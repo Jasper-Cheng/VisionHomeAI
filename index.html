@@ -82,6 +82,63 @@
 
       <section class="app-content" aria-label="内容区">
         <div id="viewer" class="viewer" aria-label="3D区域"></div>
+
+        <section id="propertiesPanel" class="properties-panel" aria-label="属性面板">
+          <div class="properties-head">
+            <div class="properties-title">
+              物体属性 - <span class="properties-name">未选择</span>
+            </div>
+          </div>
+
+          <div class="properties-body">
+            <div class="prop-row">
+              <div class="prop-label">部件数</div>
+              <div class="prop-value" data-prop="parts">—</div>
+            </div>
+
+            <div class="prop-divider"></div>
+
+            <div class="prop-group">
+              <div class="prop-group-title">位置</div>
+              <div class="prop-cols">
+                <div class="prop-sub">
+                  <div class="prop-label">X</div>
+                  <div class="prop-value" data-prop="x">0</div>
+                </div>
+                <div class="prop-sub">
+                  <div class="prop-label">Y</div>
+                  <div class="prop-value" data-prop="y">0</div>
+                </div>
+                <div class="prop-sub">
+                  <div class="prop-label">Z</div>
+                  <div class="prop-value" data-prop="z">0</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="prop-group">
+              <div class="prop-group-title">旋转（Y）</div>
+              <div class="prop-cols">
+                <div class="prop-sub" style="width: 100%;">
+                  <div class="prop-label">Yaw</div>
+                  <div class="prop-value" data-prop="rotY">0</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="prop-divider"></div>
+
+            <div class="prop-group">
+              <div class="prop-group-title">材质/颜色（示例）</div>
+              <div class="color-row">
+                <div class="color-dot" aria-hidden="true" data-color="primary"></div>
+                <div class="color-dot" aria-hidden="true" data-color="secondary"></div>
+                <div class="color-dot is-selected" aria-hidden="true" data-color="accent"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="side-panel is-visible" data-panel="assets" aria-label="家具库面板">
           <div class="panel-header">
             <div class="panel-title">家具库</div>

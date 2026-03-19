@@ -344,12 +344,126 @@ body {
   display: block;
 }
 
+.properties-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 320px;
+  border-radius: 0;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.65);
+  display: none;
+  flex-direction: column;
+  z-index: 6;
+  overflow: hidden;
+}
+
+.properties-panel.is-visible {
+  display: flex;
+}
+
+.properties-head {
+  padding: 14px 14px 10px;
+}
+
+.properties-title {
+  font-weight: 800;
+  font-size: 13px;
+  color: rgba(235, 233, 255, 0.98);
+}
+
+.properties-body {
+  padding: 6px 14px 14px;
+  overflow: auto;
+}
+
+.prop-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.prop-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.prop-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+}
+
+.prop-value {
+  font-size: 12px;
+  color: rgba(235, 233, 255, 0.98);
+  font-weight: 800;
+  text-align: right;
+}
+
+.prop-group {
+  padding: 12px 0;
+}
+
+.prop-group-title {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.prop-cols {
+  display: flex;
+  gap: 12px;
+}
+
+.prop-sub {
+  flex: 1 1 0;
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.color-dot[data-color="primary"] {
+  background: rgba(109, 92, 255, 0.35);
+  border-color: rgba(109, 92, 255, 0.6);
+}
+
+.color-dot[data-color="secondary"] {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.color-dot[data-color="accent"] {
+  background: rgba(140, 120, 255, 0.38);
+  border-color: rgba(140, 120, 255, 0.7);
+}
+
+.color-dot.is-selected {
+  outline: 2px solid rgba(140, 120, 255, 0.45);
+  outline-offset: 2px;
+}
+
 .side-panel {
   width: 320px;
   height: auto;
   background: #1a1a1a;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  border-radius: 0;
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.55);
   display: none;
   overflow: hidden;

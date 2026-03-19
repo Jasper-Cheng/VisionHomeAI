@@ -53,6 +53,41 @@ import { OrbitControls } from "./public/OrbitControls.js";
   const placeables = [];
   const interactiveMeshes = [];
 
+  const propertiesPanel = document.getElementById("propertiesPanel");
+  const propertiesName = propertiesPanel?.querySelector(".properties-name");
+  const propParts = propertiesPanel?.querySelector('[data-prop="parts"]');
+  const propX = propertiesPanel?.querySelector('[data-prop="x"]');
+  const propY = propertiesPanel?.querySelector('[data-prop="y"]');
+  const propZ = propertiesPanel?.querySelector('[data-prop="z"]');
+  const propRotY = propertiesPanel?.querySelector('[data-prop="rotY"]');
+
+  const MODEL_LABEL = {
+    sofa: "沙发",
+    table: "桌几",
+    lamp: "落地灯",
+    rug: "地毯",
+    "tv-cabinet": "电视柜",
+    plant: "绿植",
+  };
+
+  const MODEL_PREFIX = {
+    sofa: "SF",
+    table: "TB",
+    lamp: "LP",
+    rug: "RG",
+    "tv-cabinet": "TV",
+    plant: "PL",
+  };
+
+  const modelCounters = {
+    sofa: 0,
+    table: 0,
+    lamp: 0,
+    rug: 0,
+    "tv-cabinet": 0,
+    plant: 0,
+  };
+
   const state = {
     currentModel: "sofa",
     dragging: false,
@@ -61,11 +96,15 @@ import { OrbitControls } from "./public/OrbitControls.js";
     draggedRoot: null,
     lastPointerInViewer: false,
     pendingPlace: null, // { model, startX, startY }
+    selectedRoot: null,
   };
 
   const createModel = (type) => {
     // All models are built with their "bottom" at y=0, so placing at y=0 feels natural.
     const group = new THREE.Group();
+    group.userData.modelType = type;
+    group.userData.modelLabel = MODEL_LABEL[type] || type;
+    group.userData.modelCode = null;
 
     const mat = new THREE.MeshStandardMaterial({
       color: 0x8c7cff,
@@ -233,12 +272,20 @@ import { OrbitControls } from "./public/OrbitControls.js";
   };
 
   const attachPlaceable = (root) => {
+    const type = root?.userData?.modelType;
+    if (type && !root.userData.modelCode) {
+      modelCounters[type] = (modelCounters[type] || 0) + 1;
+      const prefix = MODEL_PREFIX[type] || type.toUpperCase().slice(0, 2);
+      const num = String(modelCounters[type]).padStart(2, "0");
+      root.userData.modelCode = `${prefix}-${num}`;
+    }
     placeables.push(root);
     root.traverse((obj) => {
       if (!obj.isMesh) return;
       obj.userData.__root = root;
       interactiveMeshes.push(obj);
     });
+    return root;
   };
 
   const setRayFromEvent = (event) => {
@@ -271,8 +318,40 @@ import { OrbitControls } from "./public/OrbitControls.js";
   const commitPlace = () => {
     if (!state.ghost) return;
     setGhostStyle(state.ghost, false);
-    attachPlaceable(state.ghost);
+    const placed = attachPlaceable(state.ghost);
     state.ghost = null;
+    if (placed) selectRoot(placed);
+  };
+
+  const selectRoot = (root) => {
+    state.selectedRoot = root;
+    if (propertiesPanel) propertiesPanel.classList.add("is-visible");
+
+    if (!root) return;
+    const label = root.userData.modelLabel || MODEL_LABEL[root.userData.modelType] || "模型";
+    const code = root.userData.modelCode ? `(${root.userData.modelCode})` : "";
+
+    if (propertiesName) propertiesName.textContent = `${label}${code}`;
+    if (propParts) propParts.textContent = String((root.children || []).length || 1);
+
+    updatePropertiesFromRoot(root);
+  };
+
+  const clearSelection = () => {
+    state.selectedRoot = null;
+    if (propertiesPanel) propertiesPanel.classList.remove("is-visible");
+    if (propertiesName) propertiesName.textContent = "未选择";
+  };
+
+  const updatePropertiesFromRoot = (root) => {
+    if (!root) return;
+    const p = root.position;
+    const ry = root.rotation?.y ?? 0;
+
+    if (propX) propX.textContent = p.x.toFixed(2);
+    if (propY) propY.textContent = p.y.toFixed(2);
+    if (propZ) propZ.textContent = p.z.toFixed(2);
+    if (propRotY) propRotY.textContent = ry.toFixed(2);
   };
 
   const pickRootAtPointer = () => {
@@ -287,10 +366,13 @@ import { OrbitControls } from "./public/OrbitControls.js";
     const pickedRoot = pickRootAtPointer();
 
     if (pickedRoot) {
+      selectRoot(pickedRoot);
       state.dragging = true;
       state.mode = "move";
       state.draggedRoot = pickedRoot;
       controls.enabled = false;
+    } else {
+      if (!state.pendingPlace) clearSelection();
     }
   };
 
@@ -304,6 +386,7 @@ import { OrbitControls } from "./public/OrbitControls.js";
         state.ghost.position.set(point.x, 0, point.z);
       } else if (state.mode === "move" && state.draggedRoot) {
         state.draggedRoot.position.set(point.x, 0, point.z);
+        updatePropertiesFromRoot(state.draggedRoot);
       }
       return;
     }
