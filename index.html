@@ -81,6 +81,7 @@
       </aside>
 
       <section class="app-content" aria-label="内容区">
+        <div id="viewer" class="viewer" aria-label="3D区域"></div>
         <section class="side-panel is-visible" data-panel="assets" aria-label="家具库面板">
           <div class="panel-header">
             <div class="panel-title">家具库</div>
@@ -123,37 +124,37 @@
           </div>
 
           <div class="asset-grid" aria-label="家具列表">
-            <article class="asset-card">
+            <article class="asset-card" data-model="sofa" tabindex="0" role="button" aria-label="北欧灰布艺沙发">
               <div class="asset-thumb">
                 <div class="thumb-skeleton"></div>
               </div>
               <div class="asset-name">北欧灰布艺沙发</div>
             </article>
-            <article class="asset-card">
+            <article class="asset-card" data-model="table" tabindex="0" role="button" aria-label="原木简约茶几">
               <div class="asset-thumb">
                 <div class="thumb-skeleton thumb-skeleton--green"></div>
               </div>
               <div class="asset-name">原木简约茶几</div>
             </article>
-            <article class="asset-card">
+            <article class="asset-card" data-model="lamp" tabindex="0" role="button" aria-label="极简落地灯">
               <div class="asset-thumb">
                 <div class="thumb-skeleton thumb-skeleton--warm"></div>
               </div>
               <div class="asset-name">极简落地灯</div>
             </article>
-            <article class="asset-card">
+            <article class="asset-card" data-model="rug" tabindex="0" role="button" aria-label="几何抽象地毯">
               <div class="asset-thumb">
                 <div class="thumb-skeleton thumb-skeleton--red"></div>
               </div>
               <div class="asset-name">几何抽象地毯</div>
             </article>
-            <article class="asset-card">
+            <article class="asset-card" data-model="tv-cabinet" tabindex="0" role="button" aria-label="悬浮式电视柜">
               <div class="asset-thumb">
                 <div class="thumb-skeleton thumb-skeleton--gray"></div>
               </div>
               <div class="asset-name">悬浮式电视柜</div>
             </article>
-            <article class="asset-card">
+            <article class="asset-card" data-model="plant" tabindex="0" role="button" aria-label="大叶天堂鸟">
               <div class="asset-thumb">
                 <div class="thumb-skeleton thumb-skeleton--blue"></div>
               </div>
@@ -187,6 +188,15 @@
       </section>
     </main>
 
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./public/three.module.js"
+        }
+      }
+    </script>
+
+    <script type="module" src="./viewer.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

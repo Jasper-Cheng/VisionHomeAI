@@ -319,6 +319,23 @@ body {
   gap: 14px;
   padding: 12px;
   min-height: 0;
+  height: 100%;
+}
+
+.viewer {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: 16px;
+  background: #070707;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  position: relative;
+}
+
+.viewer canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 .side-panel {
@@ -434,6 +451,11 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 14px;
   padding: 10px;
+}
+
+.asset-card.is-selected {
+  border-color: rgba(109, 92, 255, 0.55);
+  background: rgba(109, 92, 255, 0.08);
 }
 
 .asset-thumb {
