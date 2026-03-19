@@ -251,6 +251,8 @@ body {
 .app-main {
   height: calc(100vh - 58px);
   display: flex;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .left-rail {
@@ -320,6 +322,9 @@ body {
   padding: 12px;
   min-height: 0;
   height: 100%;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .viewer {
@@ -330,6 +335,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.06);
   overflow: hidden;
   position: relative;
+  z-index: 0;
 }
 
 .viewer canvas {
@@ -340,7 +346,7 @@ body {
 
 .side-panel {
   width: 320px;
-  height: 100%;
+  height: auto;
   background: #1a1a1a;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
@@ -348,6 +354,12 @@ body {
   display: none;
   overflow: hidden;
   min-height: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 5;
+  box-sizing: border-box;
 }
 
 .side-panel.is-visible {
