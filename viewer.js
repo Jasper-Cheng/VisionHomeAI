@@ -99,6 +99,119 @@ import { OrbitControls } from "./public/OrbitControls.js";
     selectedRoot: null,
   };
 
+  // Placement history (undo/redo)
+  const ENABLE_HISTORY = false; // 暂未实现上一步/下一步
+  const history = [];
+  let historyIndex = -1;
+  let isRestoring = false;
+  let nextPlacedId = 1;
+
+  const snapshotState = () => {
+    const selectedId = state.selectedRoot?.userData?.__id ?? null;
+    return {
+      selectedId,
+      objects: placeables.map((root) => ({
+        id: root.userData.__id,
+        type: root.userData.modelType,
+        code: root.userData.modelCode,
+        pos: { x: root.position.x, y: root.position.y, z: root.position.z },
+        rotY: root.rotation?.y ?? 0,
+      })),
+    };
+  };
+
+  const recordHistory = () => {
+    if (!ENABLE_HISTORY) return;
+    if (isRestoring) return;
+    const snap = snapshotState();
+    // Truncate redo branch
+    history.splice(historyIndex + 1);
+    history.push(snap);
+    historyIndex = history.length - 1;
+  };
+
+  const applySnapshot = (snap) => {
+    if (!snap) return;
+    isRestoring = true;
+
+    // Cancel any in-progress placement/move.
+    state.pendingPlace = null;
+    if (state.ghost) {
+      scene.remove(state.ghost);
+      state.ghost = null;
+    }
+    state.dragging = false;
+    state.mode = null;
+    state.draggedRoot = null;
+    controls.enabled = true;
+
+    // Clear current objects
+    for (const root of placeables) {
+      scene.remove(root);
+    }
+    placeables.splice(0, placeables.length);
+    interactiveMeshes.splice(0, interactiveMeshes.length);
+
+    // Reset counters to continue codes correctly.
+    const prefixToType = Object.fromEntries(
+      Object.entries(MODEL_PREFIX).map(([type, prefix]) => [prefix, type]),
+    );
+    // eslint-disable-next-line no-restricted-syntax
+    for (const key of Object.keys(modelCounters)) modelCounters[key] = 0;
+
+    for (const obj of snap.objects || []) {
+      const code = obj.code;
+      if (!code) continue;
+      const parts = String(code).split("-");
+      if (parts.length < 2) continue;
+      const prefix = parts[0];
+      const num = Number(parts[1]);
+      const type = prefixToType[prefix];
+      if (type && Number.isFinite(num)) {
+        modelCounters[type] = Math.max(modelCounters[type], num);
+      }
+    }
+
+    nextPlacedId = 1;
+    for (const obj of snap.objects || []) {
+      if (typeof obj.id === "number") nextPlacedId = Math.max(nextPlacedId, obj.id + 1);
+    }
+
+    // Recreate
+    for (const obj of snap.objects || []) {
+      const root = createModel(obj.type);
+      root.userData.__id = obj.id;
+      root.userData.modelCode = obj.code ?? null;
+      root.position.set(obj.pos.x, obj.pos.y, obj.pos.z);
+      root.rotation.y = obj.rotY;
+      attachPlaceable(root);
+    }
+
+    // Restore selection
+    const selectedRoot = snap.selectedId
+      ? placeables.find((r) => r.userData.__id === snap.selectedId) || null
+      : null;
+    if (selectedRoot) selectRoot(selectedRoot);
+    else clearSelection();
+
+    isRestoring = false;
+  };
+
+  const undo = () => {
+    if (historyIndex <= 0) return;
+    historyIndex -= 1;
+    applySnapshot(history[historyIndex]);
+  };
+
+  const redo = () => {
+    if (historyIndex >= history.length - 1) return;
+    historyIndex += 1;
+    applySnapshot(history[historyIndex]);
+  };
+
+  // Initial history (empty scene)
+  recordHistory();
+
   const createModel = (type) => {
     // All models are built with their "bottom" at y=0, so placing at y=0 feels natural.
     const group = new THREE.Group();
@@ -279,6 +392,9 @@ import { OrbitControls } from "./public/OrbitControls.js";
       const num = String(modelCounters[type]).padStart(2, "0");
       root.userData.modelCode = `${prefix}-${num}`;
     }
+    if (typeof root.userData.__id !== "number") {
+      root.userData.__id = nextPlacedId++;
+    }
     placeables.push(root);
     root.traverse((obj) => {
       if (!obj.isMesh) return;
@@ -321,6 +437,7 @@ import { OrbitControls } from "./public/OrbitControls.js";
     const placed = attachPlaceable(state.ghost);
     state.ghost = null;
     if (placed) selectRoot(placed);
+    recordHistory();
   };
 
   const selectRoot = (root) => {
@@ -424,6 +541,7 @@ import { OrbitControls } from "./public/OrbitControls.js";
 
   const onPointerUp = (event) => {
     if (!state.dragging && !state.pendingPlace) return;
+    const wasMoving = state.mode === "move" && state.draggedRoot;
     state.dragging = false;
 
     if (state.pendingPlace) {
@@ -441,6 +559,10 @@ import { OrbitControls } from "./public/OrbitControls.js";
         scene.remove(state.ghost);
         state.ghost = null;
       }
+    }
+
+    if (wasMoving) {
+      recordHistory();
     }
 
     state.mode = null;
@@ -494,6 +616,30 @@ import { OrbitControls } from "./public/OrbitControls.js";
     camera.updateProjectionMatrix();
     renderer.setSize(w, h, false);
   };
+
+  const resetView = () => {
+    // Remove any in-progress placement.
+    state.pendingPlace = null;
+    if (state.ghost) {
+      scene.remove(state.ghost);
+      state.ghost = null;
+    }
+    state.dragging = false;
+    state.mode = null;
+    state.draggedRoot = null;
+
+    // Reset camera pose.
+    camera.position.set(7, 7, 9);
+    controls.target.set(0, 0, 0);
+    controls.enabled = true;
+    resize();
+    controls.update();
+  };
+
+  // Expose for "refresh view" button.
+  window.resetViewerView = resetView;
+
+  // Undo/redo暂未实现（按钮已 disabled），这里不暴露对应全局函数。
 
   const animate = () => {
     requestAnimationFrame(animate);

@@ -4,6 +4,8 @@
   const tabStrips = Array.from(document.querySelectorAll(".panel-tabs"));
   const appContent = document.querySelector(".app-content");
   const contentIcons = document.querySelector(".content-icons");
+  const resetBtn = document.querySelector('[data-action="reset-view"]');
+  // Undo/redo暂未实现
 
   function setActive(panelId) {
     const isNone = !panelId;
@@ -42,5 +44,12 @@
   // Default
   const defaultPanel = railButtons.find((b) => b.classList.contains("is-active"))?.dataset.panel;
   if (defaultPanel) setActive(defaultPanel);
+
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      if (typeof window.resetViewerView === "function") window.resetViewerView();
+    });
+  }
+  // Undo/redo暂未实现（按钮已 disabled），这里不绑定点击事件。
 })();
 
