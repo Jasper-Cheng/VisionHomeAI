@@ -44,6 +44,8 @@ import { OrbitControls } from "./public/OrbitControls.js";
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
+  // Default: hide ground plane.
+  ground.visible = false;
 
   // Placement plane (infinite mathematical plane)
   const placementPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -646,6 +648,31 @@ import { OrbitControls } from "./public/OrbitControls.js";
     controls.update();
     renderer.render(scene, camera);
   };
+
+  // Toggle grid/ground from quick actions (with selected button state).
+  const gridBtn = document.querySelector('[data-action="toggle-grid"]');
+  const groundBtn = document.querySelector('[data-action="toggle-ground"]');
+
+  const setBtnActive = (btn, active) => {
+    if (!btn) return;
+    btn.classList.toggle("is-active", !!active);
+  };
+
+  // Initial states: grid/ground are visible by default.
+  setBtnActive(gridBtn, grid.visible);
+  setBtnActive(groundBtn, ground.visible);
+
+  const toggleGrid = () => {
+    grid.visible = !grid.visible;
+    setBtnActive(gridBtn, grid.visible);
+  };
+  const toggleGround = () => {
+    ground.visible = !ground.visible;
+    setBtnActive(groundBtn, ground.visible);
+  };
+
+  gridBtn?.addEventListener("click", toggleGrid);
+  groundBtn?.addEventListener("click", toggleGround);
 
   window.addEventListener("resize", resize);
   resize();
