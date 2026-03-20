@@ -203,6 +203,12 @@ body {
   filter: brightness(1.08);
 }
 
+.btn-primary.btn-save {
+  border-radius: 8px;
+  padding: 0 24px;
+  min-width: 72px;
+}
+
 .icon-btn {
   width: 30px;
   height: 30px;
