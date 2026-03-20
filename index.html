@@ -69,11 +69,11 @@
             </svg>
           </button>
 
-          <button class="rail-btn" type="button" aria-label="设置" data-panel="settings">
+          <button class="rail-btn" type="button" aria-label="文件" data-panel="files">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 fill="currentColor"
-                d="M19.4 13a7.8 7.8 0 0 0 .1-2l2-1.5-2-3.4-2.4 1a8.3 8.3 0 0 0-1.7-1l-.3-2.6H11l-.3 2.6a8.3 8.3 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.8 7.8 0 0 0 .1 2l-2 1.5 2 3.4 2.4-1a8.3 8.3 0 0 0 1.7 1l.3 2.6h4.2l.3-2.6a8.3 8.3 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5ZM13 12a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+                d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"
               />
             </svg>
           </button>
@@ -345,11 +345,59 @@
           </div>
         </section>
 
-        <section class="side-panel" data-panel="settings" aria-label="设置面板">
+        <section class="side-panel" data-panel="files" aria-label="文件面板">
           <div class="panel-header">
-            <div class="panel-title">设置</div>
+            <div class="panel-title">文件</div>
+            <label class="search" aria-label="搜索文件">
+              <span class="search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M10.5 3a7.5 7.5 0 1 1 4.67 13.36l3.48 3.48-1.41 1.41-3.48-3.48A7.5 7.5 0 0 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z"
+                  />
+                </svg>
+              </span>
+              <input class="search-input file-search-input" type="search" placeholder="搜索文件..." />
+            </label>
           </div>
-          <div class="panel-empty">这里放你的设置项。</div>
+          <div class="file-list" aria-label="文件列表">
+            <div class="file-item" data-name="index.html">
+              <span class="file-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+              </span>
+              <span class="file-name">index.html</span>
+            </div>
+            <div class="file-item" data-name="styles.css">
+              <span class="file-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+              </span>
+              <span class="file-name">styles.css</span>
+            </div>
+            <div class="file-item" data-name="app.js">
+              <span class="file-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+              </span>
+              <span class="file-name">app.js</span>
+            </div>
+            <div class="file-item" data-name="viewer.js">
+              <span class="file-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+              </span>
+              <span class="file-name">viewer.js</span>
+            </div>
+            <div class="file-item" data-name="public/three.module.js">
+              <span class="file-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+              </span>
+              <span class="file-name">public/three.module.js</span>
+            </div>
+            <div class="file-item" data-name="public/OrbitControls.js">
+              <span class="file-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+              </span>
+              <span class="file-name">public/OrbitControls.js</span>
+            </div>
+          </div>
         </section>
       </section>
     </main>

@@ -12,7 +12,7 @@
     railButtons.forEach((b) => b.classList.toggle("is-active", !isNone && b.dataset.panel === panelId));
     panels.forEach((p) => p.classList.toggle("is-visible", !isNone && p.dataset.panel === panelId));
 
-    const hasLeftPanel = panelId === "assets" || panelId === "settings";
+    const hasLeftPanel = panelId === "assets" || panelId === "files";
     if (appContent) appContent.classList.toggle("has-assets-panel", hasLeftPanel);
 
     if (contentIcons) {
@@ -49,6 +49,19 @@
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
       if (typeof window.resetViewerView === "function") window.resetViewerView();
+    });
+  }
+
+  // File panel search
+  const fileSearchInput = document.querySelector(".file-search-input");
+  const fileItems = document.querySelectorAll(".file-item");
+  if (fileSearchInput && fileItems.length) {
+    fileSearchInput.addEventListener("input", () => {
+      const q = (fileSearchInput.value || "").trim().toLowerCase();
+      fileItems.forEach((item) => {
+        const name = (item.dataset.name || "").toLowerCase();
+        item.classList.toggle("is-hidden", q && !name.includes(q));
+      });
     });
   }
   // Undo/redo暂未实现（按钮已 disabled），这里不绑定点击事件。
