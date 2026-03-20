@@ -12,10 +12,11 @@
     railButtons.forEach((b) => b.classList.toggle("is-active", !isNone && b.dataset.panel === panelId));
     panels.forEach((p) => p.classList.toggle("is-visible", !isNone && p.dataset.panel === panelId));
 
-    if (appContent) appContent.classList.toggle("has-assets-panel", panelId === "assets");
+    const hasLeftPanel = panelId === "assets" || panelId === "settings";
+    if (appContent) appContent.classList.toggle("has-assets-panel", hasLeftPanel);
 
     if (contentIcons) {
-      contentIcons.style.left = panelId === "assets" ? "calc(320px + 14px)" : "14px";
+      contentIcons.style.left = hasLeftPanel ? "calc(320px + 14px)" : "14px";
     }
   }
 
