@@ -60,19 +60,19 @@
     <main class="app-main" role="main">
       <aside class="left-rail" aria-label="侧边栏">
         <div class="rail-group" role="group" aria-label="工具">
-          <button class="rail-btn" type="button" aria-label="户型库" data-panel="floorplans">
+          <button class="rail-btn is-active" type="button" aria-label="户型库" data-panel="floorplans">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"
+              />
+            </svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="家具库" data-panel="assets">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 fill="currentColor"
                 d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 7h4v4H7V7zm6 0h4v2h-4V7zm0 4h4v2h-4v-2zm-6 4h4v2H7v-2z"
-              />
-            </svg>
-          </button>
-          <button class="rail-btn is-active" type="button" aria-label="家具库" data-panel="assets">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M7 11c-1.66 0-3 1.34-3 3v4h2v-2h12v2h2v-4c0-1.66-1.34-3-3-3h-1V9c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v2H7Zm2-2h6v2H9V9Z"
               />
             </svg>
           </button>
@@ -256,7 +256,7 @@
           </div>
         </section>
 
-        <section class="side-panel" data-panel="floorplans" aria-label="户型库面板">
+        <section class="side-panel is-visible" data-panel="floorplans" aria-label="户型库面板">
           <div class="panel-header">
             <div class="panel-title">户型库</div>
             <label class="search" aria-label="搜索户型">
@@ -335,7 +335,7 @@
           </div>
         </section>
 
-        <section class="side-panel is-visible" data-panel="assets" aria-label="家具库面板">
+        <section class="side-panel" data-panel="assets" aria-label="家具库面板">
           <div class="panel-header">
             <div class="panel-title">家具库</div>
             <label class="search" aria-label="搜索模型">
