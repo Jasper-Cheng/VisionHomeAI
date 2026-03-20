@@ -41,6 +41,20 @@
         });
         tab.classList.add("is-active");
         tab.setAttribute("aria-selected", "true");
+
+        // Filter floorplan cards by category when floorplan tabs are clicked
+        if (strip.classList.contains("floorplan-tabs")) {
+          const category = tab.dataset.category || "";
+          const grid = document.querySelector(".floorplan-grid");
+          const searchInput = document.querySelector(".floorplan-search-input");
+          const searchQ = (searchInput?.value || "").trim().toLowerCase();
+          grid?.querySelectorAll(".floorplan-card").forEach((card) => {
+            const cardCategory = card.dataset.category || "";
+            const matchesCategory = !category || cardCategory === category;
+            const matchesSearch = !searchQ || (card.dataset.name || "").toLowerCase().includes(searchQ);
+            card.classList.toggle("is-hidden", !matchesCategory || !matchesSearch);
+          });
+        }
       });
     });
   });
@@ -75,16 +89,57 @@
     });
   }
 
-  // Floorplan panel search
+  // Floorplan panel: search + category filter
   const floorplanSearchInput = document.querySelector(".floorplan-search-input");
-  const floorplanCards = document.querySelectorAll(".floorplan-card");
-  if (floorplanSearchInput && floorplanCards.length) {
-    floorplanSearchInput.addEventListener("input", () => {
-      const q = (floorplanSearchInput.value || "").trim().toLowerCase();
-      floorplanCards.forEach((card) => {
-        const name = (card.dataset.name || "").toLowerCase();
-        card.classList.toggle("is-hidden", q && !name.includes(q));
-      });
+  const floorplanGrid = document.querySelector(".floorplan-grid");
+  const floorplanTabs = document.querySelector(".floorplan-tabs");
+
+  function filterFloorplanCards() {
+    const q = (floorplanSearchInput?.value || "").trim().toLowerCase();
+    const activeTab = floorplanTabs?.querySelector(".tab.is-active");
+    const category = activeTab?.dataset.category || "";
+
+    floorplanGrid?.querySelectorAll(".floorplan-card").forEach((card) => {
+      const cardCategory = card.dataset.category || "";
+      const matchesCategory = !category || cardCategory === category;
+      const matchesSearch = !q || (card.dataset.name || "").toLowerCase().includes(q);
+      card.classList.toggle("is-hidden", !matchesCategory || !matchesSearch);
+    });
+  }
+
+  if (floorplanSearchInput) {
+    floorplanSearchInput.addEventListener("input", filterFloorplanCards);
+  }
+
+  // Floorplan upload: add new card to special category
+  const uploadInput = document.querySelector(".upload-floorplan-input");
+  let uploadedCount = 0;
+  if (uploadInput && floorplanGrid) {
+    uploadInput.addEventListener("change", (e) => {
+      const file = e.target.files?.[0];
+      if (!file || !file.type.startsWith("image/")) return;
+
+      uploadedCount += 1;
+      const name = file.name.replace(/\.[^.]+$/, "") || `上传户型 ${uploadedCount}`;
+      const url = URL.createObjectURL(file);
+
+      const card = document.createElement("article");
+      card.className = "asset-card floorplan-card";
+      card.tabIndex = 0;
+      card.role = "button";
+      card.dataset.name = name;
+      card.dataset.category = "special";
+      card.setAttribute("aria-label", name);
+      card.innerHTML = `
+        <div class="asset-thumb">
+          <div class="thumb-uploaded" style="background-image:url(${url})"></div>
+        </div>
+        <div class="asset-name">${name}</div>
+      `;
+      floorplanGrid.appendChild(card);
+
+      filterFloorplanCards();
+      e.target.value = "";
     });
   }
   // Undo/redo暂未实现（按钮已 disabled），这里不绑定点击事件。
