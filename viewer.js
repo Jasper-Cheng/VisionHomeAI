@@ -57,11 +57,9 @@ import { OrbitControls } from "./public/OrbitControls.js";
 
   const propertiesPanel = document.getElementById("propertiesPanel");
   const propertiesName = propertiesPanel?.querySelector(".properties-name");
-  const propParts = propertiesPanel?.querySelector('[data-prop="parts"]');
-  const propX = propertiesPanel?.querySelector('[data-prop="x"]');
-  const propY = propertiesPanel?.querySelector('[data-prop="y"]');
-  const propZ = propertiesPanel?.querySelector('[data-prop="z"]');
-  const propRotY = propertiesPanel?.querySelector('[data-prop="rotY"]');
+  const propInputX = propertiesPanel?.querySelector('input[data-prop="x"]');
+  const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
+  const propInputRotY = propertiesPanel?.querySelector('input[data-prop="rotY"]');
 
   const MODEL_LABEL = {
     sofa: "沙发",
@@ -451,7 +449,6 @@ import { OrbitControls } from "./public/OrbitControls.js";
     const code = root.userData.modelCode ? `(${root.userData.modelCode})` : "";
 
     if (propertiesName) propertiesName.textContent = `${label}${code}`;
-    if (propParts) propParts.textContent = String((root.children || []).length || 1);
 
     updatePropertiesFromRoot(root);
   };
@@ -466,11 +463,22 @@ import { OrbitControls } from "./public/OrbitControls.js";
     if (!root) return;
     const p = root.position;
     const ry = root.rotation?.y ?? 0;
+    const deg = (ry * 180) / Math.PI;
 
-    if (propX) propX.textContent = p.x.toFixed(2);
-    if (propY) propY.textContent = p.y.toFixed(2);
-    if (propZ) propZ.textContent = p.z.toFixed(2);
-    if (propRotY) propRotY.textContent = ry.toFixed(2);
+    if (propInputX) propInputX.value = p.x.toFixed(2);
+    if (propInputZ) propInputZ.value = p.z.toFixed(2);
+    if (propInputRotY) propInputRotY.value = deg.toFixed(2);
+  };
+
+  const applyPropertiesToRoot = (root) => {
+    if (!root) return;
+    const x = parseFloat(propInputX?.value) || 0;
+    const z = parseFloat(propInputZ?.value) || 0;
+    const deg = parseFloat(propInputRotY?.value) || 0;
+    const rad = (deg * Math.PI) / 180;
+    root.position.x = x;
+    root.position.z = z;
+    root.rotation.y = rad;
   };
 
   const pickRootAtPointer = () => {
@@ -673,6 +681,39 @@ import { OrbitControls } from "./public/OrbitControls.js";
 
   gridBtn?.addEventListener("click", toggleGrid);
   groundBtn?.addEventListener("click", toggleGround);
+
+  // Property panel: input change → apply to selected model
+  const onPropInputChange = () => {
+    if (state.selectedRoot) {
+      applyPropertiesToRoot(state.selectedRoot);
+      recordHistory();
+    }
+  };
+  propInputX?.addEventListener("change", onPropInputChange);
+  propInputZ?.addEventListener("change", onPropInputChange);
+  propInputRotY?.addEventListener("change", onPropInputChange);
+
+  // Material tiles & color swatches: selection state only (visual)
+  propertiesPanel?.querySelectorAll(".prop-material-tile").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      propertiesPanel.querySelectorAll(".prop-material-tile").forEach((b) => b.classList.remove("is-selected"));
+      if (!btn.classList.contains("prop-material-add")) btn.classList.add("is-selected");
+    });
+  });
+  propertiesPanel?.querySelectorAll(".prop-color-swatch").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      propertiesPanel.querySelectorAll(".prop-color-swatch").forEach((b) => b.classList.remove("is-selected"));
+      btn.classList.add("is-selected");
+      const hex = btn.dataset.color;
+      if (hex && state.selectedRoot) {
+        state.selectedRoot.traverse((obj) => {
+          if (obj.isMesh && obj.material && obj.material.color) {
+            obj.material.color.setStyle(hex);
+          }
+        });
+      }
+    });
+  });
 
   window.addEventListener("resize", resize);
   resize();
