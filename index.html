@@ -60,6 +60,14 @@
     <main class="app-main" role="main">
       <aside class="left-rail" aria-label="侧边栏">
         <div class="rail-group" role="group" aria-label="工具">
+          <button class="rail-btn" type="button" aria-label="户型库" data-panel="floorplans">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 7h4v4H7V7zm6 0h4v2h-4V7zm0 4h4v2h-4v-2zm-6 4h4v2H7v-2z"
+              />
+            </svg>
+          </button>
           <button class="rail-btn is-active" type="button" aria-label="家具库" data-panel="assets">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -243,6 +251,90 @@
                   <input type="checkbox" class="prop-toggle-input" data-prop="collisionFeedback" />
                   <span class="prop-toggle-slider"></span>
                 </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="side-panel" data-panel="floorplans" aria-label="户型库面板">
+          <div class="panel-header">
+            <div class="panel-title">户型库</div>
+            <label class="search" aria-label="搜索户型">
+              <span class="search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M10.5 3a7.5 7.5 0 1 1 4.67 13.36l3.48 3.48-1.41 1.41-3.48-3.48A7.5 7.5 0 0 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z"
+                  />
+                </svg>
+              </span>
+              <input class="search-input floorplan-search-input" type="search" placeholder="搜索户型..." />
+            </label>
+          </div>
+
+          <div class="panel-tabs" role="tablist" aria-label="户型分类">
+            <button class="tab is-active" type="button" role="tab" aria-selected="true">全部</button>
+            <button class="tab" type="button" role="tab" aria-selected="false">一居室</button>
+            <button class="tab" type="button" role="tab" aria-selected="false">两居室</button>
+            <button class="tab" type="button" role="tab" aria-selected="false">三居室</button>
+            <button class="tab" type="button" role="tab" aria-selected="false">四居室</button>
+            <button class="tab" type="button" role="tab" aria-selected="false">复式</button>
+            <button class="tab" type="button" role="tab" aria-selected="false">别墅</button>
+            <button class="tab" type="button" role="tab" aria-selected="false">Loft</button>
+            <button class="tab" type="button" role="tab" aria-selected="false">大平层</button>
+          </div>
+
+          <div class="asset-grid" aria-label="户型列表">
+            <article class="asset-card floorplan-card" tabindex="0" role="button" data-name="简约两居 约89㎡" aria-label="简约两居 约89㎡">
+              <div class="asset-thumb">
+                <div class="thumb-skeleton thumb-floorplan"></div>
+              </div>
+              <div class="asset-name">简约两居 约89㎡</div>
+            </article>
+            <article class="asset-card floorplan-card" tabindex="0" role="button" data-name="北欧三居 约120㎡" aria-label="北欧三居 约120㎡">
+              <div class="asset-thumb">
+                <div class="thumb-skeleton thumb-floorplan thumb-floorplan--alt"></div>
+              </div>
+              <div class="asset-name">北欧三居 约120㎡</div>
+            </article>
+            <article class="asset-card floorplan-card" tabindex="0" role="button" data-name="现代一居 约55㎡" aria-label="现代一居 约55㎡">
+              <div class="asset-thumb">
+                <div class="thumb-skeleton thumb-floorplan thumb-floorplan--compact"></div>
+              </div>
+              <div class="asset-name">现代一居 约55㎡</div>
+            </article>
+            <article class="asset-card floorplan-card" tabindex="0" role="button" data-name="轻奢四居 约165㎡" aria-label="轻奢四居 约165㎡">
+              <div class="asset-thumb">
+                <div class="thumb-skeleton thumb-floorplan"></div>
+              </div>
+              <div class="asset-name">轻奢四居 约165㎡</div>
+            </article>
+            <article class="asset-card floorplan-card" tabindex="0" role="button" data-name="复式 loft 约180㎡" aria-label="复式 loft 约180㎡">
+              <div class="asset-thumb">
+                <div class="thumb-skeleton thumb-floorplan thumb-floorplan--alt"></div>
+              </div>
+              <div class="asset-name">复式 loft 约180㎡</div>
+            </article>
+            <article class="asset-card floorplan-card" tabindex="0" role="button" data-name="大平层 约220㎡" aria-label="大平层 约220㎡">
+              <div class="asset-thumb">
+                <div class="thumb-skeleton thumb-floorplan thumb-floorplan--wide"></div>
+              </div>
+              <div class="asset-name">大平层 约220㎡</div>
+            </article>
+          </div>
+
+          <div class="panel-footer">
+            <div class="ai-box">
+              <div class="ai-top">
+                <span class="ai-badge">AI 推荐</span>
+              </div>
+              <div class="ai-tags" aria-label="热门户型">
+                <button class="ai-tag" type="button">小户型</button>
+                <button class="ai-tag" type="button">南北通透</button>
+                <button class="ai-tag" type="button">方正户型</button>
+                <button class="ai-tag" type="button">明厨明卫</button>
+                <button class="ai-tag" type="button">双阳台</button>
+                <button class="ai-tag" type="button">收纳充足</button>
               </div>
             </div>
           </div>

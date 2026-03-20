@@ -998,6 +998,31 @@ body {
   background: linear-gradient(135deg, rgba(120, 190, 255, 0.35), rgba(120, 160, 255, 0.12));
 }
 
+/* Floor plan thumb – blueprint-style grid */
+.thumb-floorplan {
+  background:
+    linear-gradient(90deg, rgba(109, 92, 255, 0.15) 1px, transparent 1px),
+    linear-gradient(rgba(109, 92, 255, 0.15) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(109, 92, 255, 0.12), rgba(109, 92, 255, 0.04));
+  background-size: 12px 12px, 12px 12px, 100% 100%;
+}
+
+.thumb-floorplan--alt {
+  background:
+    linear-gradient(90deg, rgba(140, 120, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(rgba(140, 120, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(109, 92, 255, 0.08), rgba(109, 92, 255, 0.02));
+  background-size: 10px 10px, 10px 10px, 100% 100%;
+}
+
+.thumb-floorplan--compact {
+  background-size: 8px 8px, 8px 8px, 100% 100%;
+}
+
+.thumb-floorplan--wide {
+  background-size: 14px 14px, 14px 14px, 100% 100%;
+}
+
 .asset-name {
   margin-top: 8px;
   font-size: 12px;
@@ -1108,6 +1133,10 @@ body {
 }
 
 .file-item.is-hidden {
+  display: none;
+}
+
+.asset-card.is-hidden {
   display: none;
 }
 

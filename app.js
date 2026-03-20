@@ -12,7 +12,7 @@
     railButtons.forEach((b) => b.classList.toggle("is-active", !isNone && b.dataset.panel === panelId));
     panels.forEach((p) => p.classList.toggle("is-visible", !isNone && p.dataset.panel === panelId));
 
-    const hasLeftPanel = panelId === "assets" || panelId === "files";
+    const hasLeftPanel = panelId === "assets" || panelId === "files" || panelId === "floorplans";
     if (appContent) appContent.classList.toggle("has-assets-panel", hasLeftPanel);
 
     if (contentIcons) {
@@ -20,7 +20,7 @@
     }
   }
 
-  // Allow mouse wheel to scroll horizontal tab strip
+  // Allow mouse wheel to scroll horizontal tab strip + tab click to switch active
   tabStrips.forEach((strip) => {
     strip.addEventListener(
       "wheel",
@@ -33,6 +33,16 @@
       },
       { passive: false },
     );
+    strip.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        strip.querySelectorAll(".tab").forEach((t) => {
+          t.classList.remove("is-active");
+          t.setAttribute("aria-selected", "false");
+        });
+        tab.classList.add("is-active");
+        tab.setAttribute("aria-selected", "true");
+      });
+    });
   });
 
   railButtons.forEach((btn) => {
@@ -61,6 +71,19 @@
       fileItems.forEach((item) => {
         const name = (item.dataset.name || "").toLowerCase();
         item.classList.toggle("is-hidden", q && !name.includes(q));
+      });
+    });
+  }
+
+  // Floorplan panel search
+  const floorplanSearchInput = document.querySelector(".floorplan-search-input");
+  const floorplanCards = document.querySelectorAll(".floorplan-card");
+  if (floorplanSearchInput && floorplanCards.length) {
+    floorplanSearchInput.addEventListener("input", () => {
+      const q = (floorplanSearchInput.value || "").trim().toLowerCase();
+      floorplanCards.forEach((card) => {
+        const name = (card.dataset.name || "").toLowerCase();
+        card.classList.toggle("is-hidden", q && !name.includes(q));
       });
     });
   }
