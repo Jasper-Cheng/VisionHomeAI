@@ -161,7 +161,7 @@ body {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   flex: 0 0 auto;
 }
 
@@ -1263,6 +1263,70 @@ a.icon-btn {
 @media (max-width: 860px) {
   .nav-segment {
     display: none;
+  }
+}
+
+/* Header search bar (user.html) */
+.header-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  width: 200px;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.header-search:focus-within {
+  border-color: rgba(109, 92, 255, 0.5);
+  background: rgba(109, 92, 255, 0.06);
+}
+
+.header-search-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.38);
+  transition: color 160ms ease;
+}
+
+.header-search:focus-within .header-search-icon {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.header-search-icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.header-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.header-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.header-search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .header-search {
+    width: 160px;
   }
 }
 
