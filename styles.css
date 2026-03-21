@@ -15,10 +15,12 @@
 html,
 body {
   height: 100%;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
+  overflow: hidden;
   background: var(--bg);
   color: var(--text);
   font-family:
