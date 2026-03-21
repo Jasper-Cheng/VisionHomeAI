@@ -246,6 +246,12 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+a.avatar:hover {
+  filter: brightness(1.08);
 }
 
 .avatar-text {
@@ -1216,6 +1222,36 @@ body {
   font-weight: 700;
   color: rgba(255, 255, 255, 0.9);
   word-break: break-all;
+}
+
+/* User page (user.html) */
+.header-inner--simple {
+  justify-content: flex-start;
+}
+
+.user-page-main {
+  min-height: calc(100vh - 58px);
+  padding: 24px 20px 40px;
+  box-sizing: border-box;
+}
+
+.user-page-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.user-page-title {
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.user-page-desc {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 @media (max-width: 860px) {
