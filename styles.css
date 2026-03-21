@@ -1226,7 +1226,11 @@ a.avatar:hover {
 
 /* User page (user.html) */
 .header-inner--simple {
-  justify-content: flex-start;
+  justify-content: space-between;
+}
+
+a.icon-btn {
+  text-decoration: none;
 }
 
 .user-page-main {
