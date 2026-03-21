@@ -1370,6 +1370,35 @@ a.icon-btn {
   padding: 6px 8px 10px;
 }
 
+.ucat-add-btn {
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.ucat-add-btn:hover {
+  background: rgba(109, 92, 255, 0.18);
+  border-color: rgba(109, 92, 255, 0.4);
+  color: rgba(200, 190, 255, 0.9);
+}
+
+.ucat-add-btn svg {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
 .ucat-group-icon {
   display: inline-flex;
   align-items: center;
