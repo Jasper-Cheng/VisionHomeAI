@@ -1531,14 +1531,69 @@ a.icon-btn {
 .ucontent-bottom {
   flex-shrink: 0;
   height: 52px;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0 20px;
 }
 
-/* ── Model card grid ── */
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-btn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.page-btn:hover:not(:disabled):not(.is-active) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.page-btn.is-active {
+  background: var(--primary);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(109, 92, 255, 0.4);
+}
+
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.page-arrow svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.page-ellipsis {
+  min-width: 24px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 13px;
+  user-select: none;
+}
 .model-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
