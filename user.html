@@ -56,9 +56,136 @@
     </header>
 
     <main class="user-page-main" role="main">
-      <div class="user-page-inner">
-        <h1 class="user-page-title">用户中心</h1>
-        <p class="user-page-desc">在此管理账户与偏好设置。</p>
+      <!-- Left sidebar: categories -->
+      <aside class="user-sidebar" aria-label="分类导航">
+
+        <!-- 户型分类 -->
+        <section class="ucat-group">
+          <div class="ucat-group-head">
+            <span class="ucat-group-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 9.5L12 3l9 6.5V21H3V9.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <rect x="9" y="14" width="6" height="7" rx="1" stroke="currentColor" stroke-width="1.6"/>
+              </svg>
+            </span>
+            <span class="ucat-group-title">户型分类</span>
+          </div>
+          <ul class="ucat-list" role="list">
+            <li class="ucat-item is-active" role="listitem">
+              <span class="ucat-label">全部户型</span>
+              <span class="ucat-count">318</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">小户型</span>
+              <span class="ucat-count">84</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">两居室</span>
+              <span class="ucat-count">96</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">三居室</span>
+              <span class="ucat-count">72</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">别墅/复式</span>
+              <span class="ucat-count">40</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">商业空间</span>
+              <span class="ucat-count">26</span>
+            </li>
+          </ul>
+        </section>
+
+        <div class="ucat-divider"></div>
+
+        <!-- 家具分类 -->
+        <section class="ucat-group">
+          <div class="ucat-group-head">
+            <span class="ucat-group-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="13" width="20" height="5" rx="2" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M4 13V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M6 18v2M18 18v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="ucat-group-title">家具分类</span>
+          </div>
+          <ul class="ucat-list" role="list">
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">全部家具</span>
+              <span class="ucat-count">4,209</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">客厅居室</span>
+              <span class="ucat-count">1,120</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">餐厅厨卫</span>
+              <span class="ucat-count">894</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">温馨卧室</span>
+              <span class="ucat-count">1,245</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">书房办公</span>
+              <span class="ucat-count">630</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">户外花园</span>
+              <span class="ucat-count">320</span>
+            </li>
+          </ul>
+        </section>
+
+        <div class="ucat-divider"></div>
+
+        <!-- 文件分类 -->
+        <section class="ucat-group">
+          <div class="ucat-group-head">
+            <span class="ucat-group-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 4h10l4 4v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M14 4v4h4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M7 12h10M7 15.5h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="ucat-group-title">文件分类</span>
+          </div>
+          <ul class="ucat-list" role="list">
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">全部文件</span>
+              <span class="ucat-count">57</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">设计方案</span>
+              <span class="ucat-count">18</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">户型图纸</span>
+              <span class="ucat-count">14</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">效果图</span>
+              <span class="ucat-count">16</span>
+            </li>
+            <li class="ucat-item" role="listitem">
+              <span class="ucat-label">报价清单</span>
+              <span class="ucat-count">9</span>
+            </li>
+          </ul>
+        </section>
+
+      </aside>
+
+      <!-- Right content -->
+      <div class="user-page-content">
+        <div class="user-page-inner">
+          <h1 class="user-page-title">用户中心</h1>
+          <p class="user-page-desc">在此管理账户与偏好设置。</p>
+        </div>
       </div>
     </main>
   </body>
