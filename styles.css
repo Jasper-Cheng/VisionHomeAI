@@ -1387,10 +1387,25 @@ a.icon-btn {
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
+.ucat-remove-btn {
+  margin-left: auto;
+  margin-right: 2px;
+}
+
+.ucat-add-btn + .ucat-add-btn {
+  margin-left: 0;
+}
+
 .ucat-add-btn:hover {
   background: rgba(109, 92, 255, 0.18);
   border-color: rgba(109, 92, 255, 0.4);
   color: rgba(200, 190, 255, 0.9);
+}
+
+.ucat-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: rgba(252, 165, 165, 0.9);
 }
 
 .ucat-add-btn svg {
