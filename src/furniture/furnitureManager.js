@@ -24,7 +24,7 @@ export function resolveModelUrl(modelPathFromRoot) {
   return `./${clean}`;
 }
 
-/** 家具预览图 URL 列表：优先 JSON.thumbnail，否则 assets/thumbnails/{id}.webp|png|jpg|jpeg */
+/** 家具预览图 URL 列表：优先 JSON.thumbnail，否则 assets/thumbnails/{id}.webp|png|jpg|jpeg|svg */
 export function getFurnitureThumbnailUrls(item) {
   const paths = [];
   const custom = item?.thumbnail != null ? String(item.thumbnail).trim() : "";
@@ -32,7 +32,7 @@ export function getFurnitureThumbnailUrls(item) {
   const id = String(item?.id || "").trim();
   if (id) {
     const base = `assets/thumbnails/${id}`;
-    paths.push(`${base}.webp`, `${base}.png`, `${base}.jpg`, `${base}.jpeg`);
+    paths.push(`${base}.webp`, `${base}.png`, `${base}.jpg`, `${base}.jpeg`, `${base}.svg`);
   }
   return paths;
 }
