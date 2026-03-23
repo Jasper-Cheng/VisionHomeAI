@@ -409,13 +409,6 @@
     removeSelected();
   });
 
-  document.querySelectorAll("[data-add-furniture]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const type = btn.dataset.addFurniture;
-      if (type) addFurniture(type);
-    });
-  });
-
   applyViewTransform();
 
   document.querySelectorAll("[data-svg-zoom]").forEach((btn) => {
