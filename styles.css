@@ -323,6 +323,130 @@ a.avatar:hover {
   min-height: 0;
 }
 
+/* 编辑模式：SVG 户型编辑区 */
+.svg-editor-slot {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.svg-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: #070707;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.svg-editor-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.svg-editor-toolbar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.svg-editor-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.2px;
+}
+
+.svg-editor-hint {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.38);
+  line-height: 1.4;
+  max-width: 420px;
+}
+
+.svg-editor-hint strong {
+  color: rgba(200, 190, 255, 0.85);
+  font-weight: 800;
+}
+
+.svg-editor-palette {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.svg-palette-btn {
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 8px;
+  border: 1px solid rgba(109, 92, 255, 0.35);
+  background: rgba(109, 92, 255, 0.12);
+  color: rgba(235, 233, 255, 0.95);
+  font-size: 11.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.svg-palette-btn:hover {
+  background: rgba(109, 92, 255, 0.22);
+  border-color: rgba(109, 92, 255, 0.55);
+}
+
+.svg-editor-canvas-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.svg-editor-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  min-height: 280px;
+  touch-action: none;
+}
+
+.svg-editor-furniture-layer {
+  pointer-events: auto;
+}
+
+.svg-furniture {
+  cursor: grab;
+  outline: none;
+}
+
+.svg-furniture:focus-visible .svg-furniture-shape {
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 2.5px;
+}
+
+.svg-furniture.is-dragging {
+  cursor: grabbing;
+}
+
+.svg-furniture.is-selected .svg-furniture-shape {
+  stroke: rgba(252, 211, 77, 0.98);
+  stroke-width: 2.5px;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.45));
+}
+
 .left-rail {
   width: 52px;
   background: #1a1a1a;
@@ -532,10 +656,6 @@ a.avatar:hover {
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.02);
-}
-
-.app-content.has-assets-panel .content-icons {
-  left: calc(320px + 14px);
 }
 
 .content-icon {

@@ -1,0 +1,264 @@
+/**
+ * 户型 SVG 平面图：家具拖拽、网格吸附、旋转、删除
+ */
+(() => {
+  const svg = document.getElementById("svgEditorCanvas");
+  const furnitureLayer = document.getElementById("svgEditorFurnitureLayer");
+  if (!svg || !furnitureLayer) return;
+
+  const GRID = 20;
+  const VIEW_W = 800;
+  const VIEW_H = 600;
+
+  /** 家具 footprint（半宽半高用于边界与绘制） */
+  const FURNITURE = {
+    sofa: { hw: 45, hh: 20, label: "沙发", fill: "rgba(109,92,255,0.42)", stroke: "rgba(140,120,255,0.95)" },
+    table: { hw: 25, hh: 25, label: "茶几", fill: "rgba(34,197,94,0.35)", stroke: "rgba(74,222,128,0.9)" },
+    lamp: { hw: 12, hh: 12, label: "灯", fill: "rgba(251,191,36,0.4)", stroke: "rgba(252,211,77,0.95)" },
+    rug: { hw: 40, hh: 28, label: "地毯", fill: "rgba(244,63,94,0.28)", stroke: "rgba(251,113,133,0.85)" },
+    "tv-cabinet": { hw: 38, hh: 14, label: "电视柜", fill: "rgba(148,163,184,0.4)", stroke: "rgba(203,213,225,0.9)" },
+    plant: { hw: 14, hh: 14, label: "绿植", fill: "rgba(16,185,129,0.38)", stroke: "rgba(52,211,153,0.9)" },
+  };
+
+  let selectedEl = null;
+  let dragState = null;
+
+  function snap(v) {
+    return Math.round(v / GRID) * GRID;
+  }
+
+  function clientToSvg(clientX, clientY) {
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
+    return pt.matrixTransform(ctm.inverse());
+  }
+
+  function parseTranslate(g) {
+    const t = g.getAttribute("transform") || "";
+    const m = t.match(/translate\(\s*([\d.-]+)\s*[,\s]\s*([\d.-]+)/);
+    if (m) return { x: parseFloat(m[1]), y: parseFloat(m[2]) };
+    return { x: 0, y: 0 };
+  }
+
+  function getRotation(g) {
+    const r = parseInt(g.getAttribute("data-rot") || "0", 10);
+    return Number.isFinite(r) ? r % 360 : 0;
+  }
+
+  function setRotation(g, deg) {
+    g.setAttribute("data-rot", String(deg));
+    applyTransform(g);
+  }
+
+  function applyTransform(g) {
+    const { x, y } = parseTranslate(g);
+    const rot = getRotation(g);
+    g.setAttribute("transform", `translate(${x},${y}) rotate(${rot})`);
+  }
+
+  function clampPosition(g, x, y) {
+    const type = g.getAttribute("data-model") || "sofa";
+    const def = FURNITURE[type] || FURNITURE.sofa;
+    const hw = def.hw;
+    const hh = def.hh;
+    const margin = 4;
+    const nx = Math.min(Math.max(x, hw + margin), VIEW_W - hw - margin);
+    const ny = Math.min(Math.max(y, hh + margin), VIEW_H - hh - margin);
+    return { x: snap(nx), y: snap(ny) };
+  }
+
+  function select(g) {
+    if (selectedEl && selectedEl !== g) selectedEl.classList.remove("is-selected");
+    selectedEl = g || null;
+    if (selectedEl) {
+      selectedEl.classList.add("is-selected");
+      try {
+        selectedEl.focus({ preventScroll: true });
+      } catch (_) {
+        /* ignore */
+      }
+    }
+  }
+
+  function createFurnitureGroup(type, cx, cy) {
+    const def = FURNITURE[type];
+    if (!def) return null;
+
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.classList.add("svg-furniture");
+    g.setAttribute("data-model", type);
+    g.setAttribute("data-rot", "0");
+    g.setAttribute("role", "button");
+    g.setAttribute("tabindex", "0");
+    g.setAttribute("aria-label", `${def.label}，可拖拽`);
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", String(-def.hw));
+    rect.setAttribute("y", String(-def.hh));
+    rect.setAttribute("width", String(def.hw * 2));
+    rect.setAttribute("height", String(def.hh * 2));
+    rect.setAttribute("rx", "6");
+    rect.setAttribute("fill", def.fill);
+    rect.setAttribute("stroke", def.stroke);
+    rect.setAttribute("stroke-width", "2");
+    rect.classList.add("svg-furniture-shape");
+
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("y", "4");
+    text.setAttribute("fill", "rgba(255,255,255,0.88)");
+    text.setAttribute("font-size", "11");
+    text.setAttribute("font-weight", "700");
+    text.setAttribute("pointer-events", "none");
+    text.textContent = def.label;
+
+    g.appendChild(rect);
+    g.appendChild(text);
+
+    const pos = clampPosition(g, cx, cy);
+    g.setAttribute("transform", `translate(${pos.x},${pos.y}) rotate(0)`);
+    furnitureLayer.appendChild(g);
+    return g;
+  }
+
+  function addFurniture(type, cx = VIEW_W / 2, cy = VIEW_H / 2) {
+    const g = createFurnitureGroup(type, cx, cy);
+    if (g) select(g);
+    return g;
+  }
+
+  function removeSelected() {
+    if (!selectedEl || !furnitureLayer.contains(selectedEl)) return;
+    selectedEl.remove();
+    selectedEl = null;
+  }
+
+  /** 从家具库 Shift+点击：加入平面图中心偏一点，避免重叠 */
+  function addFromLibrary(model) {
+    if (!FURNITURE[model]) return;
+    const jitter = (Math.random() - 0.5) * GRID * 4;
+    addFurniture(model, VIEW_W / 2 + jitter, VIEW_H / 2 + jitter);
+  }
+
+  function endDrag(e) {
+    if (!dragState) return;
+    if (e.pointerId !== dragState.pointerId) return;
+    dragState.el.classList.remove("is-dragging");
+    try {
+      dragState.el.releasePointerCapture(e.pointerId);
+    } catch (_) {
+      /* ignore */
+    }
+    window.removeEventListener("pointermove", onWindowMove);
+    window.removeEventListener("pointerup", endDrag);
+    window.removeEventListener("pointercancel", endDrag);
+    dragState = null;
+  }
+
+  function onWindowMove(e) {
+    if (!dragState || e.pointerId !== dragState.pointerId) return;
+    const p = clientToSvg(e.clientX, e.clientY);
+    const nx = p.x - dragState.grabX;
+    const ny = p.y - dragState.grabY;
+    const c = clampPosition(dragState.el, nx, ny);
+    dragState.el.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${getRotation(dragState.el)})`);
+  }
+
+  svg.addEventListener(
+    "pointerdown",
+    (e) => {
+      const item = e.target.closest(".svg-furniture");
+      if (item && furnitureLayer.contains(item)) {
+        e.stopPropagation();
+        select(item);
+        try {
+          item.setPointerCapture(e.pointerId);
+        } catch (_) {
+          /* ignore */
+        }
+        const p = clientToSvg(e.clientX, e.clientY);
+        const pos = parseTranslate(item);
+        dragState = {
+          el: item,
+          grabX: p.x - pos.x,
+          grabY: p.y - pos.y,
+          pointerId: e.pointerId,
+        };
+        item.classList.add("is-dragging");
+        window.addEventListener("pointermove", onWindowMove, { passive: true });
+        window.addEventListener("pointerup", endDrag);
+        window.addEventListener("pointercancel", endDrag);
+        return;
+      }
+
+      if (e.target.classList?.contains("svg-editor-bg") || e.target === svg) {
+        select(null);
+      }
+    },
+    true,
+  );
+
+  svg.addEventListener("dblclick", (e) => {
+    const item = e.target.closest(".svg-furniture");
+    if (!item || !furnitureLayer.contains(item)) return;
+    e.preventDefault();
+    const next = (getRotation(item) + 90) % 360;
+    setRotation(item, next);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Delete" && e.key !== "Backspace") return;
+    const active = document.activeElement;
+    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+    if (!selectedEl) return;
+    e.preventDefault();
+    removeSelected();
+  });
+
+  document.querySelectorAll("[data-add-furniture]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const type = btn.dataset.addFurniture;
+      if (type) addFurniture(type);
+    });
+  });
+
+  /** Shift + 点击家具库卡片：加入平面图（不触发 3D 拖拽） */
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (!e.shiftKey) return;
+      const card = e.target.closest?.(".asset-card[data-model]");
+      if (!card) return;
+      const panel = card.closest?.(".side-panel[data-panel='assets']");
+      if (!panel || !panel.classList.contains("is-visible")) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      addFromLibrary(card.dataset.model);
+    },
+    true,
+  );
+
+  /** 导出布局（供保存 / 与 3D 同步） */
+  function getLayout() {
+    return Array.from(furnitureLayer.querySelectorAll(".svg-furniture")).map((g) => {
+      const pos = parseTranslate(g);
+      return {
+        model: g.getAttribute("data-model"),
+        x: pos.x,
+        y: pos.y,
+        rotation: getRotation(g),
+      };
+    });
+  }
+
+  window.svgEditorAddFurniture = addFurniture;
+  window.svgEditorGetLayout = getLayout;
+
+  /* 初始示例：各一件，便于直接拖拽体验 */
+  addFurniture("sofa", 240, 280);
+  addFurniture("table", 400, 300);
+  select(null);
+})();

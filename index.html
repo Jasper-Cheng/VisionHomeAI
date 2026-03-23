@@ -93,79 +93,58 @@
       </aside>
 
       <section class="app-content" aria-label="内容区">
-        <div class="viewer-cluster-slot" id="viewerClusterSlotEdit">
-        <div class="viewer-cluster" id="viewerCluster">
-        <div id="viewer" class="viewer" aria-label="3D区域">
-          <div class="viewer-bottom-ui" aria-hidden="true">
-            <div class="bottom-ui-left">
-              <span class="bottom-ui-icon" aria-hidden="true">🏠</span>
-              <div class="bottom-ui-text">
-                <div class="bottom-ui-title">实时预算(BOM)</div>
-                <div class="bottom-ui-price">¥12,480.00</div>
+        <div class="svg-editor-slot" id="svgEditorSlot">
+          <div class="svg-editor" aria-label="SVG户型编辑区">
+            <header class="svg-editor-toolbar">
+              <div class="svg-editor-toolbar-left">
+                <span class="svg-editor-title">户型平面图</span>
+                <span class="svg-editor-hint">
+                  拖拽摆放家具 · 双击旋转 · Delete 删除 · <strong>Shift+点击</strong>家具库卡片加入平面图
+                </span>
               </div>
-            </div>
-
-            <div class="bottom-ui-divider" aria-hidden="true"></div>
-
-            <div class="bottom-ui-right">
-              <span class="bottom-ui-check" aria-hidden="true">✓</span>
-              <div class="bottom-ui-text">
-                <div class="bottom-ui-link">空间利用率</div>
-                <div class="bottom-ui-rate">
-                  <span class="bottom-ui-rate-percent">78%</span>
-                  <span class="bottom-ui-rate-level">优秀</span>
-                </div>
+              <div class="svg-editor-palette" role="toolbar" aria-label="添加家具到平面图">
+                <button type="button" class="svg-palette-btn" data-add-furniture="sofa">沙发</button>
+                <button type="button" class="svg-palette-btn" data-add-furniture="table">茶几</button>
+                <button type="button" class="svg-palette-btn" data-add-furniture="lamp">灯</button>
+                <button type="button" class="svg-palette-btn" data-add-furniture="rug">地毯</button>
+                <button type="button" class="svg-palette-btn" data-add-furniture="tv-cabinet">电视柜</button>
+                <button type="button" class="svg-palette-btn" data-add-furniture="plant">绿植</button>
               </div>
+            </header>
+            <div class="svg-editor-canvas-wrap">
+              <svg
+                class="svg-editor-canvas"
+                id="svgEditorCanvas"
+                viewBox="0 0 800 600"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="xMidYMid meet"
+                aria-label="可编辑户型 SVG 画布"
+              >
+                <defs>
+                  <pattern id="svgEditorGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1" />
+                  </pattern>
+                </defs>
+                <rect class="svg-editor-bg" width="100%" height="100%" fill="#0d0d0d" />
+                <rect class="svg-editor-bg" width="100%" height="100%" fill="url(#svgEditorGrid)" />
+                <g
+                  id="svgEditorWalls"
+                  class="svg-editor-layer"
+                  stroke="rgba(109,92,255,0.9)"
+                  stroke-width="3"
+                  fill="rgba(109,92,255,0.08)"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  pointer-events="none"
+                >
+                  <rect x="120" y="80" width="360" height="260" rx="4" />
+                  <line x1="120" y1="210" x2="480" y2="210" />
+                  <line x1="300" y1="80" x2="300" y2="340" />
+                </g>
+                <g id="svgEditorFurnitureLayer" class="svg-editor-furniture-layer" aria-label="家具布局"></g>
+              </svg>
             </div>
           </div>
-        </div>
-
-        <div class="content-icons" aria-label="快捷入口">
-          <button class="content-icon is-active" type="button" aria-label="重置" data-action="reset-view">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5ZM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5Zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3Z"
-              />
-            </svg>
-          </button>
-
-          <button class="content-icon" type="button" aria-label="切换网格" data-action="toggle-grid">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"
-              />
-            </svg>
-          </button>
-          <button class="content-icon" type="button" aria-label="切换地面" data-action="toggle-ground">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M12 3 2 8l10 5 10-5-10-5Zm-9 8.1V19l9 4 9-4v-7.9l-9 4.5-9-4.5Z"
-              />
-            </svg>
-          </button>
-
-          <button class="content-icon" type="button" aria-label="上一步（撤回）" data-action="history-back" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6a6 6 0 0 1-6 6 6 6 0 0 1-6-6H4a8 8 0 0 0 8 8 8 8 0 0 0 8-8c0-4.42-3.58-8-8-8Z"
-              />
-            </svg>
-          </button>
-          <button class="content-icon" type="button" aria-label="下一步（反向撤回）" data-action="history-forward" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                transform="translate(24 0) scale(-1 1)"
-                d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6a6 6 0 0 1-6 6 6 6 0 0 1-6-6H4a8 8 0 0 0 8 8 8 8 0 0 0 8-8c0-4.42-3.58-8-8-8Z"
-              />
-            </svg>
-          </button>
-        </div>
-        </div>
         </div>
 
         <section id="propertiesPanel" class="properties-panel" aria-label="属性面板">
@@ -500,7 +479,80 @@
       <!-- 全景漫游：仅 3D 区域 + 快捷入口 -->
       <div class="app-view app-view--panorama" id="appViewPanorama" data-app-view="panorama">
         <section class="app-content app-content--panorama" aria-label="全景漫游">
-          <div class="viewer-cluster-slot viewer-cluster-slot--panorama" id="viewerClusterSlotPanorama"></div>
+          <div class="viewer-cluster-slot viewer-cluster-slot--panorama" id="viewerClusterSlotPanorama">
+            <div class="viewer-cluster" id="viewerCluster">
+              <div id="viewer" class="viewer" aria-label="3D区域">
+                <div class="viewer-bottom-ui" aria-hidden="true">
+                  <div class="bottom-ui-left">
+                    <span class="bottom-ui-icon" aria-hidden="true">🏠</span>
+                    <div class="bottom-ui-text">
+                      <div class="bottom-ui-title">实时预算(BOM)</div>
+                      <div class="bottom-ui-price">¥12,480.00</div>
+                    </div>
+                  </div>
+
+                  <div class="bottom-ui-divider" aria-hidden="true"></div>
+
+                  <div class="bottom-ui-right">
+                    <span class="bottom-ui-check" aria-hidden="true">✓</span>
+                    <div class="bottom-ui-text">
+                      <div class="bottom-ui-link">空间利用率</div>
+                      <div class="bottom-ui-rate">
+                        <span class="bottom-ui-rate-percent">78%</span>
+                        <span class="bottom-ui-rate-level">优秀</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="content-icons" aria-label="快捷入口">
+                <button class="content-icon is-active" type="button" aria-label="重置" data-action="reset-view">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5ZM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5Zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3Z"
+                    />
+                  </svg>
+                </button>
+
+                <button class="content-icon" type="button" aria-label="切换网格" data-action="toggle-grid">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"
+                    />
+                  </svg>
+                </button>
+                <button class="content-icon" type="button" aria-label="切换地面" data-action="toggle-ground">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M12 3 2 8l10 5 10-5-10-5Zm-9 8.1V19l9 4 9-4v-7.9l-9 4.5-9-4.5Z"
+                    />
+                  </svg>
+                </button>
+
+                <button class="content-icon" type="button" aria-label="上一步（撤回）" data-action="history-back" disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6a6 6 0 0 1-6 6 6 6 0 0 1-6-6H4a8 8 0 0 0 8 8 8 8 0 0 0 8-8c0-4.42-3.58-8-8-8Z"
+                    />
+                  </svg>
+                </button>
+                <button class="content-icon" type="button" aria-label="下一步（反向撤回）" data-action="history-forward" disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      transform="translate(24 0) scale(-1 1)"
+                      d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6a6 6 0 0 1-6 6 6 6 0 0 1-6-6H4a8 8 0 0 0 8 8 8 8 0 0 0 8-8c0-4.42-3.58-8-8-8Z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </main>
@@ -515,6 +567,7 @@
 
     <script type="module" src="./viewer.js"></script>
     <script src="./app.js"></script>
+    <script src="./svg-editor.js"></script>
   </body>
 </html>
 

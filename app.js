@@ -3,7 +3,6 @@
   const panels = Array.from(document.querySelectorAll(".side-panel[data-panel]"));
   const tabStrips = Array.from(document.querySelectorAll(".panel-tabs"));
   const appContent = document.querySelector("#appViewEdit .app-content");
-  const contentIcons = document.querySelector(".content-icons");
   const resetBtn = document.querySelector('[data-action="reset-view"]');
   // Undo/redo暂未实现
 
@@ -14,10 +13,6 @@
 
     const hasLeftPanel = panelId === "assets" || panelId === "files" || panelId === "floorplans";
     if (appContent) appContent.classList.toggle("has-assets-panel", hasLeftPanel);
-
-    if (contentIcons) {
-      contentIcons.style.left = hasLeftPanel ? "calc(320px + 14px)" : "14px";
-    }
   }
 
   // Allow mouse wheel to scroll horizontal tab strip + tab click to switch active
@@ -70,17 +65,14 @@
   const defaultPanel = railButtons.find((b) => b.classList.contains("is-active"))?.dataset.panel;
   if (defaultPanel) setActive(defaultPanel);
 
-  // 主导航：编辑模式 ↔ 全景漫游（移动 3D 区 + 快捷入口，保持 WebGL 上下文）
-  const viewerCluster = document.getElementById("viewerCluster");
-  const viewerClusterSlotEdit = document.getElementById("viewerClusterSlotEdit");
-  const viewerClusterSlotPanorama = document.getElementById("viewerClusterSlotPanorama");
+  // 主导航：编辑模式（SVG）↔ 全景漫游（3D + 快捷入口）
   const appViewEdit = document.getElementById("appViewEdit");
   const appViewPanorama = document.getElementById("appViewPanorama");
   const navViewLinks = document.querySelectorAll(".nav-segment .seg-item[data-app-view]");
 
   function setAppView(mode) {
     const isPanorama = mode === "panorama";
-    if (!viewerCluster || !viewerClusterSlotEdit || !viewerClusterSlotPanorama || !appViewEdit || !appViewPanorama) return;
+    if (!appViewEdit || !appViewPanorama) return;
 
     appViewEdit.classList.toggle("is-active", !isPanorama);
     appViewPanorama.classList.toggle("is-active", isPanorama);
@@ -88,9 +80,6 @@
     navViewLinks.forEach((link) => {
       link.classList.toggle("is-active", link.dataset.appView === mode);
     });
-
-    const targetSlot = isPanorama ? viewerClusterSlotPanorama : viewerClusterSlotEdit;
-    targetSlot.appendChild(viewerCluster);
 
     requestAnimationFrame(() => {
       window.dispatchEvent(new Event("resize"));
