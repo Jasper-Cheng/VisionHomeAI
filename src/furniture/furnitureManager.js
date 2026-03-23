@@ -24,6 +24,61 @@ export function resolveModelUrl(modelPathFromRoot) {
   return `./${clean}`;
 }
 
+/** 家具预览图 URL 列表：优先 JSON.thumbnail，否则 assets/thumbnails/{id}.webp|png|jpg|jpeg */
+export function getFurnitureThumbnailUrls(item) {
+  const paths = [];
+  const custom = item?.thumbnail != null ? String(item.thumbnail).trim() : "";
+  if (custom) paths.push(resolveModelUrl(custom));
+  const id = String(item?.id || "").trim();
+  if (id) {
+    const base = `assets/thumbnails/${id}`;
+    paths.push(`${base}.webp`, `${base}.png`, `${base}.jpg`, `${base}.jpeg`);
+  }
+  return paths;
+}
+
+/**
+ * 在 .asset-thumb 内挂预览图；全部失败则保留彩色骨架
+ * @param {HTMLElement} thumbEl
+ * @param {object} item
+ * @param {number} idx 骨架配色轮询
+ */
+export function mountFurnitureThumb(thumbEl, item, idx = 0) {
+  const paths = getFurnitureThumbnailUrls(item);
+  const variant = THUMB_VARIANTS[idx % THUMB_VARIANTS.length];
+  const placeholder = document.createElement("div");
+  placeholder.className = variant ? `thumb-skeleton ${variant}` : "thumb-skeleton";
+
+  if (!paths.length) {
+    thumbEl.appendChild(placeholder);
+    return;
+  }
+
+  const img = document.createElement("img");
+  img.className = "asset-thumb-img";
+  img.alt = "";
+  img.loading = "lazy";
+  img.decoding = "async";
+  let i = 0;
+  img.onload = () => {
+    thumbEl.classList.add("has-image");
+    placeholder.remove();
+  };
+  img.onerror = () => {
+    i += 1;
+    if (i < paths.length) {
+      img.src = paths[i];
+    } else {
+      img.remove();
+      /* 骨架仍在 thumbEl 内，继续作占位 */
+    }
+  };
+  img.src = paths[0];
+  /* 先铺图再叠骨架，加载完成前显示彩色占位 */
+  thumbEl.appendChild(img);
+  thumbEl.appendChild(placeholder);
+}
+
 /**
  * 根据目录渲染家具库 Tab + 卡片，并绑定分类筛选与搜索
  * @param {{ items: object[] }} catalog
@@ -109,10 +164,7 @@ export function mountFurnitureLibrary(catalog, options = {}) {
 
     const thumb = document.createElement("div");
     thumb.className = "asset-thumb";
-    const sk = document.createElement("div");
-    const variant = THUMB_VARIANTS[idx % THUMB_VARIANTS.length];
-    sk.className = variant ? `thumb-skeleton ${variant}` : "thumb-skeleton";
-    thumb.appendChild(sk);
+    mountFurnitureThumb(thumb, item, idx);
 
     const nameEl = document.createElement("div");
     nameEl.className = "asset-name";

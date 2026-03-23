@@ -7,6 +7,8 @@ export const DATA_PATHS = {
   projects: "data/projects",
   assetsModels: "assets/models",
   assetsTextures: "assets/textures",
+  /** 家具库卡片预览：`assets/thumbnails/{id}.webp|png|jpg` */
+  assetsThumbnails: "assets/thumbnails",
 };
 
 export const SCHEMA_VERSION = "1.0";

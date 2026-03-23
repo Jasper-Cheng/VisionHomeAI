@@ -1256,11 +1256,31 @@ a.avatar:hover {
 }
 
 .asset-thumb {
+  position: relative;
   height: 108px;
   flex-shrink: 0;
   border-radius: 12px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.03);
+}
+
+/* 家具库预览图（assets/thumbnails/{id}.*） */
+.asset-thumb-img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.asset-thumb .thumb-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
 }
 
 .thumb-skeleton {
