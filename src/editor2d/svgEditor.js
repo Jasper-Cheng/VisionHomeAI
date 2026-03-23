@@ -30,6 +30,7 @@
 
   let selectedEl = null;
   let dragState = null;
+  let middlePanState = null;
 
   /** 视图：与 #svgEditorViewRoot 的 transform 一致（世界坐标 ↔ 屏幕） */
   let viewTx = 0;
@@ -49,14 +50,19 @@
     viewRoot.setAttribute("transform", `translate(${viewTx} ${viewTy}) scale(${viewScale})`);
   }
 
-  /** 屏幕坐标 → 户型世界坐标（与家具 translate 一致） */
-  function clientToWorld(clientX, clientY) {
+  /** 屏幕 → SVG 根用户坐标（viewBox 空间，含 viewRoot 变换在屏幕上的效果） */
+  function clientToRootSvg(clientX, clientY) {
     const pt = svg.createSVGPoint();
     pt.x = clientX;
     pt.y = clientY;
     const ctm = svg.getScreenCTM();
     if (!ctm) return { x: 0, y: 0 };
-    const root = pt.matrixTransform(ctm.inverse());
+    return pt.matrixTransform(ctm.inverse());
+  }
+
+  /** 屏幕坐标 → 户型世界坐标（与家具 translate 一致） */
+  function clientToWorld(clientX, clientY) {
+    const root = clientToRootSvg(clientX, clientY);
     if (!viewRoot) return { x: root.x, y: root.y };
     const s = viewScale || 1;
     return {
@@ -65,18 +71,29 @@
     };
   }
 
-  function zoomAtViewCenter(factor) {
-    const cx = VIEW_W / 2;
-    const cy = VIEW_H / 2;
-    const wx = (cx - viewTx) / viewScale;
-    const wy = (cy - viewTy) / viewScale;
+  /** 以 (rx,ry) 为锚点缩放（根坐标，通常为指针位置） */
+  function zoomAtRootPoint(rx, ry, factor) {
+    const wx = (rx - viewTx) / viewScale;
+    const wy = (ry - viewTy) / viewScale;
     let next = viewScale * factor;
     next = Math.min(SCALE_MAX, Math.max(SCALE_MIN, next));
-    if (next === viewScale) return;
+    if (Math.abs(next - viewScale) < 1e-9) return;
     viewScale = next;
-    viewTx = cx - wx * viewScale;
-    viewTy = cy - wy * viewScale;
+    viewTx = rx - wx * viewScale;
+    viewTy = ry - wy * viewScale;
     applyViewTransform();
+  }
+
+  function zoomAtViewCenter(factor) {
+    zoomAtRootPoint(VIEW_W / 2, VIEW_H / 2, factor);
+  }
+
+  /** 滚轮：deltaY 负为放大；触控板用指数更顺 */
+  function wheelZoomFactor(deltaY, ctrlKey) {
+    const k = ctrlKey ? 0.008 : 0.0015;
+    let f = Math.exp(-deltaY * k);
+    f = Math.min(Math.max(f, 0.9), 1.11);
+    return f;
   }
 
   function resetView() {
@@ -279,9 +296,70 @@
     if (propInputZ) propInputZ.value = c.y.toFixed(2);
   }
 
+  function onMiddlePanMove(e) {
+    if (!middlePanState || e.pointerId !== middlePanState.pointerId) return;
+    const r = clientToRootSvg(e.clientX, e.clientY);
+    viewTx += r.x - middlePanState.lastRx;
+    viewTy += r.y - middlePanState.lastRy;
+    middlePanState.lastRx = r.x;
+    middlePanState.lastRy = r.y;
+    applyViewTransform();
+  }
+
+  function endMiddlePan(e) {
+    if (!middlePanState) return;
+    if (e.pointerId !== middlePanState.pointerId) return;
+    svg.classList.remove("is-middle-panning");
+    try {
+      svg.releasePointerCapture(e.pointerId);
+    } catch (_) {
+      /* ignore */
+    }
+    window.removeEventListener("pointermove", onMiddlePanMove);
+    window.removeEventListener("pointerup", endMiddlePan);
+    window.removeEventListener("pointercancel", endMiddlePan);
+    middlePanState = null;
+  }
+
+  function startMiddlePan(e) {
+    if (!viewRoot) return;
+    if (middlePanState) return;
+    e.preventDefault();
+    const r = clientToRootSvg(e.clientX, e.clientY);
+    middlePanState = { pointerId: e.pointerId, lastRx: r.x, lastRy: r.y };
+    svg.classList.add("is-middle-panning");
+    try {
+      svg.setPointerCapture(e.pointerId);
+    } catch (_) {
+      /* ignore */
+    }
+    window.addEventListener("pointermove", onMiddlePanMove, { passive: true });
+    window.addEventListener("pointerup", endMiddlePan);
+    window.addEventListener("pointercancel", endMiddlePan);
+  }
+
+  svg.addEventListener("wheel", (e) => {
+    if (!viewRoot) return;
+    e.preventDefault();
+    const r = clientToRootSvg(e.clientX, e.clientY);
+    const factor = wheelZoomFactor(e.deltaY, e.ctrlKey);
+    zoomAtRootPoint(r.x, r.y, factor);
+  }, { passive: false });
+
+  svg.addEventListener("auxclick", (e) => {
+    if (e.button === 1) e.preventDefault();
+  });
+
   svg.addEventListener(
     "pointerdown",
     (e) => {
+      if (e.button === 1) {
+        e.preventDefault();
+        e.stopPropagation();
+        startMiddlePan(e);
+        return;
+      }
+
       const item = e.target.closest(".svg-furniture");
       if (item && furnitureLayer.contains(item)) {
         e.stopPropagation();

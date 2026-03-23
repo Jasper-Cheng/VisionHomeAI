@@ -502,6 +502,10 @@ a.avatar:hover {
   touch-action: none;
 }
 
+.svg-editor-canvas.is-middle-panning {
+  cursor: grabbing;
+}
+
 .svg-editor-furniture-layer {
   pointer-events: auto;
 }
