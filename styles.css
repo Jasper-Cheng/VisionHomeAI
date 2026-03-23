@@ -444,6 +444,24 @@ a.avatar:hover {
   font-weight: 800;
 }
 
+.svg-view-btn.is-active {
+  border-color: rgba(109, 92, 255, 0.55);
+  background: rgba(109, 92, 255, 0.2);
+  color: rgba(235, 233, 255, 0.98);
+}
+
+.svg-view-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 网格层（由 JS 切换 .svg-grid-hidden） */
+.svg-editor-grid-layer.svg-grid-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .svg-view-sep {
   width: 1px;
   height: 18px;

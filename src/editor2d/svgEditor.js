@@ -5,6 +5,10 @@
   const svg = document.getElementById("svgEditorCanvas");
   const furnitureLayer = document.getElementById("svgEditorFurnitureLayer");
   const viewRoot = document.getElementById("svgEditorViewRoot");
+  const gridLayer = document.getElementById("svgEditorGridLayer");
+  const undoBtn = document.querySelector("[data-svg-undo]");
+  const redoBtn = document.querySelector("[data-svg-redo]");
+  const gridToggleBtn = document.getElementById("svgGridToggleBtn");
   if (!svg || !furnitureLayer) return;
 
   const propertiesPanel = document.getElementById("propertiesPanel");
@@ -31,6 +35,96 @@
   let selectedEl = null;
   let dragState = null;
   let middlePanState = null;
+
+  /** 撤销 / 重做：家具布局快照 */
+  const MAX_HISTORY = 80;
+  let history = [];
+  let historyIndex = -1;
+  let historyReady = false;
+  let isRestoring = false;
+  let historyDebounceTimer = null;
+
+  let gridVisible = true;
+
+  function serializeLayout() {
+    return JSON.stringify(getLayout());
+  }
+
+  function updateUndoRedoButtons() {
+    if (undoBtn) undoBtn.disabled = historyIndex <= 0;
+    if (redoBtn) redoBtn.disabled = historyIndex >= history.length - 1;
+  }
+
+  function pushHistorySnapshot() {
+    if (!historyReady || isRestoring) return;
+    const s = serializeLayout();
+    if (history.length && history[historyIndex] === s) return;
+    history = history.slice(0, historyIndex + 1);
+    history.push(s);
+    historyIndex = history.length - 1;
+    while (history.length > MAX_HISTORY) {
+      history.shift();
+      historyIndex--;
+    }
+    updateUndoRedoButtons();
+  }
+
+  function schedulePushHistory() {
+    if (!historyReady || isRestoring) return;
+    clearTimeout(historyDebounceTimer);
+    historyDebounceTimer = setTimeout(() => {
+      historyDebounceTimer = null;
+      pushHistorySnapshot();
+    }, 450);
+  }
+
+  function initHistory() {
+    history = [serializeLayout()];
+    historyIndex = 0;
+    updateUndoRedoButtons();
+  }
+
+  /** 按布局重建家具层（不写入历史） */
+  function rebuildFromLayout(layout) {
+    isRestoring = true;
+    furnitureLayer.replaceChildren();
+    for (const item of layout) {
+      appendFurnitureItem(item.model, item.x, item.y, item.rotation ?? 0);
+    }
+    isRestoring = false;
+  }
+
+  function applyHistoryIndex(i) {
+    const layout = JSON.parse(history[i]);
+    rebuildFromLayout(layout);
+    select(null);
+    updateUndoRedoButtons();
+  }
+
+  function undoSvg() {
+    if (historyIndex <= 0) return;
+    historyIndex--;
+    applyHistoryIndex(historyIndex);
+  }
+
+  function redoSvg() {
+    if (historyIndex >= history.length - 1) return;
+    historyIndex++;
+    applyHistoryIndex(historyIndex);
+  }
+
+  function setGridVisible(visible) {
+    gridVisible = !!visible;
+    gridLayer?.classList.toggle("svg-grid-hidden", !gridVisible);
+    if (gridToggleBtn) {
+      gridToggleBtn.classList.toggle("is-active", gridVisible);
+      gridToggleBtn.setAttribute("aria-pressed", String(gridVisible));
+    }
+  }
+
+  function toggleGridVisible() {
+    setGridVisible(!gridVisible);
+  }
 
   /** 视图：与 #svgEditorViewRoot 的 transform 一致（世界坐标 ↔ 屏幕） */
   let viewTx = 0;
@@ -188,6 +282,7 @@
     }
     selectedEl.setAttribute("data-rot", String(rot));
     selectedEl.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${rot})`);
+    schedulePushHistory();
     return true;
   }
   window.svgEditorApplyPropertiesFromPanel = applyPropertiesFromPanelToSvg;
@@ -206,14 +301,17 @@
     syncPropertiesPanelForSelection(selectedEl);
   }
 
-  function createFurnitureGroup(type, cx, cy) {
+  function appendFurnitureItem(type, cx, cy, rotationDeg = 0) {
     const def = FURNITURE[type];
     if (!def) return null;
+
+    let rot = Math.round(Number(rotationDeg) || 0) % 360;
+    if (rot < 0) rot += 360;
 
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.classList.add("svg-furniture");
     g.setAttribute("data-model", type);
-    g.setAttribute("data-rot", "0");
+    g.setAttribute("data-rot", String(rot));
     g.setAttribute("role", "button");
     g.setAttribute("tabindex", "0");
     g.setAttribute("aria-label", `${def.label}，可拖拽`);
@@ -242,14 +340,20 @@
     g.appendChild(text);
 
     const pos = clampPosition(g, cx, cy);
-    g.setAttribute("transform", `translate(${pos.x},${pos.y}) rotate(0)`);
+    g.setAttribute("transform", `translate(${pos.x},${pos.y}) rotate(${rot})`);
     furnitureLayer.appendChild(g);
+    return g;
+  }
+
+  function createFurnitureGroup(type, cx, cy) {
+    const g = appendFurnitureItem(type, cx, cy, 0);
+    if (g) select(g);
     return g;
   }
 
   function addFurniture(type, cx = VIEW_W / 2, cy = VIEW_H / 2) {
     const g = createFurnitureGroup(type, cx, cy);
-    if (g) select(g);
+    if (g && historyReady) pushHistorySnapshot();
     return g;
   }
 
@@ -258,6 +362,7 @@
     selectedEl.remove();
     selectedEl = null;
     syncPropertiesPanelForSelection(null);
+    if (historyReady) pushHistorySnapshot();
   }
 
   /** 从家具库 Shift+点击：加入平面图中心偏一点，避免重叠 */
@@ -282,6 +387,7 @@
     const endedEl = dragState.el;
     dragState = null;
     if (selectedEl === endedEl) syncPropertiesPanelForSelection(selectedEl);
+    if (historyReady) pushHistorySnapshot();
   }
 
   function onWindowMove(e) {
@@ -398,9 +504,18 @@
     const next = (getRotation(item) + 90) % 360;
     setRotation(item, next);
     if (selectedEl === item) syncPropertiesPanelForSelection(item);
+    if (historyReady) pushHistorySnapshot();
   });
 
   document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === "z") {
+      const t = e.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      e.preventDefault();
+      if (e.shiftKey) redoSvg();
+      else undoSvg();
+      return;
+    }
     if (e.key !== "Delete" && e.key !== "Backspace") return;
     const active = document.activeElement;
     if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
@@ -432,6 +547,12 @@
       else if (dir === "down") panView(0, s);
     });
   });
+
+  document.querySelectorAll("[data-svg-grid-toggle]").forEach((btn) => {
+    btn.addEventListener("click", () => toggleGridVisible());
+  });
+  undoBtn?.addEventListener("click", () => undoSvg());
+  redoBtn?.addEventListener("click", () => redoSvg());
 
   /** Shift + 点击家具库卡片：加入平面图（不触发 3D 拖拽） */
   document.addEventListener(
@@ -472,4 +593,7 @@
   addFurniture("sofa", 1650, 1680);
   addFurniture("table", 1720, 1690);
   select(null);
+  initHistory();
+  historyReady = true;
+  setGridVisible(true);
 })();
