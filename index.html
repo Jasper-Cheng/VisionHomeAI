@@ -330,8 +330,36 @@
               <div class="svg-editor-toolbar-left">
                 <span class="svg-editor-title">户型平面图</span>
                 <span class="svg-editor-hint">
-                  拖拽摆放家具 · 双击旋转 · Delete 删除 · <strong>Shift+点击</strong>家具库卡片加入平面图
+                  拖拽摆放家具 · 双击旋转 · Delete 删除 · <strong>Shift+点击</strong>家具库卡片加入平面图 · 工具条可缩放平移画布
                 </span>
+              </div>
+              <div
+                class="svg-editor-view-controls"
+                role="toolbar"
+                aria-label="画布平移与缩放"
+              >
+                <button type="button" class="svg-view-btn" data-svg-zoom="in" title="放大" aria-label="放大">
+                  +
+                </button>
+                <button type="button" class="svg-view-btn" data-svg-zoom="out" title="缩小" aria-label="缩小">
+                  −
+                </button>
+                <button type="button" class="svg-view-btn svg-view-btn--wide" data-svg-reset="1" title="复位视图" aria-label="复位视图">
+                  复位
+                </button>
+                <span class="svg-view-sep" aria-hidden="true"></span>
+                <button type="button" class="svg-view-btn" data-svg-pan="left" title="向左平移" aria-label="向左平移">
+                  ←
+                </button>
+                <button type="button" class="svg-view-btn" data-svg-pan="right" title="向右平移" aria-label="向右平移">
+                  →
+                </button>
+                <button type="button" class="svg-view-btn" data-svg-pan="up" title="向上平移" aria-label="向上平移">
+                  ↑
+                </button>
+                <button type="button" class="svg-view-btn" data-svg-pan="down" title="向下平移" aria-label="向下平移">
+                  ↓
+                </button>
               </div>
               <div class="svg-editor-palette" role="toolbar" aria-label="添加家具到平面图">
                 <button type="button" class="svg-palette-btn" data-add-furniture="sofa">沙发</button>
@@ -356,23 +384,25 @@
                     <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1" />
                   </pattern>
                 </defs>
-                <rect class="svg-editor-bg" width="100%" height="100%" fill="#0d0d0d" />
-                <rect class="svg-editor-bg" width="100%" height="100%" fill="url(#svgEditorGrid)" />
-                <g
-                  id="svgEditorWalls"
-                  class="svg-editor-layer"
-                  stroke="rgba(109,92,255,0.9)"
-                  stroke-width="6"
-                  fill="rgba(109,92,255,0.08)"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  pointer-events="none"
-                >
-                  <rect x="700" y="700" width="600" height="600" rx="8" />
-                  <line x1="700" y1="1000" x2="1300" y2="1000" />
-                  <line x1="1000" y1="700" x2="1000" y2="1300" />
+                <g id="svgEditorViewRoot" transform="translate(0 0) scale(1)">
+                  <rect class="svg-editor-bg" width="100%" height="100%" fill="#0d0d0d" />
+                  <rect class="svg-editor-bg" width="100%" height="100%" fill="url(#svgEditorGrid)" />
+                  <g
+                    id="svgEditorWalls"
+                    class="svg-editor-layer"
+                    stroke="rgba(109,92,255,0.9)"
+                    stroke-width="6"
+                    fill="rgba(109,92,255,0.08)"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    pointer-events="none"
+                  >
+                    <rect x="700" y="700" width="600" height="600" rx="8" />
+                    <line x1="700" y1="1000" x2="1300" y2="1000" />
+                    <line x1="1000" y1="700" x2="1000" y2="1300" />
+                  </g>
+                  <g id="svgEditorFurnitureLayer" class="svg-editor-furniture-layer" aria-label="家具布局"></g>
                 </g>
-                <g id="svgEditorFurnitureLayer" class="svg-editor-furniture-layer" aria-label="家具布局"></g>
               </svg>
             </div>
           </div>

@@ -4,6 +4,7 @@
 (() => {
   const svg = document.getElementById("svgEditorCanvas");
   const furnitureLayer = document.getElementById("svgEditorFurnitureLayer");
+  const viewRoot = document.getElementById("svgEditorViewRoot");
   if (!svg || !furnitureLayer) return;
 
   const propertiesPanel = document.getElementById("propertiesPanel");
@@ -30,17 +31,65 @@
   let selectedEl = null;
   let dragState = null;
 
+  /** 视图：与 #svgEditorViewRoot 的 transform 一致（世界坐标 ↔ 屏幕） */
+  let viewTx = 0;
+  let viewTy = 0;
+  let viewScale = 1;
+  const SCALE_MIN = 0.12;
+  const SCALE_MAX = 8;
+  const ZOOM_STEP = 1.18;
+  const PAN_STEP = 120;
+
   function snap(v) {
     return Math.round(v / GRID) * GRID;
   }
 
-  function clientToSvg(clientX, clientY) {
+  function applyViewTransform() {
+    if (!viewRoot) return;
+    viewRoot.setAttribute("transform", `translate(${viewTx} ${viewTy}) scale(${viewScale})`);
+  }
+
+  /** 屏幕坐标 → 户型世界坐标（与家具 translate 一致） */
+  function clientToWorld(clientX, clientY) {
     const pt = svg.createSVGPoint();
     pt.x = clientX;
     pt.y = clientY;
     const ctm = svg.getScreenCTM();
     if (!ctm) return { x: 0, y: 0 };
-    return pt.matrixTransform(ctm.inverse());
+    const root = pt.matrixTransform(ctm.inverse());
+    if (!viewRoot) return { x: root.x, y: root.y };
+    const s = viewScale || 1;
+    return {
+      x: (root.x - viewTx) / s,
+      y: (root.y - viewTy) / s,
+    };
+  }
+
+  function zoomAtViewCenter(factor) {
+    const cx = VIEW_W / 2;
+    const cy = VIEW_H / 2;
+    const wx = (cx - viewTx) / viewScale;
+    const wy = (cy - viewTy) / viewScale;
+    let next = viewScale * factor;
+    next = Math.min(SCALE_MAX, Math.max(SCALE_MIN, next));
+    if (next === viewScale) return;
+    viewScale = next;
+    viewTx = cx - wx * viewScale;
+    viewTy = cy - wy * viewScale;
+    applyViewTransform();
+  }
+
+  function resetView() {
+    viewTx = 0;
+    viewTy = 0;
+    viewScale = 1;
+    applyViewTransform();
+  }
+
+  function panView(dxRoot, dyRoot) {
+    viewTx += dxRoot;
+    viewTy += dyRoot;
+    applyViewTransform();
   }
 
   function parseTranslate(g) {
@@ -220,7 +269,7 @@
 
   function onWindowMove(e) {
     if (!dragState || e.pointerId !== dragState.pointerId) return;
-    const p = clientToSvg(e.clientX, e.clientY);
+    const p = clientToWorld(e.clientX, e.clientY);
     const nx = p.x - dragState.grabX;
     const ny = p.y - dragState.grabY;
     const c = clampPosition(dragState.el, nx, ny);
@@ -242,7 +291,7 @@
         } catch (_) {
           /* ignore */
         }
-        const p = clientToSvg(e.clientX, e.clientY);
+        const p = clientToWorld(e.clientX, e.clientY);
         const pos = parseTranslate(item);
         dragState = {
           el: item,
@@ -289,6 +338,30 @@
     });
   });
 
+  applyViewTransform();
+
+  document.querySelectorAll("[data-svg-zoom]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const dir = btn.dataset.svgZoom;
+      if (dir === "in") zoomAtViewCenter(ZOOM_STEP);
+      else if (dir === "out") zoomAtViewCenter(1 / ZOOM_STEP);
+    });
+  });
+  document.querySelectorAll("[data-svg-reset]").forEach((btn) => {
+    btn.addEventListener("click", () => resetView());
+  });
+  document.querySelectorAll("[data-svg-pan]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const dir = btn.dataset.svgPan;
+      const s = PAN_STEP;
+      /* 与箭头语义一致：按「把内容往箭头方向推」的直觉 */
+      if (dir === "left") panView(-s, 0);
+      else if (dir === "right") panView(s, 0);
+      else if (dir === "up") panView(0, -s);
+      else if (dir === "down") panView(0, s);
+    });
+  });
+
   /** Shift + 点击家具库卡片：加入平面图（不触发 3D 拖拽） */
   document.addEventListener(
     "pointerdown",
@@ -321,6 +394,8 @@
   window.svgEditorAddFurniture = addFurniture;
   window.svgEditorGetLayout = getLayout;
   window.svgEditorGetViewSize = () => ({ width: VIEW_W, height: VIEW_H });
+  window.svgEditorResetView = resetView;
+  window.svgEditorGetViewTransform = () => ({ tx: viewTx, ty: viewTy, scale: viewScale });
 
   /* 初始示例：置于居中较小户型右下房间内 */
   addFurniture("sofa", 1150, 1180);
