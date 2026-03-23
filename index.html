@@ -330,73 +330,47 @@
               <div class="svg-editor-toolbar-left">
                 <span class="svg-editor-title">户型平面图</span>
                 <span class="svg-editor-hint">
-                  拖拽摆放家具 · 双击旋转 · Delete 删除 · <strong>Ctrl/⌘+滚轮</strong>缩放 ·
-                  <strong>Shift+点击</strong>家具库卡片加入平面图
+                  拖拽摆放家具 · 双击旋转 · Delete 删除 · <strong>Shift+点击</strong>家具库卡片加入平面图
                 </span>
               </div>
-              <div class="svg-editor-toolbar-right">
-                <div class="svg-editor-zoom" role="toolbar" aria-label="画布缩放">
-                  <button type="button" class="svg-zoom-btn" data-svg-zoom="out" title="缩小">−</button>
-                  <button type="button" class="svg-zoom-btn svg-zoom-btn--label" data-svg-zoom="reset" title="重置视图">
-                    100%
-                  </button>
-                  <button type="button" class="svg-zoom-btn" data-svg-zoom="in" title="放大">+</button>
-                </div>
-                <div class="svg-editor-palette" role="toolbar" aria-label="添加家具到平面图">
-                  <button type="button" class="svg-palette-btn" data-add-furniture="sofa">沙发</button>
-                  <button type="button" class="svg-palette-btn" data-add-furniture="table">茶几</button>
-                  <button type="button" class="svg-palette-btn" data-add-furniture="lamp">灯</button>
-                  <button type="button" class="svg-palette-btn" data-add-furniture="rug">地毯</button>
-                  <button type="button" class="svg-palette-btn" data-add-furniture="tv-cabinet">电视柜</button>
-                  <button type="button" class="svg-palette-btn" data-add-furniture="plant">绿植</button>
-                </div>
+              <div class="svg-editor-palette" role="toolbar" aria-label="添加家具到平面图">
+                <button type="button" class="svg-palette-btn" data-add-furniture="sofa">沙发</button>
+                <button type="button" class="svg-palette-btn" data-add-furniture="table">茶几</button>
+                <button type="button" class="svg-palette-btn" data-add-furniture="lamp">灯</button>
+                <button type="button" class="svg-palette-btn" data-add-furniture="rug">地毯</button>
+                <button type="button" class="svg-palette-btn" data-add-furniture="tv-cabinet">电视柜</button>
+                <button type="button" class="svg-palette-btn" data-add-furniture="plant">绿植</button>
               </div>
             </header>
             <div class="svg-editor-canvas-wrap">
               <svg
                 class="svg-editor-canvas"
                 id="svgEditorCanvas"
-                viewBox="0 0 800 600"
+                viewBox="0 0 2000 2000"
                 xmlns="http://www.w3.org/2000/svg"
                 preserveAspectRatio="xMidYMid slice"
-                aria-label="可编辑户型 SVG 画布"
+                aria-label="可编辑户型 SVG 画布（2000×2000）"
               >
                 <defs>
-                  <pattern id="svgEditorGrid" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.055)" stroke-width="0.85" />
+                  <pattern id="svgEditorGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1" />
                   </pattern>
                 </defs>
-                <!-- 固定超大背景（非 100%）：缩小 viewBox 时百分比仍以初始视口为基准，会导致网格不铺满 -->
-                <rect
-                  class="svg-editor-bg"
-                  x="-4000"
-                  y="-3500"
-                  width="12000"
-                  height="9000"
-                  fill="#0d0d0d"
-                />
-                <rect
-                  class="svg-editor-bg"
-                  x="-4000"
-                  y="-3500"
-                  width="12000"
-                  height="9000"
-                  fill="url(#svgEditorGrid)"
-                />
+                <rect class="svg-editor-bg" width="100%" height="100%" fill="#0d0d0d" />
+                <rect class="svg-editor-bg" width="100%" height="100%" fill="url(#svgEditorGrid)" />
                 <g
                   id="svgEditorWalls"
                   class="svg-editor-layer"
                   stroke="rgba(109,92,255,0.9)"
-                  stroke-width="2.25"
+                  stroke-width="6"
                   fill="rgba(109,92,255,0.08)"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   pointer-events="none"
                 >
-                  <!-- 初始示例户型：居中、约 220×150（原约 360×260 缩小） -->
-                  <rect x="290" y="225" width="220" height="150" rx="4" />
-                  <line x1="290" y1="300" x2="510" y2="300" />
-                  <line x1="400" y1="225" x2="400" y2="375" />
+                  <rect x="700" y="700" width="600" height="600" rx="8" />
+                  <line x1="700" y1="1000" x2="1300" y2="1000" />
+                  <line x1="1000" y1="700" x2="1000" y2="1300" />
                 </g>
                 <g id="svgEditorFurnitureLayer" class="svg-editor-furniture-layer" aria-label="家具布局"></g>
               </svg>

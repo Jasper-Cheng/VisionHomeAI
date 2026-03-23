@@ -12,82 +12,19 @@
   const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
   const propInputRotY = propertiesPanel?.querySelector('input[data-prop="rotY"]');
 
-  /** 与画布 pattern 对齐：更细的吸附网格 */
-  const GRID = 10;
-  const VIEW_W = 800;
-  const VIEW_H = 600;
+  /** 与 index.html 中 SVG viewBox 一致：固定逻辑坐标 2000×2000 */
+  const VIEW_W = 2000;
+  const VIEW_H = 2000;
+  const GRID = 20;
 
-  /** viewBox 缩放：世界坐标仍为 800×600，仅改变可视窗口 */
-  const MIN_VB_W = VIEW_W / 14;
-  /** 最大缩小倍数；与 index.html 中背景大矩形覆盖范围一致，勿单独改大而不改背景 */
-  const MAX_VB_W = VIEW_W * 4;
-  let vbX = 0;
-  let vbY = 0;
-  let vbW = VIEW_W;
-  let vbH = VIEW_H;
-  const zoomLabelBtn = document.querySelector('.svg-zoom-btn[data-svg-zoom="reset"]');
-
-  function clampPan() {
-    vbH = vbW * (VIEW_H / VIEW_W);
-    if (vbW >= VIEW_W) {
-      vbX = (VIEW_W - vbW) / 2;
-    } else {
-      vbX = Math.min(Math.max(vbX, 0), VIEW_W - vbW);
-    }
-    if (vbH >= VIEW_H) {
-      vbY = (VIEW_H - vbH) / 2;
-    } else {
-      vbY = Math.min(Math.max(vbY, 0), VIEW_H - vbH);
-    }
-  }
-
-  function setViewBoxAttr() {
-    svg.setAttribute("viewBox", `${vbX} ${vbY} ${vbW} ${vbH}`);
-  }
-
-  function updateZoomLabel() {
-    if (!zoomLabelBtn) return;
-    const pct = Math.round((VIEW_W / vbW) * 100);
-    zoomLabelBtn.textContent = `${pct}%`;
-  }
-
-  /** scale>1 放大（可视窗口变小）；以 (mx,my) 为世界坐标锚点 */
-  function zoomAtWorld(mx, my, scale) {
-    if (!Number.isFinite(scale) || scale <= 0) return;
-    const ow = vbW || VIEW_W;
-    const oh = vbH || VIEW_H;
-    let newW = ow / scale;
-    newW = Math.max(MIN_VB_W, Math.min(MAX_VB_W, newW));
-    const newH = newW * (VIEW_H / VIEW_W);
-    const fx = (mx - vbX) / ow;
-    const fy = (my - vbY) / oh;
-    vbW = newW;
-    vbH = newH;
-    vbX = mx - fx * newW;
-    vbY = my - fy * newH;
-    clampPan();
-    setViewBoxAttr();
-    updateZoomLabel();
-  }
-
-  function resetViewBox() {
-    vbX = 0;
-    vbY = 0;
-    vbW = VIEW_W;
-    vbH = VIEW_H;
-    setViewBoxAttr();
-    updateZoomLabel();
-  }
-  window.svgEditorResetView = resetViewBox;
-
-  /** 家具 footprint（半宽半高用于边界与绘制） */
+  /** 家具 footprint（半宽半高，用户空间单位；按画布比例相对旧 800×600 约 2.5× 放大） */
   const FURNITURE = {
-    sofa: { hw: 45, hh: 20, label: "沙发", fill: "rgba(109,92,255,0.42)", stroke: "rgba(140,120,255,0.95)" },
-    table: { hw: 25, hh: 25, label: "茶几", fill: "rgba(34,197,94,0.35)", stroke: "rgba(74,222,128,0.9)" },
-    lamp: { hw: 12, hh: 12, label: "灯", fill: "rgba(251,191,36,0.4)", stroke: "rgba(252,211,77,0.95)" },
-    rug: { hw: 40, hh: 28, label: "地毯", fill: "rgba(244,63,94,0.28)", stroke: "rgba(251,113,133,0.85)" },
-    "tv-cabinet": { hw: 38, hh: 14, label: "电视柜", fill: "rgba(148,163,184,0.4)", stroke: "rgba(203,213,225,0.9)" },
-    plant: { hw: 14, hh: 14, label: "绿植", fill: "rgba(16,185,129,0.38)", stroke: "rgba(52,211,153,0.9)" },
+    sofa: { hw: 112, hh: 50, label: "沙发", fill: "rgba(109,92,255,0.42)", stroke: "rgba(140,120,255,0.95)" },
+    table: { hw: 63, hh: 63, label: "茶几", fill: "rgba(34,197,94,0.35)", stroke: "rgba(74,222,128,0.9)" },
+    lamp: { hw: 30, hh: 30, label: "灯", fill: "rgba(251,191,36,0.4)", stroke: "rgba(252,211,77,0.95)" },
+    rug: { hw: 100, hh: 70, label: "地毯", fill: "rgba(244,63,94,0.28)", stroke: "rgba(251,113,133,0.85)" },
+    "tv-cabinet": { hw: 95, hh: 35, label: "电视柜", fill: "rgba(148,163,184,0.4)", stroke: "rgba(203,213,225,0.9)" },
+    plant: { hw: 35, hh: 35, label: "绿植", fill: "rgba(16,185,129,0.38)", stroke: "rgba(52,211,153,0.9)" },
   };
 
   let selectedEl = null;
@@ -134,7 +71,7 @@
     const def = FURNITURE[type] || FURNITURE.sofa;
     const hw = def.hw;
     const hh = def.hh;
-    const margin = 4;
+    const margin = 10;
     const nx = Math.min(Math.max(x, hw + margin), VIEW_W - hw - margin);
     const ny = Math.min(Math.max(y, hh + margin), VIEW_H - hh - margin);
     return { x: snap(nx), y: snap(ny) };
@@ -220,17 +157,17 @@
     rect.setAttribute("y", String(-def.hh));
     rect.setAttribute("width", String(def.hw * 2));
     rect.setAttribute("height", String(def.hh * 2));
-    rect.setAttribute("rx", "6");
+    rect.setAttribute("rx", "14");
     rect.setAttribute("fill", def.fill);
     rect.setAttribute("stroke", def.stroke);
-    rect.setAttribute("stroke-width", "2");
+    rect.setAttribute("stroke-width", "5");
     rect.classList.add("svg-furniture-shape");
 
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.setAttribute("text-anchor", "middle");
-    text.setAttribute("y", "4");
+    text.setAttribute("y", "10");
     text.setAttribute("fill", "rgba(255,255,255,0.88)");
-    text.setAttribute("font-size", "11");
+    text.setAttribute("font-size", "28");
     text.setAttribute("font-weight", "700");
     text.setAttribute("pointer-events", "none");
     text.textContent = def.label;
@@ -292,31 +229,6 @@
     if (propInputX) propInputX.value = c.x.toFixed(2);
     if (propInputZ) propInputZ.value = c.y.toFixed(2);
   }
-
-  svg.addEventListener(
-    "wheel",
-    (e) => {
-      if (!e.ctrlKey && !e.metaKey) return;
-      e.preventDefault();
-      const p = clientToSvg(e.clientX, e.clientY);
-      const scale = Math.exp(-e.deltaY * 0.0018);
-      zoomAtWorld(p.x, p.y, scale);
-    },
-    { passive: false },
-  );
-
-  document.querySelectorAll("[data-svg-zoom]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const mode = btn.dataset.svgZoom;
-      const cx = vbX + vbW / 2;
-      const cy = vbY + vbH / 2;
-      if (mode === "in") zoomAtWorld(cx, cy, 1.18);
-      else if (mode === "out") zoomAtWorld(cx, cy, 1 / 1.18);
-      else if (mode === "reset") resetViewBox();
-    });
-  });
-
-  updateZoomLabel();
 
   svg.addEventListener(
     "pointerdown",
@@ -408,9 +320,10 @@
 
   window.svgEditorAddFurniture = addFurniture;
   window.svgEditorGetLayout = getLayout;
+  window.svgEditorGetViewSize = () => ({ width: VIEW_W, height: VIEW_H });
 
-  /* 初始示例：落在缩小后的示例户型格内 */
-  addFurniture("sofa", 345, 340);
-  addFurniture("table", 455, 340);
+  /* 初始示例：置于居中较小户型右下房间内 */
+  addFurniture("sofa", 1150, 1180);
+  addFurniture("table", 1220, 1190);
   select(null);
 })();
