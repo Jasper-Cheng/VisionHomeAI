@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "projectId": "project_001",
+  "name": "示例项目",
+  "createdAt": "2025-03-21T12:00:00.000Z",
+  "updatedAt": "2025-03-21T12:00:00.000Z",
+  "templateRef": "data/templates/apartment_2b1l.json",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_001",
+      "floorId": "floor1",
+      "positionMm": [2100, 7200],
+      "rotationDeg": 0
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { OrbitControls } from "./public/OrbitControls.js";
+import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 
 (() => {
   const container = document.getElementById("viewer");

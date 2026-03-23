@@ -447,29 +447,29 @@
               </span>
               <span class="file-name">styles.css</span>
             </div>
-            <div class="file-item" data-name="app.js">
+            <div class="file-item" data-name="src/core/appShell.js">
               <span class="file-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
               </span>
-              <span class="file-name">app.js</span>
+              <span class="file-name">src/core/appShell.js</span>
             </div>
-            <div class="file-item" data-name="viewer.js">
+            <div class="file-item" data-name="src/editor3d/viewer.js">
               <span class="file-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
               </span>
-              <span class="file-name">viewer.js</span>
+              <span class="file-name">src/editor3d/viewer.js</span>
             </div>
-            <div class="file-item" data-name="public/three.module.js">
+            <div class="file-item" data-name="assets/vendor/three.module.js">
               <span class="file-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
               </span>
-              <span class="file-name">public/three.module.js</span>
+              <span class="file-name">assets/vendor/three.module.js</span>
             </div>
-            <div class="file-item" data-name="public/OrbitControls.js">
+            <div class="file-item" data-name="assets/vendor/OrbitControls.js">
               <span class="file-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
               </span>
-              <span class="file-name">public/OrbitControls.js</span>
+              <span class="file-name">assets/vendor/OrbitControls.js</span>
             </div>
           </div>
         </section>
@@ -560,14 +560,14 @@
     <script type="importmap">
       {
         "imports": {
-          "three": "./public/three.module.js"
+          "three": "./assets/vendor/three.module.js"
         }
       }
     </script>
 
-    <script type="module" src="./viewer.js"></script>
-    <script src="./app.js"></script>
-    <script src="./svg-editor.js"></script>
+    <script type="module" src="./src/main.js"></script>
+    <script src="./src/core/appShell.js"></script>
+    <script src="./src/editor2d/svgEditor.js"></script>
   </body>
 </html>
 

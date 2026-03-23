@@ -1,0 +1,95 @@
+{
+  "furnitureLibrary": [
+    {
+      "id": "sofa_001",
+      "name": "北欧灰布艺沙发",
+      "category": "sofa",
+      "model": "assets/models/sofa_001.glb",
+      "size": { "width": 2100, "depth": 900, "height": 800 },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "placement": {
+        "allowRooms": ["living", "study"],
+        "snapToWall": true,
+        "minDistanceToWall": 50
+      }
+    },
+    {
+      "id": "table_001",
+      "name": "原木简约茶几",
+      "category": "table",
+      "model": "assets/models/table_001.glb",
+      "size": { "width": 1100, "depth": 600, "height": 450 },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "placement": {
+        "allowRooms": ["living", "dining"],
+        "snapToWall": false,
+        "minDistanceToWall": 50
+      }
+    },
+    {
+      "id": "bed_001",
+      "name": "标准双人床（示例）",
+      "category": "bed",
+      "model": "assets/models/bed_001.glb",
+      "size": { "width": 1800, "depth": 2000, "height": 500 },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "placement": {
+        "allowRooms": ["bedroom"],
+        "snapToWall": true,
+        "minDistanceToWall": 50
+      }
+    },
+    {
+      "id": "lamp_001",
+      "name": "极简落地灯",
+      "category": "lamp",
+      "model": "assets/models/lamp_001.glb",
+      "size": { "width": 350, "depth": 350, "height": 1600 },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "placement": {
+        "allowRooms": ["living", "bedroom", "study"],
+        "snapToWall": false,
+        "minDistanceToWall": 50
+      }
+    },
+    {
+      "id": "rug_001",
+      "name": "几何抽象地毯",
+      "category": "rug",
+      "model": "assets/models/rug_001.glb",
+      "size": { "width": 2000, "depth": 1400, "height": 20 },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "placement": {
+        "allowRooms": ["living", "bedroom"],
+        "snapToWall": false,
+        "minDistanceToWall": 50
+      }
+    },
+    {
+      "id": "tv_cabinet_001",
+      "name": "悬浮式电视柜",
+      "category": "cabinet",
+      "model": "assets/models/tv_cabinet_001.glb",
+      "size": { "width": 2000, "depth": 400, "height": 500 },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "placement": {
+        "allowRooms": ["living"],
+        "snapToWall": true,
+        "minDistanceToWall": 50
+      }
+    },
+    {
+      "id": "plant_001",
+      "name": "大叶天堂鸟",
+      "category": "plant",
+      "model": "assets/models/plant_001.glb",
+      "size": { "width": 450, "depth": 450, "height": 1200 },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "placement": {
+        "allowRooms": ["living", "bedroom", "study", "corridor"],
+        "snapToWall": false,
+        "minDistanceToWall": 50
+      }
+    }
+  ]
+}
