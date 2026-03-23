@@ -366,8 +366,23 @@
                     <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.055)" stroke-width="0.85" />
                   </pattern>
                 </defs>
-                <rect class="svg-editor-bg" width="100%" height="100%" fill="#0d0d0d" />
-                <rect class="svg-editor-bg" width="100%" height="100%" fill="url(#svgEditorGrid)" />
+                <!-- 固定超大背景（非 100%）：缩小 viewBox 时百分比仍以初始视口为基准，会导致网格不铺满 -->
+                <rect
+                  class="svg-editor-bg"
+                  x="-4000"
+                  y="-3500"
+                  width="12000"
+                  height="9000"
+                  fill="#0d0d0d"
+                />
+                <rect
+                  class="svg-editor-bg"
+                  x="-4000"
+                  y="-3500"
+                  width="12000"
+                  height="9000"
+                  fill="url(#svgEditorGrid)"
+                />
                 <g
                   id="svgEditorWalls"
                   class="svg-editor-layer"

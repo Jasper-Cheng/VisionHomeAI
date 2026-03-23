@@ -19,6 +19,7 @@
 
   /** viewBox 缩放：世界坐标仍为 800×600，仅改变可视窗口 */
   const MIN_VB_W = VIEW_W / 14;
+  /** 最大缩小倍数；与 index.html 中背景大矩形覆盖范围一致，勿单独改大而不改背景 */
   const MAX_VB_W = VIEW_W * 4;
   let vbX = 0;
   let vbY = 0;
