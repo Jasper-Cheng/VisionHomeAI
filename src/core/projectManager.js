@@ -11,7 +11,7 @@ export async function loadProject(projectId) {
 }
 
 export async function loadFurnitureLibrary() {
-  const res = await fetch(DATA_PATHS.furnitureLibrary);
+  const res = await fetch(DATA_PATHS.furnitureLibrary, { cache: "no-store" });
   if (!res.ok) throw new Error("loadFurnitureLibrary failed");
   return res.json();
 }

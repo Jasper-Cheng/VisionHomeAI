@@ -61,35 +61,22 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
   const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
   const propInputRotY = propertiesPanel?.querySelector('input[data-prop="rotY"]');
 
-  const MODEL_LABEL = {
-    sofa: "沙发",
-    table: "桌几",
-    lamp: "落地灯",
-    rug: "地毯",
-    "tv-cabinet": "电视柜",
-    plant: "绿植",
-  };
-
+  /** 与家具 JSON 的 category 一致，用于 3D 占位几何与编码前缀 */
   const MODEL_PREFIX = {
     sofa: "SF",
     table: "TB",
     lamp: "LP",
     rug: "RG",
-    "tv-cabinet": "TV",
+    cabinet: "TV",
     plant: "PL",
+    bed: "BD",
   };
 
-  const modelCounters = {
-    sofa: 0,
-    table: 0,
-    lamp: 0,
-    rug: 0,
-    "tv-cabinet": 0,
-    plant: 0,
-  };
+  const modelCounters = {};
 
+  const catalog = window.__furnitureCatalog;
   const state = {
-    currentModel: "sofa",
+    currentModel: catalog?.items?.[0]?.id || "sofa_001",
     dragging: false,
     mode: null, // "place" | "move"
     ghost: null,
@@ -153,11 +140,11 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
     interactiveMeshes.splice(0, interactiveMeshes.length);
 
     // Reset counters to continue codes correctly.
-    const prefixToType = Object.fromEntries(
-      Object.entries(MODEL_PREFIX).map(([type, prefix]) => [prefix, type]),
+    const prefixToCategory = Object.fromEntries(
+      Object.entries(MODEL_PREFIX).map(([cat, prefix]) => [prefix, cat]),
     );
     // eslint-disable-next-line no-restricted-syntax
-    for (const key of Object.keys(modelCounters)) modelCounters[key] = 0;
+    for (const key of Object.keys(modelCounters)) delete modelCounters[key];
 
     for (const obj of snap.objects || []) {
       const code = obj.code;
@@ -166,9 +153,9 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
       if (parts.length < 2) continue;
       const prefix = parts[0];
       const num = Number(parts[1]);
-      const type = prefixToType[prefix];
-      if (type && Number.isFinite(num)) {
-        modelCounters[type] = Math.max(modelCounters[type], num);
+      const category = prefixToCategory[prefix];
+      if (category && Number.isFinite(num)) {
+        modelCounters[category] = Math.max(modelCounters[category] || 0, num);
       }
     }
 
@@ -179,7 +166,7 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 
     // Recreate
     for (const obj of snap.objects || []) {
-      const root = createModel(obj.type);
+      const root = createModel(obj.type); // furniture id，如 sofa_001
       root.userData.__id = obj.id;
       root.userData.modelCode = obj.code ?? null;
       root.position.set(obj.pos.x, obj.pos.y, obj.pos.z);
@@ -212,11 +199,18 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
   // Initial history (empty scene)
   recordHistory();
 
-  const createModel = (type) => {
+  const createModel = (furnitureId) => {
+    const lib = window.__furnitureCatalog;
+    const entry = lib?.byId?.get?.(furnitureId);
+    const category = entry?.category || "sofa";
+    const geoKey = category === "cabinet" ? "tv-cabinet" : category;
+
     // All models are built with their "bottom" at y=0, so placing at y=0 feels natural.
     const group = new THREE.Group();
-    group.userData.modelType = type;
-    group.userData.modelLabel = MODEL_LABEL[type] || type;
+    group.userData.modelType = furnitureId;
+    group.userData.furnitureId = furnitureId;
+    group.userData.modelCategory = category;
+    group.userData.modelLabel = entry?.name || furnitureId;
     group.userData.modelCode = null;
 
     const mat = new THREE.MeshStandardMaterial({
@@ -243,7 +237,7 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
       metalness: 0.05,
     });
 
-    switch (type) {
+    switch (geoKey) {
       case "sofa": {
         const base = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.55, 1.0), mat);
         base.castShadow = true;
@@ -357,6 +351,18 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
         group.add(leaf2);
         break;
       }
+      case "bed": {
+        const mattress = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.35, 2.0), mat);
+        mattress.castShadow = true;
+        mattress.position.y = 0.175;
+        group.add(mattress);
+
+        const headboard = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.75, 0.12), mat);
+        headboard.castShadow = true;
+        headboard.position.set(0, 0.55, -0.94);
+        group.add(headboard);
+        break;
+      }
       default: {
         const box = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat);
         box.castShadow = true;
@@ -385,11 +391,11 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
   };
 
   const attachPlaceable = (root) => {
-    const type = root?.userData?.modelType;
-    if (type && !root.userData.modelCode) {
-      modelCounters[type] = (modelCounters[type] || 0) + 1;
-      const prefix = MODEL_PREFIX[type] || type.toUpperCase().slice(0, 2);
-      const num = String(modelCounters[type]).padStart(2, "0");
+    const category = root?.userData?.modelCategory || "sofa";
+    if (category && !root.userData.modelCode) {
+      modelCounters[category] = (modelCounters[category] || 0) + 1;
+      const prefix = MODEL_PREFIX[category] || String(category).toUpperCase().slice(0, 2);
+      const num = String(modelCounters[category]).padStart(2, "0");
       root.userData.modelCode = `${prefix}-${num}`;
     }
     if (typeof root.userData.__id !== "number") {
@@ -446,7 +452,7 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
     if (propertiesPanel) propertiesPanel.classList.add("is-visible");
 
     if (!root) return;
-    const label = root.userData.modelLabel || MODEL_LABEL[root.userData.modelType] || "模型";
+    const label = root.userData.modelLabel || root.userData.modelType || "模型";
     const code = root.userData.modelCode ? `(${root.userData.modelCode})` : "";
 
     if (propertiesName) propertiesName.textContent = `${label}${code}`;

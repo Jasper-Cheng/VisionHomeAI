@@ -1,7 +1,10 @@
 /**
  * 户型 SVG 平面图：家具拖拽、网格吸附、旋转、删除
+ * 家具尺寸与名称来自 data/furniture/furnitureLibrary.json（由 main 注入 catalog）
  */
-(() => {
+import { getFurnitureDisplayName, getSvgStyleForItem } from "../furniture/svgStyle.js";
+
+export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const svg = document.getElementById("svgEditorCanvas");
   const furnitureLayer = document.getElementById("svgEditorFurnitureLayer");
   const viewRoot = document.getElementById("svgEditorViewRoot");
@@ -10,6 +13,8 @@
   const redoBtn = document.querySelector("[data-svg-redo]");
   const gridToggleBtn = document.getElementById("svgGridToggleBtn");
   if (!svg || !furnitureLayer) return;
+
+  const byId = catalog.byId instanceof Map ? catalog.byId : new Map();
 
   const propertiesPanel = document.getElementById("propertiesPanel");
   const propertiesName = propertiesPanel?.querySelector(".properties-name");
@@ -22,15 +27,22 @@
   const VIEW_H = 3000;
   const GRID = 20;
 
-  /** 家具 footprint（半宽半高，用户空间单位；按画布比例相对旧 800×600 约 2.5× 放大） */
-  const FURNITURE = {
-    sofa: { hw: 112, hh: 50, label: "沙发", fill: "rgba(109,92,255,0.42)", stroke: "rgba(140,120,255,0.95)" },
-    table: { hw: 63, hh: 63, label: "茶几", fill: "rgba(34,197,94,0.35)", stroke: "rgba(74,222,128,0.9)" },
-    lamp: { hw: 30, hh: 30, label: "灯", fill: "rgba(251,191,36,0.4)", stroke: "rgba(252,211,77,0.95)" },
-    rug: { hw: 100, hh: 70, label: "地毯", fill: "rgba(244,63,94,0.28)", stroke: "rgba(251,113,133,0.85)" },
-    "tv-cabinet": { hw: 95, hh: 35, label: "电视柜", fill: "rgba(148,163,184,0.4)", stroke: "rgba(203,213,225,0.9)" },
-    plant: { hw: 35, hh: 35, label: "绿植", fill: "rgba(16,185,129,0.38)", stroke: "rgba(52,211,153,0.9)" },
-  };
+  /** 根据家具 id 取 2D 占位尺寸与样式（未知 id 用保守默认，便于兼容旧布局 JSON） */
+  function getFootprint(modelId) {
+    const item = byId.get(modelId);
+    if (item) {
+      const s = getSvgStyleForItem(item);
+      if (s) return s;
+    }
+    return {
+      hw: 50,
+      hh: 50,
+      fill: "rgba(100,116,139,0.38)",
+      stroke: "rgba(148,163,184,0.9)",
+      label: "?",
+      longName: modelId || "家具",
+    };
+  }
 
   let selectedEl = null;
   let dragState = null;
@@ -227,8 +239,8 @@
   }
 
   function clampPosition(g, x, y) {
-    const type = g.getAttribute("data-model") || "sofa";
-    const def = FURNITURE[type] || FURNITURE.sofa;
+    const type = g.getAttribute("data-model") || "";
+    const def = getFootprint(type);
     const hw = def.hw;
     const hh = def.hh;
     const margin = 10;
@@ -246,9 +258,11 @@
       return;
     }
     propertiesPanel.classList.add("is-visible");
-    const type = g.getAttribute("data-model") || "";
-    const def = FURNITURE[type];
-    if (propertiesName) propertiesName.textContent = def ? def.label : type || "家具";
+    const id = g.getAttribute("data-model") || "";
+    const item = byId.get(id);
+    if (propertiesName) {
+      propertiesName.textContent = item ? getFurnitureDisplayName(item) : getFootprint(id).longName || id || "家具";
+    }
     const pos = parseTranslate(g);
     const rot = getRotation(g);
     if (propInputX) propInputX.value = pos.x.toFixed(2);
@@ -302,7 +316,9 @@
   }
 
   function appendFurnitureItem(type, cx, cy, rotationDeg = 0) {
-    const def = FURNITURE[type];
+    const item = byId.get(type);
+    if (!item) return null;
+    const def = getSvgStyleForItem(item);
     if (!def) return null;
 
     let rot = Math.round(Number(rotationDeg) || 0) % 360;
@@ -314,7 +330,7 @@
     g.setAttribute("data-rot", String(rot));
     g.setAttribute("role", "button");
     g.setAttribute("tabindex", "0");
-    g.setAttribute("aria-label", `${def.label}，可拖拽`);
+    g.setAttribute("aria-label", `${def.longName}，可拖拽`);
 
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("x", String(-def.hw));
@@ -367,7 +383,7 @@
 
   /** 从家具库 Shift+点击：加入平面图中心偏一点，避免重叠 */
   function addFromLibrary(model) {
-    if (!FURNITURE[model]) return;
+    if (!byId.has(model)) return;
     const jitter = (Math.random() - 0.5) * GRID * 4;
     addFurniture(model, VIEW_W / 2 + jitter, VIEW_H / 2 + jitter);
   }
@@ -589,11 +605,15 @@
   window.svgEditorResetView = resetView;
   window.svgEditorGetViewTransform = () => ({ tx: viewTx, ty: viewTy, scale: viewScale });
 
-  /* 初始示例：置于画布正中户型的右下房间内 */
-  addFurniture("sofa", 1650, 1680);
-  addFurniture("table", 1720, 1690);
+  /* 初始示例：置于画布正中户型的右下房间内（条目来自家具库 JSON） */
+  const ids = (catalog.items || []).map((i) => i.id);
+  const pick = (want) => (ids.includes(want) ? want : null);
+  const id1 = pick("sofa_001") || ids[0];
+  const id2 = pick("table_001") || ids[1];
+  if (id1) addFurniture(id1, 1650, 1680);
+  if (id2 && id2 !== id1) addFurniture(id2, 1720, 1690);
   select(null);
   initHistory();
   historyReady = true;
   setGridVisible(true);
-})();
+}

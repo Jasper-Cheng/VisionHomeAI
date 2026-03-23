@@ -189,69 +189,9 @@
             </label>
           </div>
 
-          <div class="panel-tabs" role="tablist" aria-label="分类">
-            <button class="tab is-active" type="button" role="tab" aria-selected="true">全部</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">沙发</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">椅子</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">桌几</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">床</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">床垫</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">柜类</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">收纳</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">电视柜</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">书桌/办公</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">餐桌椅</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">灯具</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">厨卫</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">软装</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">地毯</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">窗帘</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">装饰画</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">摆件</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">绿植</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">家电</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">门窗</button>
-            <button class="tab" type="button" role="tab" aria-selected="false">建模结构</button>
-          </div>
+          <div class="panel-tabs furniture-tabs" role="tablist" aria-label="家具分类"></div>
 
-          <div class="asset-grid" aria-label="家具列表">
-            <article class="asset-card" data-model="sofa" tabindex="0" role="button" aria-label="北欧灰布艺沙发">
-              <div class="asset-thumb">
-                <div class="thumb-skeleton"></div>
-              </div>
-              <div class="asset-name">北欧灰布艺沙发</div>
-            </article>
-            <article class="asset-card" data-model="table" tabindex="0" role="button" aria-label="原木简约茶几">
-              <div class="asset-thumb">
-                <div class="thumb-skeleton thumb-skeleton--green"></div>
-              </div>
-              <div class="asset-name">原木简约茶几</div>
-            </article>
-            <article class="asset-card" data-model="lamp" tabindex="0" role="button" aria-label="极简落地灯">
-              <div class="asset-thumb">
-                <div class="thumb-skeleton thumb-skeleton--warm"></div>
-              </div>
-              <div class="asset-name">极简落地灯</div>
-            </article>
-            <article class="asset-card" data-model="rug" tabindex="0" role="button" aria-label="几何抽象地毯">
-              <div class="asset-thumb">
-                <div class="thumb-skeleton thumb-skeleton--red"></div>
-              </div>
-              <div class="asset-name">几何抽象地毯</div>
-            </article>
-            <article class="asset-card" data-model="tv-cabinet" tabindex="0" role="button" aria-label="悬浮式电视柜">
-              <div class="asset-thumb">
-                <div class="thumb-skeleton thumb-skeleton--gray"></div>
-              </div>
-              <div class="asset-name">悬浮式电视柜</div>
-            </article>
-            <article class="asset-card" data-model="plant" tabindex="0" role="button" aria-label="大叶天堂鸟">
-              <div class="asset-thumb">
-                <div class="thumb-skeleton thumb-skeleton--blue"></div>
-              </div>
-              <div class="asset-name">大叶天堂鸟</div>
-            </article>
-          </div>
+          <div class="asset-grid furniture-asset-grid" id="furnitureAssetGrid" aria-label="家具列表"></div>
 
           <div class="panel-footer">
             <div class="ai-box">
@@ -614,7 +554,6 @@
 
     <script type="module" src="./src/main.js"></script>
     <script src="./src/core/appShell.js"></script>
-    <script src="./src/editor2d/svgEditor.js"></script>
   </body>
 </html>
 
