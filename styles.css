@@ -1227,10 +1227,24 @@ a.avatar:hover {
   overflow: auto;
 }
 
-/* 家具库：可滚动但不显示滚动条 */
+/* 家具库：可滚动但不显示滚动条；卡片高度随内容，避免标题下大块留白 */
 .furniture-asset-grid {
+  grid-auto-rows: auto;
+  align-items: start;
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+.furniture-asset-grid .asset-card {
+  height: auto;
+  width: 100%;
+  padding: 8px 10px 10px;
+  box-sizing: border-box;
+}
+
+.furniture-asset-grid .asset-name {
+  flex: 0 0 auto;
+  margin-top: 6px;
 }
 
 .furniture-asset-grid::-webkit-scrollbar {
