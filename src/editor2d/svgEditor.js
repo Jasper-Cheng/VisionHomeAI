@@ -17,6 +17,68 @@
   const VIEW_W = 800;
   const VIEW_H = 600;
 
+  /** viewBox 缩放：世界坐标仍为 800×600，仅改变可视窗口 */
+  const MIN_VB_W = VIEW_W / 14;
+  const MAX_VB_W = VIEW_W * 4;
+  let vbX = 0;
+  let vbY = 0;
+  let vbW = VIEW_W;
+  let vbH = VIEW_H;
+  const zoomLabelBtn = document.querySelector('.svg-zoom-btn[data-svg-zoom="reset"]');
+
+  function clampPan() {
+    vbH = vbW * (VIEW_H / VIEW_W);
+    if (vbW >= VIEW_W) {
+      vbX = (VIEW_W - vbW) / 2;
+    } else {
+      vbX = Math.min(Math.max(vbX, 0), VIEW_W - vbW);
+    }
+    if (vbH >= VIEW_H) {
+      vbY = (VIEW_H - vbH) / 2;
+    } else {
+      vbY = Math.min(Math.max(vbY, 0), VIEW_H - vbH);
+    }
+  }
+
+  function setViewBoxAttr() {
+    svg.setAttribute("viewBox", `${vbX} ${vbY} ${vbW} ${vbH}`);
+  }
+
+  function updateZoomLabel() {
+    if (!zoomLabelBtn) return;
+    const pct = Math.round((VIEW_W / vbW) * 100);
+    zoomLabelBtn.textContent = `${pct}%`;
+  }
+
+  /** scale>1 放大（可视窗口变小）；以 (mx,my) 为世界坐标锚点 */
+  function zoomAtWorld(mx, my, scale) {
+    if (!Number.isFinite(scale) || scale <= 0) return;
+    const ow = vbW || VIEW_W;
+    const oh = vbH || VIEW_H;
+    let newW = ow / scale;
+    newW = Math.max(MIN_VB_W, Math.min(MAX_VB_W, newW));
+    const newH = newW * (VIEW_H / VIEW_W);
+    const fx = (mx - vbX) / ow;
+    const fy = (my - vbY) / oh;
+    vbW = newW;
+    vbH = newH;
+    vbX = mx - fx * newW;
+    vbY = my - fy * newH;
+    clampPan();
+    setViewBoxAttr();
+    updateZoomLabel();
+  }
+
+  function resetViewBox() {
+    vbX = 0;
+    vbY = 0;
+    vbW = VIEW_W;
+    vbH = VIEW_H;
+    setViewBoxAttr();
+    updateZoomLabel();
+  }
+  window.svgEditorResetView = resetViewBox;
+
   /** 家具 footprint（半宽半高用于边界与绘制） */
   const FURNITURE = {
     sofa: { hw: 45, hh: 20, label: "沙发", fill: "rgba(109,92,255,0.42)", stroke: "rgba(140,120,255,0.95)" },
@@ -229,6 +291,31 @@
     if (propInputX) propInputX.value = c.x.toFixed(2);
     if (propInputZ) propInputZ.value = c.y.toFixed(2);
   }
+
+  svg.addEventListener(
+    "wheel",
+    (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const p = clientToSvg(e.clientX, e.clientY);
+      const scale = Math.exp(-e.deltaY * 0.0018);
+      zoomAtWorld(p.x, p.y, scale);
+    },
+    { passive: false },
+  );
+
+  document.querySelectorAll("[data-svg-zoom]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const mode = btn.dataset.svgZoom;
+      const cx = vbX + vbW / 2;
+      const cy = vbY + vbH / 2;
+      if (mode === "in") zoomAtWorld(cx, cy, 1.18);
+      else if (mode === "out") zoomAtWorld(cx, cy, 1 / 1.18);
+      else if (mode === "reset") resetViewBox();
+    });
+  });
+
+  updateZoomLabel();
 
   svg.addEventListener(
     "pointerdown",
