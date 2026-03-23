@@ -13,9 +13,9 @@
   const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
   const propInputRotY = propertiesPanel?.querySelector('input[data-prop="rotY"]');
 
-  /** 与 index.html 中 SVG viewBox 一致：固定逻辑坐标 2000×2000 */
-  const VIEW_W = 2000;
-  const VIEW_H = 2000;
+  /** 与 index.html 中 SVG viewBox 一致：画布逻辑坐标 3000×3000（户型几何单独绘制，尺寸不变） */
+  const VIEW_W = 3000;
+  const VIEW_H = 3000;
   const GRID = 20;
 
   /** 家具 footprint（半宽半高，用户空间单位；按画布比例相对旧 800×600 约 2.5× 放大） */
@@ -475,8 +475,8 @@
   window.svgEditorResetView = resetView;
   window.svgEditorGetViewTransform = () => ({ tx: viewTx, ty: viewTy, scale: viewScale });
 
-  /* 初始示例：置于居中较小户型右下房间内 */
-  addFurniture("sofa", 1150, 1180);
-  addFurniture("table", 1220, 1190);
+  /* 初始示例：置于画布正中户型的右下房间内 */
+  addFurniture("sofa", 1650, 1680);
+  addFurniture("table", 1720, 1690);
   select(null);
 })();
