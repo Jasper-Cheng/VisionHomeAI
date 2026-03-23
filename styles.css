@@ -619,6 +619,12 @@ a.avatar:hover {
   border-radius: 14px;
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.55);
   pointer-events: none;
+  z-index: 2;
+}
+
+/* 叠在 2D SVG 画布底部（.svg-editor-canvas-wrap 为 position:relative） */
+.svg-editor-canvas-wrap .viewer-bottom-ui {
+  z-index: 4;
 }
 
 .bottom-ui-left {
