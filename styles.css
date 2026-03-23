@@ -265,8 +265,62 @@ a.avatar:hover {
 .app-main {
   height: calc(100vh - 58px);
   display: flex;
+  flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+/* 编辑模式 / 全景漫游：二选一显示 */
+.app-view {
+  display: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-view.is-active {
+  display: flex;
+}
+
+.app-view--edit {
+  flex-direction: row;
+}
+
+.app-view--panorama {
+  flex-direction: column;
+}
+
+.app-content--panorama {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.viewer-cluster-slot {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewer-cluster-slot--panorama {
+  height: 100%;
+}
+
+.viewer-cluster {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewer-cluster .viewer {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .left-rail {

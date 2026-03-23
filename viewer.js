@@ -716,6 +716,9 @@ import { OrbitControls } from "./public/OrbitControls.js";
   });
 
   window.addEventListener("resize", resize);
+  if (typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(() => resize()).observe(container);
+  }
   resize();
   animate();
 })();

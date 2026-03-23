@@ -31,8 +31,8 @@
           <span class="divider" aria-hidden="true"></span>
 
           <nav class="nav-segment" aria-label="主导航">
-            <a class="seg-item is-active" href="#">编辑模式</a>
-            <a class="seg-item" href="#">全景漫游</a>
+            <a class="seg-item is-active" href="#" data-app-view="edit">编辑模式</a>
+            <a class="seg-item" href="#" data-app-view="panorama">全景漫游</a>
           </nav>
 
           <button class="btn-primary btn-save" type="button">新建场景</button>
@@ -59,7 +59,9 @@
       </div>
     </header>
 
-    <main class="app-main" role="main">
+    <main class="app-main" id="appMain" role="main">
+      <!-- 编辑模式：左侧栏 + 内容区 -->
+      <div class="app-view app-view--edit is-active" id="appViewEdit" data-app-view="edit">
       <aside class="left-rail" aria-label="侧边栏">
         <div class="rail-group" role="group" aria-label="工具">
           <button class="rail-btn is-active" type="button" aria-label="户型库" data-panel="floorplans">
@@ -91,6 +93,8 @@
       </aside>
 
       <section class="app-content" aria-label="内容区">
+        <div class="viewer-cluster-slot" id="viewerClusterSlotEdit">
+        <div class="viewer-cluster" id="viewerCluster">
         <div id="viewer" class="viewer" aria-label="3D区域">
           <div class="viewer-bottom-ui" aria-hidden="true">
             <div class="bottom-ui-left">
@@ -160,6 +164,8 @@
               />
             </svg>
           </button>
+        </div>
+        </div>
         </div>
 
         <section id="propertiesPanel" class="properties-panel" aria-label="属性面板">
@@ -489,6 +495,14 @@
           </div>
         </section>
       </section>
+      </div>
+
+      <!-- 全景漫游：仅 3D 区域 + 快捷入口 -->
+      <div class="app-view app-view--panorama" id="appViewPanorama" data-app-view="panorama">
+        <section class="app-content app-content--panorama" aria-label="全景漫游">
+          <div class="viewer-cluster-slot viewer-cluster-slot--panorama" id="viewerClusterSlotPanorama"></div>
+        </section>
+      </div>
     </main>
 
     <script type="importmap">
