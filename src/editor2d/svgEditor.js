@@ -6,6 +6,12 @@
   const furnitureLayer = document.getElementById("svgEditorFurnitureLayer");
   if (!svg || !furnitureLayer) return;
 
+  const propertiesPanel = document.getElementById("propertiesPanel");
+  const propertiesName = propertiesPanel?.querySelector(".properties-name");
+  const propInputX = propertiesPanel?.querySelector('input[data-prop="x"]');
+  const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
+  const propInputRotY = propertiesPanel?.querySelector('input[data-prop="rotY"]');
+
   const GRID = 20;
   const VIEW_W = 800;
   const VIEW_H = 600;
@@ -70,6 +76,55 @@
     return { x: snap(nx), y: snap(ny) };
   }
 
+  /** 与 3D 共用右侧面板：位置 X / 位置 Y(存 Z 字段) / 旋转° */
+  function syncPropertiesPanelForSelection(g) {
+    if (!propertiesPanel) return;
+    if (!g || !furnitureLayer.contains(g)) {
+      propertiesPanel.classList.remove("is-visible");
+      if (propertiesName) propertiesName.textContent = "未选择";
+      return;
+    }
+    propertiesPanel.classList.add("is-visible");
+    const type = g.getAttribute("data-model") || "";
+    const def = FURNITURE[type];
+    if (propertiesName) propertiesName.textContent = def ? def.label : type || "家具";
+    const pos = parseTranslate(g);
+    const rot = getRotation(g);
+    if (propInputX) propInputX.value = pos.x.toFixed(2);
+    if (propInputZ) propInputZ.value = pos.y.toFixed(2);
+    if (propInputRotY) propInputRotY.value = String(rot);
+  }
+
+  /** 仅清除 SVG 选中样式（3D 选中时由 viewer 调用，避免双选） */
+  function deselectVisualOnly() {
+    if (selectedEl) {
+      selectedEl.classList.remove("is-selected");
+      selectedEl = null;
+    }
+  }
+  window.svgEditorDeselect = deselectVisualOnly;
+
+  /** 从属性面板读数写回当前 SVG 家具；有选中时返回 true（供 viewer 的 input 回调优先处理） */
+  function applyPropertiesFromPanelToSvg() {
+    if (!selectedEl || !furnitureLayer.contains(selectedEl)) return false;
+    const x = parseFloat(propInputX?.value ?? "");
+    const zField = parseFloat(propInputZ?.value ?? "");
+    const deg = parseFloat(propInputRotY?.value ?? "");
+    const pos = parseTranslate(selectedEl);
+    const nx = Number.isFinite(x) ? x : pos.x;
+    const ny = Number.isFinite(zField) ? zField : pos.y;
+    const c = clampPosition(selectedEl, nx, ny);
+    let rot = getRotation(selectedEl);
+    if (Number.isFinite(deg)) {
+      rot = Math.round(deg) % 360;
+      if (rot < 0) rot += 360;
+    }
+    selectedEl.setAttribute("data-rot", String(rot));
+    selectedEl.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${rot})`);
+    return true;
+  }
+  window.svgEditorApplyPropertiesFromPanel = applyPropertiesFromPanelToSvg;
+
   function select(g) {
     if (selectedEl && selectedEl !== g) selectedEl.classList.remove("is-selected");
     selectedEl = g || null;
@@ -81,6 +136,7 @@
         /* ignore */
       }
     }
+    syncPropertiesPanelForSelection(selectedEl);
   }
 
   function createFurnitureGroup(type, cx, cy) {
@@ -134,6 +190,7 @@
     if (!selectedEl || !furnitureLayer.contains(selectedEl)) return;
     selectedEl.remove();
     selectedEl = null;
+    syncPropertiesPanelForSelection(null);
   }
 
   /** 从家具库 Shift+点击：加入平面图中心偏一点，避免重叠 */
@@ -155,7 +212,9 @@
     window.removeEventListener("pointermove", onWindowMove);
     window.removeEventListener("pointerup", endDrag);
     window.removeEventListener("pointercancel", endDrag);
+    const endedEl = dragState.el;
     dragState = null;
+    if (selectedEl === endedEl) syncPropertiesPanelForSelection(selectedEl);
   }
 
   function onWindowMove(e) {
@@ -164,7 +223,10 @@
     const nx = p.x - dragState.grabX;
     const ny = p.y - dragState.grabY;
     const c = clampPosition(dragState.el, nx, ny);
-    dragState.el.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${getRotation(dragState.el)})`);
+    const r = getRotation(dragState.el);
+    dragState.el.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${r})`);
+    if (propInputX) propInputX.value = c.x.toFixed(2);
+    if (propInputZ) propInputZ.value = c.y.toFixed(2);
   }
 
   svg.addEventListener(
@@ -207,6 +269,7 @@
     e.preventDefault();
     const next = (getRotation(item) + 90) % 360;
     setRotation(item, next);
+    if (selectedEl === item) syncPropertiesPanelForSelection(item);
   });
 
   document.addEventListener("keydown", (e) => {

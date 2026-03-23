@@ -441,6 +441,7 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
   };
 
   const selectRoot = (root) => {
+    if (typeof window.svgEditorDeselect === "function") window.svgEditorDeselect();
     state.selectedRoot = root;
     if (propertiesPanel) propertiesPanel.classList.add("is-visible");
 
@@ -454,6 +455,7 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
   };
 
   const clearSelection = () => {
+    if (typeof window.svgEditorDeselect === "function") window.svgEditorDeselect();
     state.selectedRoot = null;
     if (propertiesPanel) propertiesPanel.classList.remove("is-visible");
     if (propertiesName) propertiesName.textContent = "未选择";
@@ -682,16 +684,22 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
   gridBtn?.addEventListener("click", toggleGrid);
   groundBtn?.addEventListener("click", toggleGround);
 
-  // Property panel: input change → apply to selected model
-  const onPropInputChange = () => {
+  // 属性面板：优先写回 SVG 平面图选中家具，否则写回 3D 选中物体
+  const applyPropsFromInputs = () => {
+    if (typeof window.svgEditorApplyPropertiesFromPanel === "function" && window.svgEditorApplyPropertiesFromPanel()) {
+      return;
+    }
     if (state.selectedRoot) {
       applyPropertiesToRoot(state.selectedRoot);
-      recordHistory();
     }
   };
-  propInputX?.addEventListener("change", onPropInputChange);
-  propInputZ?.addEventListener("change", onPropInputChange);
-  propInputRotY?.addEventListener("change", onPropInputChange);
+  [propInputX, propInputZ, propInputRotY].forEach((el) => {
+    el?.addEventListener("input", applyPropsFromInputs);
+    el?.addEventListener("change", () => {
+      applyPropsFromInputs();
+      if (state.selectedRoot) recordHistory();
+    });
+  });
 
   // Material tiles & color swatches: selection state only (visual)
   propertiesPanel?.querySelectorAll(".prop-material-tile").forEach((btn) => {
