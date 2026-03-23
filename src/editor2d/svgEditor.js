@@ -12,7 +12,8 @@
   const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
   const propInputRotY = propertiesPanel?.querySelector('input[data-prop="rotY"]');
 
-  const GRID = 20;
+  /** 与画布 pattern 对齐：更细的吸附网格 */
+  const GRID = 10;
   const VIEW_W = 800;
   const VIEW_H = 600;
 
@@ -320,8 +321,8 @@
   window.svgEditorAddFurniture = addFurniture;
   window.svgEditorGetLayout = getLayout;
 
-  /* 初始示例：各一件，便于直接拖拽体验 */
-  addFurniture("sofa", 240, 280);
-  addFurniture("table", 400, 300);
+  /* 初始示例：落在缩小后的示例户型格内 */
+  addFurniture("sofa", 345, 340);
+  addFurniture("table", 455, 340);
   select(null);
 })();
