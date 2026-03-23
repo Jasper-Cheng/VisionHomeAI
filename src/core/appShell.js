@@ -2,7 +2,6 @@
   const railButtons = Array.from(document.querySelectorAll(".rail-btn[data-panel]"));
   const panels = Array.from(document.querySelectorAll(".side-panel[data-panel]"));
   const tabStrips = Array.from(document.querySelectorAll(".panel-tabs"));
-  const appContent = document.querySelector("#appViewEdit .app-content");
   const resetBtn = document.querySelector('[data-action="reset-view"]');
   // Undo/redo暂未实现
 
@@ -10,9 +9,6 @@
     const isNone = !panelId;
     railButtons.forEach((b) => b.classList.toggle("is-active", !isNone && b.dataset.panel === panelId));
     panels.forEach((p) => p.classList.toggle("is-visible", !isNone && p.dataset.panel === panelId));
-
-    const hasLeftPanel = panelId === "assets" || panelId === "files" || panelId === "floorplans";
-    if (appContent) appContent.classList.toggle("has-assets-panel", hasLeftPanel);
   }
 
   // Allow mouse wheel to scroll horizontal tab strip + tab click to switch active

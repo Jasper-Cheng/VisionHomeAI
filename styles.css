@@ -507,6 +507,7 @@ a.avatar:hover {
 }
 
 .app-content {
+  --side-panel-width: 320px;
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -1027,21 +1028,22 @@ a.avatar:hover {
   color: rgba(255, 255, 255, 0.9);
 }
 
+/* 参与 .app-content 的 flex 行布局，与平面图并排，避免 absolute 叠在画布上 */
 .side-panel {
-  width: 320px;
-  height: auto;
+  flex: 0 0 var(--side-panel-width, 320px);
+  width: var(--side-panel-width, 320px);
+  min-width: var(--side-panel-width, 320px);
+  max-width: var(--side-panel-width, 320px);
+  min-height: 0;
+  align-self: stretch;
+  position: relative;
+  z-index: 1;
   background: #1a1a1a;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0;
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.55);
   display: none;
   overflow: hidden;
-  min-height: 0;
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  z-index: 5;
   box-sizing: border-box;
 }
 
