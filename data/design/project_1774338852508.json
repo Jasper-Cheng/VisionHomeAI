@@ -1,0 +1,141 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1774338852508",
+  "name": "jasoer",
+  "description": "",
+  "createdAt": "2026-03-24T07:54:12.508Z",
+  "updatedAt": "2026-03-24T07:54:12.509Z",
+  "templateId": "apartment_3b2l",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_001",
+      "floorId": "floor1",
+      "positionCm": [
+        1127.9027777777778,
+        1114.9583333333333
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "table_001",
+      "floorId": "floor1",
+      "positionCm": [
+        1187.9490740740741,
+        1135.9722222222222
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_3",
+      "furnitureId": "sofa_001",
+      "floorId": "floor1",
+      "positionCm": [
+        1852.9027777777778,
+        1394.9583333333333
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_4",
+      "furnitureId": "lamp_001",
+      "floorId": "floor1",
+      "positionCm": [
+        1238.4837962962963,
+        1562.4837962962963
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_5",
+      "furnitureId": "bed_001",
+      "floorId": "floor1",
+      "positionCm": [
+        1782.9166666666667,
+        1600.9074074074074
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_6",
+      "furnitureId": "rug_001",
+      "floorId": "floor1",
+      "positionCm": [
+        1574.9074074074074,
+        1757.9351851851852
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_7",
+      "furnitureId": "tv_cabinet_001",
+      "floorId": "floor1",
+      "positionCm": [
+        1475.9074074074074,
+        1142.9814814814815
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apartment_3b2l",
+    "view": {
+      "tx": 127.51797371636349,
+      "ty": 128.02209692268934,
+      "scale": 0.9849610777352302
+    },
+    "gridVisible": true,
+    "viewBox": {
+      "width": 3000,
+      "height": 3000
+    },
+    "furniture": [
+      {
+        "model": "sofa_001",
+        "x": 1127.9027777777778,
+        "y": 1114.9583333333333,
+        "rotation": 0
+      },
+      {
+        "model": "table_001",
+        "x": 1187.9490740740741,
+        "y": 1135.9722222222222,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_001",
+        "x": 1852.9027777777778,
+        "y": 1394.9583333333333,
+        "rotation": 0
+      },
+      {
+        "model": "lamp_001",
+        "x": 1238.4837962962963,
+        "y": 1562.4837962962963,
+        "rotation": 0
+      },
+      {
+        "model": "bed_001",
+        "x": 1782.9166666666667,
+        "y": 1600.9074074074074,
+        "rotation": 0
+      },
+      {
+        "model": "rug_001",
+        "x": 1574.9074074074074,
+        "y": 1757.9351851851852,
+        "rotation": 0
+      },
+      {
+        "model": "tv_cabinet_001",
+        "x": 1475.9074074074074,
+        "y": 1142.9814814814815,
+        "rotation": 0
+      }
+    ]
+  }
+}
