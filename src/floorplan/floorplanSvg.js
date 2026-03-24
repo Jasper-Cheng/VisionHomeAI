@@ -209,7 +209,7 @@ function polygonAreaCm2(pts) {
 }
 
 /**
- * 户型尺寸标注（房间标注在各自 AABB 右下角内侧；墙段长度 cm）；inversePlanScale = 1/s 抵消画布 scale(s) 使字号可读
+ * 户型尺寸标注（房间外包框 cm、面积㎡；墙段长度 cm）；inversePlanScale = 1/s 抵消画布 scale(s) 使字号可读
  * @param {object} floor
  * @param {SVGGElement} innerG
  * @param {(n: number) => number} snapCoord
@@ -219,8 +219,8 @@ function appendFloorDimensionAnnotations(floor, innerG, snapCoord, inversePlanSc
   const inv = inversePlanScale;
   if (!Number.isFinite(inv) || inv <= 0) return;
 
-  const ROOM_BR_PAD_X = 12;
-  const ROOM_BR_PAD_Y = 10;
+  /** 房间标注内缩（plan cm），贴在右下角内侧 */
+  const ROOM_BR_PAD = 10;
   const FLOOR_TITLE_GAP = 26;
   const WALL_OFF = 14;
 
@@ -262,30 +262,34 @@ function appendFloorDimensionAnnotations(floor, innerG, snapCoord, inversePlanSc
     const wR = Math.round(box.w);
     const hR = Math.round(box.h);
 
-    const name = String(room.name || "").trim();
-    const lh = 14;
-    const nLines = (name ? 1 : 0) + 1 + (arM2 >= 0.01 ? 1 : 0);
-    const descFudge = 4;
-    let ty = box.maxY - ROOM_BR_PAD_Y - (nLines - 1) * lh - descFudge;
-    const tyMin = box.minY + (nLines - 1) * lh + descFudge + 6;
-    if (ty < tyMin) ty = tyMin;
-    const tx = box.maxX - ROOM_BR_PAD_X;
+    const brX = box.maxX - ROOM_BR_PAD;
+    const brY = box.maxY - ROOM_BR_PAD;
 
     const g = document.createElementNS(NS, "g");
     g.setAttribute("class", "svg-floor-dim-room");
     g.setAttribute("data-room-id", String(room.id || ""));
-    g.setAttribute("transform", `translate(${tx} ${ty}) scale(${inv})`);
+    g.setAttribute("transform", `translate(${brX} ${brY}) scale(${inv})`);
 
     const text = document.createElementNS(NS, "text");
     text.setAttribute("text-anchor", "end");
     text.setAttribute("font-size", "13");
     text.setAttribute("class", "svg-floor-dim-label svg-floor-dim-label--room");
 
+    const name = String(room.name || "").trim();
+    const lh = 14;
+    const cap = 11;
+    let nLines = 0;
+    if (name) nLines += 1;
+    nLines += 1;
+    if (arM2 >= 0.01) nLines += 1;
+    const totalH = (nLines - 1) * lh + cap;
+    text.setAttribute("x", "0");
+    text.setAttribute("y", String(-totalH));
+
     let first = true;
-    const xAttr = "0";
     function addTspan(content, extraClass) {
       const ts = document.createElementNS(NS, "tspan");
-      ts.setAttribute("x", xAttr);
+      ts.setAttribute("x", "0");
       ts.setAttribute("dy", first ? "0" : String(lh));
       first = false;
       if (extraClass) ts.setAttribute("class", extraClass);
