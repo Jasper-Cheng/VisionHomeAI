@@ -7,6 +7,7 @@ import {
   loadDesignProjectsFromManifest,
   mountDesignFileList,
   mountHeaderCurrentDesignLabel,
+  mountSaveDesignFlow,
 } from "./files/designFilesManager.js";
 import { initSvgEditor } from "./editor2d/svgEditor.js";
 
@@ -54,6 +55,7 @@ async function boot() {
     console.error(err);
     window.__visionHomeSvgEditor = { ok: false, reason: "threw", error: String(err) };
   }
+  mountSaveDesignFlow();
 
   try {
     await import("./editor3d/viewer.js");

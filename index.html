@@ -61,7 +61,7 @@
 
           <div class="header-save-group">
             <button class="btn-primary btn-save" type="button" id="btnNewScene">新建场景</button>
-            <button class="btn-primary btn-save" type="button" id="btnSave">保存</button>
+            <button class="btn-primary btn-save" type="button" id="btnSave" disabled>保存</button>
             <span class="current-design-file-label" id="currentDesignFileLabel" aria-live="polite">未保存文件</span>
           </div>
         </div>
@@ -483,6 +483,28 @@
         </section>
       </div>
     </main>
+
+    <dialog id="saveDesignDialog" class="save-design-dialog" aria-labelledby="saveDesignDialogTitle">
+      <div class="save-design-dialog__panel">
+        <h2 id="saveDesignDialogTitle" class="save-design-dialog__title">保存方案</h2>
+        <label class="save-design-dialog__label">
+          保存名称
+          <input
+            id="saveDesignNameInput"
+            class="save-design-dialog__input"
+            type="text"
+            name="saveDesignName"
+            autocomplete="off"
+            maxlength="120"
+          />
+        </label>
+        <p id="saveDesignNameError" class="save-design-dialog__error" role="alert" hidden></p>
+        <div class="save-design-dialog__actions">
+          <button type="button" class="save-design-dialog__cancel" id="saveDesignCancelBtn">取消</button>
+          <button type="button" class="btn-primary btn-save" id="saveDesignConfirmBtn">保存</button>
+        </div>
+      </div>
+    </dialog>
 
     <script type="importmap">
       {

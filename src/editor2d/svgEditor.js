@@ -130,6 +130,10 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (redoBtn) redoBtn.disabled = historyIndex >= history.length - 1;
   }
 
+  function emitSvgLayoutChanged() {
+    window.dispatchEvent(new CustomEvent("visionhome:svg-layout-changed"));
+  }
+
   function pushHistorySnapshot() {
     if (!historyReady || isRestoring) return;
     const s = serializeLayout();
@@ -142,6 +146,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       historyIndex--;
     }
     updateUndoRedoButtons();
+    emitSvgLayoutChanged();
   }
 
   function schedulePushHistory() {
@@ -174,6 +179,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     rebuildFromLayout(layout);
     select(null);
     updateUndoRedoButtons();
+    emitSvgLayoutChanged();
   }
 
   function undoSvg() {
@@ -841,8 +847,48 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     });
   }
 
+  /** 方案 JSON furnitureInstances → 画布布局（仅当前 activeFloorId） */
+  function projectToSvgLayout(project) {
+    const floorId = project?.activeFloorId != null ? String(project.activeFloorId) : "floor1";
+    const inst = project?.furnitureInstances;
+    if (!Array.isArray(inst)) return [];
+    return inst
+      .filter((fi) => !fi?.floorId || String(fi.floorId) === floorId)
+      .map((fi) => ({
+        model: String(fi.furnitureId ?? fi.modelId ?? "").trim(),
+        x: Array.isArray(fi.positionMm) ? Number(fi.positionMm[0]) || 0 : 0,
+        y: Array.isArray(fi.positionMm) ? Number(fi.positionMm[1]) || 0 : 0,
+        rotation: Number(fi.rotationDeg ?? fi.rotation ?? 0) || 0,
+      }))
+      .filter((row) => row.model);
+  }
+
+  /** 外部切换方案 / 新建：重建家具并重置撤销栈与「已保存」基线 */
+  function applyExternalLayout(layout) {
+    rebuildFromLayout(layout);
+    select(null);
+    initHistory();
+    historyReady = true;
+    window.__designLayoutBaseline = JSON.stringify(getLayout());
+    emitSvgLayoutChanged();
+  }
+
+  window.addEventListener("visionhome:design-select", (e) => {
+    const project = e.detail?.project;
+    if (!project) return;
+    applyExternalLayout(projectToSvgLayout(project));
+  });
+
+  window.addEventListener("visionhome:design-new", () => {
+    applyExternalLayout([]);
+  });
+
   window.svgEditorAddFurniture = addFurniture;
   window.svgEditorGetLayout = getLayout;
+  window.svgEditorCommitSavedBaseline = () => {
+    window.__designLayoutBaseline = JSON.stringify(getLayout());
+    emitSvgLayoutChanged();
+  };
   window.svgEditorGetViewSize = () => ({ width: VIEW_W, height: VIEW_H });
   window.svgEditorResetView = resetView;
   window.svgEditorGetViewTransform = () => ({ tx: viewTx, ty: viewTy, scale: viewScale });
@@ -851,6 +897,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   select(null);
   initHistory();
   historyReady = true;
+  window.__designLayoutBaseline = JSON.stringify(getLayout());
   setGridVisible(true);
 
   const okResult = { ok: true, reason: null, catalogSize: byId.size };

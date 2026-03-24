@@ -174,6 +174,7 @@ export function mountHeaderCurrentDesignLabel() {
   }
 
   window.addEventListener("visionhome:design-select", () => syncFromGlobals());
+  window.addEventListener("visionhome:design-metadata-updated", () => syncFromGlobals());
 
   btnNew?.addEventListener("click", () => {
     window.__activeDesignFile = undefined;
@@ -184,4 +185,172 @@ export function mountHeaderCurrentDesignLabel() {
   });
 
   syncFromGlobals();
+}
+
+let saveDesignFlowMounted = false;
+
+function layoutToFurnitureInstances(layout, floorId) {
+  const fid = floorId || "floor1";
+  return (Array.isArray(layout) ? layout : []).map((item, i) => ({
+    instanceId: `fi_${i + 1}`,
+    furnitureId: item.model,
+    floorId: fid,
+    positionMm: [item.x, item.y],
+    rotationDeg: item.rotation ?? 0,
+  }));
+}
+
+function isoNow() {
+  return new Date().toISOString();
+}
+
+function buildProjectPayload(name, layout) {
+  const trimmed = String(name || "").trim();
+  const prev = window.__activeDesignProject;
+  const activeFile = window.__activeDesignFile;
+  const isExisting = Boolean(activeFile && prev && typeof prev === "object");
+  const id = isExisting ? String(prev.id ?? activeFile.replace(/\.json$/i, "")).trim() : `project_${Date.now()}`;
+  const floorId = prev?.activeFloorId != null ? String(prev.activeFloorId) : "floor1";
+  const furnitureInstances = layoutToFurnitureInstances(layout, floorId);
+  const base = isExisting ? { ...prev } : {};
+  return {
+    schemaVersion: "1.0",
+    id,
+    name: trimmed,
+    description: base.description ?? "",
+    createdAt: base.createdAt ?? isoNow(),
+    updatedAt: isoNow(),
+    templateId: base.templateId ?? null,
+    activeFloorId: floorId,
+    floorplanSnapshot: base.floorplanSnapshot ?? null,
+    furnitureInstances,
+  };
+}
+
+function updateSaveButtonState() {
+  const btn = document.getElementById("btnSave");
+  if (!btn) return;
+  const getLayout = window.svgEditorGetLayout;
+  const layout = typeof getLayout === "function" ? getLayout() : [];
+  const hasItems = Array.isArray(layout) && layout.length > 0;
+  const cur = JSON.stringify(layout);
+  const baseline = window.__designLayoutBaseline;
+  const dirty = baseline === undefined || cur !== baseline;
+  const can = hasItems && dirty;
+  btn.disabled = !can;
+  if (!hasItems) btn.title = "画布上没有家具，无法保存";
+  else if (!dirty) btn.title = "当前已与上次保存一致";
+  else btn.title = "保存方案（将下载 JSON）";
+}
+
+/**
+ * 保存按钮：有家具且相对上次保存有改动时可点；弹窗输入名称后下载方案 JSON 并更新内存中的活动方案。
+ */
+export function mountSaveDesignFlow() {
+  if (saveDesignFlowMounted) return;
+  const btn = document.getElementById("btnSave");
+  const dialog = document.getElementById("saveDesignDialog");
+  const input = document.getElementById("saveDesignNameInput");
+  const errEl = document.getElementById("saveDesignNameError");
+  const cancelBtn = document.getElementById("saveDesignCancelBtn");
+  const confirmBtn = document.getElementById("saveDesignConfirmBtn");
+  if (!btn || !dialog || !input || !confirmBtn) return;
+  saveDesignFlowMounted = true;
+
+  function hideError() {
+    if (errEl) {
+      errEl.hidden = true;
+      errEl.textContent = "";
+    }
+  }
+
+  function showError(msg) {
+    if (errEl) {
+      errEl.hidden = false;
+      errEl.textContent = msg;
+    }
+  }
+
+  function closeDialog() {
+    if (typeof dialog.close === "function") dialog.close();
+  }
+
+  function openSaveDialog() {
+    hideError();
+    const p = window.__activeDesignProject;
+    const defaultName = String(p?.name ?? "").trim();
+    input.value = defaultName;
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    requestAnimationFrame(() => {
+      try {
+        input.focus();
+        input.select();
+      } catch (_) {
+        /* ignore */
+      }
+    });
+  }
+
+  btn.addEventListener("click", () => {
+    if (btn.disabled) return;
+    openSaveDialog();
+  });
+
+  cancelBtn?.addEventListener("click", () => closeDialog());
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      confirmBtn.click();
+    }
+  });
+
+  confirmBtn.addEventListener("click", () => {
+    const name = String(input.value ?? "").trim();
+    if (!name) {
+      showError("请输入保存名称。");
+      try {
+        input.focus();
+      } catch (_) {
+        /* ignore */
+      }
+      return;
+    }
+    const getLayout = window.svgEditorGetLayout;
+    const layout = typeof getLayout === "function" ? getLayout() : [];
+    if (!layout.length) {
+      showError("画布上没有家具，无法保存。");
+      return;
+    }
+    const previousFile = window.__activeDesignFile;
+    const project = buildProjectPayload(name, layout);
+    const filename =
+      previousFile && String(previousFile).trim().toLowerCase().endsWith(".json")
+        ? String(previousFile).trim()
+        : `${String(project.id).replace(/[^\w.-]+/g, "_")}.json`;
+    const json = `${JSON.stringify(project, null, 2)}\n`;
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    window.__activeDesignProject = project;
+    window.__activeDesignFile = filename;
+    window.__activeDesignId = String(project.id);
+    if (typeof window.svgEditorCommitSavedBaseline === "function") {
+      window.svgEditorCommitSavedBaseline();
+    }
+    window.dispatchEvent(new CustomEvent("visionhome:design-metadata-updated"));
+    closeDialog();
+  });
+
+  window.addEventListener("visionhome:svg-layout-changed", updateSaveButtonState);
+  updateSaveButtonState();
 }
