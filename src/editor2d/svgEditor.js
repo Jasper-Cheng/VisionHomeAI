@@ -1043,7 +1043,10 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     hit.setAttribute("fill", "transparent");
 
     const planUnitsPerWorldGrid = GRID / s;
-    appendFloorGeometryToGroup(floor, xform, { planUnitsPerWorldGrid });
+    appendFloorGeometryToGroup(floor, xform, {
+      planUnitsPerWorldGrid,
+      dimensionLabelInverseScale: 1 / s,
+    });
     xform.appendChild(hit);
     root.appendChild(xform);
     floorplanLayer.appendChild(root);

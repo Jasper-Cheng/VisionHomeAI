@@ -163,6 +163,222 @@ function safeTypeClass(raw) {
   return t || "default";
 }
 
+/** @param {number[][]} pts */
+function aabbFromPoints(pts) {
+  if (!pts.length) return null;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of pts) {
+    const x = Number(p[0]);
+    const y = Number(p[1]);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  }
+  if (!Number.isFinite(minX)) return null;
+  return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY };
+}
+
+/**
+ * @param {unknown} poly
+ * @param {(n: number) => number} snapCoord
+ * @returns {number[][]}
+ */
+function polygonPointsSnapped(poly, snapCoord) {
+  if (!Array.isArray(poly)) return [];
+  return poly
+    .filter((p) => Array.isArray(p) && p.length >= 2)
+    .map((p) => [snapCoord(Number(p[0])), snapCoord(Number(p[1]))]);
+}
+
+/** 多边形面积（顶点为 cm，结果 cm²） */
+function polygonAreaCm2(pts) {
+  if (pts.length < 3) return 0;
+  let s = 0;
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const [x1, y1] = pts[i];
+    const [x2, y2] = pts[(i + 1) % n];
+    s += x1 * y2 - x2 * y1;
+  }
+  return Math.abs(s) / 2;
+}
+
+/**
+ * 户型尺寸标注（房间外包框 cm、面积㎡；墙段长度 cm）；inversePlanScale = 1/s 抵消画布 scale(s) 使字号可读
+ * @param {object} floor
+ * @param {SVGGElement} innerG
+ * @param {(n: number) => number} snapCoord
+ * @param {number} inversePlanScale
+ */
+/** 房间外包框哪一侧离户型外轮廓最远，标注放在该侧外侧（plan cm） */
+function pickRoomLabelSide(box, floorBox) {
+  const gaps = {
+    top: box.minY - floorBox.minY,
+    bottom: floorBox.maxY - box.maxY,
+    left: box.minX - floorBox.minX,
+    right: floorBox.maxX - box.maxX,
+  };
+  const entries = Object.entries(gaps).sort((a, b) => b[1] - a[1]);
+  let best = entries[0][0];
+  /* 顶边留给层标题，顶侧留白过小时改选次优边 */
+  const minTopForLabel = 52;
+  if (best === "top" && gaps.top < minTopForLabel) {
+    const alt = entries.find(([k]) => k !== "top");
+    if (alt) best = alt[0];
+  }
+  return best;
+}
+
+function appendFloorDimensionAnnotations(floor, innerG, snapCoord, inversePlanScale) {
+  const inv = inversePlanScale;
+  if (!Number.isFinite(inv) || inv <= 0) return;
+
+  const ROOM_GAP = 20;
+  const ROOM_EXTRA = 18;
+  const FLOOR_TITLE_GAP = 26;
+  const WALL_OFF = 14;
+
+  const layer = document.createElementNS(NS, "g");
+  layer.setAttribute("class", "svg-floor-dimensions-layer");
+  layer.setAttribute("pointer-events", "none");
+
+  const floorBox = getFloorBBoxCm(floor);
+  if (floorBox && (floor?.name || Number.isFinite(Number(floor?.height)))) {
+    const fn = String(floor.name || "").trim();
+    const fh = Number(floor.height);
+    const bits = [];
+    if (fn) bits.push(fn);
+    if (Number.isFinite(fh) && fh > 0) bits.push(`层高 ${Math.round(fh)} cm`);
+    if (bits.length) {
+      const fcx = (floorBox.minX + floorBox.maxX) / 2;
+      const fy = floorBox.minY - FLOOR_TITLE_GAP;
+      const g0 = document.createElementNS(NS, "g");
+      g0.setAttribute("class", "svg-floor-dim-floor");
+      g0.setAttribute("transform", `translate(${fcx} ${fy}) scale(${inv})`);
+      const t0 = document.createElementNS(NS, "text");
+      t0.setAttribute("class", "svg-floor-dim-label svg-floor-dim-label--floor");
+      t0.setAttribute("font-size", "12");
+      t0.setAttribute("text-anchor", "middle");
+      t0.textContent = bits.join(" · ");
+      g0.appendChild(t0);
+      layer.appendChild(g0);
+    }
+  }
+
+  for (const room of floor.rooms || []) {
+    const poly = room?.polygon;
+    if (!Array.isArray(poly) || poly.length < 3) continue;
+    const pts = polygonPointsSnapped(poly, snapCoord);
+    const box = aabbFromPoints(pts);
+    if (!box || box.w < 3 || box.h < 3 || !floorBox) continue;
+    const cx = (box.minX + box.maxX) / 2;
+    const cy = (box.minY + box.maxY) / 2;
+    const arCm2 = polygonAreaCm2(pts);
+    const arM2 = arCm2 / 10000;
+    const wR = Math.round(box.w);
+    const hR = Math.round(box.h);
+
+    const side = pickRoomLabelSide(box, floorBox);
+    let tx = cx;
+    let ty = cy;
+    let anchor = "middle";
+    if (side === "top") {
+      ty = box.minY - ROOM_GAP - ROOM_EXTRA;
+    } else if (side === "bottom") {
+      ty = box.maxY + ROOM_GAP + ROOM_EXTRA;
+    } else if (side === "left") {
+      tx = box.minX - ROOM_GAP - ROOM_EXTRA;
+      ty = cy;
+      anchor = "end";
+    } else {
+      tx = box.maxX + ROOM_GAP + ROOM_EXTRA;
+      ty = cy;
+      anchor = "start";
+    }
+
+    const g = document.createElementNS(NS, "g");
+    g.setAttribute("class", "svg-floor-dim-room");
+    g.setAttribute("data-room-id", String(room.id || ""));
+    g.setAttribute("transform", `translate(${tx} ${ty}) scale(${inv})`);
+
+    const text = document.createElementNS(NS, "text");
+    text.setAttribute("text-anchor", anchor);
+    text.setAttribute("font-size", "13");
+    text.setAttribute("class", "svg-floor-dim-label svg-floor-dim-label--room");
+
+    const name = String(room.name || "").trim();
+    let first = true;
+    const lh = 14;
+    const xAttr = anchor === "middle" ? "0" : "0";
+    function addTspan(content, extraClass) {
+      const ts = document.createElementNS(NS, "tspan");
+      ts.setAttribute("x", xAttr);
+      ts.setAttribute("dy", first ? "0" : String(lh));
+      first = false;
+      if (extraClass) ts.setAttribute("class", extraClass);
+      ts.textContent = content;
+      text.appendChild(ts);
+    }
+    if (name) addTspan(name.length > 16 ? `${name.slice(0, 15)}…` : name, "svg-floor-dim-label__name");
+    addTspan(`${wR}×${hR} cm`);
+    if (arM2 >= 0.01) {
+      addTspan(arM2 >= 100 ? `≈ ${arM2.toFixed(1)} m²` : `≈ ${arM2.toFixed(2)} m²`);
+    }
+    g.appendChild(text);
+    layer.appendChild(g);
+  }
+
+  if (floorBox) {
+    const fcx = (floorBox.minX + floorBox.maxX) / 2;
+    const fcy = (floorBox.minY + floorBox.maxY) / 2;
+    for (const wall of floor.walls || []) {
+      if (!Array.isArray(wall?.start) || wall.start.length < 2 || !Array.isArray(wall?.end) || wall.end.length < 2) {
+        continue;
+      }
+      const x1 = snapCoord(Number(wall.start[0]));
+      const y1 = snapCoord(Number(wall.start[1]));
+      const x2 = snapCoord(Number(wall.end[0]));
+      const y2 = snapCoord(Number(wall.end[1]));
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      if (len < 28) continue;
+      const mx = (x1 + x2) / 2;
+      const my = (y1 + y2) / 2;
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const nx = (-dy / len) * WALL_OFF;
+      const ny = (dx / len) * WALL_OFF;
+      const vx = mx - fcx;
+      const vy = my - fcy;
+      const outward = Math.sign(nx * vx + ny * vy) || 1;
+      const ox = mx + nx * outward;
+      const oy = my + ny * outward;
+      let ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+      if (ang > 90) ang -= 180;
+      if (ang < -90) ang += 180;
+
+      const g = document.createElementNS(NS, "g");
+      g.setAttribute("class", "svg-floor-dim-wall");
+      g.setAttribute("data-wall-id", String(wall.id || ""));
+      g.setAttribute("transform", `translate(${ox} ${oy}) rotate(${ang}) scale(${inv})`);
+      const tw = document.createElementNS(NS, "text");
+      tw.setAttribute("text-anchor", "middle");
+      tw.setAttribute("y", "-4");
+      tw.setAttribute("class", "svg-floor-dim-label svg-floor-dim-label--wall");
+      tw.setAttribute("font-size", "11");
+      tw.textContent = `${Math.round(len)} cm`;
+      g.appendChild(tw);
+      layer.appendChild(g);
+    }
+  }
+
+  innerG.appendChild(layer);
+}
+
 function appendPolygonIfValid(innerG, poly, className, dataAttrs = {}, snapCoord = identitySnapCoord) {
   if (!Array.isArray(poly) || poly.length < 3) return;
   const pts = poly
@@ -315,7 +531,8 @@ function appendFloorFurniture(innerG, f, snapCoord = identitySnapCoord) {
 /**
  * @param {object} floor 单层对象
  * @param {SVGGElement} innerG
- * @param {{ planUnitsPerWorldGrid?: number }} [options] 传入 GRID/s（cm/画布单位）时量化平面坐标
+ * @param {{ planUnitsPerWorldGrid?: number, dimensionLabelInverseScale?: number }} [options]
+ *   dimensionLabelInverseScale：户型 transform 中 scale(s) 的倒数 1/s，用于标注文字不随户型缩放糊成一团
  */
 export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
   if (!floor || !innerG) return;
@@ -373,6 +590,11 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
   /* 5. 层内模板家具 */
   for (const fu of floor.furnitures || []) {
     appendFloorFurniture(innerG, fu, snapCoord);
+  }
+
+  const inv = options.dimensionLabelInverseScale;
+  if (Number.isFinite(inv) && inv > 0) {
+    appendFloorDimensionAnnotations(floor, innerG, snapCoord, inv);
   }
 }
 
