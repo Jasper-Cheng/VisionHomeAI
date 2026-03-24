@@ -295,10 +295,46 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const SCALE_MIN = 0.12;
   const SCALE_MAX = 8;
   const ZOOM_STEP = 1.18;
-  const PAN_STEP = 120;
+  /** 工具栏平移：与背景网格 cell 一致（pattern 20×20） */
+  const PAN_STEP = GRID;
 
   function snap(v) {
     return Math.round(v / GRID) * GRID;
+  }
+
+  /** 与 SVG `rotate(deg)` 矩阵一致：x' = cos*x + sin*y, y' = -sin*x + cos*y（W3C SVG） */
+  function rotateLocalPoint(x, y, deg) {
+    const rad = (deg * Math.PI) / 180;
+    const c = Math.cos(rad);
+    const s = Math.sin(rad);
+    return {
+      x: c * x + s * y,
+      y: -s * x + c * y,
+    };
+  }
+
+  /** 家具组 translate(cx,cy)+rotate(rot) 后，矩形 footprint 在父坐标系中的轴对齐包围盒 */
+  function furnitureWorldAabb(cx, cy, rot, hw, hh) {
+    const corners = [
+      [-hw, -hh],
+      [hw, -hh],
+      [hw, hh],
+      [-hw, hh],
+    ];
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const [lx, ly] of corners) {
+      const p = rotateLocalPoint(lx, ly, rot);
+      const wx = p.x + cx;
+      const wy = p.y + cy;
+      minX = Math.min(minX, wx);
+      minY = Math.min(minY, wy);
+      maxX = Math.max(maxX, wx);
+      maxY = Math.max(maxY, wy);
+    }
+    return { minX, minY, maxX, maxY };
   }
 
   function applyViewTransform() {
@@ -385,18 +421,59 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function applyTransform(g) {
     const { x, y } = parseTranslate(g);
     const rot = getRotation(g);
-    g.setAttribute("transform", `translate(${x},${y}) rotate(${rot})`);
+    const c = clampPosition(g, x, y);
+    g.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${rot})`);
   }
 
+  /**
+   * 将家具摆到合法位置：轴对齐包围盒的 min 角落在网格交点上（边与网格线对齐），再夹紧画布边距
+   */
   function clampPosition(g, x, y) {
     const type = g.getAttribute("data-model") || "";
     const def = getFootprint(type);
     const hw = def.hw;
     const hh = def.hh;
     const margin = 10;
-    const nx = Math.min(Math.max(x, hw + margin), VIEW_W - hw - margin);
-    const ny = Math.min(Math.max(y, hh + margin), VIEW_H - hh - margin);
-    return { x: snap(nx), y: snap(ny) };
+    const rot = getRotation(g);
+
+    let cx = x;
+    let cy = y;
+
+    for (let iter = 0; iter < 16; iter++) {
+      let b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+      cx += Math.round(b.minX / GRID) * GRID - b.minX;
+      cy += Math.round(b.minY / GRID) * GRID - b.minY;
+
+      b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+      let adjusted = false;
+      if (b.minX < margin) {
+        cx += margin - b.minX;
+        adjusted = true;
+      }
+      b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+      if (b.minY < margin) {
+        cy += margin - b.minY;
+        adjusted = true;
+      }
+      b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+      if (b.maxX > VIEW_W - margin) {
+        cx += VIEW_W - margin - b.maxX;
+        adjusted = true;
+      }
+      b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+      if (b.maxY > VIEW_H - margin) {
+        cy += VIEW_H - margin - b.maxY;
+        adjusted = true;
+      }
+      if (!adjusted) {
+        b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+        cx += Math.round(b.minX / GRID) * GRID - b.minX;
+        cy += Math.round(b.minY / GRID) * GRID - b.minY;
+        break;
+      }
+    }
+
+    return { x: cx, y: cy };
   }
 
   /** 与 3D 共用右侧面板：位置 X / 位置 Y(存 Z 字段) / 旋转° */
@@ -415,8 +492,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     }
     const pos = parseTranslate(g);
     const rot = getRotation(g);
-    if (propInputX) propInputX.value = pos.x.toFixed(2);
-    if (propInputZ) propInputZ.value = pos.y.toFixed(2);
+    if (propInputX) propInputX.value = String(Math.round(pos.x));
+    if (propInputZ) propInputZ.value = String(Math.round(pos.y));
     if (propInputRotY) propInputRotY.value = String(rot);
   }
 
@@ -573,11 +650,12 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (historyReady) pushHistorySnapshot();
   }
 
-  /** 从家具库 Shift+点击：加入平面图中心偏一点，避免重叠 */
+  /** 从家具库 Shift+点击：落在中心附近整格偏移，避免重叠 */
   function addFromLibrary(model) {
     if (!byId.has(model)) return;
-    const jitter = (Math.random() - 0.5) * GRID * 4;
-    addFurniture(model, VIEW_W / 2 + jitter, VIEW_H / 2 + jitter);
+    const n = Math.floor(Math.random() * 5) - 2;
+    const m = Math.floor(Math.random() * 5) - 2;
+    addFurniture(model, VIEW_W / 2 + n * GRID, VIEW_H / 2 + m * GRID);
   }
 
   function endDrag(e) {
@@ -600,6 +678,12 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const endedEl = dragState.el;
     dragState = null;
     popPointerDragTextSuppression();
+    if (endedEl && furnitureLayer.contains(endedEl)) {
+      const pos = parseTranslate(endedEl);
+      const c = clampPosition(endedEl, pos.x, pos.y);
+      const r = getRotation(endedEl);
+      endedEl.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${r})`);
+    }
     if (selectedEl === endedEl) syncPropertiesPanelForSelection(selectedEl);
     if (historyReady) pushHistorySnapshot();
   }
@@ -612,8 +696,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const c = clampPosition(dragState.el, nx, ny);
     const r = getRotation(dragState.el);
     dragState.el.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${r})`);
-    if (propInputX) propInputX.value = c.x.toFixed(2);
-    if (propInputZ) propInputZ.value = c.y.toFixed(2);
+    if (propInputX) propInputX.value = String(Math.round(c.x));
+    if (propInputZ) propInputZ.value = String(Math.round(c.y));
   }
 
   function onMiddlePanMove(e) {
@@ -808,6 +892,31 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       else undoSvg();
       return;
     }
+    const keyTarget = e.target;
+    if (
+      keyTarget &&
+      (keyTarget.tagName === "INPUT" || keyTarget.tagName === "TEXTAREA" || keyTarget.isContentEditable)
+    ) {
+      /* 属性栏输入时不抢方向键 */
+    } else if (isEditViewActive() && selectedEl && furnitureLayer.contains(selectedEl) && !dragState) {
+      const k = e.key;
+      if (k === "ArrowLeft" || k === "ArrowRight" || k === "ArrowUp" || k === "ArrowDown") {
+        e.preventDefault();
+        const pos = parseTranslate(selectedEl);
+        let dx = 0;
+        let dy = 0;
+        if (k === "ArrowLeft") dx = -GRID;
+        else if (k === "ArrowRight") dx = GRID;
+        else if (k === "ArrowUp") dy = -GRID;
+        else if (k === "ArrowDown") dy = GRID;
+        const c = clampPosition(selectedEl, pos.x + dx, pos.y + dy);
+        const r = getRotation(selectedEl);
+        selectedEl.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${r})`);
+        syncPropertiesPanelForSelection(selectedEl);
+        if (historyReady) schedulePushHistory();
+        return;
+      }
+    }
     if (e.key !== "Delete" && e.key !== "Backspace") return;
     const active = document.activeElement;
     if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
@@ -868,8 +977,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
    * 将户型目录条目（毫米几何）缩放落入 viewBox；户型中心固定在画布逻辑中心（忽略传入坐标，兼容旧 API）
    */
   function applyFloorplanEntryAtWorld(entry, _worldX, _worldY) {
-    const worldX = VIEW_W / 2;
-    const worldY = VIEW_H / 2;
+    const worldX = snap(VIEW_W / 2);
+    const worldY = snap(VIEW_H / 2);
     const floor = getPrimaryFloor(entry);
     if (!floor) return;
     const bbox = getFloorBBoxMm(floor);
