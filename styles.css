@@ -661,9 +661,27 @@ a.avatar:hover {
   cursor: grabbing;
 }
 
-/* 户型底图不拦截指针，家具仍可点选拖拽 */
+/* 户型在独立层；家具层在上，重叠区域优先点家具 */
 .svg-editor-floorplan-layer {
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+.svg-floorplan-root {
+  cursor: grab;
+  outline: none;
+}
+
+.svg-floorplan-root.is-dragging {
+  cursor: grabbing;
+}
+
+.svg-floorplan-hit {
+  pointer-events: all;
+}
+
+.svg-floorplan-root.is-selected .svg-floorplan-hit {
+  stroke: rgba(252, 211, 77, 0.55);
+  stroke-width: 6;
 }
 
 .svg-floor-room {

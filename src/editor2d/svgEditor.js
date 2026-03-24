@@ -130,6 +130,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   let middlePanState = null;
   /** 左键在空白处按下后，超过阈值再进入平移（避免误触） */
   let pendingLeftPan = null;
+  let selectedFloorplanRoot = null;
+  let floorplanDragState = null;
 
   /** 撤销 / 重做：家具布局快照 */
   const MAX_HISTORY = 80;
@@ -390,14 +392,35 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   }
   window.svgEditorApplyPropertiesFromPanel = applyPropertiesFromPanelToSvg;
 
+  function clearFloorplanSelection() {
+    if (selectedFloorplanRoot) {
+      selectedFloorplanRoot.classList.remove("is-selected");
+      selectedFloorplanRoot = null;
+    }
+  }
+
+  function setFloorplanSelected(root) {
+    clearFloorplanSelection();
+    if (root && floorplanLayer.contains(root)) {
+      selectedFloorplanRoot = root;
+      root.classList.add("is-selected");
+    }
+  }
+
+  function clearFloorplanLayerContent() {
+    clearFloorplanSelection();
+    floorplanLayer.replaceChildren();
+  }
+
   /**
    * @param {{ skipFocus?: boolean }} [options] Safari：pointerdown 时立刻 focus SVG 组可能干扰拖拽，鼠标按下选中应 skipFocus
    */
   function select(g, options = {}) {
     const skipFocus = options.skipFocus === true;
-    if (selectedEl && selectedEl !== g) selectedEl.classList.remove("is-selected");
-    selectedEl = g || null;
-    if (selectedEl) {
+    if (g) {
+      clearFloorplanSelection();
+      if (selectedEl && selectedEl !== g) selectedEl.classList.remove("is-selected");
+      selectedEl = g;
       selectedEl.classList.add("is-selected");
       if (!skipFocus) {
         try {
@@ -406,6 +429,10 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
           /* ignore */
         }
       }
+    } else {
+      if (selectedEl) selectedEl.classList.remove("is-selected");
+      selectedEl = null;
+      clearFloorplanSelection();
     }
     syncPropertiesPanelForSelection(selectedEl);
   }
@@ -594,6 +621,40 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return false;
   }
 
+  function onFloorplanDragMove(e) {
+    if (!floorplanDragState || e.pointerId !== floorplanDragState.pointerId) return;
+    const xf = floorplanDragState.xform;
+    const p = clientToWorld(e.clientX, e.clientY);
+    const wx = snap(p.x - floorplanDragState.grabX);
+    const wy = snap(p.y - floorplanDragState.grabY);
+    const s = parseFloat(xf.dataset.fpS || "1");
+    const cx = parseFloat(xf.dataset.fpCx || "0");
+    const cy = parseFloat(xf.dataset.fpCy || "0");
+    xf.dataset.fpWx = String(wx);
+    xf.dataset.fpWy = String(wy);
+    xf.setAttribute("transform", `translate(${wx} ${wy}) scale(${s}) translate(${-cx} ${-cy})`);
+  }
+
+  function endFloorplanDrag(e) {
+    if (!floorplanDragState || e.pointerId !== floorplanDragState.pointerId) return;
+    const root = floorplanDragState.root;
+    try {
+      svg.releasePointerCapture(e.pointerId);
+    } catch (_) {
+      try {
+        root?.releasePointerCapture?.(e.pointerId);
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    root?.classList.remove("is-dragging");
+    floorplanDragState = null;
+    popPointerDragTextSuppression();
+    window.removeEventListener("pointermove", onFloorplanDragMove, { passive: true });
+    window.removeEventListener("pointerup", endFloorplanDrag);
+    window.removeEventListener("pointercancel", endFloorplanDrag);
+  }
+
   function startMiddlePan(e) {
     if (!viewRoot) return;
     if (middlePanState) return;
@@ -669,6 +730,52 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         return;
       }
 
+      const fpRoot = e.target.closest?.(".svg-floorplan-root");
+      if (fpRoot && floorplanLayer.contains(fpRoot) && e.button === 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (selectedEl) {
+          selectedEl.classList.remove("is-selected");
+          selectedEl = null;
+        }
+        syncPropertiesPanelForSelection(null);
+        setFloorplanSelected(fpRoot);
+
+        const xform = fpRoot.querySelector(".svg-floorplan-xform");
+        if (!xform) return;
+
+        try {
+          if (document.activeElement === fpRoot) fpRoot.blur();
+          const sel = window.getSelection?.();
+          if (sel && sel.rangeCount > 0) sel.removeAllRanges();
+        } catch (_) {
+          /* ignore */
+        }
+        try {
+          svg.setPointerCapture(e.pointerId);
+        } catch (_) {
+          /* ignore */
+        }
+
+        const p = clientToWorld(e.clientX, e.clientY);
+        const wx = parseFloat(xform.dataset.fpWx || "0");
+        const wy = parseFloat(xform.dataset.fpWy || "0");
+
+        pushPointerDragTextSuppression();
+        fpRoot.classList.add("is-dragging");
+        floorplanDragState = {
+          pointerId: e.pointerId,
+          xform,
+          root: fpRoot,
+          grabX: p.x - wx,
+          grabY: p.y - wy,
+        };
+        window.addEventListener("pointermove", onFloorplanDragMove, { passive: true });
+        window.addEventListener("pointerup", endFloorplanDrag);
+        window.addEventListener("pointercancel", endFloorplanDrag);
+        return;
+      }
+
       if (e.button === 0 && isPointerOnCanvasBackground(e.target)) {
         e.preventDefault();
         select(null);
@@ -704,6 +811,11 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (e.key !== "Delete" && e.key !== "Backspace") return;
     const active = document.activeElement;
     if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+    if (selectedFloorplanRoot && floorplanLayer.contains(selectedFloorplanRoot)) {
+      e.preventDefault();
+      clearFloorplanLayerContent();
+      return;
+    }
     if (!selectedEl) return;
     e.preventDefault();
     removeSelected();
@@ -738,6 +850,11 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   });
   undoBtn?.addEventListener("click", () => undoSvg());
   redoBtn?.addEventListener("click", () => redoSvg());
+  document.querySelectorAll("[data-svg-floorplan-clear]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (floorplanLayer.childNodes.length > 0) clearFloorplanLayerContent();
+    });
+  });
 
   function isEditViewActive() {
     return document.getElementById("appViewEdit")?.classList.contains("is-active");
@@ -764,14 +881,40 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     s *= FLOORPLAN_SIZE_FACTOR;
     s = Math.min(Math.max(s, 0.02), 4);
 
+    clearFloorplanSelection();
     floorplanLayer.replaceChildren();
-    const inner = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    inner.setAttribute(
+    const svgNS = "http://www.w3.org/2000/svg";
+
+    const root = document.createElementNS(svgNS, "g");
+    root.setAttribute("class", "svg-floorplan-root");
+    root.setAttribute("data-floorplan-root", "1");
+    root.setAttribute("tabindex", "-1");
+    root.setAttribute("aria-label", "户型底图，可拖动、Delete 删除");
+
+    const xform = document.createElementNS(svgNS, "g");
+    xform.setAttribute("class", "svg-floorplan-xform");
+    xform.dataset.fpWx = String(worldX);
+    xform.dataset.fpWy = String(worldY);
+    xform.dataset.fpS = String(s);
+    xform.dataset.fpCx = String(bbox.cx);
+    xform.dataset.fpCy = String(bbox.cy);
+    xform.setAttribute(
       "transform",
       `translate(${worldX} ${worldY}) scale(${s}) translate(${-bbox.cx} ${-bbox.cy})`,
     );
-    appendFloorGeometryToGroup(floor, inner);
-    floorplanLayer.appendChild(inner);
+
+    const hit = document.createElementNS(svgNS, "rect");
+    hit.setAttribute("class", "svg-floorplan-hit");
+    hit.setAttribute("x", String(bbox.minX));
+    hit.setAttribute("y", String(bbox.minY));
+    hit.setAttribute("width", String(Math.max(bbox.w, 1)));
+    hit.setAttribute("height", String(Math.max(bbox.h, 1)));
+    hit.setAttribute("fill", "transparent");
+
+    appendFloorGeometryToGroup(floor, xform);
+    xform.appendChild(hit);
+    root.appendChild(xform);
+    floorplanLayer.appendChild(root);
 
     window.dispatchEvent(
       new CustomEvent("visionhome:floorplan-applied-to-svg", {
@@ -1058,12 +1201,14 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   });
 
   window.addEventListener("visionhome:design-new", () => {
+    clearFloorplanLayerContent();
     applyExternalLayout([]);
   });
 
   window.svgEditorAddFurniture = addFurniture;
   window.svgEditorGetLayout = getLayout;
   window.svgEditorApplyFloorplanAtWorld = applyFloorplanEntryAtWorld;
+  window.svgEditorClearFloorplan = clearFloorplanLayerContent;
   window.svgEditorCommitSavedBaseline = () => {
     window.__designLayoutBaseline = JSON.stringify(getLayout());
     emitSvgLayoutChanged();
