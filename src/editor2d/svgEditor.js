@@ -803,7 +803,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       clipRect.setAttribute("y", String(-def.hh));
       clipRect.setAttribute("width", String(bw));
       clipRect.setAttribute("height", String(bh));
-      clipRect.setAttribute("rx", String(rxShape));
+      /* 与 footprint 一致裁剪，无圆角描边框 */
+      clipRect.setAttribute("rx", "0");
       clipPath.appendChild(clipRect);
       defs.appendChild(clipPath);
       shapeG.appendChild(defs);
@@ -819,20 +820,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       imgEl.setAttribute("href", thumbHref);
       imgEl.setAttributeNS(XLINK_NS, "href", thumbHref);
 
-      const outline = document.createElementNS(SVG_NS, "rect");
-      outline.setAttribute("class", "svg-furniture-shape");
-      outline.setAttribute("x", String(-def.hw));
-      outline.setAttribute("y", String(-def.hh));
-      outline.setAttribute("width", String(bw));
-      outline.setAttribute("height", String(bh));
-      outline.setAttribute("rx", String(rxShape));
-      outline.setAttribute("fill", "none");
-      outline.setAttribute("stroke", def.stroke);
-      outline.setAttribute("stroke-width", String(strokeW));
-      outline.setAttribute("pointer-events", "none");
-
       shapeG.appendChild(imgEl);
-      shapeG.appendChild(outline);
       shape = shapeG;
     } else if (polyDraw && polyDraw.length >= 3) {
       const poly = document.createElementNS(SVG_NS, "polygon");

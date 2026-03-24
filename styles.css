@@ -828,6 +828,10 @@ a.avatar:hover {
   stroke-width: 2.5px;
 }
 
+.svg-furniture:focus-visible .svg-furniture-shape-group .svg-furniture-thumb-img {
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 5px rgba(255, 255, 255, 0.35));
+}
+
 .svg-furniture.is-dragging {
   cursor: grabbing;
 }
@@ -838,7 +842,11 @@ a.avatar:hover {
   /* 不再使用 filter：Safari 对 SVG filter+transform 极容易画出全宽白线残影 */
 }
 
-/* 画布家具：缩略图与侧栏同源，slice 铺满 footprint；描边在叠加的 rect 上 */
+.svg-furniture.is-selected .svg-furniture-shape-group .svg-furniture-thumb-img {
+  filter: drop-shadow(0 0 1px rgba(252, 211, 77, 0.98)) drop-shadow(0 0 6px rgba(252, 211, 77, 0.4));
+}
+
+/* 画布家具：缩略图 slice 铺满 footprint（cm）；无描边，选中/焦点用光晕 */
 .svg-furniture-thumb-img {
   -webkit-user-drag: none;
   pointer-events: auto;
