@@ -38,9 +38,10 @@ export function getFurnitureDisplayName(item) {
 
 /**
  * 家具 JSON 可选 `polygon`：[[x,y],…] 或 [{x,y},…]，单位 cm，原点 = 外轮廓轴对齐包围盒中心（与 anchor 0.5/0.5 一致）
+ * 仅本模块内部使用；svgEditor 内另有副本，避免跨模块命名导出在 Chrome 强缓存下不一致
  * @returns {{ x: number, y: number }[] | null}
  */
-export function parseFurniturePolygonPoints(item) {
+function parseFurniturePolygonPoints(item) {
   const raw = item?.polygon;
   if (!Array.isArray(raw) || raw.length < 3) return null;
   const out = [];
@@ -66,9 +67,16 @@ export function getSvgStyleForItem(item) {
   if (!item?.size) return null;
   const cat = item.category || "default";
   const pal = CATEGORY_STYLES[cat] || CATEGORY_STYLES.default;
-  const w = Number(item.size.width) || 210;
-  const d = Number(item.size.depth) || 90;
-  const h = Number(item.size.height);
+  const sz = item.size;
+  let w = Number(sz.widthCm ?? sz.width ?? sz.w);
+  let d = Number(sz.depthCm ?? sz.depth ?? sz.d ?? sz.length);
+  if (!Number.isFinite(w) || w <= 0) w = 210;
+  if (!Number.isFinite(d) || d <= 0) d = 90;
+  if (w > 600 || d > 600) {
+    w /= 10;
+    d /= 10;
+  }
+  const h = Number(sz.height);
   /* 画布 1 单位 = 1 cm；外接尺寸只认 size，polygon 仅决定外形（svgEditor 内再缩放到此外接框） */
   const hw = Math.max(8, w / 2);
   const hh = Math.max(8, d / 2);

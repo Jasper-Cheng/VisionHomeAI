@@ -108,6 +108,34 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     true,
   );
 
+  /**
+   * 从目录条目原始对象读宽深（cm），与 getSvgStyleForItem 一致；不依赖已算好的 def，避免旧缓存/错误 polygon 链把 normalize 缩成 24cm
+   */
+  function extractFurnitureFootprintCm(item) {
+    if (!item || typeof item !== "object") {
+      return { w: 100, d: 100, hw: 50, hh: 50 };
+    }
+    const raw = item.size;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+      return { w: 100, d: 100, hw: 50, hh: 50 };
+    }
+    let w = Number(raw.widthCm ?? raw.width ?? raw.w);
+    let d = Number(raw.depthCm ?? raw.depth ?? raw.d ?? raw.length);
+    if (!Number.isFinite(w) || w <= 0) w = 210;
+    if (!Number.isFinite(d) || d <= 0) d = 90;
+    /* 误把 mm 写进标为 cm 的字段时常见 ≥600 */
+    if (w > 600 || d > 600) {
+      w /= 10;
+      d /= 10;
+    }
+    return {
+      w,
+      d,
+      hw: Math.max(8, w / 2),
+      hh: Math.max(8, d / 2),
+    };
+  }
+
   /** 根据家具 id 取 2D 占位尺寸与样式（未知 id 用保守默认，便于兼容旧布局 JSON） */
   function getFootprint(modelId) {
     const item = byId.get(modelId);
@@ -327,6 +355,29 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const m = Math.max(6, Math.floor(maxLen));
     if (t.length <= m) return t;
     return `${t.slice(0, Math.max(1, m - 1))}…`;
+  }
+
+  /** 与 svgStyle 内逻辑一致；放此处避免 Chrome 缓存旧 svgStyle 时缺少命名导出 */
+  function parseFurniturePolygonPointsFromItem(item) {
+    const raw = item?.polygon;
+    if (!Array.isArray(raw) || raw.length < 3) return null;
+    const out = [];
+    for (const p of raw) {
+      let x;
+      let y;
+      if (Array.isArray(p) && p.length >= 2) {
+        x = Number(p[0]);
+        y = Number(p[1]);
+      } else if (p && typeof p === "object") {
+        x = Number(p.x);
+        y = Number(p.y);
+      } else {
+        return null;
+      }
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      out.push({ x, y });
+    }
+    return out;
   }
 
   /**
@@ -686,6 +737,22 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         sizeW: fp.sizeW ?? fp.hw * 2,
         sizeD: fp.sizeD ?? fp.hh * 2,
       };
+    }
+
+    const fpCm = extractFurnitureFootprintCm(item);
+    def = {
+      ...def,
+      hw: fpCm.hw,
+      hh: fpCm.hh,
+      sizeW: fpCm.w,
+      sizeD: fpCm.d,
+      dimLine: `${Math.round(fpCm.w)}×${Math.round(fpCm.d)} cm`,
+    };
+    const polyFresh = parseFurniturePolygonPointsFromItem(item);
+    if (polyFresh && polyFresh.length >= 3) {
+      def.polygonPoints = polyFresh;
+    } else {
+      delete def.polygonPoints;
     }
 
     let rot = Math.round(Number(rotationDeg) || 0) % 360;
