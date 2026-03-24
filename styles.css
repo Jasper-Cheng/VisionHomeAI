@@ -1729,17 +1729,26 @@ a.avatar:hover {
   height: 92px;
   pointer-events: none;
   border-radius: 14px;
-  overflow: hidden;
+  overflow: visible;
   box-sizing: border-box;
-  background: rgba(18, 18, 18, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .furniture-library-drag-ghost .asset-thumb {
   height: 100%;
   width: 100%;
-  border-radius: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: transparent;
+  /* 仅让图标/图本身浮在画布上，避免整块黑底卡片感 */
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+}
+
+/* 克隆侧栏 DOM 时骨架层 z-index 可能盖住图；拖拽跟手只保留图 */
+.furniture-library-drag-ghost .thumb-skeleton {
+  display: none !important;
 }
 
 .furniture-library-drag-ghost__fallback {
