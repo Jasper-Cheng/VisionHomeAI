@@ -1280,6 +1280,7 @@ a.avatar:hover {
   border-radius: 14px;
   padding: 10px;
   box-sizing: border-box;
+  cursor: pointer;
 }
 
 .asset-card.is-selected {

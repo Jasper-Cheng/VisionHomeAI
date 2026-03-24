@@ -61,6 +61,53 @@ export function mountFloorplanLibrary(catalog, options = {}) {
 
   const searchInput = document.querySelector('.side-panel[data-panel="floorplans"] .search-input');
 
+  /** @type {HTMLElement | null} */
+  let selectedFloorplanCard = null;
+
+  function floorplanCards() {
+    return grid.querySelectorAll(".asset-card[data-floor-plan-id]");
+  }
+
+  /**
+   * 单选户型卡片（与家具库 .is-selected 视觉一致）
+   * @param {HTMLElement | null} card
+   */
+  function selectFloorplanCard(card) {
+    if (card != null && (!grid.contains(card) || card.classList.contains("is-hidden"))) return;
+
+    floorplanCards().forEach((c) => {
+      const on = c === card;
+      c.classList.toggle("is-selected", on);
+      c.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    selectedFloorplanCard = card;
+    const id = card?.dataset?.floorPlanId?.trim() || "";
+    window.__selectedFloorPlanId = id;
+    if (id) {
+      window.dispatchEvent(
+        new CustomEvent("visionhome:floorplan-select", {
+          detail: { id, entry: catalog.byId?.get(id) ?? null },
+        }),
+      );
+    }
+  }
+
+  function syncFloorplanSelectionAfterFilter() {
+    const visible = [...floorplanCards()].filter((c) => !c.classList.contains("is-hidden"));
+    if (!visible.length) {
+      selectFloorplanCard(null);
+      window.__selectedFloorPlanId = "";
+      return;
+    }
+    if (
+      !selectedFloorplanCard ||
+      selectedFloorplanCard.classList.contains("is-hidden") ||
+      !grid.contains(selectedFloorplanCard)
+    ) {
+      selectFloorplanCard(visible[0]);
+    }
+  }
+
   function applyFilter() {
     const active = strip.querySelector(".tab.is-active");
     const category = active?.dataset.category ?? "";
@@ -72,6 +119,7 @@ export function mountFloorplanLibrary(catalog, options = {}) {
       const matchQ = !q || name.includes(q);
       card.classList.toggle("is-hidden", !matchCat || !matchQ);
     });
+    syncFloorplanSelectionAfterFilter();
   }
 
   strip.addEventListener("click", (e) => {
@@ -101,6 +149,7 @@ export function mountFloorplanLibrary(catalog, options = {}) {
     card.dataset.name = display.toLowerCase();
     card.tabIndex = 0;
     card.setAttribute("role", "button");
+    card.setAttribute("aria-pressed", "false");
     card.setAttribute("aria-label", display);
     card.setAttribute(
       "title",
@@ -121,6 +170,18 @@ export function mountFloorplanLibrary(catalog, options = {}) {
     card.appendChild(thumb);
     card.appendChild(nameEl);
     grid.appendChild(card);
+
+    const activate = () => selectFloorplanCard(card);
+    card.addEventListener("click", (e) => {
+      e.preventDefault();
+      activate();
+    });
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        activate();
+      }
+    });
   });
 
   if (options.loadError) {
