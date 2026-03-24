@@ -1,6 +1,6 @@
 # 家具预览图（家具库缩略图）
 
-与 `data/furniture/furnitureLibrary.json` 中每条家具的 **`id`** 对应，放入同名的图片文件即可在侧栏家具库中显示。
+与 `data/furnitureLibrary.json` 中每条家具的 **`id`** 对应，放入同名的图片文件即可在侧栏家具库中显示。
 
 ## 在 furnitureLibrary.json 中配置（必须）
 

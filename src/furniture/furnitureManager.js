@@ -8,7 +8,7 @@ export { CATEGORY_LABELS, getFurnitureDisplayName };
 export { getSvgStyleForItem } from "./svgStyle.js";
 
 /**
- * 拉取并解析 data/furniture/furnitureLibrary.json
+ * 拉取并解析 data/furnitureLibrary.json
  * @returns {{ items: object[], byId: Map<string, object> }}
  */
 export async function loadFurnitureCatalog() {
@@ -174,7 +174,7 @@ export function mountFurnitureLibrary(catalog, options = {}) {
   if (options.loadError) {
     const msg = document.createElement("p");
     msg.className = "furniture-load-hint";
-    msg.textContent = "家具库加载失败，请检查 data/furniture/furnitureLibrary.json 或网络。";
+    msg.textContent = "家具库加载失败，请检查 data/furnitureLibrary.json 或网络。";
     grid.appendChild(msg);
   }
 

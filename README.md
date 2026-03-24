@@ -9,14 +9,15 @@
 │   ├── textures/         # 贴图（可选）
 │   └── vendor/           # three.js、OrbitControls 等
 ├── data/
-│   ├── templates/        # floorPlanLibrary.json（户型模板合集）
-│   ├── furniture/        # furnitureLibrary.json
-│   └── projects/         # 用户保存的工程 JSON
+│   ├── floorPlanLibrary.json   # 户型模板合集
+│   ├── furnitureLibrary.json   # 家具库
+│   └── design/           # 方案 / 工程 JSON
 ├── src/
 │   ├── core/             # projectManager、schema
 │   ├── editor2d/         # 2D / SVG（svgEditor.js + renderer 占位）
 │   ├── editor3d/         # 3D（viewer.js + loader 占位）
-│   ├── furniture/        # 家具管理、碰撞、吸附（占位）
+│   ├── floorplan/        # 户型库加载与侧栏挂载
+│   ├── furniture/        # 家具库、SVG 样式
 │   └── utils/
 ├── index.html
 ├── user.html
@@ -33,6 +34,6 @@ python3 -m http.server 8080
 
 ## 数据说明
 
-- 户型模板：`data/templates/floorPlanLibrary.json`（`floorPlanLibrary` 数组；工程里用 **`templateId`** 指向条目的 **`id`**）
-- 家具库：`data/furniture/furnitureLibrary.json`（启动时 `fetch` 解析；侧栏预览仅当该条配置了 **`thumbnail`** 时加载图片，否则为骨架占位；平面图中 `data-model` 为 **`id`**）
-- 示例工程：`data/projects/project_001.json`（字段 **`templateId`** 对应 `floorPlanLibrary` 中模板的 **`id`**）
+- 户型模板：`data/floorPlanLibrary.json`（`floorPlanLibrary` 数组；工程里用 **`templateId`** 指向条目的 **`id`**）
+- 家具库：`data/furnitureLibrary.json`（启动时 `fetch` 解析；侧栏预览仅当该条配置了 **`thumbnail`** 时加载图片，否则为骨架占位；平面图中 `data-model` 为 **`id`**）
+- 示例方案：`data/design/project_001.json`（字段 **`templateId`** 对应 `floorPlanLibrary` 中模板的 **`id`**）

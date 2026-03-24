@@ -2,8 +2,8 @@
 
 | 路径 | 说明 |
 |------|------|
-| `templates/floorPlanLibrary.json` | 户型模板合集（`floorPlanLibrary` 数组，见该目录 README） |
-| `furniture/furnitureLibrary.json` | 静态家具库；侧栏预览需在该条填写 `thumbnail`（否则仅骨架占位） |
-| `projects/` | 用户保存的工程 JSON |
+| `floorPlanLibrary.json` | 户型模板合集（根字段 `floorPlanLibrary` 数组） |
+| `furnitureLibrary.json` | 静态家具库（根字段 `furnitureLibrary` 数组；预览用每条 `thumbnail`） |
+| `design/` | 方案 / 工程 JSON（如 `project_001.json`） |
 
 详见项目根目录 `README.md`。

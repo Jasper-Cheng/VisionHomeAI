@@ -131,7 +131,7 @@ export function mountFloorplanLibrary(catalog, options = {}) {
   if (options.loadError) {
     const msg = document.createElement("p");
     msg.className = "furniture-load-hint";
-    msg.textContent = "户型库加载失败，请检查 data/templates/floorPlanLibrary.json。";
+    msg.textContent = "户型库加载失败，请检查 data/floorPlanLibrary.json。";
     grid.appendChild(msg);
   }
 

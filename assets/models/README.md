@@ -1,6 +1,6 @@
 # GLB 家具模型
 
-与 `data/furniture/furnitureLibrary.json` 中 `model` 字段对应，例如：
+与 `data/furnitureLibrary.json` 中 `model` 字段对应，例如：
 
 - `sofa_001.glb`
 - `bed_001.glb`

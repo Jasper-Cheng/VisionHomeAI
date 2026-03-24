@@ -4,7 +4,7 @@ import { DATA_PATHS, SCHEMA_VERSION } from "./schema.js";
  * 用户工程 JSON 读写（静态站点下用 fetch + 下载；后续可接 IndexedDB）
  */
 export async function loadProject(projectId) {
-  const url = `${DATA_PATHS.projects}/${projectId}.json`;
+  const url = `${DATA_PATHS.design}/${projectId}.json`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`loadProject failed: ${url}`);
   return res.json();
@@ -16,7 +16,7 @@ export async function loadFurnitureLibrary() {
   return res.json();
 }
 
-/** 加载户型模板库（`data/templates/floorPlanLibrary.json`） */
+/** 加载户型模板库（`data/floorPlanLibrary.json`） */
 export async function loadFloorPlanLibrary() {
   const res = await fetch(DATA_PATHS.floorPlanLibrary, { cache: "no-store" });
   if (!res.ok) throw new Error(`loadFloorPlanLibrary failed: ${DATA_PATHS.floorPlanLibrary}`);
