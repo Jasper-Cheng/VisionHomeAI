@@ -1253,6 +1253,18 @@ a.avatar:hover {
   height: 0;
 }
 
+/* 户型库列表：可滚动、隐藏滚动条 */
+.floorplan-grid {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.floorplan-grid::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .asset-card {
   height: 168px;
   display: flex;

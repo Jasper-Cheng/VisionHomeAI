@@ -16,7 +16,7 @@ export async function loadFurnitureLibrary() {
   return res.json();
 }
 
-/** 加载户型模板库（`data/floorPlanLibrary.json`） */
+/** 加载户型库 JSON（`data/floorPlanLibrary.json`） */
 export async function loadFloorPlanLibrary() {
   const res = await fetch(DATA_PATHS.floorPlanLibrary, { cache: "no-store" });
   if (!res.ok) throw new Error(`loadFloorPlanLibrary failed: ${DATA_PATHS.floorPlanLibrary}`);
@@ -24,7 +24,7 @@ export async function loadFloorPlanLibrary() {
 }
 
 /**
- * 按 id 取模板条目（含 id、project、floors、connections）
+ * 按 id 取户型条目（含 id、project、floors、connections）
  * @param {object} data loadFloorPlanLibrary() 的返回值
  * @param {string} templateId 如 apartment_2b1l
  */

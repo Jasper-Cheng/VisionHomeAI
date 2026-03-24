@@ -28,10 +28,7 @@ export async function loadFloorPlanCatalog() {
 function cardDisplayName(entry) {
   const p = entry?.project;
   if (!p) return entry?.id || "户型";
-  const name = p.name || entry.id;
-  const a = p.areaM2;
-  if (a != null && Number.isFinite(Number(a))) return `${name} 约${a}㎡`;
-  return name;
+  return p.name || entry.id;
 }
 
 /**
