@@ -120,6 +120,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       return {
         hw,
         hh,
+        sizeW: hw * 2,
+        sizeD: hh * 2,
         fill: "rgba(100,116,139,0.38)",
         stroke: "rgba(148,163,184,0.9)",
         longName: nameFull,
@@ -131,6 +133,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return {
       hw: 50,
       hh: 50,
+      sizeW: 100,
+      sizeD: 100,
       fill: "rgba(100,116,139,0.38)",
       stroke: "rgba(148,163,184,0.9)",
       longName: modelId || "家具",
@@ -325,24 +329,41 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return `${t.slice(0, Math.max(1, m - 1))}…`;
   }
 
-  /** 2D 外轮廓在局部坐标下的轴对齐包围盒（cm），用于夹紧、碰撞与标注排版 */
-  function getFurnitureLocalFootprintBounds(def) {
-    const pts = def?.polygonPoints;
-    if (Array.isArray(pts) && pts.length >= 3) {
-      let minX = Infinity;
-      let minY = Infinity;
-      let maxX = -Infinity;
-      let maxY = -Infinity;
-      for (const p of pts) {
-        minX = Math.min(minX, p.x);
-        minY = Math.min(minY, p.y);
-        maxX = Math.max(maxX, p.x);
-        maxY = Math.max(maxY, p.y);
-      }
-      if (Number.isFinite(minX) && Number.isFinite(maxX)) {
-        return { minX, minY, maxX, maxY };
-      }
+  /**
+   * 将 polygon 局部点缩放到外接框 [-hw,hw]×[-hh,hh]（cm），与 `size` 一致
+   * @param {{ x: number, y: number }[]} points
+   * @returns {{ x: number, y: number }[] | null}
+   */
+  function normalizeFurniturePolygonToFootprint(points, hw, hh) {
+    if (!Array.isArray(points) || points.length < 3) return null;
+    const hwAbs = Math.abs(Number(hw));
+    const hhAbs = Math.abs(Number(hh));
+    if (!Number.isFinite(hwAbs) || !Number.isFinite(hhAbs) || hwAbs < 1e-9 || hhAbs < 1e-9) return null;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const p of points) {
+      minX = Math.min(minX, p.x);
+      minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x);
+      maxY = Math.max(maxY, p.y);
     }
+    const spanX = maxX - minX;
+    const spanY = maxY - minY;
+    if (!Number.isFinite(spanX) || !Number.isFinite(spanY) || spanX < 1e-6 || spanY < 1e-6) return null;
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const sx = (2 * hwAbs) / spanX;
+    const sy = (2 * hhAbs) / spanY;
+    return points.map((p) => ({
+      x: (p.x - cx) * sx,
+      y: (p.y - cy) * sy,
+    }));
+  }
+
+  /** 2D 外接框（cm）：只认 catalog `size` 对应的 hw/hh，与 polygon 顶点无关，避免错误 polygon 导致夹紧/标注异常 */
+  function getFurnitureLocalFootprintBounds(def) {
     const hw = Math.max(1, Number(def.hw) || 0);
     const hh = Math.max(1, Number(def.hh) || 0);
     return { minX: -hw, minY: -hh, maxX: hw, maxY: hh };
@@ -353,7 +374,10 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const nameMax = Math.max(10, Math.min(26, Math.floor(Math.max(fw, fh) / 11)));
     const rawName = String(def.nameFull || def.longName || "家具").trim();
     const line1 = truncateFurnitureLabelLine(rawName, nameMax);
-    const dim = def.dimLine || `${Math.round(fw)}×${Math.round(fh)} cm`;
+    const dim =
+      Number.isFinite(Number(def.sizeW)) && Number.isFinite(Number(def.sizeD))
+        ? `${Math.round(Number(def.sizeW))}×${Math.round(Number(def.sizeD))} cm`
+        : def.dimLine || `${Math.round(fw)}×${Math.round(fh)} cm`;
     const line2 = [dim, def.heightLine].filter(Boolean).join(" · ");
     return { line1, line2 };
   }
@@ -659,6 +683,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         heightLine: fp.heightLine || "",
         hw: fp.hw,
         hh: fp.hh,
+        sizeW: fp.sizeW ?? fp.hw * 2,
+        sizeD: fp.sizeD ?? fp.hh * 2,
       };
     }
 
@@ -680,11 +706,15 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const strokeW = Math.min(2.5, Math.max(0.6, Math.min(fw, fh) * 0.02));
 
     let shape;
-    if (def.polygonPoints && def.polygonPoints.length >= 3) {
+    const polyDraw =
+      def.polygonPoints && def.polygonPoints.length >= 3
+        ? normalizeFurniturePolygonToFootprint(def.polygonPoints, def.hw, def.hh)
+        : null;
+    if (polyDraw && polyDraw.length >= 3) {
       const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
       poly.setAttribute(
         "points",
-        def.polygonPoints.map((p) => `${p.x},${p.y}`).join(" "),
+        polyDraw.map((p) => `${p.x},${p.y}`).join(" "),
       );
       poly.setAttribute("fill", def.fill);
       poly.setAttribute("stroke", def.stroke);

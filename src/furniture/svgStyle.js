@@ -69,30 +69,10 @@ export function getSvgStyleForItem(item) {
   const w = Number(item.size.width) || 210;
   const d = Number(item.size.depth) || 90;
   const h = Number(item.size.height);
-  /* 画布 1 单位 = 1 cm：占位矩形与 JSON 外形 1:1（半宽/半高） */
-  let hw = Math.max(8, w / 2);
-  let hh = Math.max(8, d / 2);
+  /* 画布 1 单位 = 1 cm；外接尺寸只认 size，polygon 仅决定外形（svgEditor 内再缩放到此外接框） */
+  const hw = Math.max(8, w / 2);
+  const hh = Math.max(8, d / 2);
   const polyPts = parseFurniturePolygonPoints(item);
-  if (polyPts) {
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    for (const p of polyPts) {
-      minX = Math.min(minX, p.x);
-      minY = Math.min(minY, p.y);
-      maxX = Math.max(maxX, p.x);
-      maxY = Math.max(maxY, p.y);
-    }
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
-    if (Math.abs(cx) > 0.5 || Math.abs(cy) > 0.5) {
-      /* 非中心对称时仍以 size 为夹紧尺寸，仅绘制多边形（避免摆放锚点错位） */
-    } else {
-      hw = Math.max(8, Math.max(-minX, maxX));
-      hh = Math.max(8, Math.max(-minY, maxY));
-    }
-  }
   const nameFull = getFurnitureDisplayName(item) || String(item.id || "").trim() || CATEGORY_LABELS[cat] || "?";
   const dimLine = `${Math.round(w)}×${Math.round(d)} cm`;
   const heightLine = Number.isFinite(h) && h > 0 ? `高 ${Math.round(h)} cm` : "";
@@ -105,6 +85,8 @@ export function getSvgStyleForItem(item) {
     heightLine,
     hw,
     hh,
+    sizeW: w,
+    sizeD: d,
     polygonPoints: polyPts || undefined,
   };
 }
