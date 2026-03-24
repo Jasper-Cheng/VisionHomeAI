@@ -1183,6 +1183,24 @@ a.avatar:hover {
   color: rgba(255, 255, 255, 0.35);
 }
 
+/* 户型库 / 家具库：Tab 与网格共用纵向节奏（与 .panel-catalog-body gap 一致） */
+.panel-catalog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-catalog-body .panel-tabs {
+  padding-bottom: 0;
+  flex-shrink: 0;
+}
+
+.panel-catalog-body .asset-grid {
+  padding-top: 0;
+}
+
 .panel-tabs {
   padding: 0 12px 10px;
   display: flex;
