@@ -977,8 +977,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
    * 将户型目录条目（毫米几何）缩放落入 viewBox；户型中心固定在画布逻辑中心（忽略传入坐标，兼容旧 API）
    */
   function applyFloorplanEntryAtWorld(entry, _worldX, _worldY) {
-    const worldX = snap(VIEW_W / 2);
-    const worldY = snap(VIEW_H / 2);
+    let worldX = snap(VIEW_W / 2);
+    let worldY = snap(VIEW_H / 2);
     const floor = getPrimaryFloor(entry);
     if (!floor) return;
     const bbox = getFloorBBoxMm(floor);
@@ -991,6 +991,18 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     }
     s *= FLOORPLAN_SIZE_FACTOR;
     s = Math.min(Math.max(s, 0.02), 4);
+
+    if (bbox.w > 1e-6) {
+      const worldW0 = s * bbox.w;
+      const nw = Math.max(1, Math.round(worldW0 / GRID));
+      s = (nw * GRID) / bbox.w;
+      s = Math.min(Math.max(s, 0.02), 4);
+    }
+
+    const wxMin = worldX + s * (bbox.minX - bbox.cx);
+    const wyMin = worldY + s * (bbox.minY - bbox.cy);
+    worldX += Math.round(wxMin / GRID) * GRID - wxMin;
+    worldY += Math.round(wyMin / GRID) * GRID - wyMin;
 
     clearFloorplanSelection();
     floorplanLayer.replaceChildren();
@@ -1025,7 +1037,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     hit.setAttribute("height", String(Math.max(bbox.h, 1)));
     hit.setAttribute("fill", "transparent");
 
-    appendFloorGeometryToGroup(floor, xform);
+    const mmPerWorldGrid = GRID / s;
+    appendFloorGeometryToGroup(floor, xform, { mmPerWorldGrid });
     xform.appendChild(hit);
     root.appendChild(xform);
     floorplanLayer.appendChild(root);
