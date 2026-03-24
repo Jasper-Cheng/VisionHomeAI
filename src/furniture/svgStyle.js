@@ -52,8 +52,9 @@ export function getSvgStyleForItem(item) {
   const pal = CATEGORY_STYLES[cat] || CATEGORY_STYLES.default;
   const w = Number(item.size.width) || 210;
   const d = Number(item.size.depth) || 90;
-  const hw = Math.max(12, (w / 210) * 112);
-  const hh = Math.max(12, (d / 90) * 50);
+  /* 画布 1 单位 = 1 cm：占位矩形与 JSON 外形 1:1（半宽/半高） */
+  const hw = Math.max(8, w / 2);
+  const hh = Math.max(8, d / 2);
   const longName = getFurnitureDisplayName(item);
   const label = svgLabelFromItem(item, cat, hw, hh);
   return {

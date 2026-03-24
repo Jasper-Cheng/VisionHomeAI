@@ -601,22 +601,27 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     g.setAttribute("tabindex", "0");
     g.setAttribute("aria-label", `${def.longName}，可拖拽`);
 
+    const fw = Math.max(1, Number(def.hw) * 2) || 1;
+    const fh = Math.max(1, Number(def.hh) * 2) || 1;
+    /* 圆角不超过短边一半，避免小占位被 rx=14(cm) 画成圆 */
+    const rx = Math.min(6, Math.min(def.hw, def.hh) * 0.22);
+
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("x", String(-def.hw));
     rect.setAttribute("y", String(-def.hh));
-    rect.setAttribute("width", String(def.hw * 2));
-    rect.setAttribute("height", String(def.hh * 2));
-    rect.setAttribute("rx", "14");
+    rect.setAttribute("width", String(fw));
+    rect.setAttribute("height", String(fh));
+    rect.setAttribute("rx", String(rx));
     rect.setAttribute("fill", def.fill);
     rect.setAttribute("stroke", def.stroke);
-    rect.setAttribute("stroke-width", "5");
+    rect.setAttribute("stroke-width", String(Math.min(2.5, Math.max(0.6, Math.min(fw, fh) * 0.02))));
     rect.classList.add("svg-furniture-shape");
 
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.setAttribute("text-anchor", "middle");
-    text.setAttribute("y", "10");
+    text.setAttribute("y", String(Math.min(14, Math.max(6, fh * 0.12))));
     text.setAttribute("fill", "rgba(255,255,255,0.88)");
-    text.setAttribute("font-size", "28");
+    text.setAttribute("font-size", String(Math.min(22, Math.max(10, Math.min(fw, fh) * 0.11))));
     text.setAttribute("font-weight", "700");
     text.setAttribute("pointer-events", "none");
     text.textContent = def.label;
