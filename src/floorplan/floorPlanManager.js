@@ -1,13 +1,7 @@
 import { DATA_PATHS } from "../core/schema.js";
 
-const THUMB_VARIANTS = [
-  "thumb-skeleton thumb-floorplan",
-  "thumb-skeleton thumb-floorplan thumb-floorplan--alt",
-  "thumb-skeleton thumb-floorplan thumb-floorplan--compact",
-  "thumb-skeleton thumb-floorplan",
-  "thumb-skeleton thumb-floorplan thumb-floorplan--alt",
-  "thumb-skeleton thumb-floorplan thumb-floorplan--wide",
-];
+/** 与家具库卡片相同的缩略图骨架配色轮询 */
+const THUMB_VARIANTS = ["", "thumb-skeleton--green", "thumb-skeleton--warm", "thumb-skeleton--red", "thumb-skeleton--gray", "thumb-skeleton--blue"];
 
 async function fetchFloorPlanLibraryJson() {
   const res = await fetch(DATA_PATHS.floorPlanLibrary, { cache: "no-store" });
@@ -65,13 +59,13 @@ export function mountFloorplanLibrary(catalog, options = {}) {
     strip.appendChild(makeTab(cat, cat, false));
   }
 
-  const searchInput = document.querySelector(".floorplan-search-input");
+  const searchInput = document.querySelector('.side-panel[data-panel="floorplans"] .search-input');
 
   function applyFilter() {
     const active = strip.querySelector(".tab.is-active");
     const category = active?.dataset.category ?? "";
     const q = (searchInput?.value || "").trim().toLowerCase();
-    grid.querySelectorAll(".floorplan-card").forEach((card) => {
+    grid.querySelectorAll(".asset-card").forEach((card) => {
       const cat = card.dataset.category || "";
       const name = (card.dataset.name || "").toLowerCase();
       const matchCat = !category || cat === category;
@@ -101,19 +95,23 @@ export function mountFloorplanLibrary(catalog, options = {}) {
     const fid = String(entry.id || "").trim();
 
     const card = document.createElement("article");
-    card.className = "asset-card floorplan-card";
+    card.className = "asset-card";
     card.dataset.floorPlanId = fid;
     card.dataset.category = category;
     card.dataset.name = display.toLowerCase();
     card.tabIndex = 0;
     card.setAttribute("role", "button");
     card.setAttribute("aria-label", display);
-    card.setAttribute("title", display);
+    card.setAttribute(
+      "title",
+      [display, category ? `分类: ${category}` : ""].filter(Boolean).join("\n"),
+    );
 
     const thumb = document.createElement("div");
     thumb.className = "asset-thumb";
     const sk = document.createElement("div");
-    sk.className = THUMB_VARIANTS[idx % THUMB_VARIANTS.length];
+    const variant = THUMB_VARIANTS[idx % THUMB_VARIANTS.length];
+    sk.className = variant ? `thumb-skeleton ${variant}` : "thumb-skeleton";
     thumb.appendChild(sk);
 
     const nameEl = document.createElement("div");

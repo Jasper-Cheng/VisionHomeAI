@@ -33,13 +33,13 @@
         tab.classList.add("is-active");
         tab.setAttribute("aria-selected", "true");
 
-        // Filter floorplan cards by category when floorplan tabs are clicked
+        // 户型库 Tab（与 floorPlanManager 内监听并存：此处仅绑定首屏已存在的 tab；动态 tab 由 mount 内逻辑处理）
         if (strip.classList.contains("floorplan-tabs")) {
           const category = tab.dataset.category || "";
-          const grid = document.querySelector(".floorplan-grid");
-          const searchInput = document.querySelector(".floorplan-search-input");
+          const grid = document.getElementById("floorPlanGrid");
+          const searchInput = document.querySelector('.side-panel[data-panel="floorplans"] .search-input');
           const searchQ = (searchInput?.value || "").trim().toLowerCase();
-          grid?.querySelectorAll(".floorplan-card").forEach((card) => {
+          grid?.querySelectorAll(".asset-card").forEach((card) => {
             const cardCategory = card.dataset.category || "";
             const matchesCategory = !category || cardCategory === category;
             const matchesSearch = !searchQ || (card.dataset.name || "").toLowerCase().includes(searchQ);
@@ -109,9 +109,9 @@
     });
   }
 
-  // Floorplan panel: search + category filter
-  const floorplanSearchInput = document.querySelector(".floorplan-search-input");
-  const floorplanGrid = document.querySelector(".floorplan-grid");
+  // 户型库：搜索与 Tab（与家具库同结构）
+  const floorplanSearchInput = document.querySelector('.side-panel[data-panel="floorplans"] .search-input');
+  const floorplanGrid = document.getElementById("floorPlanGrid");
   const floorplanTabs = document.querySelector(".floorplan-tabs");
 
   function filterFloorplanCards() {
@@ -119,7 +119,7 @@
     const activeTab = floorplanTabs?.querySelector(".tab.is-active");
     const category = activeTab?.dataset.category || "";
 
-    floorplanGrid?.querySelectorAll(".floorplan-card").forEach((card) => {
+    floorplanGrid?.querySelectorAll(".asset-card").forEach((card) => {
       const cardCategory = card.dataset.category || "";
       const matchesCategory = !category || cardCategory === category;
       const matchesSearch = !q || (card.dataset.name || "").toLowerCase().includes(q);
@@ -131,37 +131,6 @@
     floorplanSearchInput.addEventListener("input", filterFloorplanCards);
   }
 
-  // Floorplan upload: add new card to special category
-  const uploadInput = document.querySelector(".upload-floorplan-input");
-  let uploadedCount = 0;
-  if (uploadInput && floorplanGrid) {
-    uploadInput.addEventListener("change", (e) => {
-      const file = e.target.files?.[0];
-      if (!file || !file.type.startsWith("image/")) return;
-
-      uploadedCount += 1;
-      const name = file.name.replace(/\.[^.]+$/, "") || `上传户型 ${uploadedCount}`;
-      const url = URL.createObjectURL(file);
-
-      const card = document.createElement("article");
-      card.className = "asset-card floorplan-card";
-      card.tabIndex = 0;
-      card.role = "button";
-      card.dataset.name = name;
-      card.dataset.category = "special";
-      card.setAttribute("aria-label", name);
-      card.innerHTML = `
-        <div class="asset-thumb">
-          <div class="thumb-uploaded" style="background-image:url(${url})"></div>
-        </div>
-        <div class="asset-name">${name}</div>
-      `;
-      floorplanGrid.appendChild(card);
-
-      filterFloorplanCards();
-      e.target.value = "";
-    });
-  }
   // Undo/redo暂未实现（按钮已 disabled），这里不绑定点击事件。
 })();
 

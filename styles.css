@@ -1253,18 +1253,6 @@ a.avatar:hover {
   height: 0;
 }
 
-/* 户型库列表：可滚动、隐藏滚动条 */
-.floorplan-grid {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.floorplan-grid::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
 .asset-card {
   height: 168px;
   display: flex;
@@ -1335,39 +1323,6 @@ a.avatar:hover {
   background: linear-gradient(135deg, rgba(120, 190, 255, 0.35), rgba(120, 160, 255, 0.12));
 }
 
-/* Floor plan thumb – blueprint-style grid */
-.thumb-floorplan {
-  background:
-    linear-gradient(90deg, rgba(109, 92, 255, 0.15) 1px, transparent 1px),
-    linear-gradient(rgba(109, 92, 255, 0.15) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(109, 92, 255, 0.12), rgba(109, 92, 255, 0.04));
-  background-size: 12px 12px, 12px 12px, 100% 100%;
-}
-
-.thumb-floorplan--alt {
-  background:
-    linear-gradient(90deg, rgba(140, 120, 255, 0.12) 1px, transparent 1px),
-    linear-gradient(rgba(140, 120, 255, 0.12) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(109, 92, 255, 0.08), rgba(109, 92, 255, 0.02));
-  background-size: 10px 10px, 10px 10px, 100% 100%;
-}
-
-.thumb-floorplan--compact {
-  background-size: 8px 8px, 8px 8px, 100% 100%;
-}
-
-.thumb-floorplan--wide {
-  background-size: 14px 14px, 14px 14px, 100% 100%;
-}
-
-.thumb-uploaded {
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
 .asset-name {
   margin-top: 8px;
   flex: 1 1 auto;
@@ -1386,38 +1341,6 @@ a.avatar:hover {
 .panel-footer {
   padding: 10px 12px 12px;
   margin-top: auto;
-}
-
-.upload-floorplan-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  height: 40px;
-  border-radius: 12px;
-  border: 1px dashed rgba(109, 92, 255, 0.5);
-  background: rgba(109, 92, 255, 0.1);
-  color: rgba(235, 233, 255, 0.98);
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.upload-floorplan-btn:hover {
-  background: rgba(109, 92, 255, 0.18);
-  border-color: rgba(109, 92, 255, 0.65);
-}
-
-.upload-floorplan-icon {
-  width: 18px;
-  height: 18px;
-}
-
-.upload-floorplan-icon svg {
-  width: 100%;
-  height: 100%;
 }
 
 .ai-box {

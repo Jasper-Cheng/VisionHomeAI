@@ -106,29 +106,35 @@
                   />
                 </svg>
               </span>
-              <input class="search-input floorplan-search-input" type="search" placeholder="搜索户型..." />
+              <input class="search-input" type="search" placeholder="搜索户型..." />
             </label>
           </div>
 
           <div class="panel-tabs floorplan-tabs" role="tablist" aria-label="户型分类"></div>
 
-          <div class="asset-grid floorplan-grid" id="floorPlanGrid" aria-label="户型列表"></div>
+          <div class="asset-grid furniture-asset-grid" id="floorPlanGrid" aria-label="户型列表"></div>
 
           <div class="panel-footer">
-            <label class="upload-floorplan-btn">
-              <input type="file" accept="image/*" class="upload-floorplan-input" hidden />
-              <span class="upload-floorplan-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-              </span>
-              <span class="upload-floorplan-text">上传户型设计图</span>
-            </label>
+            <div class="ai-box">
+              <div class="ai-top">
+                <span class="ai-badge">AI 推荐</span>
+              </div>
+              <div class="ai-tags" aria-label="常用户型特征">
+                <button class="ai-tag" type="button">南北通透</button>
+                <button class="ai-tag" type="button">全明边套</button>
+                <button class="ai-tag" type="button">动静分区</button>
+                <button class="ai-tag" type="button">LDK 一体</button>
+                <button class="ai-tag" type="button">双卫</button>
+                <button class="ai-tag" type="button">大面宽</button>
+              </div>
+            </div>
           </div>
         </section>
 
         <section class="side-panel" data-panel="assets" aria-label="家具库面板">
           <div class="panel-header">
             <div class="panel-title">家具库</div>
-            <label class="search" aria-label="搜索模型">
+            <label class="search" aria-label="搜索家具">
               <span class="search-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
                   <path
@@ -137,7 +143,7 @@
                   />
                 </svg>
               </span>
-              <input class="search-input" type="search" placeholder="搜索模型..." />
+              <input class="search-input" type="search" placeholder="搜索家具..." />
             </label>
           </div>
 
