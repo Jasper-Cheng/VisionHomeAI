@@ -1,8 +1,6 @@
 import { loadItemsFromManifest } from "../core/catalogLoader.js";
 import { DATA_PATHS } from "../core/schema.js";
-
-/** 与家具库卡片相同的缩略图骨架配色轮询 */
-const THUMB_VARIANTS = ["", "thumb-skeleton--green", "thumb-skeleton--warm", "thumb-skeleton--red", "thumb-skeleton--gray", "thumb-skeleton--blue"];
+import { mountFloorplanThumb } from "./floorplanPreview.js";
 
 /**
  * @returns {{ items: object[], byId: Map<string, object>, raw: object }}
@@ -157,10 +155,7 @@ export function mountFloorplanLibrary(catalog, options = {}) {
 
     const thumb = document.createElement("div");
     thumb.className = "asset-thumb";
-    const sk = document.createElement("div");
-    const variant = THUMB_VARIANTS[idx % THUMB_VARIANTS.length];
-    sk.className = variant ? `thumb-skeleton ${variant}` : "thumb-skeleton";
-    thumb.appendChild(sk);
+    mountFloorplanThumb(thumb, entry, idx);
 
     const nameEl = document.createElement("div");
     nameEl.className = "asset-name";

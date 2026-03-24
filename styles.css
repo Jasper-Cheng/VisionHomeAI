@@ -1522,6 +1522,40 @@ a.avatar:hover {
   overflow: auto;
 }
 
+/* 网格内卡片在窄栏下参与 minmax(0,1fr) 分配，避免被内容撑破两列布局 */
+.asset-grid > .asset-card {
+  min-width: 0;
+}
+
+/* 户型库：与家具库一致的滚动条隐藏，但保留固定行高卡片（独立双列卡片，非家具库的 auto 行高） */
+.floorplan-asset-grid {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.floorplan-asset-grid::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* 户型库：标题不要 flex 撑满剩余高度，避免文字下方大块空白 */
+.floorplan-asset-grid .asset-name {
+  flex: 0 0 auto;
+  margin-top: 6px;
+}
+
+.floorplan-asset-grid .asset-card {
+  padding: 8px 10px 6px;
+}
+
+/* 固定行高时剩余空间给缩略图，避免文字与卡片底之间一条死空白 */
+.floorplan-asset-grid .asset-thumb {
+  flex: 1 1 auto;
+  min-height: 108px;
+  height: auto;
+}
+
 /* 家具库：可滚动但不显示滚动条；卡片高度随内容，避免标题下大块留白 */
 .furniture-asset-grid {
   grid-auto-rows: auto;
@@ -1559,11 +1593,28 @@ a.avatar:hover {
   box-sizing: border-box;
   cursor: pointer;
   -webkit-user-drag: none;
+  /* 避免默认 outline 与圆角 border 叠成双圈、角上错位（删户型后焦点常落到侧栏卡片上） */
+  outline: none;
+}
+
+.asset-card:focus {
+  outline: none;
+}
+
+.asset-card:focus-visible:not(.is-selected) {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(109, 92, 255, 0.65);
 }
 
 .asset-card.is-selected {
   border-color: rgba(109, 92, 255, 0.55);
   background: rgba(109, 92, 255, 0.08);
+  box-shadow: none;
+}
+
+.asset-card.is-selected:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .asset-thumb {
@@ -1586,6 +1637,18 @@ a.avatar:hover {
   display: block;
   -webkit-user-drag: none;
   pointer-events: none; /* 让按下落在卡片上，统一走 Pointer 逻辑，避免点在图上时行为不一致 */
+}
+
+/* 户型库：由 JSON 几何生成的矢量预览（与画布同源） */
+.asset-thumb .floorplan-thumb-svg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  -webkit-user-drag: none;
 }
 
 .asset-thumb .thumb-skeleton {
