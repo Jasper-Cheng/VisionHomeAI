@@ -1,6 +1,11 @@
 import { loadItemsFromManifest } from "../core/catalogLoader.js";
 import { DATA_PATHS } from "../core/schema.js";
-import { CATEGORY_LABELS, getFurnitureDisplayName, getFurnitureLibraryCardLabel } from "./svgStyle.js";
+import {
+  CATEGORY_LABELS,
+  getFurnitureDisplayName,
+  getFurnitureLibraryCardLabel,
+  getFurnitureLibrarySizeSuffix,
+} from "./svgStyle.js";
 
 /** 缩略图骨架色（循环使用） */
 const THUMB_VARIANTS = ["", "thumb-skeleton--green", "thumb-skeleton--warm", "thumb-skeleton--red", "thumb-skeleton--gray", "thumb-skeleton--blue"];
@@ -150,6 +155,8 @@ export function mountFurnitureLibrary(catalog, options = {}) {
   (catalog.items || []).forEach((item, idx) => {
     const cardLabel = getFurnitureLibraryCardLabel(item);
     const fid = String(item.id || "").trim();
+    const displayName = getFurnitureDisplayName(item) || fid;
+    const sizeSuffix = getFurnitureLibrarySizeSuffix(item);
 
     const card = document.createElement("article");
     card.className = "asset-card";
@@ -170,8 +177,18 @@ export function mountFurnitureLibrary(catalog, options = {}) {
     mountFurnitureThumb(thumb, item, idx);
 
     const nameEl = document.createElement("div");
-    nameEl.className = "asset-name";
-    nameEl.textContent = cardLabel || fid;
+    /* 不用 .asset-name：其 -webkit-line-clamp + -webkit-box 在 Safari 上会吞掉第二行尺寸 */
+    nameEl.className = "furniture-asset-label";
+    const titleSpan = document.createElement("span");
+    titleSpan.className = "furniture-asset-label__title";
+    titleSpan.textContent = displayName;
+    nameEl.appendChild(titleSpan);
+    if (sizeSuffix) {
+      const dimSpan = document.createElement("span");
+      dimSpan.className = "furniture-asset-label__dims";
+      dimSpan.textContent = sizeSuffix;
+      nameEl.appendChild(dimSpan);
+    }
 
     card.appendChild(thumb);
     card.appendChild(nameEl);

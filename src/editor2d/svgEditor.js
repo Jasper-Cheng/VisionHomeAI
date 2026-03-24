@@ -1344,7 +1344,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     } else {
       const label = document.createElement("span");
       label.className = "furniture-library-drag-ghost__fallback";
-      const nameEl = card?.querySelector(".asset-name");
+      const nameEl = card?.querySelector(".furniture-asset-label, .asset-name");
       label.textContent = (nameEl?.textContent || "").trim() || pendingLibraryDrag.model || "?";
       ghost.appendChild(label);
     }
@@ -1450,7 +1450,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     } else {
       const label = document.createElement("span");
       label.className = "furniture-library-drag-ghost__fallback";
-      const nameEl = card?.querySelector(".asset-name");
+      const nameEl = card?.querySelector(".furniture-asset-label, .asset-name");
       label.textContent = (nameEl?.textContent || "").trim() || pendingFloorplanDrag.floorPlanId || "?";
       ghost.appendChild(label);
     }

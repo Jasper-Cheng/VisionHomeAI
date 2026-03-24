@@ -37,16 +37,15 @@ export function getFurnitureDisplayName(item) {
 }
 
 /**
- * 侧栏卡片标题：`名称 长×宽×高cm`（长=size.width，宽=size.depth，高=size.height，单位 cm）
+ * 侧栏卡片尺寸行：`长×宽×高cm`（长=size.width，宽=size.depth，高=size.height），无有效 size 时返回 ""
  * @param {object} item 家具库 JSON 单条
  */
-export function getFurnitureLibraryCardLabel(item) {
-  const name = getFurnitureDisplayName(item) || String(item?.id || "").trim() || "家具";
+export function getFurnitureLibrarySizeSuffix(item) {
   const sz = item?.size;
-  if (!sz || typeof sz !== "object" || Array.isArray(sz)) return name;
+  if (!sz || typeof sz !== "object" || Array.isArray(sz)) return "";
   let len = Number(sz.widthCm ?? sz.width ?? sz.w);
   let wid = Number(sz.depthCm ?? sz.depth ?? sz.d ?? sz.length);
-  if (!Number.isFinite(len) || len <= 0 || !Number.isFinite(wid) || wid <= 0) return name;
+  if (!Number.isFinite(len) || len <= 0 || !Number.isFinite(wid) || wid <= 0) return "";
   if (len > 600 || wid > 600) {
     len /= 10;
     wid /= 10;
@@ -56,9 +55,19 @@ export function getFurnitureLibraryCardLabel(item) {
   const lr = Math.round(len);
   const wr = Math.round(wid);
   if (Number.isFinite(h) && h > 0) {
-    return `${name} ${lr}×${wr}×${Math.round(h)}cm`;
+    return `${lr}×${wr}×${Math.round(h)}cm`;
   }
-  return `${name} ${lr}×${wr}cm`;
+  return `${lr}×${wr}cm`;
+}
+
+/**
+ * 侧栏搜索/aria 用整行：`名称 长×宽×高cm`
+ * @param {object} item 家具库 JSON 单条
+ */
+export function getFurnitureLibraryCardLabel(item) {
+  const name = getFurnitureDisplayName(item) || String(item?.id || "").trim() || "家具";
+  const suf = getFurnitureLibrarySizeSuffix(item);
+  return suf ? `${name} ${suf}` : name;
 }
 
 /**
