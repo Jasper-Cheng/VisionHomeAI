@@ -13,21 +13,21 @@
       "instanceId": "fi_1",
       "furnitureId": "sofa_001",
       "floorId": "floor1",
-      "positionMm": [
-        2100,
-        2940
-      ],
-      "rotationDeg": 0
+      "rotationDeg": 0,
+      "positionCm": [
+        210.0,
+        294.0
+      ]
     },
     {
       "instanceId": "fi_2",
       "furnitureId": "sofa_001",
       "floorId": "floor1",
-      "positionMm": [
-        1100,
-        1020
-      ],
-      "rotationDeg": 0
+      "rotationDeg": 0,
+      "positionCm": [
+        110.0,
+        102.0
+      ]
     }
   ],
   "svgEditor": {
@@ -46,14 +46,14 @@
     "furniture": [
       {
         "model": "sofa_001",
-        "x": 2100,
-        "y": 2940,
+        "x": 210.0,
+        "y": 294.0,
         "rotation": 0
       },
       {
         "model": "sofa_001",
-        "x": 1100,
-        "y": 1020,
+        "x": 110.0,
+        "y": 102.0,
         "rotation": 0
       }
     ]

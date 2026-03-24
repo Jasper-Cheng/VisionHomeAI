@@ -317,7 +317,7 @@ function layoutToFurnitureInstances(layout, floorId) {
     instanceId: `fi_${i + 1}`,
     furnitureId: item.model,
     floorId: fid,
-    positionMm: [item.x, item.y],
+    positionCm: [item.x, item.y],
     rotationDeg: item.rotation ?? 0,
   }));
 }

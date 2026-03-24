@@ -5,9 +5,9 @@
   "model": "assets/models/bed_001.glb",
   "thumbnail": "assets/thumbnails/bed_001.svg",
   "size": {
-    "width": 1800,
-    "depth": 2000,
-    "height": 500
+    "width": 180.0,
+    "depth": 200.0,
+    "height": 50.0
   },
   "anchor": {
     "x": 0.5,
@@ -18,6 +18,6 @@
       "bedroom"
     ],
     "snapToWall": true,
-    "minDistanceToWall": 50
+    "minDistanceToWall": 5.0
   }
 }

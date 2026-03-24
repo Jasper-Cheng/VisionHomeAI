@@ -295,22 +295,27 @@
                 viewBox="0 0 3000 3000"
                 xmlns="http://www.w3.org/2000/svg"
                 preserveAspectRatio="xMidYMid slice"
-                aria-label="可编辑户型 SVG 画布（3000×3000）"
+                aria-label="可编辑户型 SVG 画布（3000×3000 cm，1 cm 细网格与每 10 cm 主网格）"
               >
                 <defs>
-                  <pattern id="svgEditorGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
+                  <pattern id="svgEditorGrid" width="1" height="1" patternUnits="userSpaceOnUse">
+                    <path d="M 1 0 L 0 0 0 1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.35" />
+                  </pattern>
+                  <pattern id="svgEditorGridMajor" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path
+                      d="M 10 0 L 0 0 0 10"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.26)"
+                      stroke-width="1.15"
+                    />
                   </pattern>
                 </defs>
                 <g id="svgEditorViewRoot" transform="translate(0 0) scale(1)">
                   <rect class="svg-editor-bg" width="100%" height="100%" fill="#0d0d0d" />
-                  <rect
-                    id="svgEditorGridLayer"
-                    class="svg-editor-bg svg-editor-grid-layer"
-                    width="100%"
-                    height="100%"
-                    fill="url(#svgEditorGrid)"
-                  />
+                  <g id="svgEditorGridStack" class="svg-editor-grid-layer" aria-hidden="true">
+                    <rect class="svg-editor-bg" width="100%" height="100%" fill="url(#svgEditorGrid)" />
+                    <rect class="svg-editor-bg" width="100%" height="100%" fill="url(#svgEditorGridMajor)" />
+                  </g>
                 </g>
               </svg>
               <div class="viewer-bottom-ui" aria-hidden="true">

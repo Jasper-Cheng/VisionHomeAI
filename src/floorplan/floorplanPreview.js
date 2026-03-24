@@ -1,7 +1,7 @@
 /**
  * 户型库卡片缩略图：优先 project.thumbnail / thumbnail 图片；否则用 floors[0] 几何生成矢量预览
  */
-import { appendFloorGeometryToGroup, getFloorBBoxMm, getPrimaryFloor } from "./floorplanSvg.js";
+import { appendFloorGeometryToGroup, getFloorBBoxCm, getPrimaryFloor } from "./floorplanSvg.js";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -74,7 +74,7 @@ export function mountFloorplanThumb(thumbEl, entry, idx = 0) {
  */
 function appendVectorPreview(thumbEl, entry, variant, fallbackEl) {
   const floor = getPrimaryFloor(entry);
-  const bbox = getFloorBBoxMm(floor);
+  const bbox = getFloorBBoxCm(floor);
 
   if (!floor || !bbox || bbox.w < 1e-9 || bbox.h < 1e-9) {
     thumbEl.appendChild(fallbackEl);

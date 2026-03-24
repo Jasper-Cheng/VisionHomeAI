@@ -13,11 +13,11 @@
       "instanceId": "fi_1",
       "furnitureId": "table_001",
       "floorId": "floor1",
-      "positionMm": [
-        1300,
-        1140
-      ],
-      "rotationDeg": 0
+      "rotationDeg": 0,
+      "positionCm": [
+        130.0,
+        114.0
+      ]
     }
   ],
   "svgEditor": {
@@ -36,8 +36,8 @@
     "furniture": [
       {
         "model": "table_001",
-        "x": 1300,
-        "y": 1140,
+        "x": 130.0,
+        "y": 114.0,
         "rotation": 0
       }
     ]

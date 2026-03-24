@@ -25,7 +25,7 @@ const CATEGORY_STYLES = {
 };
 
 /**
- * 2D SVG 示意矩形：半宽/半高与颜色（户型画布单位，与旧 sofa 2100×900 标定一致）
+ * 2D SVG 示意矩形：半宽/半高与颜色（画布单位 = cm，与 sofa 210×90 cm 标定一致）
  * @param {object} item 家具库 JSON 单条
  */
 /** 与家具库 JSON 一致的展示名（优先 name，兼容 label/title） */
@@ -50,10 +50,10 @@ export function getSvgStyleForItem(item) {
   if (!item?.size) return null;
   const cat = item.category || "default";
   const pal = CATEGORY_STYLES[cat] || CATEGORY_STYLES.default;
-  const w = Number(item.size.width) || 1000;
-  const d = Number(item.size.depth) || 1000;
-  const hw = Math.max(12, (w / 2100) * 112);
-  const hh = Math.max(12, (d / 900) * 50);
+  const w = Number(item.size.width) || 210;
+  const d = Number(item.size.depth) || 90;
+  const hw = Math.max(12, (w / 210) * 112);
+  const hh = Math.max(12, (d / 90) * 50);
   const longName = getFurnitureDisplayName(item);
   const label = svgLabelFromItem(item, cat, hw, hh);
   return {

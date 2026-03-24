@@ -5,9 +5,9 @@
   "model": "assets/models/sofa_001.glb",
   "thumbnail": "assets/thumbnails/sofa_001.svg",
   "size": {
-    "width": 2100,
-    "depth": 900,
-    "height": 800
+    "width": 210.0,
+    "depth": 90.0,
+    "height": 80.0
   },
   "anchor": {
     "x": 0.5,
@@ -19,6 +19,6 @@
       "study"
     ],
     "snapToWall": true,
-    "minDistanceToWall": 50
+    "minDistanceToWall": 5.0
   }
 }

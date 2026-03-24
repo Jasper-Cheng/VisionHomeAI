@@ -5,9 +5,9 @@
   "model": "assets/models/lamp_001.glb",
   "thumbnail": "assets/thumbnails/lamp_001.svg",
   "size": {
-    "width": 350,
-    "depth": 350,
-    "height": 1600
+    "width": 35.0,
+    "depth": 35.0,
+    "height": 160.0
   },
   "anchor": {
     "x": 0.5,
@@ -20,6 +20,6 @@
       "study"
     ],
     "snapToWall": false,
-    "minDistanceToWall": 50
+    "minDistanceToWall": 5.0
   }
 }

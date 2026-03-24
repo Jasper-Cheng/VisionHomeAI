@@ -5,9 +5,9 @@
   "model": "assets/models/tv_cabinet_001.glb",
   "thumbnail": "assets/thumbnails/tv_cabinet_001.svg",
   "size": {
-    "width": 2000,
-    "depth": 400,
-    "height": 500
+    "width": 200.0,
+    "depth": 40.0,
+    "height": 50.0
   },
   "anchor": {
     "x": 0.5,
@@ -18,6 +18,6 @@
       "living"
     ],
     "snapToWall": true,
-    "minDistanceToWall": 50
+    "minDistanceToWall": 5.0
   }
 }

@@ -5,9 +5,9 @@
   "model": "assets/models/table_001.glb",
   "thumbnail": "assets/thumbnails/table_001.svg",
   "size": {
-    "width": 1100,
-    "depth": 600,
-    "height": 450
+    "width": 110.0,
+    "depth": 60.0,
+    "height": 45.0
   },
   "anchor": {
     "x": 0.5,
@@ -19,6 +19,6 @@
       "dining"
     ],
     "snapToWall": false,
-    "minDistanceToWall": 50
+    "minDistanceToWall": 5.0
   }
 }

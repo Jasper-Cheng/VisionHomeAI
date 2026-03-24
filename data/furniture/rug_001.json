@@ -5,9 +5,9 @@
   "model": "assets/models/rug_001.glb",
   "thumbnail": "assets/thumbnails/rug_001.svg",
   "size": {
-    "width": 2000,
-    "depth": 1400,
-    "height": 20
+    "width": 200.0,
+    "depth": 140.0,
+    "height": 2.0
   },
   "anchor": {
     "x": 0.5,
@@ -19,6 +19,6 @@
       "bedroom"
     ],
     "snapToWall": false,
-    "minDistanceToWall": 50
+    "minDistanceToWall": 5.0
   }
 }

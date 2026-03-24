@@ -5,9 +5,9 @@
   "model": "assets/models/plant_001.glb",
   "thumbnail": "assets/thumbnails/plant_001.svg",
   "size": {
-    "width": 450,
-    "depth": 450,
-    "height": 1200
+    "width": 45.0,
+    "depth": 45.0,
+    "height": 120.0
   },
   "anchor": {
     "x": 0.5,
@@ -21,6 +21,6 @@
       "corridor"
     ],
     "snapToWall": false,
-    "minDistanceToWall": 50
+    "minDistanceToWall": 5.0
   }
 }

@@ -637,7 +637,7 @@ a.avatar:hover {
   pointer-events: none;
 }
 
-/* 网格层（由 JS 切换 .svg-grid-hidden） */
+/* 网格层（主次 1cm/10cm，#svgEditorGridStack；由 JS 切换 .svg-grid-hidden） */
 .svg-editor-grid-layer.svg-grid-hidden {
   visibility: hidden;
   pointer-events: none;

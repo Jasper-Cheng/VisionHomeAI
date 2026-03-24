@@ -1,8 +1,8 @@
 /**
  * 户型 SVG 平面图：家具拖拽、网格吸附、旋转、删除
- * 家具尺寸与名称来自 data/furniture/ 各条目 JSON（由 main 注入 catalog）
+ * 画布 3000×3000 cm（1 用户单位 = 1 cm）；家具尺寸来自 data/furniture/（cm，由 main 注入 catalog）
  */
-import { appendFloorGeometryToGroup, getFloorBBoxMm, getPrimaryFloor } from "../floorplan/floorplanSvg.js";
+import { appendFloorGeometryToGroup, getFloorBBoxCm, getPrimaryFloor } from "../floorplan/floorplanSvg.js";
 import { getFurnitureDisplayName, getSvgStyleForItem } from "../furniture/svgStyle.js";
 
 /**
@@ -11,7 +11,7 @@ import { getFurnitureDisplayName, getSvgStyleForItem } from "../furniture/svgSty
 export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const svg = document.getElementById("svgEditorCanvas");
   const viewRoot = document.getElementById("svgEditorViewRoot");
-  const gridLayer = document.getElementById("svgEditorGridLayer");
+  const gridLayer = document.getElementById("svgEditorGridStack");
   const undoBtn = document.querySelector("[data-svg-undo]");
   const redoBtn = document.querySelector("[data-svg-redo]");
   const gridToggleBtn = document.getElementById("svgGridToggleBtn");
@@ -70,10 +70,10 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
   const propInputRotY = propertiesPanel?.querySelector('input[data-prop="rotY"]');
 
-  /** 与 index.html 中 SVG viewBox 一致：画布逻辑坐标 3000×3000（户型几何单独绘制，尺寸不变） */
+  /** 与 index.html 中 SVG viewBox 一致：3000×3000 cm，1 用户单位 = 1 cm；GRID = 1 即 1cm 吸附 */
   const VIEW_W = 3000;
   const VIEW_H = 3000;
-  const GRID = 20;
+  const GRID = 1;
 
   /** 拖动画布 / 家具 / 从侧栏拖出时禁止划选工具栏说明文字等（Safari/Chrome 均会出现蓝选区） */
   const POINTER_DRAG_BODY_CLASS = "vision-home-pointer-dragging";
@@ -295,7 +295,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const SCALE_MIN = 0.12;
   const SCALE_MAX = 8;
   const ZOOM_STEP = 1.18;
-  /** 工具栏平移：与背景网格 cell 一致（pattern 20×20） */
+  /** 工具栏平移：与背景网格步长一致（1 cm） */
   const PAN_STEP = GRID;
 
   function snap(v) {
@@ -761,7 +761,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function isPointerOnCanvasBackground(target) {
     if (!target || target === svg) return true;
     if (target.classList?.contains("svg-editor-bg")) return true;
-    if (target.id === "svgEditorGridLayer") return true;
+    if (target.closest?.("#svgEditorGridStack")) return true;
     return false;
   }
 
@@ -974,14 +974,14 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const FLOORPLAN_SIZE_FACTOR = 0.38;
 
   /**
-   * 将户型目录条目（毫米几何）缩放落入 viewBox；户型中心固定在画布逻辑中心（忽略传入坐标，兼容旧 API）
+   * 将户型目录条目（厘米几何）缩放落入 viewBox；户型中心固定在画布逻辑中心（忽略传入坐标，兼容旧 API）
    */
   function applyFloorplanEntryAtWorld(entry, _worldX, _worldY) {
     let worldX = snap(VIEW_W / 2);
     let worldY = snap(VIEW_H / 2);
     const floor = getPrimaryFloor(entry);
     if (!floor) return;
-    const bbox = getFloorBBoxMm(floor);
+    const bbox = getFloorBBoxCm(floor);
     if (!bbox) return;
     const availW = Math.max(40, VIEW_W - 2 * FLOORPLAN_PAD);
     const availH = Math.max(40, VIEW_H - 2 * FLOORPLAN_PAD);
@@ -1037,8 +1037,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     hit.setAttribute("height", String(Math.max(bbox.h, 1)));
     hit.setAttribute("fill", "transparent");
 
-    const mmPerWorldGrid = GRID / s;
-    appendFloorGeometryToGroup(floor, xform, { mmPerWorldGrid });
+    const planUnitsPerWorldGrid = GRID / s;
+    appendFloorGeometryToGroup(floor, xform, { planUnitsPerWorldGrid });
     xform.appendChild(hit);
     root.appendChild(xform);
     floorplanLayer.appendChild(root);
@@ -1304,19 +1304,24 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     });
   }
 
-  /** 方案 JSON furnitureInstances → 画布布局（仅当前 activeFloorId） */
+  /** 方案 JSON furnitureInstances → 画布布局（仅当前 activeFloorId），坐标 cm */
   function projectToSvgLayout(project) {
     const floorId = project?.activeFloorId != null ? String(project.activeFloorId) : "floor1";
     const inst = project?.furnitureInstances;
     if (!Array.isArray(inst)) return [];
     return inst
       .filter((fi) => !fi?.floorId || String(fi.floorId) === floorId)
-      .map((fi) => ({
-        model: String(fi.furnitureId ?? fi.modelId ?? "").trim(),
-        x: Array.isArray(fi.positionMm) ? Number(fi.positionMm[0]) || 0 : 0,
-        y: Array.isArray(fi.positionMm) ? Number(fi.positionMm[1]) || 0 : 0,
-        rotation: Number(fi.rotationDeg ?? fi.rotation ?? 0) || 0,
-      }))
+      .map((fi) => {
+        const pc = Array.isArray(fi.positionCm) && fi.positionCm.length >= 2 ? fi.positionCm : null;
+        const x = pc ? Number(pc[0]) || 0 : 0;
+        const y = pc ? Number(pc[1]) || 0 : 0;
+        return {
+          model: String(fi.furnitureId ?? fi.modelId ?? "").trim(),
+          x,
+          y,
+          rotation: Number(fi.rotationDeg ?? fi.rotation ?? 0) || 0,
+        };
+      })
       .filter((row) => row.model);
   }
 

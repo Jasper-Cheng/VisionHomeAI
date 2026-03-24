@@ -1,5 +1,5 @@
 /**
- * 单层 floors[i] → SVG 局部几何（毫米坐标，由 svgEditor 外层 transform 统一缩放平移）
+ * 单层 floors[i] → SVG 局部几何（厘米坐标，与画布 3000×3000 cm 一致；由 svgEditor 外层 transform 缩放平移）
  * 遍历该层内 rooms / walls / doors / windows / furnitures；3D 属性（height、elevation 等）不参与 2D 绘制。
  */
 
@@ -10,14 +10,21 @@ function identitySnapCoord(v) {
   return Number.isFinite(n) ? n : v;
 }
 
-/** @param {number | undefined} mmQuantum 毫米坐标量化步长（≈ GRID/s），使变换后落在世界网格上 */
-function makeMmSnapper(mmQuantum) {
-  if (mmQuantum == null || !Number.isFinite(mmQuantum) || mmQuantum <= 0) return identitySnapCoord;
+/** @param {number | undefined} step 户型平面坐标量化步长（≈ GRID/s，单位 cm），使变换后落在画布网格上 */
+function makePlanUnitSnapper(step) {
+  if (step == null || !Number.isFinite(step) || step <= 0) return identitySnapCoord;
   return (v) => {
     const n = Number(v);
     if (!Number.isFinite(n)) return n;
-    return Math.round(n / mmQuantum) * mmQuantum;
+    return Math.round(n / step) * step;
   };
+}
+
+/** 平面 [x,y]：positionCm 或 position（均为 cm） */
+function readPlanPoint2d(obj) {
+  if (!obj || typeof obj !== "object") return null;
+  const a = obj.positionCm ?? obj.position;
+  return Array.isArray(a) && a.length >= 2 ? a : null;
 }
 
 /** @param {(x: number, y: number) => void} pt */
@@ -42,22 +49,22 @@ function bboxFromPolygon(poly, pt) {
 }
 
 /**
- * positionMm / position + width/depth + rotationDeg → 旋转矩形四角入 bbox
+ * positionCm / position + width/depth（cm）+ rotationDeg → 旋转矩形四角入 bbox
  * @param {object} obj
  * @param {(x: number, y: number) => void} pt
  */
 function bboxFromPositionFootprint(obj, pt) {
   if (!obj || typeof obj !== "object") return;
-  const pm = obj.positionMm ?? obj.position;
-  if (!Array.isArray(pm) || pm.length < 2) return;
+  const pm = readPlanPoint2d(obj);
+  if (!pm) return;
   const cx = Number(pm[0]);
   const cy = Number(pm[1]);
   if (!Number.isFinite(cx) || !Number.isFinite(cy)) return;
 
-  const w = Number(obj.widthMm ?? obj.width ?? 800);
-  const d = Number(obj.depthMm ?? obj.depth ?? 800);
-  const hw = Number.isFinite(w) && w > 0 ? w / 2 : 400;
-  const hd = Number.isFinite(d) && d > 0 ? d / 2 : 400;
+  const w = Number(obj.widthCm ?? obj.widthMm ?? obj.width ?? 80);
+  const d = Number(obj.depthCm ?? obj.depthMm ?? obj.depth ?? 80);
+  const hw = Number.isFinite(w) && w > 0 ? w / 2 : 40;
+  const hd = Number.isFinite(d) && d > 0 ? d / 2 : 40;
   const deg = Number(obj.rotationDeg ?? obj.rotation ?? 0);
   const rad = (deg * Math.PI) / 180;
   const cos = Math.cos(rad);
@@ -85,10 +92,10 @@ function bboxFromOpeningLike(obj, pt) {
   bboxFromPolygon(obj.polygon, pt);
   bboxFromSegment(obj, pt);
 
-  const pos = obj.position ?? obj.positionMm;
-  const L = Number(obj.lengthMm ?? obj.length);
+  const pos = readPlanPoint2d(obj);
+  const L = Number(obj.lengthCm ?? obj.lengthMm ?? obj.length);
   const ang = Number(obj.angleDeg ?? obj.angle ?? obj.rotationDeg ?? 0);
-  if (Array.isArray(pos) && pos.length >= 2 && Number.isFinite(L) && L > 0) {
+  if (pos && Number.isFinite(L) && L > 0) {
     const x0 = Number(pos[0]);
     const y0 = Number(pos[1]);
     const rad = (ang * Math.PI) / 180;
@@ -103,7 +110,7 @@ function bboxFromOpeningLike(obj, pt) {
  * @param {object} floor
  * @returns {{ minX: number, minY: number, maxX: number, maxY: number, cx: number, cy: number, w: number, h: number } | null}
  */
-export function getFloorBBoxMm(floor) {
+export function getFloorBBoxCm(floor) {
   if (!floor || typeof floor !== "object") return null;
   let minX = Infinity;
   let minY = Infinity;
@@ -203,7 +210,7 @@ function appendOpening(innerG, obj, className, defaultStroke, snapCoord = identi
     return;
   }
   if (Array.isArray(obj.start) && Array.isArray(obj.end) && obj.start.length >= 2 && obj.end.length >= 2) {
-    const sw = Number(obj.strokeWidthMm ?? obj.frameThicknessMm ?? defaultStroke);
+    const sw = Number(obj.strokeWidthCm ?? obj.strokeWidthMm ?? obj.frameThicknessCm ?? obj.frameThicknessMm ?? defaultStroke);
     appendLineIfValid(
       innerG,
       Number(obj.start[0]),
@@ -217,16 +224,16 @@ function appendOpening(innerG, obj, className, defaultStroke, snapCoord = identi
     );
     return;
   }
-  const pos = obj.position ?? obj.positionMm;
-  const L = Number(obj.lengthMm ?? obj.length);
+  const pos = readPlanPoint2d(obj);
+  const L = Number(obj.lengthCm ?? obj.lengthMm ?? obj.length);
   const ang = Number(obj.angleDeg ?? obj.angle ?? obj.rotationDeg ?? 0);
-  if (Array.isArray(pos) && pos.length >= 2 && Number.isFinite(L) && L > 0) {
+  if (pos && Number.isFinite(L) && L > 0) {
     const x0 = Number(pos[0]);
     const y0 = Number(pos[1]);
     const rad = (ang * Math.PI) / 180;
     const x1 = x0 + L * Math.cos(rad);
     const y1 = y0 + L * Math.sin(rad);
-    const sw = Number(obj.strokeWidthMm ?? defaultStroke);
+    const sw = Number(obj.strokeWidthCm ?? obj.strokeWidthMm ?? defaultStroke);
     appendLineIfValid(
       innerG,
       x0,
@@ -242,7 +249,7 @@ function appendOpening(innerG, obj, className, defaultStroke, snapCoord = identi
 }
 
 /**
- * 模板层内嵌家具：polygon / 线段 / positionMm+宽高+旋转
+ * 模板层内嵌家具：polygon / 线段 / positionCm+宽高（cm）+旋转
  */
 function appendFloorFurniture(innerG, f, snapCoord = identitySnapCoord) {
   if (!f || typeof f !== "object") return;
@@ -256,7 +263,7 @@ function appendFloorFurniture(innerG, f, snapCoord = identitySnapCoord) {
     return;
   }
   if (Array.isArray(f.start) && Array.isArray(f.end) && f.start.length >= 2 && f.end.length >= 2) {
-    const sw = Number(f.thicknessMm ?? f.strokeWidthMm ?? 80);
+    const sw = Number(f.thicknessCm ?? f.thicknessMm ?? f.strokeWidthCm ?? f.strokeWidthMm ?? 8);
     appendLineIfValid(
       innerG,
       Number(f.start[0]),
@@ -264,23 +271,23 @@ function appendFloorFurniture(innerG, f, snapCoord = identitySnapCoord) {
       Number(f.end[0]),
       Number(f.end[1]),
       "svg-floor-embed-furniture svg-floor-embed-furniture--line",
-      Number.isFinite(sw) && sw > 0 ? sw : 80,
+      Number.isFinite(sw) && sw > 0 ? sw : 8,
       { "data-furniture-id": fid, "data-embed-id": String(f.instanceId ?? f.id ?? "") },
       snapCoord,
     );
     return;
   }
 
-  const pm = f.positionMm ?? f.position;
-  if (!Array.isArray(pm) || pm.length < 2) return;
+  const pm = readPlanPoint2d(f);
+  if (!pm) return;
   const cx = snapCoord(Number(pm[0]));
   const cy = snapCoord(Number(pm[1]));
   if (!Number.isFinite(cx) || !Number.isFinite(cy)) return;
 
-  const w = Number(f.widthMm ?? f.width ?? 800);
-  const d = Number(f.depthMm ?? f.depth ?? 800);
-  let wf = Number.isFinite(w) && w > 0 ? snapCoord(w) : snapCoord(800);
-  let df = Number.isFinite(d) && d > 0 ? snapCoord(d) : snapCoord(800);
+  const w = Number(f.widthCm ?? f.widthMm ?? f.width ?? 80);
+  const d = Number(f.depthCm ?? f.depthMm ?? f.depth ?? 80);
+  let wf = Number.isFinite(w) && w > 0 ? snapCoord(w) : snapCoord(80);
+  let df = Number.isFinite(d) && d > 0 ? snapCoord(d) : snapCoord(80);
   if (wf < 1) wf = 1;
   if (df < 1) df = 1;
   const hw = wf / 2;
@@ -300,7 +307,7 @@ function appendFloorFurniture(innerG, f, snapCoord = identitySnapCoord) {
   rect.setAttribute("y", String(-hd));
   rect.setAttribute("width", String(wf));
   rect.setAttribute("height", String(df));
-  rect.setAttribute("rx", "6");
+  rect.setAttribute("rx", "1");
   g.appendChild(rect);
   innerG.appendChild(g);
 }
@@ -308,11 +315,12 @@ function appendFloorFurniture(innerG, f, snapCoord = identitySnapCoord) {
 /**
  * @param {object} floor 单层对象
  * @param {SVGGElement} innerG
- * @param {{ mmPerWorldGrid?: number }} [options] 传入 GRID/s 时，毫米坐标量化使变换后顶点落在世界网格上
+ * @param {{ planUnitsPerWorldGrid?: number }} [options] 传入 GRID/s（cm/画布单位）时量化平面坐标
  */
 export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
   if (!floor || !innerG) return;
-  const snapCoord = makeMmSnapper(options.mmPerWorldGrid);
+  const step = options.planUnitsPerWorldGrid;
+  const snapCoord = makePlanUnitSnapper(step);
 
   /* 1. 房间面 */
   for (const room of floor.rooms || []) {
@@ -346,7 +354,7 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
       Number(wall.end[0]),
       Number(wall.end[1]),
       "svg-floor-wall",
-      Number.isFinite(th) && th > 0 ? th : 100,
+      Number.isFinite(th) && th > 0 ? th : 10,
       { "data-wall-id": String(wall.id || "") },
       snapCoord,
     );
@@ -354,12 +362,12 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
 
   /* 3. 窗 */
   for (const win of floor.windows || []) {
-    appendOpening(innerG, win, "svg-floor-window", 60, snapCoord);
+    appendOpening(innerG, win, "svg-floor-window", 6, snapCoord);
   }
 
   /* 4. 门 */
   for (const door of floor.doors || []) {
-    appendOpening(innerG, door, "svg-floor-door", 80, snapCoord);
+    appendOpening(innerG, door, "svg-floor-door", 8, snapCoord);
   }
 
   /* 5. 层内模板家具 */
