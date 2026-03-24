@@ -36,6 +36,32 @@ export function getFurnitureDisplayName(item) {
   return s || String(item.id || "").trim();
 }
 
+/**
+ * 家具 JSON 可选 `polygon`：[[x,y],…] 或 [{x,y},…]，单位 cm，原点 = 外轮廓轴对齐包围盒中心（与 anchor 0.5/0.5 一致）
+ * @returns {{ x: number, y: number }[] | null}
+ */
+export function parseFurniturePolygonPoints(item) {
+  const raw = item?.polygon;
+  if (!Array.isArray(raw) || raw.length < 3) return null;
+  const out = [];
+  for (const p of raw) {
+    let x;
+    let y;
+    if (Array.isArray(p) && p.length >= 2) {
+      x = Number(p[0]);
+      y = Number(p[1]);
+    } else if (p && typeof p === "object") {
+      x = Number(p.x);
+      y = Number(p.y);
+    } else {
+      return null;
+    }
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    out.push({ x, y });
+  }
+  return out;
+}
+
 export function getSvgStyleForItem(item) {
   if (!item?.size) return null;
   const cat = item.category || "default";
@@ -44,8 +70,29 @@ export function getSvgStyleForItem(item) {
   const d = Number(item.size.depth) || 90;
   const h = Number(item.size.height);
   /* 画布 1 单位 = 1 cm：占位矩形与 JSON 外形 1:1（半宽/半高） */
-  const hw = Math.max(8, w / 2);
-  const hh = Math.max(8, d / 2);
+  let hw = Math.max(8, w / 2);
+  let hh = Math.max(8, d / 2);
+  const polyPts = parseFurniturePolygonPoints(item);
+  if (polyPts) {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const p of polyPts) {
+      minX = Math.min(minX, p.x);
+      minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x);
+      maxY = Math.max(maxY, p.y);
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    if (Math.abs(cx) > 0.5 || Math.abs(cy) > 0.5) {
+      /* 非中心对称时仍以 size 为夹紧尺寸，仅绘制多边形（避免摆放锚点错位） */
+    } else {
+      hw = Math.max(8, Math.max(-minX, maxX));
+      hh = Math.max(8, Math.max(-minY, maxY));
+    }
+  }
   const nameFull = getFurnitureDisplayName(item) || String(item.id || "").trim() || CATEGORY_LABELS[cat] || "?";
   const dimLine = `${Math.round(w)}×${Math.round(d)} cm`;
   const heightLine = Number.isFinite(h) && h > 0 ? `高 ${Math.round(h)} cm` : "";
@@ -58,5 +105,6 @@ export function getSvgStyleForItem(item) {
     heightLine,
     hw,
     hh,
+    polygonPoints: polyPts || undefined,
   };
 }

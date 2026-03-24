@@ -325,6 +325,29 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return `${t.slice(0, Math.max(1, m - 1))}…`;
   }
 
+  /** 2D 外轮廓在局部坐标下的轴对齐包围盒（cm），用于夹紧、碰撞与标注排版 */
+  function getFurnitureLocalFootprintBounds(def) {
+    const pts = def?.polygonPoints;
+    if (Array.isArray(pts) && pts.length >= 3) {
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (const p of pts) {
+        minX = Math.min(minX, p.x);
+        minY = Math.min(minY, p.y);
+        maxX = Math.max(maxX, p.x);
+        maxY = Math.max(maxY, p.y);
+      }
+      if (Number.isFinite(minX) && Number.isFinite(maxX)) {
+        return { minX, minY, maxX, maxY };
+      }
+    }
+    const hw = Math.max(1, Number(def.hw) || 0);
+    const hh = Math.max(1, Number(def.hh) || 0);
+    return { minX: -hw, minY: -hh, maxX: hw, maxY: hh };
+  }
+
   /** 画布上整块标注固定两行：[名称]、[宽×深 · 高] */
   function buildFurnitureDimTwoLines(def, fw, fh) {
     const nameMax = Math.max(10, Math.min(26, Math.floor(Math.max(fw, fh) / 11)));
@@ -346,10 +369,11 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     };
   }
 
-  /** 矩形底边以下标注块在局部 +Y 方向占用（与 appendFurnitureItem 排版一致，cm） */
+  /** 形状底边以下标注块在局部 +Y 方向占用（与 appendFurnitureItem 排版一致，cm） */
   function estimateFurnitureLabelPadBelow(def) {
-    const fh = Math.max(1, Number(def.hh) * 2);
-    const fw = Math.max(1, Number(def.hw) * 2);
+    const b = getFurnitureLocalFootprintBounds(def);
+    const fh = Math.max(1, b.maxY - b.minY);
+    const fw = Math.max(1, b.maxX - b.minX);
     const lineH = Math.min(15, Math.max(11, Math.min(fw, fh) * 0.065));
     const fontPx = Math.min(14, Math.max(11, Math.min(fw, fh) * 0.055));
     const gapBelow = Math.max(6, Math.min(14, fh * 0.06));
@@ -357,14 +381,15 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return gapBelow + 1.2 * fontPx + (nTotal - 1) * lineH;
   }
 
-  /** 家具组 translate(cx,cy)+rotate(rot) 后，矩形+底部标注 在父坐标系中的轴对齐包围盒 */
-  function furnitureWorldAabb(cx, cy, rot, hw, hh, labelBelowPad = 0) {
+  /** 家具组 translate(cx,cy)+rotate(rot) 后，外轮廓+底部标注区 在父坐标系中的轴对齐包围盒 */
+  function furnitureWorldAabb(cx, cy, rot, localBounds, labelBelowPad = 0) {
     const pad = Math.max(0, Number(labelBelowPad) || 0);
+    const { minX: lx0, minY: ly0, maxX: lx1, maxY: ly1 } = localBounds;
     const corners = [
-      [-hw, -hh],
-      [hw, -hh],
-      [hw, hh + pad],
-      [-hw, hh + pad],
+      [lx0, ly0],
+      [lx1, ly0],
+      [lx1, ly1 + pad],
+      [lx0, ly1 + pad],
     ];
     let minX = Infinity;
     let minY = Infinity;
@@ -476,8 +501,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function clampPosition(g, x, y) {
     const type = g.getAttribute("data-model") || "";
     const def = getFootprint(type);
-    const hw = def.hw;
-    const hh = def.hh;
+    const bounds = getFurnitureLocalFootprintBounds(def);
     const labelPad = estimateFurnitureLabelPadBelow(def);
     const margin = 10;
     const rot = getRotation(g);
@@ -486,33 +510,33 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     let cy = y;
 
     for (let iter = 0; iter < 16; iter++) {
-      let b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
+      let b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
       cx += Math.round(b.minX / GRID) * GRID - b.minX;
       cy += Math.round(b.minY / GRID) * GRID - b.minY;
 
-      b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
+      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
       let adjusted = false;
       if (b.minX < margin) {
         cx += margin - b.minX;
         adjusted = true;
       }
-      b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
+      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
       if (b.minY < margin) {
         cy += margin - b.minY;
         adjusted = true;
       }
-      b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
+      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
       if (b.maxX > VIEW_W - margin) {
         cx += VIEW_W - margin - b.maxX;
         adjusted = true;
       }
-      b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
+      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
       if (b.maxY > VIEW_H - margin) {
         cy += VIEW_H - margin - b.maxY;
         adjusted = true;
       }
       if (!adjusted) {
-        b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
+        b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
         cx += Math.round(b.minX / GRID) * GRID - b.minX;
         cy += Math.round(b.minY / GRID) * GRID - b.minY;
         break;
@@ -650,21 +674,39 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const dimBits = [def.dimLine || "", def.heightLine || ""].filter(Boolean).join("，");
     g.setAttribute("aria-label", dimBits ? `${def.longName}，${dimBits}，可拖拽` : `${def.longName}，可拖拽`);
 
-    const fw = Math.max(1, Number(def.hw) * 2) || 1;
-    const fh = Math.max(1, Number(def.hh) * 2) || 1;
-    /* 圆角不超过短边一半，避免小占位被 rx=14(cm) 画成圆 */
-    const rx = Math.min(6, Math.min(def.hw, def.hh) * 0.22);
+    const lb = getFurnitureLocalFootprintBounds(def);
+    const fw = Math.max(1, lb.maxX - lb.minX) || 1;
+    const fh = Math.max(1, lb.maxY - lb.minY) || 1;
+    const strokeW = Math.min(2.5, Math.max(0.6, Math.min(fw, fh) * 0.02));
 
-    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    rect.setAttribute("x", String(-def.hw));
-    rect.setAttribute("y", String(-def.hh));
-    rect.setAttribute("width", String(fw));
-    rect.setAttribute("height", String(fh));
-    rect.setAttribute("rx", String(rx));
-    rect.setAttribute("fill", def.fill);
-    rect.setAttribute("stroke", def.stroke);
-    rect.setAttribute("stroke-width", String(Math.min(2.5, Math.max(0.6, Math.min(fw, fh) * 0.02))));
-    rect.classList.add("svg-furniture-shape");
+    let shape;
+    if (def.polygonPoints && def.polygonPoints.length >= 3) {
+      const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      poly.setAttribute(
+        "points",
+        def.polygonPoints.map((p) => `${p.x},${p.y}`).join(" "),
+      );
+      poly.setAttribute("fill", def.fill);
+      poly.setAttribute("stroke", def.stroke);
+      poly.setAttribute("stroke-width", String(strokeW));
+      poly.setAttribute("stroke-linejoin", "round");
+      poly.classList.add("svg-furniture-shape");
+      shape = poly;
+    } else {
+      /* 圆角不超过短边一半，避免小占位被 rx=14(cm) 画成圆 */
+      const rx = Math.min(6, Math.min(def.hw, def.hh) * 0.22);
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", String(-def.hw));
+      rect.setAttribute("y", String(-def.hh));
+      rect.setAttribute("width", String(Math.max(1, Number(def.hw) * 2) || 1));
+      rect.setAttribute("height", String(Math.max(1, Number(def.hh) * 2) || 1));
+      rect.setAttribute("rx", String(rx));
+      rect.setAttribute("fill", def.fill);
+      rect.setAttribute("stroke", def.stroke);
+      rect.setAttribute("stroke-width", String(strokeW));
+      rect.classList.add("svg-furniture-shape");
+      shape = rect;
+    }
 
     const { line1, line2 } = buildFurnitureDimTwoLines(def, fw, fh);
     const lineH = Math.min(15, Math.max(11, Math.min(fw, fh) * 0.065));
@@ -680,7 +722,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     cap.setAttribute("font-size", String(fontPx));
     cap.setAttribute("font-weight", "600");
     const gapBelow = Math.max(6, Math.min(14, fh * 0.06));
-    cap.setAttribute("y", String(def.hh + gapBelow + fontPx * 0.85));
+    cap.setAttribute("y", String(lb.maxY + gapBelow + fontPx * 0.85));
 
     const tsName = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
     tsName.setAttribute("x", "0");
@@ -695,7 +737,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     cap.appendChild(tsDim);
     dimG.appendChild(cap);
 
-    g.appendChild(rect);
+    g.appendChild(shape);
     g.appendChild(dimG);
 
     const pos = clampPosition(g, cx, cy);
