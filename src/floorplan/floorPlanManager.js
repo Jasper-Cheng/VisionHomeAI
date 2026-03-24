@@ -189,7 +189,10 @@ export function mountFloorplanLibrary(catalog, options = {}) {
 
   window.__selectFloorplanLibraryCardById = (fid) => {
     const id = String(fid || "").trim();
-    if (!id) return;
+    if (!id) {
+      selectFloorplanCard(null);
+      return;
+    }
     const card = [...grid.querySelectorAll(".asset-card[data-floor-plan-id]")].find((c) => c.dataset.floorPlanId === id);
     if (card) selectFloorplanCard(card);
   };

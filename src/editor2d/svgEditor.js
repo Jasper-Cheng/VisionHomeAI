@@ -132,7 +132,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   let pendingLeftPan = null;
   let selectedFloorplanRoot = null;
 
-  /** 撤销 / 重做：家具布局快照 */
+  /** 撤销 / 重做：家具布局 + 户型 id（null 表示无户型；旧快照为纯数组时撤销不改户型层） */
   const MAX_HISTORY = 80;
   let history = [];
   let historyIndex = -1;
@@ -142,8 +142,50 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
 
   let gridVisible = true;
 
-  function serializeLayout() {
-    return JSON.stringify(getLayout());
+  function serializeEditorSnapshot() {
+    return JSON.stringify({
+      v: 1,
+      furniture: getLayout(),
+      floorPlanId: getCurrentFloorplanId(),
+    });
+  }
+
+  /**
+   * @param {unknown} parsed JSON.parse 结果
+   * @returns {{ furniture: unknown[], floorPlanId: string | null | undefined } | null}
+   */
+  function normalizeHistorySnapshot(parsed) {
+    if (Array.isArray(parsed)) {
+      return { furniture: parsed, floorPlanId: undefined };
+    }
+    if (parsed && typeof parsed === "object" && Array.isArray(parsed.furniture)) {
+      const id = /** @type {{ floorPlanId?: unknown }} */ (parsed).floorPlanId;
+      if (id === undefined) {
+        return { furniture: parsed.furniture, floorPlanId: undefined };
+      }
+      if (id === null || String(id).trim() === "") {
+        return { furniture: parsed.furniture, floorPlanId: null };
+      }
+      return { furniture: parsed.furniture, floorPlanId: String(id).trim() };
+    }
+    return null;
+  }
+
+  /** 将某一历史帧应用到画布（不修改 history 数组；调用方负责 isRestoring） */
+  function applyHistorySnapshotState(state) {
+    if (!state) return;
+    if (state.floorPlanId !== undefined) {
+      if (state.floorPlanId) {
+        const cat = window.__floorPlanCatalog;
+        const entry = cat?.byId instanceof Map ? cat.byId.get(state.floorPlanId) : null;
+        if (entry) applyFloorplanEntryAtWorld(entry);
+        else clearFloorplanLayerContent();
+      } else {
+        clearFloorplanLayerContent();
+      }
+    }
+    const furn = Array.isArray(state.furniture) ? state.furniture : [];
+    rebuildFromLayout(furn);
   }
 
   function updateUndoRedoButtons() {
@@ -157,7 +199,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
 
   function pushHistorySnapshot() {
     if (!historyReady || isRestoring) return;
-    const s = serializeLayout();
+    const s = serializeEditorSnapshot();
     if (history.length && history[historyIndex] === s) return;
     history = history.slice(0, historyIndex + 1);
     history.push(s);
@@ -179,25 +221,43 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     }, 450);
   }
 
+  /** 离开页面前调用：把防抖中的布局写入撤销栈，避免会话快照落后一档 */
+  function flushHistoryDebounce() {
+    if (historyDebounceTimer) {
+      clearTimeout(historyDebounceTimer);
+      historyDebounceTimer = null;
+      pushHistorySnapshot();
+    }
+  }
+
   function initHistory() {
-    history = [serializeLayout()];
+    history = [serializeEditorSnapshot()];
     historyIndex = 0;
     updateUndoRedoButtons();
   }
 
-  /** 按布局重建家具层（不写入历史） */
+  /** 按布局重建家具层（不写入历史；调用方在需抑制入栈时应设 isRestoring） */
   function rebuildFromLayout(layout) {
-    isRestoring = true;
     furnitureLayer.replaceChildren();
     for (const item of layout) {
       appendFurnitureItem(item.model, item.x, item.y, item.rotation ?? 0);
     }
-    isRestoring = false;
   }
 
   function applyHistoryIndex(i) {
-    const layout = JSON.parse(history[i]);
-    rebuildFromLayout(layout);
+    let state;
+    try {
+      state = normalizeHistorySnapshot(JSON.parse(history[i]));
+    } catch {
+      state = null;
+    }
+    if (!state) return;
+    isRestoring = true;
+    try {
+      applyHistorySnapshotState(state);
+    } finally {
+      isRestoring = false;
+    }
     select(null);
     updateUndoRedoButtons();
     emitSvgLayoutChanged();
@@ -409,6 +469,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function clearFloorplanLayerContent() {
     clearFloorplanSelection();
     floorplanLayer.replaceChildren();
+    if (historyReady && !isRestoring) pushHistorySnapshot();
   }
 
   /**
@@ -829,6 +890,9 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const root = document.createElementNS(svgNS, "g");
     root.setAttribute("class", "svg-floorplan-root");
     root.setAttribute("data-floorplan-root", "1");
+    if (entry?.id != null && String(entry.id).trim()) {
+      root.setAttribute("data-floor-plan-id", String(entry.id).trim());
+    }
     root.setAttribute("tabindex", "-1");
     root.setAttribute("aria-label", "户型底图（固定在画布中心），Delete 删除");
 
@@ -862,6 +926,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         detail: { id: entry?.id != null ? String(entry.id) : "" },
       }),
     );
+
+    if (historyReady && !isRestoring) pushHistorySnapshot();
   }
 
   function addFloorplanFromLibraryAtCenter(floorPlanId) {
@@ -1125,13 +1191,179 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /** 外部切换方案 / 新建：重建家具并重置撤销栈与「已保存」基线 */
-  function applyExternalLayout(layout) {
-    rebuildFromLayout(layout);
+  function applyExternalLayout(layout, options = {}) {
+    isRestoring = true;
+    try {
+      rebuildFromLayout(layout);
+    } finally {
+      isRestoring = false;
+    }
     select(null);
     initHistory();
     historyReady = true;
-    window.__designLayoutBaseline = JSON.stringify(getLayout());
+    const baseline = options.designLayoutBaseline;
+    window.__designLayoutBaseline =
+      typeof baseline === "string" ? baseline : JSON.stringify(getLayout());
     emitSvgLayoutChanged();
+  }
+
+  function isValidUndoHistoryPayload(uh) {
+    if (!uh || typeof uh !== "object") return false;
+    const entries = uh.entries;
+    const index = uh.index;
+    if (!Array.isArray(entries) || entries.length === 0) return false;
+    if (!Number.isFinite(Number(index))) return false;
+    const idx = Math.trunc(Number(index));
+    if (idx < 0 || idx >= entries.length) return false;
+    for (const s of entries) {
+      if (typeof s !== "string") return false;
+      try {
+        const p = JSON.parse(s);
+        if (normalizeHistorySnapshot(p) == null) return false;
+      } catch {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * 从 sessionStorage 等恢复 2D 编辑态（户型 id + 家具 + 视图 + 网格 + 未保存基线 + 可选撤销栈）
+   * @param {{ version?: number, furnitureLayout?: unknown[], undoHistory?: { entries: string[], index: number }, floorPlanId?: string | null, view?: { tx?: number, ty?: number, scale?: number }, gridVisible?: boolean, designLayoutBaseline?: string }} payload
+   */
+  function restoreEditorSession(payload) {
+    if (!payload || Number(payload.version) !== 1) return;
+
+    const v = payload.view;
+    if (v && Number.isFinite(Number(v.tx)) && Number.isFinite(Number(v.ty)) && Number.isFinite(Number(v.scale))) {
+      let sc = Number(v.scale);
+      sc = Math.min(SCALE_MAX, Math.max(SCALE_MIN, sc));
+      viewTx = Number(v.tx);
+      viewTy = Number(v.ty);
+      viewScale = sc;
+      applyViewTransform();
+    }
+
+    if (typeof payload.gridVisible === "boolean") {
+      setGridVisible(payload.gridVisible);
+    }
+
+    clearTimeout(historyDebounceTimer);
+    historyDebounceTimer = null;
+
+    const layout = Array.isArray(payload.furnitureLayout) ? payload.furnitureLayout : [];
+    const uh = payload.undoHistory;
+
+    if (isValidUndoHistoryPayload(uh)) {
+      let entries = uh.entries.slice();
+      let idx = Math.trunc(Number(uh.index));
+      if (entries.length > MAX_HISTORY) {
+        const drop = entries.length - MAX_HISTORY;
+        entries = entries.slice(drop);
+        idx -= drop;
+      }
+      if (idx < 0 || idx >= entries.length) {
+        isRestoring = true;
+        try {
+          const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
+          if (fpId) {
+            const cat = window.__floorPlanCatalog;
+            const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
+            if (entry) applyFloorplanEntryAtWorld(entry);
+            else {
+              clearFloorplanSelection();
+              floorplanLayer.replaceChildren();
+            }
+          } else {
+            clearFloorplanSelection();
+            floorplanLayer.replaceChildren();
+          }
+        } finally {
+          isRestoring = false;
+        }
+        applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
+        return;
+      }
+
+      historyReady = false;
+      isRestoring = true;
+      history = entries;
+      historyIndex = idx;
+      try {
+        const state = normalizeHistorySnapshot(JSON.parse(history[historyIndex]));
+        if (!state) throw new Error("bad snapshot");
+        applyHistorySnapshotState(state);
+      } catch {
+        historyReady = true;
+        isRestoring = true;
+        try {
+          const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
+          if (fpId) {
+            const cat = window.__floorPlanCatalog;
+            const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
+            if (entry) applyFloorplanEntryAtWorld(entry);
+            else {
+              clearFloorplanSelection();
+              floorplanLayer.replaceChildren();
+            }
+          } else {
+            clearFloorplanSelection();
+            floorplanLayer.replaceChildren();
+          }
+        } finally {
+          isRestoring = false;
+        }
+        applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
+        return;
+      }
+      isRestoring = false;
+      select(null);
+      historyReady = true;
+      const baseline = payload.designLayoutBaseline;
+      window.__designLayoutBaseline =
+        typeof baseline === "string" ? baseline : JSON.stringify(getLayout());
+      updateUndoRedoButtons();
+      emitSvgLayoutChanged();
+    } else {
+      isRestoring = true;
+      try {
+        const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
+        if (fpId) {
+          const cat = window.__floorPlanCatalog;
+          const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
+          if (entry) applyFloorplanEntryAtWorld(entry);
+          else {
+            clearFloorplanSelection();
+            floorplanLayer.replaceChildren();
+          }
+        } else {
+          clearFloorplanSelection();
+          floorplanLayer.replaceChildren();
+        }
+      } finally {
+        isRestoring = false;
+      }
+      applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
+    }
+  }
+
+  function getCurrentFloorplanId() {
+    const el = floorplanLayer.querySelector(".svg-floorplan-root[data-floor-plan-id]");
+    const id = el?.getAttribute("data-floor-plan-id")?.trim();
+    return id || null;
+  }
+
+  function setViewTransform(t) {
+    if (!t) return;
+    const tx = Number(t.tx);
+    const ty = Number(t.ty);
+    let sc = Number(t.scale);
+    if (!Number.isFinite(tx) || !Number.isFinite(ty) || !Number.isFinite(sc)) return;
+    sc = Math.min(SCALE_MAX, Math.max(SCALE_MIN, sc));
+    viewTx = tx;
+    viewTy = ty;
+    viewScale = sc;
+    applyViewTransform();
   }
 
   window.addEventListener("visionhome:design-select", (e) => {
@@ -1156,7 +1388,14 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorGetViewSize = () => ({ width: VIEW_W, height: VIEW_H });
   window.svgEditorResetView = resetView;
   window.svgEditorGetViewTransform = () => ({ tx: viewTx, ty: viewTy, scale: viewScale });
+  window.svgEditorSetViewTransform = setViewTransform;
   window.svgEditorToggleGrid = toggleGridVisible;
+  window.svgEditorGetGridVisible = () => gridVisible;
+  window.svgEditorSetGridVisible = setGridVisible;
+  window.svgEditorGetCurrentFloorplanId = getCurrentFloorplanId;
+  window.svgEditorRestoreSession = restoreEditorSession;
+  window.svgEditorGetUndoHistory = () => ({ entries: [...history], index: historyIndex });
+  window.svgEditorFlushHistoryDebounce = flushHistoryDebounce;
 
   select(null);
   initHistory();
