@@ -329,8 +329,18 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function appendFurnitureItem(type, cx, cy, rotationDeg = 0) {
     const item = byId.get(type);
     if (!item) return null;
-    const def = getSvgStyleForItem(item);
-    if (!def) return null;
+    let def = getSvgStyleForItem(item);
+    if (!def) {
+      const fp = getFootprint(type);
+      def = {
+        fill: fp.fill,
+        stroke: fp.stroke,
+        label: fp.label,
+        longName: fp.longName,
+        hw: fp.hw,
+        hh: fp.hh,
+      };
+    }
 
     let rot = Math.round(Number(rotationDeg) || 0) % 360;
     if (rot < 0) rot += 360;
@@ -581,18 +591,71 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   undoBtn?.addEventListener("click", () => undoSvg());
   redoBtn?.addEventListener("click", () => redoSvg());
 
-  /** Shift + 点击家具库卡片：加入平面图（不触发 3D 拖拽） */
+  function isEditViewActive() {
+    return document.getElementById("appViewEdit")?.classList.contains("is-active");
+  }
+
+  /** 编辑模式：从家具库拖到 SVG 画布上松开 → 落在指针处（家具不入 3D，仅从侧栏进 2D） */
+  let pendingLibraryDrag = null;
+
+  function onLibraryDragMove(e) {
+    if (!pendingLibraryDrag || e.pointerId !== pendingLibraryDrag.pointerId) return;
+    const d = Math.hypot(e.clientX - pendingLibraryDrag.sx, e.clientY - pendingLibraryDrag.sy);
+    if (d >= 6) pendingLibraryDrag.didDrag = true;
+  }
+
+  function endLibraryDrag(e) {
+    if (!pendingLibraryDrag || e.pointerId !== pendingLibraryDrag.pointerId) return;
+    const p = pendingLibraryDrag;
+    pendingLibraryDrag = null;
+    window.removeEventListener("pointermove", onLibraryDragMove, { passive: true });
+    window.removeEventListener("pointerup", endLibraryDrag);
+    window.removeEventListener("pointercancel", endLibraryDrag);
+
+    if (!p.didDrag) return;
+
+    const rect = svg.getBoundingClientRect();
+    const { clientX: x, clientY: y } = e;
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return;
+    if (!byId.has(p.model)) return;
+    const wpt = clientToWorld(x, y);
+    addFurniture(p.model, wpt.x, wpt.y);
+  }
+
+  /** Shift+点击：加入画布中心附近；普通拖拽：松手在 SVG 上则落到该点 */
   document.addEventListener(
     "pointerdown",
     (e) => {
-      if (!e.shiftKey) return;
       const card = e.target.closest?.(".asset-card[data-model]");
       if (!card) return;
       const panel = card.closest?.(".side-panel[data-panel='assets']");
       if (!panel || !panel.classList.contains("is-visible")) return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      addFromLibrary(card.dataset.model);
+      if (!isEditViewActive()) return;
+
+      if (e.shiftKey) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        addFromLibrary(card.dataset.model);
+        return;
+      }
+
+      if (!e.isPrimary) return;
+
+      const model = card.dataset.model;
+      if (typeof window.__selectFurnitureLibraryCardByModel === "function") {
+        window.__selectFurnitureLibraryCardByModel(model);
+      }
+
+      pendingLibraryDrag = {
+        model,
+        sx: e.clientX,
+        sy: e.clientY,
+        pointerId: e.pointerId,
+        didDrag: false,
+      };
+      window.addEventListener("pointermove", onLibraryDragMove, { passive: true });
+      window.addEventListener("pointerup", endLibraryDrag);
+      window.addEventListener("pointercancel", endLibraryDrag);
     },
     true,
   );

@@ -78,11 +78,9 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
   const state = {
     currentModel: catalog?.items?.[0]?.id || "sofa_001",
     dragging: false,
-    mode: null, // "place" | "move"
-    ghost: null,
+    mode: null, // "move"（家具仅从侧栏拖到 2D SVG，不在此场景从卡片置入 3D）
     draggedRoot: null,
     lastPointerInViewer: false,
-    pendingPlace: null, // { model, startX, startY }
     selectedRoot: null,
   };
 
@@ -121,12 +119,7 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
     if (!snap) return;
     isRestoring = true;
 
-    // Cancel any in-progress placement/move.
-    state.pendingPlace = null;
-    if (state.ghost) {
-      scene.remove(state.ghost);
-      state.ghost = null;
-    }
+    // Cancel any in-progress move.
     state.dragging = false;
     state.mode = null;
     state.draggedRoot = null;
@@ -378,18 +371,6 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
     return group;
   };
 
-  const setGhostStyle = (root, isGhost) => {
-    root.traverse((obj) => {
-      if (!obj.isMesh) return;
-      obj.castShadow = !isGhost;
-      obj.receiveShadow = !isGhost;
-      if (obj.material) {
-        obj.material.transparent = isGhost;
-        obj.material.opacity = isGhost ? 0.55 : 1.0;
-      }
-    });
-  };
-
   const attachPlaceable = (root) => {
     const category = root?.userData?.modelCategory || "sofa";
     if (category && !root.userData.modelCode) {
@@ -429,21 +410,6 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
     const point = new THREE.Vector3();
     const ok = raycaster.ray.intersectPlane(placementPlane, point);
     return ok ? point : null;
-  };
-
-  const startPlace = () => {
-    state.ghost = createModel(state.currentModel);
-    setGhostStyle(state.ghost, true);
-    scene.add(state.ghost);
-  };
-
-  const commitPlace = () => {
-    if (!state.ghost) return;
-    setGhostStyle(state.ghost, false);
-    const placed = attachPlaceable(state.ghost);
-    state.ghost = null;
-    if (placed) selectRoot(placed);
-    recordHistory();
   };
 
   const selectRoot = (root) => {
@@ -507,77 +473,26 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
       state.draggedRoot = pickedRoot;
       controls.enabled = false;
     } else {
-      if (!state.pendingPlace) clearSelection();
+      clearSelection();
     }
   };
 
   const onPointerMove = (event) => {
-    if (state.dragging) {
-      setRayFromEvent(event);
-      const point = getPlanePoint();
-      if (!point) return;
+    if (!state.dragging) return;
+    setRayFromEvent(event);
+    const point = getPlanePoint();
+    if (!point) return;
 
-      if (state.mode === "place" && state.ghost) {
-        state.ghost.position.set(point.x, 0, point.z);
-      } else if (state.mode === "move" && state.draggedRoot) {
-        state.draggedRoot.position.set(point.x, 0, point.z);
-        updatePropertiesFromRoot(state.draggedRoot);
-      }
-      return;
-    }
-
-    // Pending placement: start only when user drags the card into the viewer.
-    if (state.pendingPlace) {
-      const dx = event.clientX - state.pendingPlace.startX;
-      const dy = event.clientY - state.pendingPlace.startY;
-      const dist = Math.hypot(dx, dy);
-      const DRAG_THRESHOLD = 6;
-
-      const canRay = setRayFromEvent(event);
-      if (!canRay) return;
-      if (dist < DRAG_THRESHOLD) return;
-
-      // Start ghost
-      state.mode = "place";
-      state.dragging = true;
-      state.draggedRoot = null;
-      state.currentModel = state.pendingPlace.model;
-
-      state.ghost = createModel(state.currentModel);
-      setGhostStyle(state.ghost, true);
-      scene.add(state.ghost);
-
-      controls.enabled = false;
-      state.pendingPlace = null;
-
-      const point = getPlanePoint();
-      if (point) {
-        state.ghost.position.set(point.x, 0, point.z);
-      }
+    if (state.mode === "move" && state.draggedRoot) {
+      state.draggedRoot.position.set(point.x, 0, point.z);
+      updatePropertiesFromRoot(state.draggedRoot);
     }
   };
 
-  const onPointerUp = (event) => {
-    if (!state.dragging && !state.pendingPlace) return;
+  const onPointerUp = () => {
+    if (!state.dragging) return;
     const wasMoving = state.mode === "move" && state.draggedRoot;
     state.dragging = false;
-
-    if (state.pendingPlace) {
-      // Click/cancel on card shouldn't create anything.
-      state.pendingPlace = null;
-      controls.enabled = true;
-      return;
-    }
-
-    if (state.mode === "place") {
-      // Only commit when pointer is released over the viewer.
-      if (setRayFromEvent(event)) {
-        commitPlace();
-      } else if (state.ghost) {
-        scene.remove(state.ghost);
-        state.ghost = null;
-      }
-    }
 
     if (wasMoving) {
       recordHistory();
@@ -601,24 +516,17 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
     cards.forEach((c) => c.classList.toggle("is-selected", c === card));
   };
 
+  window.__selectFurnitureLibraryCardByModel = (modelId) => {
+    const c = cards.find((x) => x.dataset.model === modelId);
+    if (c) selectCard(c);
+  };
+
   cards.forEach((card) => {
-    const model = card.dataset.model;
     const select = () => selectCard(card);
 
     card.addEventListener("click", select);
     card.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") select();
-    });
-
-    // Pointer-drag from the library card into the 3D viewer.
-    card.addEventListener("pointerdown", (e) => {
-      if (!e.isPrimary) return;
-      e.preventDefault();
-
-      selectCard(card);
-
-      // Pending until user actually drags into viewer.
-      state.pendingPlace = { model, startX: e.clientX, startY: e.clientY };
     });
   });
 
@@ -636,12 +544,6 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
   };
 
   const resetView = () => {
-    // Remove any in-progress placement.
-    state.pendingPlace = null;
-    if (state.ghost) {
-      scene.remove(state.ghost);
-      state.ghost = null;
-    }
     state.dragging = false;
     state.mode = null;
     state.draggedRoot = null;
