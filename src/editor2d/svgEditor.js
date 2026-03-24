@@ -131,7 +131,6 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   /** 左键在空白处按下后，超过阈值再进入平移（避免误触） */
   let pendingLeftPan = null;
   let selectedFloorplanRoot = null;
-  let floorplanDragState = null;
 
   /** 撤销 / 重做：家具布局快照 */
   const MAX_HISTORY = 80;
@@ -621,40 +620,6 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return false;
   }
 
-  function onFloorplanDragMove(e) {
-    if (!floorplanDragState || e.pointerId !== floorplanDragState.pointerId) return;
-    const xf = floorplanDragState.xform;
-    const p = clientToWorld(e.clientX, e.clientY);
-    const wx = snap(p.x - floorplanDragState.grabX);
-    const wy = snap(p.y - floorplanDragState.grabY);
-    const s = parseFloat(xf.dataset.fpS || "1");
-    const cx = parseFloat(xf.dataset.fpCx || "0");
-    const cy = parseFloat(xf.dataset.fpCy || "0");
-    xf.dataset.fpWx = String(wx);
-    xf.dataset.fpWy = String(wy);
-    xf.setAttribute("transform", `translate(${wx} ${wy}) scale(${s}) translate(${-cx} ${-cy})`);
-  }
-
-  function endFloorplanDrag(e) {
-    if (!floorplanDragState || e.pointerId !== floorplanDragState.pointerId) return;
-    const root = floorplanDragState.root;
-    try {
-      svg.releasePointerCapture(e.pointerId);
-    } catch (_) {
-      try {
-        root?.releasePointerCapture?.(e.pointerId);
-      } catch (_) {
-        /* ignore */
-      }
-    }
-    root?.classList.remove("is-dragging");
-    floorplanDragState = null;
-    popPointerDragTextSuppression();
-    window.removeEventListener("pointermove", onFloorplanDragMove, { passive: true });
-    window.removeEventListener("pointerup", endFloorplanDrag);
-    window.removeEventListener("pointercancel", endFloorplanDrag);
-  }
-
   function startMiddlePan(e) {
     if (!viewRoot) return;
     if (middlePanState) return;
@@ -740,10 +705,6 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         }
         syncPropertiesPanelForSelection(null);
         setFloorplanSelected(fpRoot);
-
-        const xform = fpRoot.querySelector(".svg-floorplan-xform");
-        if (!xform) return;
-
         try {
           if (document.activeElement === fpRoot) fpRoot.blur();
           const sel = window.getSelection?.();
@@ -751,28 +712,6 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         } catch (_) {
           /* ignore */
         }
-        try {
-          svg.setPointerCapture(e.pointerId);
-        } catch (_) {
-          /* ignore */
-        }
-
-        const p = clientToWorld(e.clientX, e.clientY);
-        const wx = parseFloat(xform.dataset.fpWx || "0");
-        const wy = parseFloat(xform.dataset.fpWy || "0");
-
-        pushPointerDragTextSuppression();
-        fpRoot.classList.add("is-dragging");
-        floorplanDragState = {
-          pointerId: e.pointerId,
-          xform,
-          root: fpRoot,
-          grabX: p.x - wx,
-          grabY: p.y - wy,
-        };
-        window.addEventListener("pointermove", onFloorplanDragMove, { passive: true });
-        window.addEventListener("pointerup", endFloorplanDrag);
-        window.addEventListener("pointercancel", endFloorplanDrag);
         return;
       }
 
@@ -865,9 +804,11 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const FLOORPLAN_SIZE_FACTOR = 0.38;
 
   /**
-   * 将户型目录条目（毫米几何）缩放落入 viewBox，使户型中心落在 (worldX, worldY)
+   * 将户型目录条目（毫米几何）缩放落入 viewBox；户型中心固定在画布逻辑中心（忽略传入坐标，兼容旧 API）
    */
-  function applyFloorplanEntryAtWorld(entry, worldX, worldY) {
+  function applyFloorplanEntryAtWorld(entry, _worldX, _worldY) {
+    const worldX = VIEW_W / 2;
+    const worldY = VIEW_H / 2;
     const floor = getPrimaryFloor(entry);
     if (!floor) return;
     const bbox = getFloorBBoxMm(floor);
@@ -889,7 +830,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     root.setAttribute("class", "svg-floorplan-root");
     root.setAttribute("data-floorplan-root", "1");
     root.setAttribute("tabindex", "-1");
-    root.setAttribute("aria-label", "户型底图，可拖动、Delete 删除");
+    root.setAttribute("aria-label", "户型底图（固定在画布中心），Delete 删除");
 
     const xform = document.createElementNS(svgNS, "g");
     xform.setAttribute("class", "svg-floorplan-xform");
@@ -1109,8 +1050,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const entry = cat?.byId instanceof Map ? cat.byId.get(p.floorPlanId) : null;
     if (!entry) return;
 
-    const wpt = clientToWorld(x, y);
-    applyFloorplanEntryAtWorld(entry, wpt.x, wpt.y);
+    applyFloorplanEntryAtWorld(entry);
   }
 
   document.addEventListener(

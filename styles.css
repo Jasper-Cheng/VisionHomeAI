@@ -667,12 +667,8 @@ a.avatar:hover {
 }
 
 .svg-floorplan-root {
-  cursor: grab;
+  cursor: pointer;
   outline: none;
-}
-
-.svg-floorplan-root.is-dragging {
-  cursor: grabbing;
 }
 
 .svg-floorplan-hit {
