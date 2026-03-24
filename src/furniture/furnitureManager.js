@@ -25,20 +25,12 @@ export function resolveModelUrl(modelPathFromRoot) {
 }
 
 /**
- * 家具预览图 URL 列表：优先 JSON.thumbnail，否则按 id 猜路径。
- * 默认把 .svg 放在最前（仓库自带矢量缩略图），避免先请求不存在的 webp/png 造成控制台大量 404。
- * 若同 id 同时存在 svg 与 webp，会优先用 svg；要用位图时请删掉对应 svg 或改用 JSON 的 thumbnail 字段写死路径。
+ * 家具预览图 URL 列表：仅当 JSON 配置了 `thumbnail` 时返回该路径；未配置则返回空数组（不请求图片，仅显示彩色骨架）。
  */
 export function getFurnitureThumbnailUrls(item) {
-  const paths = [];
   const custom = item?.thumbnail != null ? String(item.thumbnail).trim() : "";
-  if (custom) paths.push(resolveModelUrl(custom));
-  const id = String(item?.id || "").trim();
-  if (id) {
-    const base = `assets/thumbnails/${id}`;
-    paths.push(`${base}.svg`, `${base}.webp`, `${base}.png`, `${base}.jpg`, `${base}.jpeg`);
-  }
-  return paths;
+  if (!custom) return [];
+  return [resolveModelUrl(custom)];
 }
 
 /**

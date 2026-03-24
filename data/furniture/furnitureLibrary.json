@@ -5,6 +5,7 @@
       "name": "北欧灰布艺沙发",
       "category": "sofa",
       "model": "assets/models/sofa_001.glb",
+      "thumbnail": "assets/thumbnails/sofa_001.svg",
       "size": { "width": 2100, "depth": 900, "height": 800 },
       "anchor": { "x": 0.5, "y": 0.5 },
       "placement": {
@@ -18,6 +19,7 @@
       "name": "原木简约茶几",
       "category": "table",
       "model": "assets/models/table_001.glb",
+      "thumbnail": "assets/thumbnails/table_001.svg",
       "size": { "width": 1100, "depth": 600, "height": 450 },
       "anchor": { "x": 0.5, "y": 0.5 },
       "placement": {
@@ -31,6 +33,7 @@
       "name": "标准双人床（示例）",
       "category": "bed",
       "model": "assets/models/bed_001.glb",
+      "thumbnail": "assets/thumbnails/bed_001.svg",
       "size": { "width": 1800, "depth": 2000, "height": 500 },
       "anchor": { "x": 0.5, "y": 0.5 },
       "placement": {
@@ -44,6 +47,7 @@
       "name": "极简落地灯",
       "category": "lamp",
       "model": "assets/models/lamp_001.glb",
+      "thumbnail": "assets/thumbnails/lamp_001.svg",
       "size": { "width": 350, "depth": 350, "height": 1600 },
       "anchor": { "x": 0.5, "y": 0.5 },
       "placement": {
@@ -57,6 +61,7 @@
       "name": "几何抽象地毯",
       "category": "rug",
       "model": "assets/models/rug_001.glb",
+      "thumbnail": "assets/thumbnails/rug_001.svg",
       "size": { "width": 2000, "depth": 1400, "height": 20 },
       "anchor": { "x": 0.5, "y": 0.5 },
       "placement": {
@@ -70,6 +75,7 @@
       "name": "悬浮式电视柜",
       "category": "cabinet",
       "model": "assets/models/tv_cabinet_001.glb",
+      "thumbnail": "assets/thumbnails/tv_cabinet_001.svg",
       "size": { "width": 2000, "depth": 400, "height": 500 },
       "anchor": { "x": 0.5, "y": 0.5 },
       "placement": {
@@ -83,6 +89,7 @@
       "name": "大叶天堂鸟",
       "category": "plant",
       "model": "assets/models/plant_001.glb",
+      "thumbnail": "assets/thumbnails/plant_001.svg",
       "size": { "width": 450, "depth": 450, "height": 1200 },
       "anchor": { "x": 0.5, "y": 0.5 },
       "placement": {
