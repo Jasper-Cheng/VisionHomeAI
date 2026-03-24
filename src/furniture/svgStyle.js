@@ -37,6 +37,31 @@ export function getFurnitureDisplayName(item) {
 }
 
 /**
+ * 侧栏卡片标题：`名称 长×宽×高cm`（长=size.width，宽=size.depth，高=size.height，单位 cm）
+ * @param {object} item 家具库 JSON 单条
+ */
+export function getFurnitureLibraryCardLabel(item) {
+  const name = getFurnitureDisplayName(item) || String(item?.id || "").trim() || "家具";
+  const sz = item?.size;
+  if (!sz || typeof sz !== "object" || Array.isArray(sz)) return name;
+  let len = Number(sz.widthCm ?? sz.width ?? sz.w);
+  let wid = Number(sz.depthCm ?? sz.depth ?? sz.d ?? sz.length);
+  if (!Number.isFinite(len) || len <= 0 || !Number.isFinite(wid) || wid <= 0) return name;
+  if (len > 600 || wid > 600) {
+    len /= 10;
+    wid /= 10;
+  }
+  let h = Number(sz.heightCm ?? sz.height ?? sz.h);
+  if (Number.isFinite(h) && h > 600) h /= 10;
+  const lr = Math.round(len);
+  const wr = Math.round(wid);
+  if (Number.isFinite(h) && h > 0) {
+    return `${name} ${lr}×${wr}×${Math.round(h)}cm`;
+  }
+  return `${name} ${lr}×${wr}cm`;
+}
+
+/**
  * 家具 JSON 可选 `polygon`：[[x,y],…] 或 [{x,y},…]，单位 cm，原点 = 外轮廓轴对齐包围盒中心（与 anchor 0.5/0.5 一致）
  * 仅本模块内部使用；svgEditor 内另有副本，避免跨模块命名导出在 Chrome 强缓存下不一致
  * @returns {{ x: number, y: number }[] | null}

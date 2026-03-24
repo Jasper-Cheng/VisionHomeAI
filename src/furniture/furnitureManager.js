@@ -1,6 +1,6 @@
 import { loadItemsFromManifest } from "../core/catalogLoader.js";
 import { DATA_PATHS } from "../core/schema.js";
-import { CATEGORY_LABELS, getFurnitureDisplayName } from "./svgStyle.js";
+import { CATEGORY_LABELS, getFurnitureDisplayName, getFurnitureLibraryCardLabel } from "./svgStyle.js";
 
 /** 缩略图骨架色（循环使用） */
 const THUMB_VARIANTS = ["", "thumb-skeleton--green", "thumb-skeleton--warm", "thumb-skeleton--red", "thumb-skeleton--gray", "thumb-skeleton--blue"];
@@ -148,7 +148,7 @@ export function mountFurnitureLibrary(catalog, options = {}) {
   searchInput?.addEventListener("input", applyFilter);
 
   (catalog.items || []).forEach((item, idx) => {
-    const displayName = getFurnitureDisplayName(item);
+    const cardLabel = getFurnitureLibraryCardLabel(item);
     const fid = String(item.id || "").trim();
 
     const card = document.createElement("article");
@@ -156,13 +156,13 @@ export function mountFurnitureLibrary(catalog, options = {}) {
     card.draggable = false;
     card.dataset.model = fid;
     card.dataset.category = item.category || "";
-    card.dataset.name = displayName.toLowerCase();
+    card.dataset.name = cardLabel.toLowerCase();
     card.tabIndex = 0;
     card.setAttribute("role", "button");
-    card.setAttribute("aria-label", displayName || fid);
+    card.setAttribute("aria-label", cardLabel || fid);
     card.setAttribute(
       "title",
-      [displayName || fid, item.category ? `分类: ${item.category}` : ""].filter(Boolean).join("\n"),
+      [cardLabel || fid, item.category ? `分类: ${item.category}` : ""].filter(Boolean).join("\n"),
     );
 
     const thumb = document.createElement("div");
@@ -171,7 +171,7 @@ export function mountFurnitureLibrary(catalog, options = {}) {
 
     const nameEl = document.createElement("div");
     nameEl.className = "asset-name";
-    nameEl.textContent = displayName || fid;
+    nameEl.textContent = cardLabel || fid;
 
     card.appendChild(thumb);
     card.appendChild(nameEl);
