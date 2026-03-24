@@ -1073,8 +1073,13 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       s = Math.min(Math.max(s, 0.02), 4);
     }
 
-    const wxMin = worldX + s * (bbox.minX - bbox.cx);
-    const wyMin = worldY + s * (bbox.minY - bbox.cy);
+    /* 与 appendFloorGeometryToGroup 中 snap(round(P*s)/s) 配合：使 s*cx、s*cy 为整数，
+     * 否则 worldX + s*(P' - cx) 会带小数，墙 stroke 在 1cm 格上看起来「偏了半格」 */
+    const cxSnap = Math.round(s * bbox.cx) / s;
+    const cySnap = Math.round(s * bbox.cy) / s;
+
+    const wxMin = worldX + s * (bbox.minX - cxSnap);
+    const wyMin = worldY + s * (bbox.minY - cySnap);
     worldX += Math.round(wxMin / GRID) * GRID - wxMin;
     worldY += Math.round(wyMin / GRID) * GRID - wyMin;
 
@@ -1096,11 +1101,11 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     xform.dataset.fpWx = String(worldX);
     xform.dataset.fpWy = String(worldY);
     xform.dataset.fpS = String(s);
-    xform.dataset.fpCx = String(bbox.cx);
-    xform.dataset.fpCy = String(bbox.cy);
+    xform.dataset.fpCx = String(cxSnap);
+    xform.dataset.fpCy = String(cySnap);
     xform.setAttribute(
       "transform",
-      `translate(${worldX} ${worldY}) scale(${s}) translate(${-bbox.cx} ${-bbox.cy})`,
+      `translate(${worldX} ${worldY}) scale(${s}) translate(${-cxSnap} ${-cySnap})`,
     );
 
     const hit = document.createElementNS(svgNS, "rect");

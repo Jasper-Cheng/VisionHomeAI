@@ -787,6 +787,15 @@ a.avatar:hover {
   stroke: rgba(0, 0, 0, 0.5);
 }
 
+.svg-floor-dim-label--room {
+  fill: rgba(198, 204, 216, 0.96);
+  stroke: rgba(0, 0, 0, 0.52);
+}
+
+.svg-floor-dim-label--room .svg-floor-dim-label__name {
+  fill: rgba(172, 180, 194, 0.98);
+}
+
 .svg-floor-dim-label--wall {
   font-weight: 600;
   opacity: 0.92;

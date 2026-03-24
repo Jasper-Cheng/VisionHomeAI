@@ -209,37 +209,18 @@ function polygonAreaCm2(pts) {
 }
 
 /**
- * 户型尺寸标注（房间外包框 cm、面积㎡；墙段长度 cm）；inversePlanScale = 1/s 抵消画布 scale(s) 使字号可读
+ * 户型尺寸标注（房间标注在各自 AABB 右下角内侧；墙段长度 cm）；inversePlanScale = 1/s 抵消画布 scale(s) 使字号可读
  * @param {object} floor
  * @param {SVGGElement} innerG
  * @param {(n: number) => number} snapCoord
  * @param {number} inversePlanScale
  */
-/** 房间外包框哪一侧离户型外轮廓最远，标注放在该侧外侧（plan cm） */
-function pickRoomLabelSide(box, floorBox) {
-  const gaps = {
-    top: box.minY - floorBox.minY,
-    bottom: floorBox.maxY - box.maxY,
-    left: box.minX - floorBox.minX,
-    right: floorBox.maxX - box.maxX,
-  };
-  const entries = Object.entries(gaps).sort((a, b) => b[1] - a[1]);
-  let best = entries[0][0];
-  /* 顶边留给层标题，顶侧留白过小时改选次优边 */
-  const minTopForLabel = 52;
-  if (best === "top" && gaps.top < minTopForLabel) {
-    const alt = entries.find(([k]) => k !== "top");
-    if (alt) best = alt[0];
-  }
-  return best;
-}
-
 function appendFloorDimensionAnnotations(floor, innerG, snapCoord, inversePlanScale) {
   const inv = inversePlanScale;
   if (!Number.isFinite(inv) || inv <= 0) return;
 
-  const ROOM_GAP = 20;
-  const ROOM_EXTRA = 18;
+  const ROOM_BR_PAD_X = 12;
+  const ROOM_BR_PAD_Y = 10;
   const FLOOR_TITLE_GAP = 26;
   const WALL_OFF = 14;
 
@@ -276,30 +257,19 @@ function appendFloorDimensionAnnotations(floor, innerG, snapCoord, inversePlanSc
     const pts = polygonPointsSnapped(poly, snapCoord);
     const box = aabbFromPoints(pts);
     if (!box || box.w < 3 || box.h < 3 || !floorBox) continue;
-    const cx = (box.minX + box.maxX) / 2;
-    const cy = (box.minY + box.maxY) / 2;
     const arCm2 = polygonAreaCm2(pts);
     const arM2 = arCm2 / 10000;
     const wR = Math.round(box.w);
     const hR = Math.round(box.h);
 
-    const side = pickRoomLabelSide(box, floorBox);
-    let tx = cx;
-    let ty = cy;
-    let anchor = "middle";
-    if (side === "top") {
-      ty = box.minY - ROOM_GAP - ROOM_EXTRA;
-    } else if (side === "bottom") {
-      ty = box.maxY + ROOM_GAP + ROOM_EXTRA;
-    } else if (side === "left") {
-      tx = box.minX - ROOM_GAP - ROOM_EXTRA;
-      ty = cy;
-      anchor = "end";
-    } else {
-      tx = box.maxX + ROOM_GAP + ROOM_EXTRA;
-      ty = cy;
-      anchor = "start";
-    }
+    const name = String(room.name || "").trim();
+    const lh = 14;
+    const nLines = (name ? 1 : 0) + 1 + (arM2 >= 0.01 ? 1 : 0);
+    const descFudge = 4;
+    let ty = box.maxY - ROOM_BR_PAD_Y - (nLines - 1) * lh - descFudge;
+    const tyMin = box.minY + (nLines - 1) * lh + descFudge + 6;
+    if (ty < tyMin) ty = tyMin;
+    const tx = box.maxX - ROOM_BR_PAD_X;
 
     const g = document.createElementNS(NS, "g");
     g.setAttribute("class", "svg-floor-dim-room");
@@ -307,14 +277,12 @@ function appendFloorDimensionAnnotations(floor, innerG, snapCoord, inversePlanSc
     g.setAttribute("transform", `translate(${tx} ${ty}) scale(${inv})`);
 
     const text = document.createElementNS(NS, "text");
-    text.setAttribute("text-anchor", anchor);
+    text.setAttribute("text-anchor", "end");
     text.setAttribute("font-size", "13");
     text.setAttribute("class", "svg-floor-dim-label svg-floor-dim-label--room");
 
-    const name = String(room.name || "").trim();
     let first = true;
-    const lh = 14;
-    const xAttr = anchor === "middle" ? "0" : "0";
+    const xAttr = "0";
     function addTspan(content, extraClass) {
       const ts = document.createElementNS(NS, "tspan");
       ts.setAttribute("x", xAttr);
