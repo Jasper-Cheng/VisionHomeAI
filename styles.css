@@ -824,10 +824,18 @@ a.avatar:hover {
   outline: none;
 }
 
-.svg-furniture text {
-  stroke: none;
-  /* 避免 Safari 对 SVG 文字度量/基线在拖动重绘时画出杂线 */
+/* 家具外置尺寸标注：完整名称折行 + 宽×深 + 可选层高 */
+.svg-furniture-dim-label {
+  fill: rgba(255, 255, 255, 0.95);
+  stroke: rgba(0, 0, 0, 0.5);
+  stroke-width: 0.35px;
+  paint-order: stroke fill;
   text-rendering: geometricPrecision;
+}
+
+.svg-furniture-dim-label__dim {
+  fill: rgba(226, 232, 240, 0.98);
+  font-weight: 700;
 }
 
 .svg-furniture:focus-visible .svg-furniture-shape {

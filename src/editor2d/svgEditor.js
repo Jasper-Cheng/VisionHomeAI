@@ -114,14 +114,29 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (item) {
       const s = getSvgStyleForItem(item);
       if (s) return s;
+      const nameFull = getFurnitureDisplayName(item) || String(modelId || "").trim() || "家具";
+      const hw = 50;
+      const hh = 50;
+      return {
+        hw,
+        hh,
+        fill: "rgba(100,116,139,0.38)",
+        stroke: "rgba(148,163,184,0.9)",
+        longName: nameFull,
+        nameFull,
+        dimLine: `${hw * 2}×${hh * 2} cm`,
+        heightLine: "",
+      };
     }
     return {
       hw: 50,
       hh: 50,
       fill: "rgba(100,116,139,0.38)",
       stroke: "rgba(148,163,184,0.9)",
-      label: "?",
       longName: modelId || "家具",
+      nameFull: modelId || "家具",
+      dimLine: "100×100 cm",
+      heightLine: "",
     };
   }
 
@@ -302,6 +317,24 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return Math.round(v / GRID) * GRID;
   }
 
+  /** 家具标注单行截断（完整文案在 aria-label） */
+  function truncateFurnitureLabelLine(s, maxLen) {
+    const t = String(s || "").trim();
+    const m = Math.max(6, Math.floor(maxLen));
+    if (t.length <= m) return t;
+    return `${t.slice(0, Math.max(1, m - 1))}…`;
+  }
+
+  /** 画布上整块标注固定两行：[名称]、[宽×深 · 高] */
+  function buildFurnitureDimTwoLines(def, fw, fh) {
+    const nameMax = Math.max(10, Math.min(26, Math.floor(Math.max(fw, fh) / 11)));
+    const rawName = String(def.nameFull || def.longName || "家具").trim();
+    const line1 = truncateFurnitureLabelLine(rawName, nameMax);
+    const dim = def.dimLine || `${Math.round(fw)}×${Math.round(fh)} cm`;
+    const line2 = [dim, def.heightLine].filter(Boolean).join(" · ");
+    return { line1, line2 };
+  }
+
   /** 与 SVG `rotate(deg)` 矩阵一致：x' = cos*x + sin*y, y' = -sin*x + cos*y（W3C SVG） */
   function rotateLocalPoint(x, y, deg) {
     const rad = (deg * Math.PI) / 180;
@@ -313,13 +346,25 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     };
   }
 
-  /** 家具组 translate(cx,cy)+rotate(rot) 后，矩形 footprint 在父坐标系中的轴对齐包围盒 */
-  function furnitureWorldAabb(cx, cy, rot, hw, hh) {
+  /** 矩形底边以下标注块在局部 +Y 方向占用（与 appendFurnitureItem 排版一致，cm） */
+  function estimateFurnitureLabelPadBelow(def) {
+    const fh = Math.max(1, Number(def.hh) * 2);
+    const fw = Math.max(1, Number(def.hw) * 2);
+    const lineH = Math.min(15, Math.max(11, Math.min(fw, fh) * 0.065));
+    const fontPx = Math.min(14, Math.max(11, Math.min(fw, fh) * 0.055));
+    const gapBelow = Math.max(6, Math.min(14, fh * 0.06));
+    const nTotal = 2;
+    return gapBelow + 1.2 * fontPx + (nTotal - 1) * lineH;
+  }
+
+  /** 家具组 translate(cx,cy)+rotate(rot) 后，矩形+底部标注 在父坐标系中的轴对齐包围盒 */
+  function furnitureWorldAabb(cx, cy, rot, hw, hh, labelBelowPad = 0) {
+    const pad = Math.max(0, Number(labelBelowPad) || 0);
     const corners = [
       [-hw, -hh],
       [hw, -hh],
-      [hw, hh],
-      [-hw, hh],
+      [hw, hh + pad],
+      [-hw, hh + pad],
     ];
     let minX = Infinity;
     let minY = Infinity;
@@ -433,6 +478,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const def = getFootprint(type);
     const hw = def.hw;
     const hh = def.hh;
+    const labelPad = estimateFurnitureLabelPadBelow(def);
     const margin = 10;
     const rot = getRotation(g);
 
@@ -440,33 +486,33 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     let cy = y;
 
     for (let iter = 0; iter < 16; iter++) {
-      let b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+      let b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
       cx += Math.round(b.minX / GRID) * GRID - b.minX;
       cy += Math.round(b.minY / GRID) * GRID - b.minY;
 
-      b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+      b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
       let adjusted = false;
       if (b.minX < margin) {
         cx += margin - b.minX;
         adjusted = true;
       }
-      b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+      b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
       if (b.minY < margin) {
         cy += margin - b.minY;
         adjusted = true;
       }
-      b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+      b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
       if (b.maxX > VIEW_W - margin) {
         cx += VIEW_W - margin - b.maxX;
         adjusted = true;
       }
-      b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+      b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
       if (b.maxY > VIEW_H - margin) {
         cy += VIEW_H - margin - b.maxY;
         adjusted = true;
       }
       if (!adjusted) {
-        b = furnitureWorldAabb(cx, cy, rot, hw, hh);
+        b = furnitureWorldAabb(cx, cy, rot, hw, hh, labelPad);
         cx += Math.round(b.minX / GRID) * GRID - b.minX;
         cy += Math.round(b.minY / GRID) * GRID - b.minY;
         break;
@@ -583,8 +629,10 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       def = {
         fill: fp.fill,
         stroke: fp.stroke,
-        label: fp.label,
         longName: fp.longName,
+        nameFull: fp.nameFull,
+        dimLine: fp.dimLine,
+        heightLine: fp.heightLine || "",
         hw: fp.hw,
         hh: fp.hh,
       };
@@ -599,7 +647,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     g.setAttribute("data-rot", String(rot));
     g.setAttribute("role", "button");
     g.setAttribute("tabindex", "0");
-    g.setAttribute("aria-label", `${def.longName}，可拖拽`);
+    const dimBits = [def.dimLine || "", def.heightLine || ""].filter(Boolean).join("，");
+    g.setAttribute("aria-label", dimBits ? `${def.longName}，${dimBits}，可拖拽` : `${def.longName}，可拖拽`);
 
     const fw = Math.max(1, Number(def.hw) * 2) || 1;
     const fh = Math.max(1, Number(def.hh) * 2) || 1;
@@ -617,17 +666,37 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     rect.setAttribute("stroke-width", String(Math.min(2.5, Math.max(0.6, Math.min(fw, fh) * 0.02))));
     rect.classList.add("svg-furniture-shape");
 
-    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    text.setAttribute("text-anchor", "middle");
-    text.setAttribute("y", String(Math.min(14, Math.max(6, fh * 0.12))));
-    text.setAttribute("fill", "rgba(255,255,255,0.88)");
-    text.setAttribute("font-size", String(Math.min(22, Math.max(10, Math.min(fw, fh) * 0.11))));
-    text.setAttribute("font-weight", "700");
-    text.setAttribute("pointer-events", "none");
-    text.textContent = def.label;
+    const { line1, line2 } = buildFurnitureDimTwoLines(def, fw, fh);
+    const lineH = Math.min(15, Math.max(11, Math.min(fw, fh) * 0.065));
+    const fontPx = Math.min(14, Math.max(11, Math.min(fw, fh) * 0.055));
+
+    const dimG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    dimG.setAttribute("class", "svg-furniture-dim");
+    dimG.setAttribute("pointer-events", "none");
+
+    const cap = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    cap.setAttribute("text-anchor", "middle");
+    cap.setAttribute("class", "svg-furniture-dim-label");
+    cap.setAttribute("font-size", String(fontPx));
+    cap.setAttribute("font-weight", "600");
+    const gapBelow = Math.max(6, Math.min(14, fh * 0.06));
+    cap.setAttribute("y", String(def.hh + gapBelow + fontPx * 0.85));
+
+    const tsName = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+    tsName.setAttribute("x", "0");
+    tsName.setAttribute("dy", "0");
+    tsName.textContent = line1;
+    cap.appendChild(tsName);
+    const tsDim = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+    tsDim.setAttribute("x", "0");
+    tsDim.setAttribute("dy", String(lineH));
+    tsDim.setAttribute("class", "svg-furniture-dim-label__dim");
+    tsDim.textContent = line2;
+    cap.appendChild(tsDim);
+    dimG.appendChild(cap);
 
     g.appendChild(rect);
-    g.appendChild(text);
+    g.appendChild(dimG);
 
     const pos = clampPosition(g, cx, cy);
     g.setAttribute("transform", `translate(${pos.x},${pos.y}) rotate(${rot})`);

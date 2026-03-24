@@ -36,32 +36,26 @@ export function getFurnitureDisplayName(item) {
   return s || String(item.id || "").trim();
 }
 
-/**
- * 画在平面图矩形里的文字：优先 JSON 名称，过长按宽度截断；无名称时才用分类中文
- */
-function svgLabelFromItem(item, cat, hw, hh) {
-  const full = getFurnitureDisplayName(item);
-  const maxChars = Math.max(4, Math.min(16, Math.floor(((hw + hh) * 2) / 26)));
-  if (full.length <= maxChars) return full || CATEGORY_LABELS[cat] || item?.id || "?";
-  return `${full.slice(0, maxChars - 1)}…`;
-}
-
 export function getSvgStyleForItem(item) {
   if (!item?.size) return null;
   const cat = item.category || "default";
   const pal = CATEGORY_STYLES[cat] || CATEGORY_STYLES.default;
   const w = Number(item.size.width) || 210;
   const d = Number(item.size.depth) || 90;
+  const h = Number(item.size.height);
   /* 画布 1 单位 = 1 cm：占位矩形与 JSON 外形 1:1（半宽/半高） */
   const hw = Math.max(8, w / 2);
   const hh = Math.max(8, d / 2);
-  const longName = getFurnitureDisplayName(item);
-  const label = svgLabelFromItem(item, cat, hw, hh);
+  const nameFull = getFurnitureDisplayName(item) || String(item.id || "").trim() || CATEGORY_LABELS[cat] || "?";
+  const dimLine = `${Math.round(w)}×${Math.round(d)} cm`;
+  const heightLine = Number.isFinite(h) && h > 0 ? `高 ${Math.round(h)} cm` : "";
   return {
     fill: pal.fill,
     stroke: pal.stroke,
-    label,
-    longName: longName || item.id,
+    longName: nameFull,
+    nameFull,
+    dimLine,
+    heightLine,
     hw,
     hh,
   };
