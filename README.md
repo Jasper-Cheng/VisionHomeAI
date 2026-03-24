@@ -47,10 +47,12 @@ python3 scripts/dev_server.py
 - **户型库**：`data/floorplans/manifest.json` 的 **`files`**（如 `apartment_2b1l.json`）→ 与同目录下的 **`data/floorplans/<文件>`** 一一对应。新增户型：在该目录增加 `<id>.json`，并把文件名写入 manifest。工程里 **`templateId`** 对应条目的 **`id`**。
 - **家具库**：`data/furniture/manifest.json` + 同目录 **`data/furniture/<id>.json`**；侧栏预览仅当该条配置了 **`thumbnail`** 时加载图片，否则为骨架占位；平面图中 `data-model` 为 **`id`**。
 - **设计文件（方案）**：`data/design/*.json` 表示在**户型库某一模板**上的**家具编辑会话**，不重复存整套户型几何。
-  - **`templateId`**：对应 `data/floorplans/<id>.json` 中条目的 **`id`**（与文件名一致，如 `apartment_2b1l`）。加载方案时先取该户型，再叠本文件中的编辑层。
+  - **`schemaVersion`**：`"1.1"` 起包含 **`svgEditor`**，用于点击侧栏方案时**完整还原 SVG 画布**（户型底图、家具、平移/缩放、网格）。旧版 `"1.0"` 无 `svgEditor` 时，仍用 **`templateId` + `furnitureInstances`** 还原。
+  - **`templateId`**：对应 `data/floorplans/<id>.json` 中条目的 **`id`**；保存时若画布上有户型，会与当前 **`svgEditor.floorPlanId`** 对齐。
+  - **`svgEditor`**（`version: 1`）：**`floorPlanId`**（画布当前户型 id，无则为 `null`）、**`view`**（`tx` / `ty` / `scale`）、**`gridVisible`**、**`viewBox`**（逻辑画布尺寸，与 SVG viewBox 一致）、**`furniture`**（`model` / `x` / `y` / `rotation`，与平面图一致）。打开方案时优先按此块还原。
   - **`floorplanSnapshot`**：可选；若用户对墙线等做了覆盖，可存于此（当前可为 `null`）。
-  - **`furnitureInstances`**：家具实例（`furnitureId` 对应 `data/furniture/` 条目 **`id`**、`floorId` 与户型楼层对应等）。
-  - 未选户型时 **`templateId`** 可为 `null`（空方案）。
+  - **`furnitureInstances`**：与 3D / 会话字段对齐的家具列表；保存时与 `svgEditor.furniture` 同源生成，便于旧逻辑与导出。
+  - 未选户型时 **`templateId`** / **`svgEditor.floorPlanId`** 可为 `null`（空方案）。
   - 侧栏列表：读 **`data/design/manifest.json`** 的 **`files`**，再 `fetch data/design/<文件名>`。
   - **`id`** 与 **`name`**：每条方案须有唯一 **`id`**；**文件名必须为 `<id>.json`**（与 manifest 中 `files` 一致）。**`name`** 为侧栏展示标题。
   - 兼容旧数据：若仅有 **`projectId`** 而无 **`id`**，加载逻辑会回退使用 `projectId`。

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1774331005322",
+  "name": "1230爱上",
+  "description": "",
+  "createdAt": "2026-03-24T05:43:25.322Z",
+  "updatedAt": "2026-03-24T05:43:45.882Z",
+  "templateId": "apartment_2b1l",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_001",
+      "floorId": "floor1",
+      "positionMm": [
+        1300,
+        1300
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "sofa_001",
+      "floorId": "floor1",
+      "positionMm": [
+        1720,
+        1200
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apartment_2b1l",
+    "view": {
+      "tx": 0,
+      "ty": 0,
+      "scale": 1
+    },
+    "gridVisible": true,
+    "viewBox": {
+      "width": 3000,
+      "height": 3000
+    },
+    "furniture": [
+      {
+        "model": "sofa_001",
+        "x": 1300,
+        "y": 1300,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_001",
+        "x": 1720,
+        "y": 1200,
+        "rotation": 0
+      }
+    ]
+  }
+}

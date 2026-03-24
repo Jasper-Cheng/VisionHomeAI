@@ -305,6 +305,44 @@ function isoNow() {
   return new Date().toISOString();
 }
 
+/**
+ * 与 svg 画布一致的状态，供打开方案时完整还原（户型 / 视图 / 网格 / 家具列表）
+ */
+function collectSvgEditorState(layout) {
+  const getFp = window.svgEditorGetCurrentFloorplanId;
+  const getV = window.svgEditorGetViewTransform;
+  const getGrid = window.svgEditorGetGridVisible;
+  const getSize = window.svgEditorGetViewSize;
+  const floorPlanId = typeof getFp === "function" ? getFp() : null;
+  let view = { tx: 0, ty: 0, scale: 1 };
+  if (typeof getV === "function") {
+    const v = getV();
+    view = {
+      tx: Number(v.tx) || 0,
+      ty: Number(v.ty) || 0,
+      scale: Number(v.scale) || 1,
+    };
+  }
+  const viewBox = typeof getSize === "function" ? getSize() : { width: 3000, height: 3000 };
+  const furniture = (Array.isArray(layout) ? layout : []).map((item) => ({
+    model: String(item.model ?? "").trim(),
+    x: Number(item.x) || 0,
+    y: Number(item.y) || 0,
+    rotation: Number(item.rotation ?? 0) || 0,
+  }));
+  return {
+    version: 1,
+    floorPlanId,
+    view,
+    gridVisible: typeof getGrid === "function" ? !!getGrid() : true,
+    viewBox: {
+      width: Number(viewBox.width) || 3000,
+      height: Number(viewBox.height) || 3000,
+    },
+    furniture,
+  };
+}
+
 function buildProjectPayload(name, layout) {
   const trimmed = String(name || "").trim();
   const prev = window.__activeDesignProject;
@@ -314,17 +352,26 @@ function buildProjectPayload(name, layout) {
   const floorId = prev?.activeFloorId != null ? String(prev.activeFloorId) : "floor1";
   const furnitureInstances = layoutToFurnitureInstances(layout, floorId);
   const base = isExisting ? { ...prev } : {};
+  const fpFromCanvas =
+    typeof window.svgEditorGetCurrentFloorplanId === "function" ? window.svgEditorGetCurrentFloorplanId() : null;
+  const templateId =
+    fpFromCanvas != null && String(fpFromCanvas).trim()
+      ? String(fpFromCanvas).trim()
+      : base.templateId != null && String(base.templateId).trim()
+        ? String(base.templateId).trim()
+        : null;
   return {
-    schemaVersion: "1.0",
+    schemaVersion: "1.1",
     id,
     name: trimmed,
     description: base.description ?? "",
     createdAt: base.createdAt ?? isoNow(),
     updatedAt: isoNow(),
-    templateId: base.templateId ?? null,
+    templateId,
     activeFloorId: floorId,
     floorplanSnapshot: base.floorplanSnapshot ?? null,
     furnitureInstances,
+    svgEditor: collectSvgEditorState(layout),
   };
 }
 

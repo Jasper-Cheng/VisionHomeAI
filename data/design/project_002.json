@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "id": "project_002",
   "name": "空白方案",
   "description": "未绑定户型模板（templateId 为 null）的空方案占位。",
@@ -8,5 +8,13 @@
   "templateId": null,
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
-  "furnitureInstances": []
+  "furnitureInstances": [],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": null,
+    "view": { "tx": 0, "ty": 0, "scale": 1 },
+    "gridVisible": true,
+    "viewBox": { "width": 3000, "height": 3000 },
+    "furniture": []
+  }
 }

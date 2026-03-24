@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "id": "project_001",
   "name": "两居示例方案",
   "description": "基于户型模板 templateId 的家具编辑方案；墙线房间来自 data/floorplans，本文件为编辑层。",
@@ -16,5 +16,15 @@
       "positionMm": [2100, 7200],
       "rotationDeg": 0
     }
-  ]
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apartment_2b1l",
+    "view": { "tx": 0, "ty": 0, "scale": 1 },
+    "gridVisible": true,
+    "viewBox": { "width": 3000, "height": 3000 },
+    "furniture": [
+      { "model": "sofa_001", "x": 2100, "y": 7200, "rotation": 0 }
+    ]
+  }
 }

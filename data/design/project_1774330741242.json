@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "id": "project_1774330741242",
   "name": "asdsad1",
   "description": "",
@@ -13,11 +13,16 @@
       "instanceId": "fi_1",
       "furnitureId": "sofa_001",
       "floorId": "floor1",
-      "positionMm": [
-        1500,
-        1400
-      ],
+      "positionMm": [1500, 1400],
       "rotationDeg": 0
     }
-  ]
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": null,
+    "view": { "tx": 0, "ty": 0, "scale": 1 },
+    "gridVisible": true,
+    "viewBox": { "width": 3000, "height": 3000 },
+    "furniture": [{ "model": "sofa_001", "x": 1500, "y": 1400, "rotation": 0 }]
+  }
 }

@@ -1190,6 +1190,83 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       .filter((row) => row.model);
   }
 
+  function normalizeSavedFurnitureLayout(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map((row) => ({
+        model: String(row?.model ?? row?.furnitureId ?? "").trim(),
+        x: Number(row?.x),
+        y: Number(row?.y),
+        rotation: Number(row?.rotation ?? row?.rotationDeg ?? 0) || 0,
+      }))
+      .filter((r) => r.model && Number.isFinite(r.x) && Number.isFinite(r.y));
+  }
+
+  /**
+   * 从方案 JSON 还原 2D：户型底图、家具、平移缩放、网格；并重置撤销栈与保存基线
+   */
+  function applyFromDesignProject(project) {
+    if (!project || typeof project !== "object") return;
+
+    const se = project.svgEditor;
+    const hasSvgEditor = se && typeof se === "object" && Number(se.version) === 1;
+
+    const layout = hasSvgEditor && Array.isArray(se.furniture)
+      ? normalizeSavedFurnitureLayout(se.furniture)
+      : projectToSvgLayout(project);
+
+    let fpId = null;
+    if (hasSvgEditor && Object.prototype.hasOwnProperty.call(se, "floorPlanId")) {
+      const v = se.floorPlanId;
+      fpId = v != null && String(v).trim() ? String(v).trim() : null;
+    } else {
+      const t = project.templateId;
+      fpId = t != null && String(t).trim() ? String(t).trim() : null;
+    }
+
+    isRestoring = true;
+    try {
+      if (fpId) {
+        const cat = window.__floorPlanCatalog;
+        const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
+        if (entry) applyFloorplanEntryAtWorld(entry);
+        else clearFloorplanLayerContent();
+      } else {
+        clearFloorplanLayerContent();
+      }
+      rebuildFromLayout(layout);
+      if (hasSvgEditor && se.view && typeof se.view === "object") {
+        const tx = Number(se.view.tx);
+        const ty = Number(se.view.ty);
+        const sc = Number(se.view.scale);
+        if (Number.isFinite(tx) && Number.isFinite(ty) && Number.isFinite(sc)) {
+          setViewTransform(se.view);
+        } else {
+          resetView();
+        }
+      } else {
+        resetView();
+      }
+      if (hasSvgEditor && typeof se.gridVisible === "boolean") {
+        setGridVisible(se.gridVisible);
+      } else {
+        setGridVisible(true);
+      }
+    } finally {
+      isRestoring = false;
+    }
+
+    select(null);
+    initHistory();
+    historyReady = true;
+    window.__designLayoutBaseline = JSON.stringify(getLayout());
+    emitSvgLayoutChanged();
+
+    if (typeof window.__selectFloorplanLibraryCardById === "function") {
+      window.__selectFloorplanLibraryCardById(fpId || "");
+    }
+  }
+
   /** 外部切换方案 / 新建：重建家具并重置撤销栈与「已保存」基线 */
   function applyExternalLayout(layout, options = {}) {
     isRestoring = true;
@@ -1369,7 +1446,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   window.addEventListener("visionhome:design-select", (e) => {
     const project = e.detail?.project;
     if (!project) return;
-    applyExternalLayout(projectToSvgLayout(project));
+    applyFromDesignProject(project);
   });
 
   window.addEventListener("visionhome:design-new", () => {
