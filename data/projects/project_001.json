@@ -4,7 +4,7 @@
   "name": "示例项目",
   "createdAt": "2025-03-21T12:00:00.000Z",
   "updatedAt": "2025-03-21T12:00:00.000Z",
-  "templateRef": "data/templates/apartment_2b1l.json",
+  "templateId": "apartment_2b1l",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
   "furnitureInstances": [

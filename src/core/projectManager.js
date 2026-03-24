@@ -16,11 +16,32 @@ export async function loadFurnitureLibrary() {
   return res.json();
 }
 
-export async function loadTemplate(filename) {
-  const url = `${DATA_PATHS.templates}/${filename}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`loadTemplate failed: ${url}`);
+/** 加载户型模板库（`data/templates/floorPlanLibrary.json`） */
+export async function loadFloorPlanLibrary() {
+  const res = await fetch(DATA_PATHS.floorPlanLibrary, { cache: "no-store" });
+  if (!res.ok) throw new Error(`loadFloorPlanLibrary failed: ${DATA_PATHS.floorPlanLibrary}`);
   return res.json();
+}
+
+/**
+ * 按 id 取模板条目（含 id、project、floors、connections）
+ * @param {object} data loadFloorPlanLibrary() 的返回值
+ * @param {string} templateId 如 apartment_2b1l
+ */
+export function getFloorPlanTemplateEntry(data, templateId) {
+  const list = data?.floorPlanLibrary;
+  if (!Array.isArray(list) || !templateId) return null;
+  return list.find((item) => item.id === templateId) ?? null;
+}
+
+/**
+ * 去掉条目上的 `id`，得到与原单文件相同的 `{ project, floors, connections }`
+ * @param {object} entry getFloorPlanTemplateEntry 的返回值
+ */
+export function floorPlanTemplatePayload(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  const { id: _omit, ...payload } = entry;
+  return payload;
 }
 
 /** 触发浏览器下载 project JSON（本地保存占位） */

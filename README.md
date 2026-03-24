@@ -9,7 +9,7 @@
 │   ├── textures/         # 贴图（可选）
 │   └── vendor/           # three.js、OrbitControls 等
 ├── data/
-│   ├── templates/        # 户型模板（初始化）
+│   ├── templates/        # floorPlanLibrary.json（户型模板合集）
 │   ├── furniture/        # furnitureLibrary.json
 │   └── projects/         # 用户保存的工程 JSON
 ├── src/
@@ -33,6 +33,6 @@ python3 -m http.server 8080
 
 ## 数据说明
 
-- 户型模板：`data/templates/apartment_2b1l.json`、`apartment_3b2l.json`、`villa_3floor.json`
+- 户型模板：`data/templates/floorPlanLibrary.json`（`floorPlanLibrary` 数组；工程里用 **`templateId`** 指向条目的 **`id`**）
 - 家具库：`data/furniture/furnitureLibrary.json`（启动时 `fetch` 解析；侧栏预览仅当该条配置了 **`thumbnail`** 时加载图片，否则为骨架占位；平面图中 `data-model` 为 **`id`**）
-- 示例工程：`data/projects/project_001.json`
+- 示例工程：`data/projects/project_001.json`（字段 **`templateId`** 对应 `floorPlanLibrary` 中模板的 **`id`**）

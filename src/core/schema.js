@@ -2,7 +2,8 @@
  * 数据路径与版本约定（与 data/ 下 JSON 对齐）
  */
 export const DATA_PATHS = {
-  templates: "data/templates",
+  /** 户型模板合集（单文件，内含 floorPlanLibrary 数组） */
+  floorPlanLibrary: "data/templates/floorPlanLibrary.json",
   furnitureLibrary: "data/furniture/furnitureLibrary.json",
   projects: "data/projects",
   assetsModels: "assets/models",

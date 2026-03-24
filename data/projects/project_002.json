@@ -4,7 +4,7 @@
   "name": "空白项目占位",
   "createdAt": "2025-03-21T12:00:00.000Z",
   "updatedAt": "2025-03-21T12:00:00.000Z",
-  "templateRef": null,
+  "templateId": null,
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
   "furnitureInstances": []
