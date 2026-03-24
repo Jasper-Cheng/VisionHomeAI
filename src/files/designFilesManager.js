@@ -484,9 +484,7 @@ export async function executeSaveWithName(name) {
     triggerDownloadDesignJson(filename, json);
     openSaveDialog();
     if (input) input.value = trimmed;
-    showError(
-      `无法写入 ${DATA_PATHS.design}/（${saved.reason}）。已改为下载 JSON。开发环境请运行：python3 scripts/dev_server.py`,
-    );
+    showError(`无法写入服务器（${saved.reason}）。已下载 JSON 文件。`);
   } else {
     await refreshDesignProjectsFromManifest();
   }
@@ -572,11 +570,11 @@ function updateSaveButtonState() {
   const dirty = baseline === undefined || cur !== baseline;
   if (!hasItems) btn.title = "画布上没有家具，无法保存";
   else if (!dirty) btn.title = "当前已与上次保存一致";
-  else btn.title = "保存方案到 data/design/（需 scripts/dev_server.py；否则下载 JSON）";
+  else btn.title = "保存当前方案";
 }
 
 /**
- * 保存按钮：有家具且相对上次保存有改动时可点；弹窗确认后优先 POST 写入 data/design/（dev_server），失败则下载 JSON。
+ * 保存按钮：有家具且相对上次保存有改动时可点；弹窗确认后优先 POST 同源保存接口，失败则触发下载 JSON。
  */
 export function mountSaveDesignFlow() {
   if (saveDesignFlowMounted) return;
