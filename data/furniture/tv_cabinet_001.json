@@ -1,0 +1,23 @@
+{
+  "id": "tv_cabinet_001",
+  "name": "悬浮式电视柜",
+  "category": "cabinet",
+  "model": "assets/models/tv_cabinet_001.glb",
+  "thumbnail": "assets/thumbnails/tv_cabinet_001.svg",
+  "size": {
+    "width": 2000,
+    "depth": 400,
+    "height": 500
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "placement": {
+    "allowRooms": [
+      "living"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 50
+  }
+}

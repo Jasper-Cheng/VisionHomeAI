@@ -1,0 +1,25 @@
+{
+  "id": "lamp_001",
+  "name": "极简落地灯",
+  "category": "lamp",
+  "model": "assets/models/lamp_001.glb",
+  "thumbnail": "assets/thumbnails/lamp_001.svg",
+  "size": {
+    "width": 350,
+    "depth": 350,
+    "height": 1600
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "study"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 50
+  }
+}

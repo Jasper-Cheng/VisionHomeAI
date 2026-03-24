@@ -1,0 +1,23 @@
+{
+  "id": "bed_001",
+  "name": "标准双人床（示例）",
+  "category": "bed",
+  "model": "assets/models/bed_001.glb",
+  "thumbnail": "assets/thumbnails/bed_001.svg",
+  "size": {
+    "width": 1800,
+    "depth": 2000,
+    "height": 500
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "placement": {
+    "allowRooms": [
+      "bedroom"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 50
+  }
+}

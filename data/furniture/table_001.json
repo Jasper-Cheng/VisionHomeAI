@@ -1,0 +1,24 @@
+{
+  "id": "table_001",
+  "name": "原木简约茶几",
+  "category": "table",
+  "model": "assets/models/table_001.glb",
+  "thumbnail": "assets/thumbnails/table_001.svg",
+  "size": {
+    "width": 1100,
+    "depth": 600,
+    "height": 450
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "placement": {
+    "allowRooms": [
+      "living",
+      "dining"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 50
+  }
+}

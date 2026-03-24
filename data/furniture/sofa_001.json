@@ -1,0 +1,24 @@
+{
+  "id": "sofa_001",
+  "name": "北欧灰布艺沙发",
+  "category": "sofa",
+  "model": "assets/models/sofa_001.glb",
+  "thumbnail": "assets/thumbnails/sofa_001.svg",
+  "size": {
+    "width": 2100,
+    "depth": 900,
+    "height": 800
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "placement": {
+    "allowRooms": [
+      "living",
+      "study"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 50
+  }
+}

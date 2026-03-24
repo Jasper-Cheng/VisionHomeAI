@@ -1,6 +1,6 @@
 /**
  * 户型 SVG 平面图：家具拖拽、网格吸附、旋转、删除
- * 家具尺寸与名称来自 data/furnitureLibrary.json（由 main 注入 catalog）
+ * 家具尺寸与名称来自 data/furniture/ 各条目 JSON（由 main 注入 catalog）
  */
 import { getFurnitureDisplayName, getSvgStyleForItem } from "../furniture/svgStyle.js";
 

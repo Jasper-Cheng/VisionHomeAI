@@ -1,0 +1,26 @@
+{
+  "id": "plant_001",
+  "name": "大叶天堂鸟",
+  "category": "plant",
+  "model": "assets/models/plant_001.glb",
+  "thumbnail": "assets/thumbnails/plant_001.svg",
+  "size": {
+    "width": 450,
+    "depth": 450,
+    "height": 1200
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "study",
+      "corridor"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 50
+  }
+}

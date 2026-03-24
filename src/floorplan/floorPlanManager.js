@@ -1,21 +1,19 @@
+import { loadItemsFromManifest } from "../core/catalogLoader.js";
 import { DATA_PATHS } from "../core/schema.js";
 
 /** 与家具库卡片相同的缩略图骨架配色轮询 */
 const THUMB_VARIANTS = ["", "thumb-skeleton--green", "thumb-skeleton--warm", "thumb-skeleton--red", "thumb-skeleton--gray", "thumb-skeleton--blue"];
 
-async function fetchFloorPlanLibraryJson() {
-  const res = await fetch(DATA_PATHS.floorPlanLibrary, { cache: "no-store" });
-  if (!res.ok) throw new Error(`floorPlanLibrary fetch failed: ${DATA_PATHS.floorPlanLibrary}`);
-  return res.json();
-}
-
 /**
  * @returns {{ items: object[], byId: Map<string, object>, raw: object }}
  */
 export async function loadFloorPlanCatalog() {
-  const raw = await fetchFloorPlanLibraryJson();
-  const items = Array.isArray(raw?.floorPlanLibrary) ? raw.floorPlanLibrary : [];
+  const items = await loadItemsFromManifest({
+    manifestUrl: DATA_PATHS.floorplansManifest,
+    itemsBaseUrl: DATA_PATHS.floorplansDir,
+  });
   const byId = new Map(items.map((t) => [t.id, t]));
+  const raw = { floorPlanLibrary: items };
   return { items, byId, raw };
 }
 
@@ -26,7 +24,7 @@ function cardDisplayName(entry) {
 }
 
 /**
- * 渲染户型库 Tab + 卡片（数据来自 floorPlanLibrary.json）
+ * 渲染户型库 Tab + 卡片（数据来自 data/floorplans/manifest + 同目录 JSON）
  */
 export function mountFloorplanLibrary(catalog, options = {}) {
   const strip = document.querySelector(".floorplan-tabs");
@@ -187,7 +185,7 @@ export function mountFloorplanLibrary(catalog, options = {}) {
   if (options.loadError) {
     const msg = document.createElement("p");
     msg.className = "furniture-load-hint";
-    msg.textContent = "户型库加载失败，请检查 data/floorPlanLibrary.json。";
+    msg.textContent = "户型库加载失败，请检查 data/floorplans/manifest.json 与同目录条目 JSON。";
     grid.appendChild(msg);
   }
 

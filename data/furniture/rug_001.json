@@ -1,0 +1,24 @@
+{
+  "id": "rug_001",
+  "name": "几何抽象地毯",
+  "category": "rug",
+  "model": "assets/models/rug_001.glb",
+  "thumbnail": "assets/thumbnails/rug_001.svg",
+  "size": {
+    "width": 2000,
+    "depth": 1400,
+    "height": 20
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 50
+  }
+}
