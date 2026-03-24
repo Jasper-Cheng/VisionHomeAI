@@ -59,6 +59,8 @@ export function mountFurnitureThumb(thumbEl, item, idx = 0) {
   img.alt = "";
   img.loading = "lazy";
   img.decoding = "async";
+  /* Safari：img 默认 draggable，会触发原生拖影并与 Pointer 自定义拖放冲突 */
+  img.draggable = false;
   let i = 0;
   img.onload = () => {
     thumbEl.classList.add("has-image");
@@ -151,6 +153,7 @@ export function mountFurnitureLibrary(catalog, options = {}) {
 
     const card = document.createElement("article");
     card.className = "asset-card";
+    card.draggable = false;
     card.dataset.model = fid;
     card.dataset.category = item.category || "";
     card.dataset.name = displayName.toLowerCase();
@@ -174,6 +177,15 @@ export function mountFurnitureLibrary(catalog, options = {}) {
     card.appendChild(nameEl);
     grid.appendChild(card);
   });
+
+  /* 防止子节点（如旧缓存 DOM）仍触发原生 dragstart */
+  grid.addEventListener(
+    "dragstart",
+    (e) => {
+      e.preventDefault();
+    },
+    true,
+  );
 
   if (options.loadError) {
     const msg = document.createElement("p");

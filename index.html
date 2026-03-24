@@ -7,6 +7,30 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <!-- file:// 打开时提示需本地 HTTP；模块加载失败时由下方脚本写入 -->
+    <div
+      id="visionHomeBootBanner"
+      class="vision-home-boot-banner"
+      hidden
+      role="alert"
+      aria-live="polite"
+    ></div>
+    <script>
+      (function () {
+        try {
+          if (location.protocol === "file:") {
+            var el = document.getElementById("visionHomeBootBanner");
+            if (el) {
+              el.hidden = false;
+              el.textContent =
+                "当前是 file:// 打开，浏览器会阻止 ES Module，脚本不会运行。请在项目根目录执行：python3 -m http.server 8080，然后访问 http://localhost:8080/index.html";
+            }
+          }
+        } catch (e) {
+          /* ignore */
+        }
+      })();
+    </script>
     <header class="app-header" role="banner">
       <div class="header-inner">
         <div class="header-left">
@@ -199,7 +223,7 @@
               <div class="svg-editor-toolbar-left">
                 <span class="svg-editor-title">户型平面图</span>
                 <span class="svg-editor-hint">
-                  从家具库<strong>拖到画布</strong>松手即放置 · <strong>Shift+点击</strong>加到画布中心 · 双击旋转 · Delete 删除 · <strong>滚轮</strong>缩放 · <strong>中键拖移</strong>平移 · <strong>Ctrl+Z / Ctrl+Shift+Z</strong>撤销重做
+                  从家具库<strong>拖到画布</strong>松手即放置 · <strong>Shift+点击</strong>加到画布中心 · 双击旋转 · Delete 删除 · <strong>滚轮</strong>缩放 · <strong>左键拖空白处</strong>或<strong>中键</strong>平移 · <strong>Ctrl+Z / Ctrl+Shift+Z</strong>撤销重做
                 </span>
               </div>
               <div
@@ -260,7 +284,7 @@
               >
                 <defs>
                   <pattern id="svgEditorGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1" />
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
                   </pattern>
                 </defs>
                 <g id="svgEditorViewRoot" transform="translate(0 0) scale(1)">
@@ -465,7 +489,18 @@
       }
     </script>
 
-    <script type="module" src="./src/main.js"></script>
+    <script type="module">
+      import("./src/main.js").catch(function (err) {
+        var el = document.getElementById("visionHomeBootBanner");
+        if (el) {
+          el.hidden = false;
+          el.style.whiteSpace = "pre-wrap";
+          el.textContent =
+            "JavaScript 未能加载。请用 http:// 打开本页并在项目根目录启动静态服务器；检查 Network 中 src/main.js 是否 404。\n\n错误：" +
+            (err && err.message ? err.message : String(err));
+        }
+      });
+    </script>
     <script src="./src/core/appShell.js"></script>
   </body>
 </html>

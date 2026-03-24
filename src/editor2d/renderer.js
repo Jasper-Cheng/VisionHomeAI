@@ -3,6 +3,6 @@
  * @param {SVGElement} svgRoot
  * @param {object} floorplanData - project + floors 结构
  */
-export function renderFloorplanToSvg(svgRoot, floorplanData) {
-  console.warn("[editor2d/renderer] renderFloorplanToSvg not implemented", svgRoot, floorplanData);
+export function renderFloorplanToSvg(_svgRoot, _floorplanData) {
+  /* 待接入：户型 JSON → 墙/房间 SVG */
 }

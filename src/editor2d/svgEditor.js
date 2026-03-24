@@ -4,6 +4,9 @@
  */
 import { getFurnitureDisplayName, getSvgStyleForItem } from "../furniture/svgStyle.js";
 
+/**
+ * @returns {{ ok: boolean, reason?: string | null, catalogSize?: number, error?: string }}
+ */
 export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const svg = document.getElementById("svgEditorCanvas");
   const viewRoot = document.getElementById("svgEditorViewRoot");
@@ -13,8 +16,21 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const gridToggleBtn = document.getElementById("svgGridToggleBtn");
 
   /** 墙层 / 家具层不再写在 index.html；家具层在运行时创建（墙层待户型 SVG 渲染接入时再挂 #svgEditorWalls） */
+  function svgEditorFail(reason) {
+    const r = { ok: false, reason };
+    window.__visionHomeSvgEditor = r;
+    return r;
+  }
+
+  if (!svg) {
+    return svgEditorFail("missing-svgEditorCanvas");
+  }
+  if (!viewRoot) {
+    return svgEditorFail("missing-svgEditorViewRoot");
+  }
+
   let furnitureLayer = document.getElementById("svgEditorFurnitureLayer");
-  if (!furnitureLayer && viewRoot) {
+  if (!furnitureLayer) {
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.setAttribute("id", "svgEditorFurnitureLayer");
     g.setAttribute("class", "svg-editor-furniture-layer");
@@ -22,8 +38,9 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     viewRoot.appendChild(g);
     furnitureLayer = g;
   }
-
-  if (!svg || !furnitureLayer) return;
+  if (!furnitureLayer) {
+    return svgEditorFail("furniture-layer-missing");
+  }
 
   const byId = catalog.byId instanceof Map ? catalog.byId : new Map();
 
@@ -37,6 +54,39 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const VIEW_W = 3000;
   const VIEW_H = 3000;
   const GRID = 20;
+
+  /** 拖动画布 / 家具 / 从侧栏拖出时禁止划选工具栏说明文字等（Safari/Chrome 均会出现蓝选区） */
+  const POINTER_DRAG_BODY_CLASS = "vision-home-pointer-dragging";
+  let pointerDragTextSuppressionDepth = 0;
+  function pushPointerDragTextSuppression() {
+    pointerDragTextSuppressionDepth += 1;
+    document.body.classList.add(POINTER_DRAG_BODY_CLASS);
+  }
+  function popPointerDragTextSuppression() {
+    pointerDragTextSuppressionDepth = Math.max(0, pointerDragTextSuppressionDepth - 1);
+    if (pointerDragTextSuppressionDepth === 0) {
+      document.body.classList.remove(POINTER_DRAG_BODY_CLASS);
+      try {
+        const sel = window.getSelection?.();
+        if (sel && sel.rangeCount > 0) sel.removeAllRanges();
+      } catch (_) {
+        /* ignore */
+      }
+    }
+  }
+
+  document.addEventListener(
+    "selectstart",
+    (e) => {
+      if (!document.body.classList.contains(POINTER_DRAG_BODY_CLASS)) return;
+      const t = e.target;
+      if (t?.closest?.("input, textarea, select, [contenteditable='true'], .search-input, .prop-input, .file-search-input")) {
+        return;
+      }
+      e.preventDefault();
+    },
+    true,
+  );
 
   /** 根据家具 id 取 2D 占位尺寸与样式（未知 id 用保守默认，便于兼容旧布局 JSON） */
   function getFootprint(modelId) {
@@ -58,6 +108,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   let selectedEl = null;
   let dragState = null;
   let middlePanState = null;
+  /** 左键在空白处按下后，超过阈值再进入平移（避免误触） */
+  let pendingLeftPan = null;
 
   /** 撤销 / 重做：家具布局快照 */
   const MAX_HISTORY = 80;
@@ -312,15 +364,21 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   }
   window.svgEditorApplyPropertiesFromPanel = applyPropertiesFromPanelToSvg;
 
-  function select(g) {
+  /**
+   * @param {{ skipFocus?: boolean }} [options] Safari：pointerdown 时立刻 focus SVG 组可能干扰拖拽，鼠标按下选中应 skipFocus
+   */
+  function select(g, options = {}) {
+    const skipFocus = options.skipFocus === true;
     if (selectedEl && selectedEl !== g) selectedEl.classList.remove("is-selected");
     selectedEl = g || null;
     if (selectedEl) {
       selectedEl.classList.add("is-selected");
-      try {
-        selectedEl.focus({ preventScroll: true });
-      } catch (_) {
-        /* ignore */
+      if (!skipFocus) {
+        try {
+          selectedEl.focus({ preventScroll: true });
+        } catch (_) {
+          /* ignore */
+        }
       }
     }
     syncPropertiesPanelForSelection(selectedEl);
@@ -413,16 +471,22 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (!dragState) return;
     if (e.pointerId !== dragState.pointerId) return;
     dragState.el.classList.remove("is-dragging");
+    /* WebKit：家具上用 setPointerCapture 常无效，拖拽时在根 svg 上 capture，此处对应 release */
     try {
-      dragState.el.releasePointerCapture(e.pointerId);
+      svg.releasePointerCapture(e.pointerId);
     } catch (_) {
-      /* ignore */
+      try {
+        dragState.el.releasePointerCapture(e.pointerId);
+      } catch (_) {
+        /* ignore */
+      }
     }
     window.removeEventListener("pointermove", onWindowMove);
     window.removeEventListener("pointerup", endDrag);
     window.removeEventListener("pointercancel", endDrag);
     const endedEl = dragState.el;
     dragState = null;
+    popPointerDragTextSuppression();
     if (selectedEl === endedEl) syncPropertiesPanelForSelection(selectedEl);
     if (historyReady) pushHistorySnapshot();
   }
@@ -462,12 +526,53 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     window.removeEventListener("pointerup", endMiddlePan);
     window.removeEventListener("pointercancel", endMiddlePan);
     middlePanState = null;
+    popPointerDragTextSuppression();
+  }
+
+  function clearPendingLeftPan() {
+    if (!pendingLeftPan) return;
+    window.removeEventListener("pointermove", onPendingLeftPanMove);
+    window.removeEventListener("pointerup", endPendingLeftPan);
+    window.removeEventListener("pointercancel", endPendingLeftPan);
+    pendingLeftPan = null;
+  }
+
+  function endPendingLeftPan(e) {
+    if (!pendingLeftPan || e.pointerId !== pendingLeftPan.pointerId) return;
+    clearPendingLeftPan();
+    popPointerDragTextSuppression();
+  }
+
+  function onPendingLeftPanMove(e) {
+    if (!pendingLeftPan || e.pointerId !== pendingLeftPan.pointerId) return;
+    const d = Math.hypot(e.clientX - pendingLeftPan.sx, e.clientY - pendingLeftPan.sy);
+    if (d < 6) return;
+    const r = clientToRootSvg(e.clientX, e.clientY);
+    clearPendingLeftPan();
+    middlePanState = { pointerId: e.pointerId, lastRx: r.x, lastRy: r.y };
+    svg.classList.add("is-middle-panning");
+    try {
+      svg.setPointerCapture(e.pointerId);
+    } catch (_) {
+      /* ignore */
+    }
+    window.addEventListener("pointermove", onMiddlePanMove, { passive: true });
+    window.addEventListener("pointerup", endMiddlePan);
+    window.addEventListener("pointercancel", endMiddlePan);
+  }
+
+  function isPointerOnCanvasBackground(target) {
+    if (!target || target === svg) return true;
+    if (target.classList?.contains("svg-editor-bg")) return true;
+    if (target.id === "svgEditorGridLayer") return true;
+    return false;
   }
 
   function startMiddlePan(e) {
     if (!viewRoot) return;
     if (middlePanState) return;
     e.preventDefault();
+    pushPointerDragTextSuppression();
     const r = clientToRootSvg(e.clientX, e.clientY);
     middlePanState = { pointerId: e.pointerId, lastRx: r.x, lastRy: r.y };
     svg.classList.add("is-middle-panning");
@@ -503,12 +608,22 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         return;
       }
 
-      const item = e.target.closest(".svg-furniture");
+      const item = e.target.closest?.(".svg-furniture");
       if (item && furnitureLayer.contains(item)) {
+        e.preventDefault();
         e.stopPropagation();
-        select(item);
+        select(item, { skipFocus: true });
+        /* Safari：焦点环 / 选区有时与 SVG 重绘叠成横向白条 */
         try {
-          item.setPointerCapture(e.pointerId);
+          if (document.activeElement === item) item.blur();
+          const sel = window.getSelection?.();
+          if (sel && sel.rangeCount > 0) sel.removeAllRanges();
+        } catch (_) {
+          /* ignore */
+        }
+        /* Chrome 可在子节点 capture；Safari/WebKit 对 SVG <g> 等 capture 常失败，统一到根 svg（与画布平移一致） */
+        try {
+          svg.setPointerCapture(e.pointerId);
         } catch (_) {
           /* ignore */
         }
@@ -520,6 +635,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
           grabY: p.y - pos.y,
           pointerId: e.pointerId,
         };
+        pushPointerDragTextSuppression();
         item.classList.add("is-dragging");
         window.addEventListener("pointermove", onWindowMove, { passive: true });
         window.addEventListener("pointerup", endDrag);
@@ -527,8 +643,14 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         return;
       }
 
-      if (e.target.classList?.contains("svg-editor-bg") || e.target === svg) {
+      if (e.button === 0 && isPointerOnCanvasBackground(e.target)) {
+        e.preventDefault();
         select(null);
+        pushPointerDragTextSuppression();
+        pendingLeftPan = { pointerId: e.pointerId, sx: e.clientX, sy: e.clientY };
+        window.addEventListener("pointermove", onPendingLeftPanMove, { passive: true });
+        window.addEventListener("pointerup", endPendingLeftPan);
+        window.addEventListener("pointercancel", endPendingLeftPan);
       }
     },
     true,
@@ -608,6 +730,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (!pendingLibraryDrag || e.pointerId !== pendingLibraryDrag.pointerId) return;
     const p = pendingLibraryDrag;
     pendingLibraryDrag = null;
+    popPointerDragTextSuppression();
     window.removeEventListener("pointermove", onLibraryDragMove, { passive: true });
     window.removeEventListener("pointerup", endLibraryDrag);
     window.removeEventListener("pointercancel", endLibraryDrag);
@@ -646,6 +769,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         window.__selectFurnitureLibraryCardByModel(model);
       }
 
+      pushPointerDragTextSuppression();
       pendingLibraryDrag = {
         model,
         sx: e.clientX,
@@ -678,9 +802,14 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorGetViewSize = () => ({ width: VIEW_W, height: VIEW_H });
   window.svgEditorResetView = resetView;
   window.svgEditorGetViewTransform = () => ({ tx: viewTx, ty: viewTy, scale: viewScale });
+  window.svgEditorToggleGrid = toggleGridVisible;
 
   select(null);
   initHistory();
   historyReady = true;
   setGridVisible(true);
+
+  const okResult = { ok: true, reason: null, catalogSize: byId.size };
+  window.__visionHomeSvgEditor = okResult;
+  return okResult;
 }

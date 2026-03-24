@@ -12,7 +12,7 @@ async function boot() {
   try {
     fpCatalog = await loadFloorPlanCatalog();
   } catch (err) {
-    console.error("[VisionHomeAI] 户型库加载失败:", err);
+    console.error(err);
     fpLoadError = true;
   }
   window.__floorPlanCatalog = fpCatalog;
@@ -23,7 +23,7 @@ async function boot() {
   try {
     catalog = await loadFurnitureCatalog();
   } catch (err) {
-    console.error("[VisionHomeAI] 家具库加载失败:", err);
+    console.error(err);
     loadError = true;
   }
 
@@ -36,14 +36,27 @@ async function boot() {
     designEntries = await loadDesignProjectsFromManifest();
     window.__designProjects = designEntries;
   } catch (err) {
-    console.error("[VisionHomeAI] 设计文件清单加载失败:", err);
+    console.error(err);
     designLoadError = true;
     window.__designProjects = [];
   }
   mountDesignFileList(designEntries, { loadError: designLoadError });
 
-  await import("./editor3d/viewer.js");
-  initSvgEditor(catalog);
+  /* 2D 编辑不依赖 WebGL：先初始化 SVG，避免 viewer 抛错时工具栏（网格等）全部未绑定 */
+  try {
+    initSvgEditor(catalog);
+  } catch (err) {
+    console.error(err);
+    window.__visionHomeSvgEditor = { ok: false, reason: "threw", error: String(err) };
+  }
+
+  try {
+    await import("./editor3d/viewer.js");
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-boot();
+boot().catch((err) => {
+  console.error(err);
+});

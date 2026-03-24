@@ -142,6 +142,7 @@ export function mountFloorplanLibrary(catalog, options = {}) {
 
     const card = document.createElement("article");
     card.className = "asset-card";
+    card.draggable = false;
     card.dataset.floorPlanId = fid;
     card.dataset.category = category;
     card.dataset.name = display.toLowerCase();

@@ -27,11 +27,14 @@
 
 ## 本地运行
 
+**必须在项目根目录（含 `index.html` 的 `VisionHomeAI` 文件夹）启动**，并用 **http://** 访问；**不要**用资源管理器双击 HTML（`file://` 下 ES Module 不会运行，页面会无交互、控制台常无脚本日志）。
+
 ```bash
+cd /path/to/VisionHomeAI
 python3 -m http.server 8080
 ```
 
-打开 http://localhost:8080
+浏览器打开：**http://localhost:8080/index.html**（或根路径 `/`）。若用 `file://` 打开或主脚本 404，页面顶部会出现提示条。
 
 ## 数据说明
 
