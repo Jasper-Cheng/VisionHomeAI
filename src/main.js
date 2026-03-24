@@ -8,6 +8,7 @@ import {
   mountDesignFileList,
   mountHeaderCurrentDesignLabel,
   mountSaveDesignFlow,
+  mountSwitchDesignUnsavedFlow,
 } from "./files/designFilesManager.js";
 import { initSvgEditor } from "./editor2d/svgEditor.js";
 
@@ -148,6 +149,7 @@ async function boot() {
   }
   /* 须在恢复会话之前挂载：恢复时会 emit layout-changed，保存按钮才能同步 */
   mountSaveDesignFlow();
+  mountSwitchDesignUnsavedFlow();
   tryRestoreEditSession();
 
   window.addEventListener("pagehide", () => persistEditSession());

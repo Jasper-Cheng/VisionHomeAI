@@ -1174,6 +1174,14 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     });
   }
 
+  /** 与顶栏「保存」脏检查一致：家具 + 画布户型 id */
+  function serializeDesignBaseline() {
+    return JSON.stringify({
+      furniture: getLayout(),
+      floorPlanId: getCurrentFloorplanId(),
+    });
+  }
+
   /** 方案 JSON furnitureInstances → 画布布局（仅当前 activeFloorId） */
   function projectToSvgLayout(project) {
     const floorId = project?.activeFloorId != null ? String(project.activeFloorId) : "floor1";
@@ -1259,7 +1267,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     select(null);
     initHistory();
     historyReady = true;
-    window.__designLayoutBaseline = JSON.stringify(getLayout());
+    window.__designLayoutBaseline = serializeDesignBaseline();
     emitSvgLayoutChanged();
 
     if (typeof window.__selectFloorplanLibraryCardById === "function") {
@@ -1280,7 +1288,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     historyReady = true;
     const baseline = options.designLayoutBaseline;
     window.__designLayoutBaseline =
-      typeof baseline === "string" ? baseline : JSON.stringify(getLayout());
+      typeof baseline === "string" ? baseline : serializeDesignBaseline();
     emitSvgLayoutChanged();
   }
 
@@ -1398,7 +1406,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       historyReady = true;
       const baseline = payload.designLayoutBaseline;
       window.__designLayoutBaseline =
-        typeof baseline === "string" ? baseline : JSON.stringify(getLayout());
+        typeof baseline === "string" ? baseline : serializeDesignBaseline();
       updateUndoRedoButtons();
       emitSvgLayoutChanged();
     } else {
@@ -1459,9 +1467,10 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorApplyFloorplanAtWorld = applyFloorplanEntryAtWorld;
   window.svgEditorClearFloorplan = clearFloorplanLayerContent;
   window.svgEditorCommitSavedBaseline = () => {
-    window.__designLayoutBaseline = JSON.stringify(getLayout());
+    window.__designLayoutBaseline = serializeDesignBaseline();
     emitSvgLayoutChanged();
   };
+  window.svgEditorGetDesignBaselineFingerprint = serializeDesignBaseline;
   window.svgEditorGetViewSize = () => ({ width: VIEW_W, height: VIEW_H });
   window.svgEditorResetView = resetView;
   window.svgEditorGetViewTransform = () => ({ tx: viewTx, ty: viewTy, scale: viewScale });
@@ -1477,7 +1486,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   select(null);
   initHistory();
   historyReady = true;
-  window.__designLayoutBaseline = JSON.stringify(getLayout());
+  window.__designLayoutBaseline = serializeDesignBaseline();
   setGridVisible(true);
 
   const okResult = { ok: true, reason: null, catalogSize: byId.size };

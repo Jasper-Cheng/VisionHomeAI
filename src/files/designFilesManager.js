@@ -192,11 +192,20 @@ export function mountDesignFileList(entries, options = {}) {
           }),
         );
       };
-      row.addEventListener("click", () => activate());
+      function tryActivateDesignFile() {
+        if (file === window.__activeDesignFile) return;
+        if (!canSaveCurrentDesign()) {
+          activate();
+          return;
+        }
+        pendingDesignFileSwitch = { activate };
+        openSwitchDesignUnsavedDialog();
+      }
+      row.addEventListener("click", () => tryActivateDesignFile());
       row.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          activate();
+          tryActivateDesignFile();
         }
       });
     }
@@ -210,11 +219,23 @@ const HEADER_UNSAVED_TEXT = "未保存文件";
 /** 新建场景流程：保存成功后再清空画布时置为 true，打开保存弹窗时由「保存」分支设置 */
 let newSceneAfterSavePending = false;
 
-function canSaveCurrentDesign() {
+/** 侧栏切换方案：保存完成或「不保存」后执行 */
+let pendingDesignFileSwitch = null;
+
+function currentDesignBaselineFingerprint() {
+  if (typeof window.svgEditorGetDesignBaselineFingerprint === "function") {
+    return window.svgEditorGetDesignBaselineFingerprint();
+  }
+  const getLayout = window.svgEditorGetLayout;
+  const layout = typeof getLayout === "function" ? getLayout() : [];
+  return JSON.stringify({ furniture: layout, floorPlanId: null });
+}
+
+export function canSaveCurrentDesign() {
   const getLayout = window.svgEditorGetLayout;
   const layout = typeof getLayout === "function" ? getLayout() : [];
   const hasItems = Array.isArray(layout) && layout.length > 0;
-  const cur = JSON.stringify(layout);
+  const cur = currentDesignBaselineFingerprint();
   const baseline = window.__designLayoutBaseline;
   const dirty = baseline === undefined || cur !== baseline;
   return hasItems && dirty;
@@ -375,6 +396,169 @@ function buildProjectPayload(name, layout) {
   };
 }
 
+function openSwitchDesignUnsavedDialog() {
+  const dlg = document.getElementById("switchDesignUnsavedDialog");
+  if (dlg && typeof dlg.showModal === "function") dlg.showModal();
+  else if (dlg) dlg.setAttribute("open", "");
+}
+
+function closeSwitchDesignUnsavedDialog() {
+  const dlg = document.getElementById("switchDesignUnsavedDialog");
+  if (dlg && typeof dlg.close === "function") dlg.close();
+  else if (dlg) dlg.removeAttribute("open");
+}
+
+function hasResolvedDesignName() {
+  return Boolean(String(window.__activeDesignProject?.name ?? "").trim());
+}
+
+function runPendingDesignFileSwitchIfAny() {
+  const p = pendingDesignFileSwitch;
+  pendingDesignFileSwitch = null;
+  if (p) p.activate();
+}
+
+/**
+ * 写入方案（顶栏 / 弹窗 / 切换前保存）；成功写入仓库后若存在待切换方案则继续打开目标文件
+ */
+export async function executeSaveWithName(name) {
+  const dialog = document.getElementById("saveDesignDialog");
+  const input = document.getElementById("saveDesignNameInput");
+  const errEl = document.getElementById("saveDesignNameError");
+
+  function hideError() {
+    if (errEl) {
+      errEl.hidden = true;
+      errEl.textContent = "";
+    }
+  }
+  function showError(msg) {
+    if (errEl) {
+      errEl.hidden = false;
+      errEl.textContent = msg;
+    }
+  }
+  function closeDialog() {
+    if (dialog && typeof dialog.close === "function") dialog.close();
+  }
+  function openSaveDialog() {
+    hideError();
+    const p = window.__activeDesignProject;
+    const defaultName = String(p?.name ?? "").trim();
+    if (input) input.value = defaultName;
+    if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+    else if (dialog) dialog.setAttribute("open", "");
+    requestAnimationFrame(() => {
+      try {
+        input?.focus();
+        input?.select();
+      } catch (_) {
+        /* ignore */
+      }
+    });
+  }
+
+  const trimmed = String(name ?? "").trim();
+  if (!trimmed) return;
+  const getLayout = window.svgEditorGetLayout;
+  const layout = typeof getLayout === "function" ? getLayout() : [];
+  if (!layout.length) {
+    openSaveDialog();
+    showError("画布上没有家具，无法保存。");
+    pendingDesignFileSwitch = null;
+    return;
+  }
+  const runNewSceneAfterSave = newSceneAfterSavePending;
+  const hadPendingSwitch = Boolean(pendingDesignFileSwitch);
+  const previousFile = window.__activeDesignFile;
+  const project = buildProjectPayload(trimmed, layout);
+  const filename =
+    previousFile && String(previousFile).trim().toLowerCase().endsWith(".json")
+      ? String(previousFile).trim()
+      : `${String(project.id).replace(/[^\w.-]+/g, "_")}.json`;
+  const json = `${JSON.stringify(project, null, 2)}\n`;
+
+  hideError();
+  const saved = await postSaveDesignToDataDir(filename, project);
+  if (!saved.ok) {
+    triggerDownloadDesignJson(filename, json);
+    openSaveDialog();
+    if (input) input.value = trimmed;
+    showError(
+      `无法写入 ${DATA_PATHS.design}/（${saved.reason}）。已改为下载 JSON。开发环境请运行：python3 scripts/dev_server.py`,
+    );
+  } else {
+    await refreshDesignProjectsFromManifest();
+  }
+
+  window.__activeDesignProject = project;
+  window.__activeDesignFile = saved.ok ? saved.file : filename;
+  window.__activeDesignId = String(project.id);
+  if (typeof window.svgEditorCommitSavedBaseline === "function") {
+    window.svgEditorCommitSavedBaseline();
+  }
+  newSceneAfterSavePending = false;
+  window.dispatchEvent(new CustomEvent("visionhome:design-metadata-updated"));
+
+  if (runNewSceneAfterSave && saved.ok) {
+    pendingDesignFileSwitch = null;
+    closeDialog();
+    window.dispatchEvent(new CustomEvent("visionhome:execute-new-scene"));
+    return;
+  }
+
+  if (hadPendingSwitch && saved.ok) {
+    closeDialog();
+    runPendingDesignFileSwitchIfAny();
+    return;
+  }
+
+  if (saved.ok) {
+    closeDialog();
+  }
+}
+
+let switchDesignUnsavedMounted = false;
+
+/**
+ * 侧栏切换方案：未保存且保存按钮可用时的确认框（取消 / 不保存 / 保存）
+ */
+export function mountSwitchDesignUnsavedFlow() {
+  if (switchDesignUnsavedMounted) return;
+  const dlg = document.getElementById("switchDesignUnsavedDialog");
+  const cancelBtn = document.getElementById("switchDesignUnsavedCancel");
+  const discardBtn = document.getElementById("switchDesignUnsavedDiscard");
+  const saveBtn = document.getElementById("switchDesignUnsavedSave");
+  if (!dlg || !cancelBtn || !discardBtn || !saveBtn) return;
+  switchDesignUnsavedMounted = true;
+
+  cancelBtn.addEventListener("click", () => {
+    pendingDesignFileSwitch = null;
+    closeSwitchDesignUnsavedDialog();
+  });
+
+  dlg.addEventListener("cancel", () => {
+    pendingDesignFileSwitch = null;
+  });
+
+  discardBtn.addEventListener("click", () => {
+    const p = pendingDesignFileSwitch;
+    pendingDesignFileSwitch = null;
+    closeSwitchDesignUnsavedDialog();
+    if (p) p.activate();
+  });
+
+  saveBtn.addEventListener("click", () => {
+    if (!pendingDesignFileSwitch) return;
+    closeSwitchDesignUnsavedDialog();
+    if (hasResolvedDesignName()) {
+      void executeSaveWithName(String(window.__activeDesignProject?.name ?? "").trim());
+    } else {
+      window.dispatchEvent(new CustomEvent("visionhome:open-save-design"));
+    }
+  });
+}
+
 function updateSaveButtonState() {
   const btn = document.getElementById("btnSave");
   if (!btn) return;
@@ -383,7 +567,7 @@ function updateSaveButtonState() {
   const getLayout = window.svgEditorGetLayout;
   const layout = typeof getLayout === "function" ? getLayout() : [];
   const hasItems = Array.isArray(layout) && layout.length > 0;
-  const cur = JSON.stringify(layout);
+  const cur = currentDesignBaselineFingerprint();
   const baseline = window.__designLayoutBaseline;
   const dirty = baseline === undefined || cur !== baseline;
   if (!hasItems) btn.title = "画布上没有家具，无法保存";
@@ -444,59 +628,6 @@ export function mountSaveDesignFlow() {
     });
   }
 
-  /** 顶栏保存：已有方案名称则直接落盘，否则弹窗输入名称 */
-  function hasResolvedDesignName() {
-    return Boolean(String(window.__activeDesignProject?.name ?? "").trim());
-  }
-
-  async function executeSaveWithName(name) {
-    const trimmed = String(name ?? "").trim();
-    if (!trimmed) return;
-    const getLayout = window.svgEditorGetLayout;
-    const layout = typeof getLayout === "function" ? getLayout() : [];
-    if (!layout.length) {
-      openSaveDialog();
-      showError("画布上没有家具，无法保存。");
-      return;
-    }
-    const runNewSceneAfterSave = newSceneAfterSavePending;
-    const previousFile = window.__activeDesignFile;
-    const project = buildProjectPayload(trimmed, layout);
-    const filename =
-      previousFile && String(previousFile).trim().toLowerCase().endsWith(".json")
-        ? String(previousFile).trim()
-        : `${String(project.id).replace(/[^\w.-]+/g, "_")}.json`;
-    const json = `${JSON.stringify(project, null, 2)}\n`;
-
-    hideError();
-    const saved = await postSaveDesignToDataDir(filename, project);
-    if (!saved.ok) {
-      triggerDownloadDesignJson(filename, json);
-      openSaveDialog();
-      input.value = trimmed;
-      showError(
-        `无法写入 ${DATA_PATHS.design}/（${saved.reason}）。已改为下载 JSON。开发环境请运行：python3 scripts/dev_server.py`,
-      );
-    } else {
-      await refreshDesignProjectsFromManifest();
-    }
-
-    window.__activeDesignProject = project;
-    window.__activeDesignFile = saved.ok ? saved.file : filename;
-    window.__activeDesignId = String(project.id);
-    if (typeof window.svgEditorCommitSavedBaseline === "function") {
-      window.svgEditorCommitSavedBaseline();
-    }
-    newSceneAfterSavePending = false;
-    window.dispatchEvent(new CustomEvent("visionhome:design-metadata-updated"));
-    if (saved.ok) {
-      closeDialog();
-      if (runNewSceneAfterSave) {
-        window.dispatchEvent(new CustomEvent("visionhome:execute-new-scene"));
-      }
-    }
-  }
-
   btn.addEventListener("click", async () => {
     if (btn.disabled) return;
     if (hasResolvedDesignName()) {
@@ -508,11 +639,13 @@ export function mountSaveDesignFlow() {
 
   cancelBtn?.addEventListener("click", () => {
     newSceneAfterSavePending = false;
+    pendingDesignFileSwitch = null;
     closeDialog();
   });
 
   dialog.addEventListener("cancel", () => {
     newSceneAfterSavePending = false;
+    pendingDesignFileSwitch = null;
   });
 
   input.addEventListener("keydown", (e) => {

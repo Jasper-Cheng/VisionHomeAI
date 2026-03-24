@@ -4,7 +4,7 @@
   "name": "两居示例方案",
   "description": "基于户型模板 templateId 的家具编辑方案；墙线房间来自 data/floorplans，本文件为编辑层。",
   "createdAt": "2025-03-21T12:00:00.000Z",
-  "updatedAt": "2025-03-21T12:00:00.000Z",
+  "updatedAt": "2026-03-24T05:48:42.610Z",
   "templateId": "apartment_2b1l",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -13,18 +13,49 @@
       "instanceId": "fi_1",
       "furnitureId": "sofa_001",
       "floorId": "floor1",
-      "positionMm": [2100, 7200],
+      "positionMm": [
+        2100,
+        2940
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "sofa_001",
+      "floorId": "floor1",
+      "positionMm": [
+        1400,
+        1640
+      ],
       "rotationDeg": 0
     }
   ],
   "svgEditor": {
     "version": 1,
     "floorPlanId": "apartment_2b1l",
-    "view": { "tx": 0, "ty": 0, "scale": 1 },
+    "view": {
+      "tx": 0,
+      "ty": 0,
+      "scale": 1
+    },
     "gridVisible": true,
-    "viewBox": { "width": 3000, "height": 3000 },
+    "viewBox": {
+      "width": 3000,
+      "height": 3000
+    },
     "furniture": [
-      { "model": "sofa_001", "x": 2100, "y": 7200, "rotation": 0 }
+      {
+        "model": "sofa_001",
+        "x": 2100,
+        "y": 2940,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_001",
+        "x": 1400,
+        "y": 1640,
+        "rotation": 0
+      }
     ]
   }
 }
