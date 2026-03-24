@@ -6,12 +6,23 @@ import { getFurnitureDisplayName, getSvgStyleForItem } from "../furniture/svgSty
 
 export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const svg = document.getElementById("svgEditorCanvas");
-  const furnitureLayer = document.getElementById("svgEditorFurnitureLayer");
   const viewRoot = document.getElementById("svgEditorViewRoot");
   const gridLayer = document.getElementById("svgEditorGridLayer");
   const undoBtn = document.querySelector("[data-svg-undo]");
   const redoBtn = document.querySelector("[data-svg-redo]");
   const gridToggleBtn = document.getElementById("svgGridToggleBtn");
+
+  /** 墙层 / 家具层不再写在 index.html；家具层在运行时创建（墙层待户型 SVG 渲染接入时再挂 #svgEditorWalls） */
+  let furnitureLayer = document.getElementById("svgEditorFurnitureLayer");
+  if (!furnitureLayer && viewRoot) {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("id", "svgEditorFurnitureLayer");
+    g.setAttribute("class", "svg-editor-furniture-layer");
+    g.setAttribute("aria-label", "家具布局");
+    viewRoot.appendChild(g);
+    furnitureLayer = g;
+  }
+
   if (!svg || !furnitureLayer) return;
 
   const byId = catalog.byId instanceof Map ? catalog.byId : new Map();
@@ -605,13 +616,6 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorResetView = resetView;
   window.svgEditorGetViewTransform = () => ({ tx: viewTx, ty: viewTy, scale: viewScale });
 
-  /* 初始示例：置于画布正中户型的右下房间内（条目来自家具库 JSON） */
-  const ids = (catalog.items || []).map((i) => i.id);
-  const pick = (want) => (ids.includes(want) ? want : null);
-  const id1 = pick("sofa_001") || ids[0];
-  const id2 = pick("table_001") || ids[1];
-  if (id1) addFurniture(id1, 1650, 1680);
-  if (id2 && id2 !== id1) addFurniture(id2, 1720, 1690);
   select(null);
   initHistory();
   historyReady = true;
