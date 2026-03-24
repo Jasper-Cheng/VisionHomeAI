@@ -144,3 +144,44 @@ export function mountDesignFileList(entries, options = {}) {
 
   bindDesignFileSearch();
 }
+
+const HEADER_UNSAVED_TEXT = "未保存文件";
+
+/**
+ * 顶栏「保存」右侧：当前方案显示名；未关联已打开文件时为「未保存文件」
+ */
+export function mountHeaderCurrentDesignLabel() {
+  const labelEl = document.getElementById("currentDesignFileLabel");
+  const btnNew = document.getElementById("btnNewScene");
+  if (!labelEl) return;
+
+  function setLabel(displayText) {
+    const text = displayText || HEADER_UNSAVED_TEXT;
+    labelEl.textContent = text;
+    labelEl.title =
+      text === HEADER_UNSAVED_TEXT ? "尚未关联已保存的设计方案" : `当前方案：${text}`;
+  }
+
+  function syncFromGlobals() {
+    const file = window.__activeDesignFile;
+    const project = window.__activeDesignProject;
+    if (!file || !project) {
+      setLabel(HEADER_UNSAVED_TEXT);
+      return;
+    }
+    const name = String(project?.name ?? "").trim();
+    setLabel(name || "（未命名）");
+  }
+
+  window.addEventListener("visionhome:design-select", () => syncFromGlobals());
+
+  btnNew?.addEventListener("click", () => {
+    window.__activeDesignFile = undefined;
+    window.__activeDesignProject = undefined;
+    window.__activeDesignId = undefined;
+    setLabel(HEADER_UNSAVED_TEXT);
+    window.dispatchEvent(new CustomEvent("visionhome:design-new"));
+  });
+
+  syncFromGlobals();
+}

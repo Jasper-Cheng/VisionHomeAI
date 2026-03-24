@@ -241,6 +241,24 @@ body.vision-home-pointer-dragging [contenteditable="true"] {
   min-width: 72px;
 }
 
+.header-save-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.current-design-file-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  max-width: min(220px, 28vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+
 .icon-btn {
   width: 30px;
   height: 30px;

@@ -3,7 +3,11 @@
  */
 import { loadFurnitureCatalog, mountFurnitureLibrary } from "./furniture/furnitureManager.js";
 import { loadFloorPlanCatalog, mountFloorplanLibrary } from "./floorplan/floorPlanManager.js";
-import { loadDesignProjectsFromManifest, mountDesignFileList } from "./files/designFilesManager.js";
+import {
+  loadDesignProjectsFromManifest,
+  mountDesignFileList,
+  mountHeaderCurrentDesignLabel,
+} from "./files/designFilesManager.js";
 import { initSvgEditor } from "./editor2d/svgEditor.js";
 
 async function boot() {
@@ -41,6 +45,7 @@ async function boot() {
     window.__designProjects = [];
   }
   mountDesignFileList(designEntries, { loadError: designLoadError });
+  mountHeaderCurrentDesignLabel();
 
   /* 2D 编辑不依赖 WebGL：先初始化 SVG，避免 viewer 抛错时工具栏（网格等）全部未绑定 */
   try {
