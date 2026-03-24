@@ -5,7 +5,7 @@
 ```
 ├── assets/
 │   ├── models/           # GLB 家具模型
-│   ├── thumbnails/       # 家具库卡片预览图（与 furniture id 同名，见该目录 README）
+│   ├── thumbnails/       # 家具库卡片预览图（与 furniture id 同名；路径见 furnitureLibrary.thumbnail）
 │   ├── textures/         # 贴图（可选）
 │   └── vendor/           # three.js、OrbitControls 等
 ├── data/
