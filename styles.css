@@ -380,7 +380,8 @@ a.avatar:hover {
 
 .svg-editor-toolbar {
   position: relative;
-  z-index: 10; /* 高于叠放的 .properties-panel(6)，避免「网格」等按钮被透明层挡住 */
+  /* 须低于 .side-panel(5) 与 .properties-panel(6)，否则会盖住左侧库面板；工具栏已用 padding 避开右侧面板区域 */
+  z-index: 3;
   flex-shrink: 0;
   display: flex;
   align-items: center;
