@@ -576,11 +576,6 @@ a.avatar:hover {
   cursor: grabbing;
 }
 
-/* 拖动时不绘制标签：opacity 仍可能参与 WebKit 排版/残影；display:none 彻底不参与绘制 */
-.svg-furniture.is-dragging > text {
-  display: none;
-}
-
 .svg-furniture.is-selected .svg-furniture-shape {
   stroke: rgba(252, 211, 77, 0.98);
   stroke-width: 2.5px;
