@@ -1630,6 +1630,17 @@ a.avatar:hover {
   box-sizing: border-box;
 }
 
+/* 家具库卡片：预览图略缩小居中，避免顶满圆角框（户型库 / 拖拽幽灵仍用全局 .asset-thumb-img 铺满） */
+.furniture-asset-grid .asset-thumb-img {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: 72%;
+  height: 72%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+}
+
 /* 家具库：独立类名，避免共用 .asset-name 的 -webkit-box/line-clamp（Safari 会裁掉尺寸行） */
 .furniture-asset-grid .furniture-asset-label {
   display: flex;
@@ -1746,16 +1757,16 @@ a.avatar:hover {
   height: 100%;
 }
 
-/* 从家具库拖向画布：Pointer 跟手缩略图（非原生 drag，避免 Safari 与放置逻辑冲突） */
+/* 从家具库/户型库拖向画布：外框与侧栏 .asset-thumb（108px）一致，图与家具库卡片同为 72% contain 居中 */
 .furniture-library-drag-ghost {
   position: fixed;
   left: 0;
   top: 0;
   z-index: 10050;
-  width: 92px;
-  height: 92px;
+  width: 108px;
+  height: 108px;
   pointer-events: none;
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: visible;
   box-sizing: border-box;
   background: transparent;
@@ -1771,6 +1782,25 @@ a.avatar:hover {
   background: transparent;
   /* 仅让图标/图本身浮在画布上，避免整块黑底卡片感 */
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+}
+
+.furniture-library-drag-ghost .asset-thumb-img {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: 72%;
+  height: 72%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+}
+
+.furniture-library-drag-ghost .floorplan-thumb-svg {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: 72%;
+  height: 72%;
+  transform: translate(-50%, -50%);
 }
 
 /* 克隆侧栏 DOM 时骨架层 z-index 可能盖住图；拖拽跟手只保留图 */

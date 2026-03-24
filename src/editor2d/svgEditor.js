@@ -1360,8 +1360,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function positionLibraryDragGhost(clientX, clientY) {
     const g = pendingLibraryDrag?.ghostEl;
     if (!g) return;
-    const w = g.offsetWidth || 88;
-    const h = g.offsetHeight || 88;
+    const w = g.offsetWidth || 108;
+    const h = g.offsetHeight || 108;
     g.style.left = `${Math.round(clientX - w / 2)}px`;
     g.style.top = `${Math.round(clientY - h / 2)}px`;
   }
@@ -1495,8 +1495,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function positionFloorplanDragGhost(clientX, clientY) {
     const g = pendingFloorplanDrag?.ghostEl;
     if (!g) return;
-    const w = g.offsetWidth || 88;
-    const h = g.offsetHeight || 88;
+    const w = g.offsetWidth || 108;
+    const h = g.offsetHeight || 108;
     g.style.left = `${Math.round(clientX - w / 2)}px`;
     g.style.top = `${Math.round(clientY - h / 2)}px`;
   }
