@@ -846,7 +846,7 @@ a.avatar:hover {
   filter: drop-shadow(0 0 1px rgba(252, 211, 77, 0.98)) drop-shadow(0 0 6px rgba(252, 211, 77, 0.4));
 }
 
-/* 画布家具：缩略图 slice 铺满 footprint（cm）；无描边，选中/焦点用光晕 */
+/* 画布家具：缩略图非等比铺满 footprint（cm，与标注一致）；无描边，选中/焦点用光晕 */
 .svg-furniture-thumb-img {
   -webkit-user-drag: none;
   pointer-events: auto;

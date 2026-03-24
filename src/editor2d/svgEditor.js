@@ -1,6 +1,7 @@
 /**
  * 户型 SVG 平面图：家具拖拽、网格吸附、旋转、删除
- * 画布 3000×3000 cm（1 用户单位 = 1 cm）；家具尺寸来自 data/furniture/（cm，由 main 注入 catalog）
+ * 画布 3000×3000 cm（1 用户单位 = 1 cm）；家具尺寸来自 data/furniture/（cm）。
+ * 有户型底图时，墙体/房间在 `svg-floorplan-xform` 内乘 scale(s)；家具组须乘同一 s，否则标注 cm 与视觉比例不一致。
  */
 import { appendFloorGeometryToGroup, getFloorBBoxCm, getPrimaryFloor } from "../floorplan/floorplanSvg.js";
 import { getFurnitureThumbnailUrls } from "../furniture/furnitureManager.js";
@@ -80,6 +81,23 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const VIEW_W = 3000;
   const VIEW_H = 3000;
   const GRID = 1;
+
+  /** 与户型 `translate(..) scale(s)` 一致；无户型时为 1 */
+  function getActiveFloorplanScale() {
+    const xf = floorplanLayer?.querySelector(".svg-floorplan-xform");
+    if (!xf) return 1;
+    const s = parseFloat(String(xf.dataset.fpS ?? "1"));
+    if (!Number.isFinite(s) || s <= 0) return 1;
+    return Math.min(Math.max(s, 0.02), 4);
+  }
+
+  function formatFurnitureTransform(cx, cy, rotDeg) {
+    const vp = getActiveFloorplanScale();
+    if (Math.abs(vp - 1) < 1e-8) {
+      return `translate(${cx},${cy}) rotate(${rotDeg})`;
+    }
+    return `translate(${cx},${cy}) rotate(${rotDeg}) scale(${vp})`;
+  }
 
   /** 拖动画布 / 家具 / 从侧栏拖出时禁止划选工具栏说明文字等（Safari/Chrome 均会出现蓝选区） */
   const POINTER_DRAG_BODY_CLASS = "vision-home-pointer-dragging";
@@ -462,15 +480,20 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return gapBelow + 1.2 * fontPx + (nTotal - 1) * lineH;
   }
 
-  /** 家具组 translate(cx,cy)+rotate(rot) 后，外轮廓+底部标注区 在父坐标系中的轴对齐包围盒 */
-  function furnitureWorldAabb(cx, cy, rot, localBounds, labelBelowPad = 0) {
-    const pad = Math.max(0, Number(labelBelowPad) || 0);
+  /** 家具组 translate(cx,cy)+rotate(rot)+scale(vp) 后，外轮廓+底部标注区 在父坐标系中的轴对齐包围盒 */
+  function furnitureWorldAabb(cx, cy, rot, localBounds, labelBelowPad = 0, vp = 1) {
+    const v = Math.max(1e-9, Number(vp) || 1);
+    const pad = Math.max(0, Number(labelBelowPad) || 0) * v;
     const { minX: lx0, minY: ly0, maxX: lx1, maxY: ly1 } = localBounds;
+    const lx0s = lx0 * v;
+    const ly0s = ly0 * v;
+    const lx1s = lx1 * v;
+    const ly1s = ly1 * v;
     const corners = [
-      [lx0, ly0],
-      [lx1, ly0],
-      [lx1, ly1 + pad],
-      [lx0, ly1 + pad],
+      [lx0s, ly0s],
+      [lx1s, ly0s],
+      [lx1s, ly1s + pad],
+      [lx0s, ly1s + pad],
     ];
     let minX = Infinity;
     let minY = Infinity;
@@ -573,7 +596,13 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const { x, y } = parseTranslate(g);
     const rot = getRotation(g);
     const c = clampPosition(g, x, y);
-    g.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${rot})`);
+    g.setAttribute("transform", formatFurnitureTransform(c.x, c.y, rot));
+  }
+
+  function syncAllFurnitureTransformsToFloorplan() {
+    furnitureLayer.querySelectorAll(".svg-furniture").forEach((el) => {
+      applyTransform(el);
+    });
   }
 
   /**
@@ -586,38 +615,39 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const labelPad = estimateFurnitureLabelPadBelow(def);
     const margin = 10;
     const rot = getRotation(g);
+    const vp = getActiveFloorplanScale();
 
     let cx = x;
     let cy = y;
 
     for (let iter = 0; iter < 16; iter++) {
-      let b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
+      let b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad, vp);
       cx += Math.round(b.minX / GRID) * GRID - b.minX;
       cy += Math.round(b.minY / GRID) * GRID - b.minY;
 
-      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
+      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad, vp);
       let adjusted = false;
       if (b.minX < margin) {
         cx += margin - b.minX;
         adjusted = true;
       }
-      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
+      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad, vp);
       if (b.minY < margin) {
         cy += margin - b.minY;
         adjusted = true;
       }
-      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
+      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad, vp);
       if (b.maxX > VIEW_W - margin) {
         cx += VIEW_W - margin - b.maxX;
         adjusted = true;
       }
-      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
+      b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad, vp);
       if (b.maxY > VIEW_H - margin) {
         cy += VIEW_H - margin - b.maxY;
         adjusted = true;
       }
       if (!adjusted) {
-        b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad);
+        b = furnitureWorldAabb(cx, cy, rot, bounds, labelPad, vp);
         cx += Math.round(b.minX / GRID) * GRID - b.minX;
         cy += Math.round(b.minY / GRID) * GRID - b.minY;
         break;
@@ -673,7 +703,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       if (rot < 0) rot += 360;
     }
     selectedEl.setAttribute("data-rot", String(rot));
-    selectedEl.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${rot})`);
+    selectedEl.setAttribute("transform", formatFurnitureTransform(c.x, c.y, rot));
     schedulePushHistory();
     return true;
   }
@@ -697,6 +727,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function clearFloorplanLayerContent() {
     clearFloorplanSelection();
     floorplanLayer.replaceChildren();
+    syncAllFurnitureTransformsToFloorplan();
     if (historyReady && !isRestoring) pushHistorySnapshot();
   }
 
@@ -815,7 +846,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       imgEl.setAttribute("y", String(-def.hh));
       imgEl.setAttribute("width", String(bw));
       imgEl.setAttribute("height", String(bh));
-      imgEl.setAttribute("preserveAspectRatio", "xMidYMid slice");
+      /* 不用 slice：各引擎对外链 SVG 的固有尺寸不一致（默认 300×150 等），会导致同 cm 宽度在栅格上差几倍；none 强制铺满 footprint */
+      imgEl.setAttribute("preserveAspectRatio", "none");
       imgEl.setAttribute("clip-path", `url(#${clipId})`);
       imgEl.setAttribute("href", thumbHref);
       imgEl.setAttributeNS(XLINK_NS, "href", thumbHref);
@@ -881,7 +913,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     g.appendChild(dimG);
 
     const pos = clampPosition(g, cx, cy);
-    g.setAttribute("transform", `translate(${pos.x},${pos.y}) rotate(${rot})`);
+    g.setAttribute("transform", formatFurnitureTransform(pos.x, pos.y, rot));
     furnitureLayer.appendChild(g);
     return g;
   }
@@ -938,7 +970,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       const pos = parseTranslate(endedEl);
       const c = clampPosition(endedEl, pos.x, pos.y);
       const r = getRotation(endedEl);
-      endedEl.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${r})`);
+      endedEl.setAttribute("transform", formatFurnitureTransform(c.x, c.y, r));
     }
     if (selectedEl === endedEl) syncPropertiesPanelForSelection(selectedEl);
     if (historyReady) pushHistorySnapshot();
@@ -951,7 +983,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const ny = p.y - dragState.grabY;
     const c = clampPosition(dragState.el, nx, ny);
     const r = getRotation(dragState.el);
-    dragState.el.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${r})`);
+    dragState.el.setAttribute("transform", formatFurnitureTransform(c.x, c.y, r));
     if (propInputX) propInputX.value = String(Math.round(c.x));
     if (propInputZ) propInputZ.value = String(Math.round(c.y));
   }
@@ -1167,7 +1199,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         else if (k === "ArrowDown") dy = GRID;
         const c = clampPosition(selectedEl, pos.x + dx, pos.y + dy);
         const r = getRotation(selectedEl);
-        selectedEl.setAttribute("transform", `translate(${c.x},${c.y}) rotate(${r})`);
+        selectedEl.setAttribute("transform", formatFurnitureTransform(c.x, c.y, r));
         syncPropertiesPanelForSelection(selectedEl);
         if (historyReady) schedulePushHistory();
         return;
@@ -1307,6 +1339,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         detail: { id: entry?.id != null ? String(entry.id) : "" },
       }),
     );
+
+    syncAllFurnitureTransformsToFloorplan();
 
     if (historyReady && !isRestoring) pushHistorySnapshot();
   }
