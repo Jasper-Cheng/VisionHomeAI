@@ -3,6 +3,7 @@
  * 画布 3000×3000 cm（1 用户单位 = 1 cm）；家具尺寸来自 data/furniture/（cm，由 main 注入 catalog）
  */
 import { appendFloorGeometryToGroup, getFloorBBoxCm, getPrimaryFloor } from "../floorplan/floorplanSvg.js";
+import { getFurnitureThumbnailUrls } from "../furniture/furnitureManager.js";
 import { getFurnitureDisplayName, getSvgStyleForItem } from "../furniture/svgStyle.js";
 
 /**
@@ -63,6 +64,11 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   const byId = catalog.byId instanceof Map ? catalog.byId : new Map();
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const XLINK_NS = "http://www.w3.org/1999/xlink";
+  /** 画布上 <image clip-path> 的 id，避免重复 */
+  let furnitureThumbClipSerial = 0;
 
   const propertiesPanel = document.getElementById("propertiesPanel");
   const propertiesName = propertiesPanel?.querySelector(".properties-name");
@@ -771,14 +777,65 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const fw = Math.max(1, lb.maxX - lb.minX) || 1;
     const fh = Math.max(1, lb.maxY - lb.minY) || 1;
     const strokeW = Math.min(2.5, Math.max(0.6, Math.min(fw, fh) * 0.02));
+    const rxShape = Math.min(6, Math.min(def.hw, def.hh) * 0.22);
+    const bw = Math.max(1, Number(def.hw) * 2) || 1;
+    const bh = Math.max(1, Number(def.hh) * 2) || 1;
+
+    const thumbUrls = getFurnitureThumbnailUrls(item);
+    const thumbHref = thumbUrls[0] ? String(thumbUrls[0]).trim() : "";
 
     let shape;
     const polyDraw =
       def.polygonPoints && def.polygonPoints.length >= 3
         ? normalizeFurniturePolygonToFootprint(def.polygonPoints, def.hw, def.hh)
         : null;
-    if (polyDraw && polyDraw.length >= 3) {
-      const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+
+    if (thumbHref) {
+      const shapeG = document.createElementNS(SVG_NS, "g");
+      shapeG.setAttribute("class", "svg-furniture-shape-group");
+
+      const clipId = `fcb-${furnitureThumbClipSerial++}`;
+      const defs = document.createElementNS(SVG_NS, "defs");
+      const clipPath = document.createElementNS(SVG_NS, "clipPath");
+      clipPath.setAttribute("id", clipId);
+      const clipRect = document.createElementNS(SVG_NS, "rect");
+      clipRect.setAttribute("x", String(-def.hw));
+      clipRect.setAttribute("y", String(-def.hh));
+      clipRect.setAttribute("width", String(bw));
+      clipRect.setAttribute("height", String(bh));
+      clipRect.setAttribute("rx", String(rxShape));
+      clipPath.appendChild(clipRect);
+      defs.appendChild(clipPath);
+      shapeG.appendChild(defs);
+
+      const imgEl = document.createElementNS(SVG_NS, "image");
+      imgEl.setAttribute("class", "svg-furniture-thumb-img");
+      imgEl.setAttribute("x", String(-def.hw));
+      imgEl.setAttribute("y", String(-def.hh));
+      imgEl.setAttribute("width", String(bw));
+      imgEl.setAttribute("height", String(bh));
+      imgEl.setAttribute("preserveAspectRatio", "xMidYMid slice");
+      imgEl.setAttribute("clip-path", `url(#${clipId})`);
+      imgEl.setAttribute("href", thumbHref);
+      imgEl.setAttributeNS(XLINK_NS, "href", thumbHref);
+
+      const outline = document.createElementNS(SVG_NS, "rect");
+      outline.setAttribute("class", "svg-furniture-shape");
+      outline.setAttribute("x", String(-def.hw));
+      outline.setAttribute("y", String(-def.hh));
+      outline.setAttribute("width", String(bw));
+      outline.setAttribute("height", String(bh));
+      outline.setAttribute("rx", String(rxShape));
+      outline.setAttribute("fill", "none");
+      outline.setAttribute("stroke", def.stroke);
+      outline.setAttribute("stroke-width", String(strokeW));
+      outline.setAttribute("pointer-events", "none");
+
+      shapeG.appendChild(imgEl);
+      shapeG.appendChild(outline);
+      shape = shapeG;
+    } else if (polyDraw && polyDraw.length >= 3) {
+      const poly = document.createElementNS(SVG_NS, "polygon");
       poly.setAttribute(
         "points",
         polyDraw.map((p) => `${p.x},${p.y}`).join(" "),
@@ -790,14 +847,12 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       poly.classList.add("svg-furniture-shape");
       shape = poly;
     } else {
-      /* 圆角不超过短边一半，避免小占位被 rx=14(cm) 画成圆 */
-      const rx = Math.min(6, Math.min(def.hw, def.hh) * 0.22);
-      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      const rect = document.createElementNS(SVG_NS, "rect");
       rect.setAttribute("x", String(-def.hw));
       rect.setAttribute("y", String(-def.hh));
-      rect.setAttribute("width", String(Math.max(1, Number(def.hw) * 2) || 1));
-      rect.setAttribute("height", String(Math.max(1, Number(def.hh) * 2) || 1));
-      rect.setAttribute("rx", String(rx));
+      rect.setAttribute("width", String(bw));
+      rect.setAttribute("height", String(bh));
+      rect.setAttribute("rx", String(rxShape));
       rect.setAttribute("fill", def.fill);
       rect.setAttribute("stroke", def.stroke);
       rect.setAttribute("stroke-width", String(strokeW));

@@ -853,6 +853,12 @@ a.avatar:hover {
   /* 不再使用 filter：Safari 对 SVG filter+transform 极容易画出全宽白线残影 */
 }
 
+/* 画布家具：缩略图与侧栏同源，slice 铺满 footprint；描边在叠加的 rect 上 */
+.svg-furniture-thumb-img {
+  -webkit-user-drag: none;
+  pointer-events: auto;
+}
+
 .left-rail {
   width: 52px;
   background: #1a1a1a;
