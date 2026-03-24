@@ -13,7 +13,7 @@
 │   ├── furnitureLibrary.json   # 家具库
 │   └── design/           # 方案 / 工程 JSON + manifest.json（侧栏「设计文件」列表）
 ├── src/
-│   ├── core/             # projectManager、schema
+│   ├── core/             # schema 等
 │   ├── editor2d/         # 2D / SVG（svgEditor.js + renderer 占位）
 │   ├── editor3d/         # 3D（viewer.js + loader 占位）
 │   ├── floorplan/        # 户型库加载与侧栏挂载

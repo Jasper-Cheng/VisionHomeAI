@@ -1,4 +1,4 @@
-import { loadFurnitureLibrary } from "../core/projectManager.js";
+import { DATA_PATHS } from "../core/schema.js";
 import { CATEGORY_LABELS, getFurnitureDisplayName } from "./svgStyle.js";
 
 /** 缩略图骨架色（循环使用） */
@@ -7,12 +7,18 @@ const THUMB_VARIANTS = ["", "thumb-skeleton--green", "thumb-skeleton--warm", "th
 export { CATEGORY_LABELS, getFurnitureDisplayName };
 export { getSvgStyleForItem } from "./svgStyle.js";
 
+async function fetchFurnitureLibraryJson() {
+  const res = await fetch(DATA_PATHS.furnitureLibrary, { cache: "no-store" });
+  if (!res.ok) throw new Error(`loadFurnitureLibrary failed: ${DATA_PATHS.furnitureLibrary}`);
+  return res.json();
+}
+
 /**
  * 拉取并解析 data/furnitureLibrary.json
  * @returns {{ items: object[], byId: Map<string, object> }}
  */
 export async function loadFurnitureCatalog() {
-  const data = await loadFurnitureLibrary();
+  const data = await fetchFurnitureLibraryJson();
   const items = Array.isArray(data?.furnitureLibrary) ? data.furnitureLibrary : [];
   const byId = new Map(items.map((item) => [item.id, item]));
   return { items, byId, raw: data };
