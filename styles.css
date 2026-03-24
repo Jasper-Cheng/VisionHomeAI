@@ -1455,7 +1455,7 @@ a.avatar:hover {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  cursor: default;
+  cursor: pointer;
 }
 
 .file-item.is-hidden {
@@ -1495,6 +1495,11 @@ a.avatar:hover {
   font-weight: 700;
   color: rgba(255, 255, 255, 0.9);
   word-break: break-all;
+}
+
+.file-item > .file-name {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 /* User page (user.html) */

@@ -96,17 +96,19 @@
     });
   }
 
-  // File panel search
-  const fileSearchInput = document.querySelector(".file-search-input");
-  const fileItems = document.querySelectorAll(".file-item");
-  if (fileSearchInput && fileItems.length) {
-    fileSearchInput.addEventListener("input", () => {
-      const q = (fileSearchInput.value || "").trim().toLowerCase();
-      fileItems.forEach((item) => {
-        const name = (item.dataset.name || "").toLowerCase();
-        item.classList.toggle("is-hidden", q && !name.includes(q));
-      });
+  // 设计文件列表搜索（条目由 designFilesManager 动态注入）
+  const fileSearchInput = document.querySelector('.side-panel[data-panel="files"] .file-search-input');
+  const designFileList = document.getElementById("designFileList");
+  function filterDesignFileItems() {
+    if (!fileSearchInput || !designFileList) return;
+    const q = (fileSearchInput.value || "").trim().toLowerCase();
+    designFileList.querySelectorAll(".file-item").forEach((item) => {
+      const name = (item.dataset.name || "").toLowerCase();
+      item.classList.toggle("is-hidden", q && !name.includes(q));
     });
+  }
+  if (fileSearchInput) {
+    fileSearchInput.addEventListener("input", filterDesignFileItems);
   }
 
   // 户型库：搜索与 Tab（与家具库同结构）

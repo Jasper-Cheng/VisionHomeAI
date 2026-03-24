@@ -81,7 +81,7 @@
             </svg>
           </button>
 
-          <button class="rail-btn" type="button" aria-label="文件" data-panel="files">
+          <button class="rail-btn" type="button" aria-label="设计文件" data-panel="files">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 fill="currentColor"
@@ -170,10 +170,10 @@
           </div>
         </section>
 
-        <section class="side-panel" data-panel="files" aria-label="文件面板">
+        <section class="side-panel" data-panel="files" aria-label="设计文件面板">
           <div class="panel-header">
-            <div class="panel-title">文件</div>
-            <label class="search" aria-label="搜索文件">
+            <div class="panel-title">设计文件</div>
+            <label class="search" aria-label="搜索设计">
               <span class="search-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
                   <path
@@ -182,47 +182,10 @@
                   />
                 </svg>
               </span>
-              <input class="search-input file-search-input" type="search" placeholder="搜索文件..." />
+              <input class="search-input file-search-input" type="search" placeholder="搜索设计..." />
             </label>
           </div>
-          <div class="file-list" aria-label="文件列表">
-            <div class="file-item" data-name="index.html">
-              <span class="file-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
-              </span>
-              <span class="file-name">index.html</span>
-            </div>
-            <div class="file-item" data-name="styles.css">
-              <span class="file-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
-              </span>
-              <span class="file-name">styles.css</span>
-            </div>
-            <div class="file-item" data-name="src/core/appShell.js">
-              <span class="file-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
-              </span>
-              <span class="file-name">src/core/appShell.js</span>
-            </div>
-            <div class="file-item" data-name="src/editor3d/viewer.js">
-              <span class="file-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
-              </span>
-              <span class="file-name">src/editor3d/viewer.js</span>
-            </div>
-            <div class="file-item" data-name="assets/vendor/three.module.js">
-              <span class="file-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
-              </span>
-              <span class="file-name">assets/vendor/three.module.js</span>
-            </div>
-            <div class="file-item" data-name="assets/vendor/OrbitControls.js">
-              <span class="file-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
-              </span>
-              <span class="file-name">assets/vendor/OrbitControls.js</span>
-            </div>
-          </div>
+          <div class="file-list" id="designFileList" aria-label="设计文件列表"></div>
         </section>
         <div class="svg-editor-slot" id="svgEditorSlot">
           <div class="svg-editor" aria-label="SVG户型编辑区">

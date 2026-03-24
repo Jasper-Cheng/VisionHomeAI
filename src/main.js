@@ -3,6 +3,7 @@
  */
 import { loadFurnitureCatalog, mountFurnitureLibrary } from "./furniture/furnitureManager.js";
 import { loadFloorPlanCatalog, mountFloorplanLibrary } from "./floorplan/floorPlanManager.js";
+import { loadDesignProjectsFromManifest, mountDesignFileList } from "./files/designFilesManager.js";
 import { initSvgEditor } from "./editor2d/svgEditor.js";
 
 async function boot() {
@@ -28,6 +29,18 @@ async function boot() {
 
   window.__furnitureCatalog = catalog;
   mountFurnitureLibrary(catalog, { loadError });
+
+  let designEntries = [];
+  let designLoadError = false;
+  try {
+    designEntries = await loadDesignProjectsFromManifest();
+    window.__designProjects = designEntries;
+  } catch (err) {
+    console.error("[VisionHomeAI] 设计文件清单加载失败:", err);
+    designLoadError = true;
+    window.__designProjects = [];
+  }
+  mountDesignFileList(designEntries, { loadError: designLoadError });
 
   await import("./editor3d/viewer.js");
   initSvgEditor(catalog);
