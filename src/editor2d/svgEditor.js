@@ -720,14 +720,56 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   /** 编辑模式：从家具库拖到 SVG 画布上松开 → 落在指针处（家具不入 3D，仅从侧栏进 2D） */
   let pendingLibraryDrag = null;
 
+  const LIBRARY_DRAG_GHOST_THRESHOLD = 6;
+
+  function positionLibraryDragGhost(clientX, clientY) {
+    const g = pendingLibraryDrag?.ghostEl;
+    if (!g) return;
+    const w = g.offsetWidth || 88;
+    const h = g.offsetHeight || 88;
+    g.style.left = `${Math.round(clientX - w / 2)}px`;
+    g.style.top = `${Math.round(clientY - h / 2)}px`;
+  }
+
+  function ensureLibraryDragGhost() {
+    if (!pendingLibraryDrag || pendingLibraryDrag.ghostEl) return;
+    const card = pendingLibraryDrag.sourceCard;
+    const ghost = document.createElement("div");
+    ghost.className = "furniture-library-drag-ghost";
+    ghost.setAttribute("aria-hidden", "true");
+    const thumb = card?.querySelector(".asset-thumb");
+    if (thumb) {
+      ghost.appendChild(thumb.cloneNode(true));
+    } else {
+      const label = document.createElement("span");
+      label.className = "furniture-library-drag-ghost__fallback";
+      const nameEl = card?.querySelector(".asset-name");
+      label.textContent = (nameEl?.textContent || "").trim() || pendingLibraryDrag.model || "?";
+      ghost.appendChild(label);
+    }
+    document.body.appendChild(ghost);
+    pendingLibraryDrag.ghostEl = ghost;
+  }
+
+  function removeLibraryDragGhost() {
+    const el = pendingLibraryDrag?.ghostEl;
+    if (el?.parentNode) el.remove();
+    if (pendingLibraryDrag) pendingLibraryDrag.ghostEl = null;
+  }
+
   function onLibraryDragMove(e) {
     if (!pendingLibraryDrag || e.pointerId !== pendingLibraryDrag.pointerId) return;
     const d = Math.hypot(e.clientX - pendingLibraryDrag.sx, e.clientY - pendingLibraryDrag.sy);
-    if (d >= 6) pendingLibraryDrag.didDrag = true;
+    if (d >= LIBRARY_DRAG_GHOST_THRESHOLD) {
+      pendingLibraryDrag.didDrag = true;
+      ensureLibraryDragGhost();
+      positionLibraryDragGhost(e.clientX, e.clientY);
+    }
   }
 
   function endLibraryDrag(e) {
     if (!pendingLibraryDrag || e.pointerId !== pendingLibraryDrag.pointerId) return;
+    removeLibraryDragGhost();
     const p = pendingLibraryDrag;
     pendingLibraryDrag = null;
     popPointerDragTextSuppression();
@@ -772,10 +814,12 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       pushPointerDragTextSuppression();
       pendingLibraryDrag = {
         model,
+        sourceCard: card,
         sx: e.clientX,
         sy: e.clientY,
         pointerId: e.pointerId,
         didDrag: false,
+        ghostEl: null,
       };
       window.addEventListener("pointermove", onLibraryDragMove, { passive: true });
       window.addEventListener("pointerup", endLibraryDrag);
