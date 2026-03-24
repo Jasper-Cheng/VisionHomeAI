@@ -688,9 +688,49 @@ a.avatar:hover {
   fill: rgba(45, 212, 191, 0.12);
 }
 
+.svg-floor-room--dining {
+  fill: rgba(251, 191, 36, 0.1);
+}
+
+.svg-floor-room--corridor {
+  fill: rgba(148, 163, 184, 0.1);
+}
+
 .svg-floor-wall {
   stroke: rgba(226, 232, 240, 0.9);
   stroke-linecap: square;
+}
+
+.svg-floor-window {
+  fill: rgba(56, 189, 248, 0.2);
+  stroke: rgba(125, 211, 252, 0.95);
+  stroke-linecap: butt;
+}
+
+.svg-floor-window:not(polygon) {
+  fill: none;
+}
+
+.svg-floor-door {
+  fill: rgba(251, 191, 36, 0.15);
+  stroke: rgba(252, 211, 77, 0.95);
+  stroke-dasharray: 14 10;
+  stroke-linecap: butt;
+}
+
+.svg-floor-door:not(polygon) {
+  fill: none;
+}
+
+.svg-floor-embed-furniture rect {
+  fill: rgba(167, 139, 250, 0.18);
+  stroke: rgba(196, 181, 253, 0.75);
+  stroke-width: 3;
+}
+
+.svg-floor-embed-furniture--line {
+  stroke: rgba(196, 181, 253, 0.85);
+  fill: none;
 }
 
 /* 家具层本身是空 <g> 时，勿设 pointer-events:auto，否则部分浏览器会吞掉整块画布事件（滚轮/点击全无反应） */

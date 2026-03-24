@@ -744,6 +744,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   const FLOORPLAN_PAD = 80;
+  /** 相对「铺满留白区」的等比缩小，初始户型略小便于看网格与家具 */
+  const FLOORPLAN_SIZE_FACTOR = 0.68;
 
   /**
    * 将户型目录条目（毫米几何）缩放落入 viewBox，使户型中心落在 (worldX, worldY)
@@ -759,6 +761,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (bbox.w > 1e-6 && bbox.h > 1e-6) {
       s = Math.min(availW / bbox.w, availH / bbox.h);
     }
+    s *= FLOORPLAN_SIZE_FACTOR;
     s = Math.min(Math.max(s, 0.02), 4);
 
     floorplanLayer.replaceChildren();
