@@ -147,12 +147,29 @@ export function mountDesignFileList(entries, options = {}) {
 
 const HEADER_UNSAVED_TEXT = "未保存文件";
 
+/** 新建场景流程：保存成功后再清空画布时置为 true，打开保存弹窗时由「保存」分支设置 */
+let newSceneAfterSavePending = false;
+
+function canSaveCurrentDesign() {
+  const getLayout = window.svgEditorGetLayout;
+  const layout = typeof getLayout === "function" ? getLayout() : [];
+  const hasItems = Array.isArray(layout) && layout.length > 0;
+  const cur = JSON.stringify(layout);
+  const baseline = window.__designLayoutBaseline;
+  const dirty = baseline === undefined || cur !== baseline;
+  return hasItems && dirty;
+}
+
 /**
  * 顶栏「保存」右侧：当前方案显示名；未关联已打开文件时为「未保存文件」
  */
 export function mountHeaderCurrentDesignLabel() {
   const labelEl = document.getElementById("currentDesignFileLabel");
   const btnNew = document.getElementById("btnNewScene");
+  const newDlg = document.getElementById("newSceneUnsavedDialog");
+  const newDlgCancel = document.getElementById("newSceneUnsavedCancel");
+  const newDlgDiscard = document.getElementById("newSceneUnsavedDiscard");
+  const newDlgSave = document.getElementById("newSceneUnsavedSave");
   if (!labelEl) return;
 
   function setLabel(displayText) {
@@ -173,15 +190,39 @@ export function mountHeaderCurrentDesignLabel() {
     setLabel(name || "（未命名）");
   }
 
+  function closeNewSceneDlg() {
+    if (newDlg && typeof newDlg.close === "function") newDlg.close();
+  }
+
   window.addEventListener("visionhome:design-select", () => syncFromGlobals());
   window.addEventListener("visionhome:design-metadata-updated", () => syncFromGlobals());
 
-  btnNew?.addEventListener("click", () => {
+  window.addEventListener("visionhome:execute-new-scene", () => {
     window.__activeDesignFile = undefined;
     window.__activeDesignProject = undefined;
     window.__activeDesignId = undefined;
     setLabel(HEADER_UNSAVED_TEXT);
     window.dispatchEvent(new CustomEvent("visionhome:design-new"));
+  });
+
+  btnNew?.addEventListener("click", () => {
+    if (canSaveCurrentDesign()) {
+      if (newDlg && typeof newDlg.showModal === "function") newDlg.showModal();
+      else newDlg?.setAttribute("open", "");
+    } else {
+      window.dispatchEvent(new CustomEvent("visionhome:execute-new-scene"));
+    }
+  });
+
+  newDlgCancel?.addEventListener("click", () => closeNewSceneDlg());
+  newDlgDiscard?.addEventListener("click", () => {
+    closeNewSceneDlg();
+    window.dispatchEvent(new CustomEvent("visionhome:execute-new-scene"));
+  });
+  newDlgSave?.addEventListener("click", () => {
+    newSceneAfterSavePending = true;
+    closeNewSceneDlg();
+    window.dispatchEvent(new CustomEvent("visionhome:open-save-design"));
   });
 
   syncFromGlobals();
@@ -230,14 +271,14 @@ function buildProjectPayload(name, layout) {
 function updateSaveButtonState() {
   const btn = document.getElementById("btnSave");
   if (!btn) return;
+  const can = canSaveCurrentDesign();
+  btn.disabled = !can;
   const getLayout = window.svgEditorGetLayout;
   const layout = typeof getLayout === "function" ? getLayout() : [];
   const hasItems = Array.isArray(layout) && layout.length > 0;
   const cur = JSON.stringify(layout);
   const baseline = window.__designLayoutBaseline;
   const dirty = baseline === undefined || cur !== baseline;
-  const can = hasItems && dirty;
-  btn.disabled = !can;
   if (!hasItems) btn.title = "画布上没有家具，无法保存";
   else if (!dirty) btn.title = "当前已与上次保存一致";
   else btn.title = "保存方案（将下载 JSON）";
@@ -256,6 +297,10 @@ export function mountSaveDesignFlow() {
   const confirmBtn = document.getElementById("saveDesignConfirmBtn");
   if (!btn || !dialog || !input || !confirmBtn) return;
   saveDesignFlowMounted = true;
+
+  window.addEventListener("visionhome:open-save-design", () => {
+    openSaveDialog();
+  });
 
   function hideError() {
     if (errEl) {
@@ -297,7 +342,14 @@ export function mountSaveDesignFlow() {
     openSaveDialog();
   });
 
-  cancelBtn?.addEventListener("click", () => closeDialog());
+  cancelBtn?.addEventListener("click", () => {
+    newSceneAfterSavePending = false;
+    closeDialog();
+  });
+
+  dialog.addEventListener("cancel", () => {
+    newSceneAfterSavePending = false;
+  });
 
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -323,6 +375,7 @@ export function mountSaveDesignFlow() {
       showError("画布上没有家具，无法保存。");
       return;
     }
+    const runNewSceneAfterSave = newSceneAfterSavePending;
     const previousFile = window.__activeDesignFile;
     const project = buildProjectPayload(name, layout);
     const filename =
@@ -347,8 +400,12 @@ export function mountSaveDesignFlow() {
     if (typeof window.svgEditorCommitSavedBaseline === "function") {
       window.svgEditorCommitSavedBaseline();
     }
+    newSceneAfterSavePending = false;
     window.dispatchEvent(new CustomEvent("visionhome:design-metadata-updated"));
     closeDialog();
+    if (runNewSceneAfterSave) {
+      window.dispatchEvent(new CustomEvent("visionhome:execute-new-scene"));
+    }
   });
 
   window.addEventListener("visionhome:svg-layout-changed", updateSaveButtonState);

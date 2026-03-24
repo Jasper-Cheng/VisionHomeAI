@@ -506,6 +506,18 @@
       </div>
     </dialog>
 
+    <dialog id="newSceneUnsavedDialog" class="save-design-dialog" aria-labelledby="newSceneUnsavedTitle">
+      <div class="save-design-dialog__panel">
+        <h2 id="newSceneUnsavedTitle" class="save-design-dialog__title">新建场景</h2>
+        <p class="save-design-dialog__hint">当前画布有未保存的更改，是否先保存再新建？</p>
+        <div class="save-design-dialog__actions save-design-dialog__actions--triple">
+          <button type="button" class="save-design-dialog__cancel" id="newSceneUnsavedCancel">取消</button>
+          <button type="button" class="save-design-dialog__cancel" id="newSceneUnsavedDiscard">不保存</button>
+          <button type="button" class="btn-primary btn-save" id="newSceneUnsavedSave">保存</button>
+        </div>
+      </div>
+    </dialog>
+
     <script type="importmap">
       {
         "imports": {

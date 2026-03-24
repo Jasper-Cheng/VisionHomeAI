@@ -273,7 +273,7 @@ body.vision-home-pointer-dragging [contenteditable="true"] {
   padding: 0;
   border: none;
   border-radius: 14px;
-  background: transparent;
+  background: #1a1a1a;
   color: inherit;
   max-width: calc(100vw - 32px);
 }
@@ -287,7 +287,7 @@ body.vision-home-pointer-dragging [contenteditable="true"] {
   padding: 22px 22px 18px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: var(--panel);
+  background: #1a1a1a;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
 }
 
@@ -311,7 +311,7 @@ body.vision-home-pointer-dragging [contenteditable="true"] {
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.25);
+  background: #121212;
   color: rgba(255, 255, 255, 0.92);
   font-size: 14px;
 }
@@ -335,12 +335,24 @@ body.vision-home-pointer-dragging [contenteditable="true"] {
   margin-top: 20px;
 }
 
+.save-design-dialog__actions--triple {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.save-design-dialog__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+}
+
 .save-design-dialog__cancel {
   padding: 0 18px;
   height: 36px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: #252525;
   color: rgba(255, 255, 255, 0.86);
   font-size: 13px;
   font-weight: 600;
@@ -348,7 +360,7 @@ body.vision-home-pointer-dragging [contenteditable="true"] {
 }
 
 .save-design-dialog__cancel:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: #2e2e2e;
 }
 
 .icon-btn {
