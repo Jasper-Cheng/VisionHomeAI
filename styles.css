@@ -542,13 +542,24 @@ a.avatar:hover {
 }
 
 .svg-editor-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-size: 11px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.38);
   line-height: 1.4;
-  max-width: min(420px, 100%);
+  max-width: min(560px, 100%);
   -webkit-user-select: none;
   user-select: none;
+}
+
+.svg-editor-hint__line {
+  display: block;
+}
+
+.svg-editor-hint__nowrap {
+  white-space: nowrap;
 }
 
 .svg-editor-hint strong {
