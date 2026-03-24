@@ -1,5 +1,28 @@
 import { DATA_PATHS } from "../core/schema.js";
 
+let designFileSearchBound = false;
+
+function bindDesignFileSearch() {
+  if (designFileSearchBound) return;
+  const input = document.getElementById("designFileSearchInput");
+  if (!input) return;
+  designFileSearchBound = true;
+
+  function applyDesignFileFilter() {
+    const root = document.getElementById("designFileList");
+    if (!root) return;
+    const q = (input.value || "").trim().toLowerCase();
+    root.querySelectorAll(".file-item").forEach((item) => {
+      const haystack = [item.dataset.name, item.dataset.file, item.dataset.projectId].filter(Boolean).join(" ").toLowerCase();
+      item.classList.toggle("is-hidden", Boolean(q && !haystack.includes(q)));
+    });
+  }
+
+  input.addEventListener("input", applyDesignFileFilter);
+  /* type=search：点清除按钮时部分浏览器只触发 search */
+  input.addEventListener("search", applyDesignFileFilter);
+}
+
 /**
  * 拉取 data/design/manifest.json，得到要加载的 JSON 文件名列表
  * @returns {Promise<string[]>}
@@ -57,63 +80,61 @@ export function mountDesignFileList(entries, options = {}) {
     p.className = "panel-empty";
     p.textContent = "设计清单加载失败，请检查 data/design/manifest.json。";
     list.appendChild(p);
-    return;
-  }
-
-  if (!entries.length) {
+  } else if (!entries.length) {
     const p = document.createElement("p");
     p.className = "panel-empty";
     p.textContent = "暂无设计文件。请在 data/design/manifest.json 的 files 中加入 JSON 文件名。";
     list.appendChild(p);
-    return;
+  } else {
+    const docSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>`;
+
+    for (const { file, project } of entries) {
+      const pid = String(project?.projectId || file.replace(/\.json$/i, "")).trim();
+      /** 展示名即 manifest 中的文件名（不再使用 JSON 内 name 字段） */
+      const title = file;
+      const templateId = project?.templateId != null ? String(project.templateId) : "";
+      const searchBlob = [title, pid, templateId].filter(Boolean).join(" ").toLowerCase();
+
+      const row = document.createElement("div");
+      row.className = "file-item";
+      row.dataset.name = searchBlob;
+      row.dataset.projectId = pid;
+      row.dataset.file = file;
+      row.tabIndex = 0;
+      row.setAttribute("role", "button");
+      row.setAttribute("aria-label", `设计文件 ${title}`);
+
+      const icon = document.createElement("span");
+      icon.className = "file-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.innerHTML = docSvg;
+
+      const nameEl = document.createElement("span");
+      nameEl.className = "file-name";
+      nameEl.textContent = title;
+
+      row.appendChild(icon);
+      row.appendChild(nameEl);
+      list.appendChild(row);
+
+      const activate = () => {
+        window.__activeDesignFile = file;
+        window.__activeDesignProject = project;
+        window.dispatchEvent(
+          new CustomEvent("visionhome:design-select", {
+            detail: { file, projectId: pid, project },
+          }),
+        );
+      };
+      row.addEventListener("click", () => activate());
+      row.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          activate();
+        }
+      });
+    }
   }
 
-  const docSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>`;
-
-  for (const { file, project } of entries) {
-    const pid = String(project?.projectId || file.replace(/\.json$/i, "")).trim();
-    /** 展示名即 manifest 中的文件名（不再使用 JSON 内 name 字段） */
-    const title = file;
-    const templateId = project?.templateId != null ? String(project.templateId) : "";
-    const searchBlob = [title, pid, templateId].filter(Boolean).join(" ").toLowerCase();
-
-    const row = document.createElement("div");
-    row.className = "file-item";
-    row.dataset.name = searchBlob;
-    row.dataset.projectId = pid;
-    row.dataset.file = file;
-    row.tabIndex = 0;
-    row.setAttribute("role", "button");
-    row.setAttribute("aria-label", `设计文件 ${title}`);
-
-    const icon = document.createElement("span");
-    icon.className = "file-icon";
-    icon.setAttribute("aria-hidden", "true");
-    icon.innerHTML = docSvg;
-
-    const nameEl = document.createElement("span");
-    nameEl.className = "file-name";
-    nameEl.textContent = title;
-
-    row.appendChild(icon);
-    row.appendChild(nameEl);
-    list.appendChild(row);
-
-    const activate = () => {
-      window.__activeDesignFile = file;
-      window.__activeDesignProject = project;
-      window.dispatchEvent(
-        new CustomEvent("visionhome:design-select", {
-          detail: { file, projectId: pid, project },
-        }),
-      );
-    };
-    row.addEventListener("click", () => activate());
-    row.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        activate();
-      }
-    });
-  }
+  bindDesignFileSearch();
 }
