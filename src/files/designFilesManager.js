@@ -444,8 +444,65 @@ export function mountSaveDesignFlow() {
     });
   }
 
-  btn.addEventListener("click", () => {
+  /** 顶栏保存：已有方案名称则直接落盘，否则弹窗输入名称 */
+  function hasResolvedDesignName() {
+    return Boolean(String(window.__activeDesignProject?.name ?? "").trim());
+  }
+
+  async function executeSaveWithName(name) {
+    const trimmed = String(name ?? "").trim();
+    if (!trimmed) return;
+    const getLayout = window.svgEditorGetLayout;
+    const layout = typeof getLayout === "function" ? getLayout() : [];
+    if (!layout.length) {
+      openSaveDialog();
+      showError("画布上没有家具，无法保存。");
+      return;
+    }
+    const runNewSceneAfterSave = newSceneAfterSavePending;
+    const previousFile = window.__activeDesignFile;
+    const project = buildProjectPayload(trimmed, layout);
+    const filename =
+      previousFile && String(previousFile).trim().toLowerCase().endsWith(".json")
+        ? String(previousFile).trim()
+        : `${String(project.id).replace(/[^\w.-]+/g, "_")}.json`;
+    const json = `${JSON.stringify(project, null, 2)}\n`;
+
+    hideError();
+    const saved = await postSaveDesignToDataDir(filename, project);
+    if (!saved.ok) {
+      triggerDownloadDesignJson(filename, json);
+      openSaveDialog();
+      input.value = trimmed;
+      showError(
+        `无法写入 ${DATA_PATHS.design}/（${saved.reason}）。已改为下载 JSON。开发环境请运行：python3 scripts/dev_server.py`,
+      );
+    } else {
+      await refreshDesignProjectsFromManifest();
+    }
+
+    window.__activeDesignProject = project;
+    window.__activeDesignFile = saved.ok ? saved.file : filename;
+    window.__activeDesignId = String(project.id);
+    if (typeof window.svgEditorCommitSavedBaseline === "function") {
+      window.svgEditorCommitSavedBaseline();
+    }
+    newSceneAfterSavePending = false;
+    window.dispatchEvent(new CustomEvent("visionhome:design-metadata-updated"));
+    if (saved.ok) {
+      closeDialog();
+      if (runNewSceneAfterSave) {
+        window.dispatchEvent(new CustomEvent("visionhome:execute-new-scene"));
+      }
+    }
+  }
+
+  btn.addEventListener("click", async () => {
     if (btn.disabled) return;
+    if (hasResolvedDesignName()) {
+      await executeSaveWithName(String(window.__activeDesignProject?.name ?? "").trim());
+      return;
+    }
     openSaveDialog();
   });
 
@@ -476,46 +533,7 @@ export function mountSaveDesignFlow() {
       }
       return;
     }
-    const getLayout = window.svgEditorGetLayout;
-    const layout = typeof getLayout === "function" ? getLayout() : [];
-    if (!layout.length) {
-      showError("画布上没有家具，无法保存。");
-      return;
-    }
-    const runNewSceneAfterSave = newSceneAfterSavePending;
-    const previousFile = window.__activeDesignFile;
-    const project = buildProjectPayload(name, layout);
-    const filename =
-      previousFile && String(previousFile).trim().toLowerCase().endsWith(".json")
-        ? String(previousFile).trim()
-        : `${String(project.id).replace(/[^\w.-]+/g, "_")}.json`;
-    const json = `${JSON.stringify(project, null, 2)}\n`;
-
-    hideError();
-    const saved = await postSaveDesignToDataDir(filename, project);
-    if (!saved.ok) {
-      triggerDownloadDesignJson(filename, json);
-      showError(
-        `无法写入 ${DATA_PATHS.design}/（${saved.reason}）。已改为下载 JSON。开发环境请运行：python3 scripts/dev_server.py`,
-      );
-    } else {
-      await refreshDesignProjectsFromManifest();
-    }
-
-    window.__activeDesignProject = project;
-    window.__activeDesignFile = saved.ok ? saved.file : filename;
-    window.__activeDesignId = String(project.id);
-    if (typeof window.svgEditorCommitSavedBaseline === "function") {
-      window.svgEditorCommitSavedBaseline();
-    }
-    newSceneAfterSavePending = false;
-    window.dispatchEvent(new CustomEvent("visionhome:design-metadata-updated"));
-    if (saved.ok) {
-      closeDialog();
-      if (runNewSceneAfterSave) {
-        window.dispatchEvent(new CustomEvent("visionhome:execute-new-scene"));
-      }
-    }
+    await executeSaveWithName(name);
   });
 
   window.addEventListener("visionhome:svg-layout-changed", updateSaveButtonState);

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1774331155441",
+  "name": "阿萨德撒",
+  "description": "",
+  "createdAt": "2026-03-24T05:45:55.441Z",
+  "updatedAt": "2026-03-24T05:45:57.433Z",
+  "templateId": "apartment_2b1l",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_001",
+      "floorId": "floor1",
+      "positionMm": [
+        1380,
+        1280
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "table_001",
+      "floorId": "floor1",
+      "positionMm": [
+        1820,
+        1260
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apartment_2b1l",
+    "view": {
+      "tx": 0,
+      "ty": 0,
+      "scale": 1
+    },
+    "gridVisible": true,
+    "viewBox": {
+      "width": 3000,
+      "height": 3000
+    },
+    "furniture": [
+      {
+        "model": "sofa_001",
+        "x": 1380,
+        "y": 1280,
+        "rotation": 0
+      },
+      {
+        "model": "table_001",
+        "x": 1820,
+        "y": 1260,
+        "rotation": 0
+      }
+    ]
+  }
+}
