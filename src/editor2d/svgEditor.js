@@ -2,6 +2,7 @@
  * 户型 SVG 平面图：家具拖拽、网格吸附、旋转、删除
  * 家具尺寸与名称来自 data/furniture/ 各条目 JSON（由 main 注入 catalog）
  */
+import { appendFloorGeometryToGroup, getFloorBBoxMm, getPrimaryFloor } from "../floorplan/floorplanSvg.js";
 import { getFurnitureDisplayName, getSvgStyleForItem } from "../furniture/svgStyle.js";
 
 /**
@@ -15,7 +16,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const redoBtn = document.querySelector("[data-svg-redo]");
   const gridToggleBtn = document.getElementById("svgGridToggleBtn");
 
-  /** 墙层 / 家具层不再写在 index.html；家具层在运行时创建（墙层待户型 SVG 渲染接入时再挂 #svgEditorWalls） */
+  /** 墙层 / 家具层不再写在 index.html；户型底图在网格之上、家具之下 */
   function svgEditorFail(reason) {
     const r = { ok: false, reason };
     window.__visionHomeSvgEditor = r;
@@ -30,6 +31,25 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   let furnitureLayer = document.getElementById("svgEditorFurnitureLayer");
+
+  let floorplanLayer = document.getElementById("svgEditorFloorplanLayer");
+  if (!floorplanLayer) {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("id", "svgEditorFloorplanLayer");
+    g.setAttribute("class", "svg-editor-floorplan-layer");
+    g.setAttribute("aria-label", "户型底图");
+    if (furnitureLayer && viewRoot.contains(furnitureLayer)) {
+      viewRoot.insertBefore(g, furnitureLayer);
+    } else if (gridLayer && viewRoot.contains(gridLayer)) {
+      const next = gridLayer.nextSibling;
+      if (next) viewRoot.insertBefore(g, next);
+      else viewRoot.appendChild(g);
+    } else {
+      viewRoot.appendChild(g);
+    }
+    floorplanLayer = g;
+  }
+
   if (!furnitureLayer) {
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.setAttribute("id", "svgEditorFurnitureLayer");
@@ -723,6 +743,47 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return document.getElementById("appViewEdit")?.classList.contains("is-active");
   }
 
+  const FLOORPLAN_PAD = 80;
+
+  /**
+   * 将户型目录条目（毫米几何）缩放落入 viewBox，使户型中心落在 (worldX, worldY)
+   */
+  function applyFloorplanEntryAtWorld(entry, worldX, worldY) {
+    const floor = getPrimaryFloor(entry);
+    if (!floor) return;
+    const bbox = getFloorBBoxMm(floor);
+    if (!bbox) return;
+    const availW = Math.max(40, VIEW_W - 2 * FLOORPLAN_PAD);
+    const availH = Math.max(40, VIEW_H - 2 * FLOORPLAN_PAD);
+    let s = 1;
+    if (bbox.w > 1e-6 && bbox.h > 1e-6) {
+      s = Math.min(availW / bbox.w, availH / bbox.h);
+    }
+    s = Math.min(Math.max(s, 0.02), 4);
+
+    floorplanLayer.replaceChildren();
+    const inner = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    inner.setAttribute(
+      "transform",
+      `translate(${worldX} ${worldY}) scale(${s}) translate(${-bbox.cx} ${-bbox.cy})`,
+    );
+    appendFloorGeometryToGroup(floor, inner);
+    floorplanLayer.appendChild(inner);
+
+    window.dispatchEvent(
+      new CustomEvent("visionhome:floorplan-applied-to-svg", {
+        detail: { id: entry?.id != null ? String(entry.id) : "" },
+      }),
+    );
+  }
+
+  function addFloorplanFromLibraryAtCenter(floorPlanId) {
+    const cat = window.__floorPlanCatalog;
+    const entry = cat?.byId instanceof Map ? cat.byId.get(floorPlanId) : null;
+    if (!entry) return;
+    applyFloorplanEntryAtWorld(entry, VIEW_W / 2, VIEW_H / 2);
+  }
+
   /** 编辑模式：从家具库拖到 SVG 画布上松开 → 落在指针处（家具不入 3D，仅从侧栏进 2D） */
   let pendingLibraryDrag = null;
 
@@ -834,6 +895,120 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     true,
   );
 
+  /** 户型库 → 画布（pointer 拖拽，与家具库一致） */
+  let pendingFloorplanDrag = null;
+
+  function removeFloorplanDragGhost() {
+    const el = pendingFloorplanDrag?.ghostEl;
+    if (el?.parentNode) el.remove();
+    if (pendingFloorplanDrag) pendingFloorplanDrag.ghostEl = null;
+  }
+
+  function ensureFloorplanDragGhost() {
+    if (!pendingFloorplanDrag || pendingFloorplanDrag.ghostEl) return;
+    const card = pendingFloorplanDrag.sourceCard;
+    const ghost = document.createElement("div");
+    ghost.className = "furniture-library-drag-ghost";
+    ghost.setAttribute("aria-hidden", "true");
+    const thumb = card?.querySelector(".asset-thumb");
+    if (thumb) {
+      ghost.appendChild(thumb.cloneNode(true));
+    } else {
+      const label = document.createElement("span");
+      label.className = "furniture-library-drag-ghost__fallback";
+      const nameEl = card?.querySelector(".asset-name");
+      label.textContent = (nameEl?.textContent || "").trim() || pendingFloorplanDrag.floorPlanId || "?";
+      ghost.appendChild(label);
+    }
+    document.body.appendChild(ghost);
+    pendingFloorplanDrag.ghostEl = ghost;
+  }
+
+  function positionFloorplanDragGhost(clientX, clientY) {
+    const g = pendingFloorplanDrag?.ghostEl;
+    if (!g) return;
+    const w = g.offsetWidth || 88;
+    const h = g.offsetHeight || 88;
+    g.style.left = `${Math.round(clientX - w / 2)}px`;
+    g.style.top = `${Math.round(clientY - h / 2)}px`;
+  }
+
+  function onFloorplanLibraryDragMoveFixed(e) {
+    if (!pendingFloorplanDrag || e.pointerId !== pendingFloorplanDrag.pointerId) return;
+    const d = Math.hypot(e.clientX - pendingFloorplanDrag.sx, e.clientY - pendingFloorplanDrag.sy);
+    if (d >= LIBRARY_DRAG_GHOST_THRESHOLD) {
+      pendingFloorplanDrag.didDrag = true;
+      ensureFloorplanDragGhost();
+      positionFloorplanDragGhost(e.clientX, e.clientY);
+    }
+  }
+
+  function endFloorplanLibraryDrag(e) {
+    if (!pendingFloorplanDrag || e.pointerId !== pendingFloorplanDrag.pointerId) return;
+    removeFloorplanDragGhost();
+    const p = pendingFloorplanDrag;
+    pendingFloorplanDrag = null;
+    popPointerDragTextSuppression();
+    window.removeEventListener("pointermove", onFloorplanLibraryDragMoveFixed, { passive: true });
+    window.removeEventListener("pointerup", endFloorplanLibraryDrag);
+    window.removeEventListener("pointercancel", endFloorplanLibraryDrag);
+
+    if (!p.didDrag) return;
+
+    const rect = svg.getBoundingClientRect();
+    const { clientX: x, clientY: y } = e;
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return;
+
+    const cat = window.__floorPlanCatalog;
+    const entry = cat?.byId instanceof Map ? cat.byId.get(p.floorPlanId) : null;
+    if (!entry) return;
+
+    const wpt = clientToWorld(x, y);
+    applyFloorplanEntryAtWorld(entry, wpt.x, wpt.y);
+  }
+
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      const fpCard = e.target.closest?.(".asset-card[data-floor-plan-id]");
+      if (!fpCard) return;
+      const panel = fpCard.closest?.('.side-panel[data-panel="floorplans"]');
+      if (!panel || !panel.classList.contains("is-visible")) return;
+      if (!isEditViewActive()) return;
+
+      const floorPlanId = String(fpCard.dataset.floorPlanId || "").trim();
+      if (!floorPlanId) return;
+
+      if (e.shiftKey) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        addFloorplanFromLibraryAtCenter(floorPlanId);
+        return;
+      }
+
+      if (!e.isPrimary) return;
+
+      if (typeof window.__selectFloorplanLibraryCardById === "function") {
+        window.__selectFloorplanLibraryCardById(floorPlanId);
+      }
+
+      pushPointerDragTextSuppression();
+      pendingFloorplanDrag = {
+        floorPlanId,
+        sourceCard: fpCard,
+        sx: e.clientX,
+        sy: e.clientY,
+        pointerId: e.pointerId,
+        didDrag: false,
+        ghostEl: null,
+      };
+      window.addEventListener("pointermove", onFloorplanLibraryDragMoveFixed, { passive: true });
+      window.addEventListener("pointerup", endFloorplanLibraryDrag);
+      window.addEventListener("pointercancel", endFloorplanLibraryDrag);
+    },
+    true,
+  );
+
   /** 导出布局（供保存 / 与 3D 同步） */
   function getLayout() {
     return Array.from(furnitureLayer.querySelectorAll(".svg-furniture")).map((g) => {
@@ -885,6 +1060,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
 
   window.svgEditorAddFurniture = addFurniture;
   window.svgEditorGetLayout = getLayout;
+  window.svgEditorApplyFloorplanAtWorld = applyFloorplanEntryAtWorld;
   window.svgEditorCommitSavedBaseline = () => {
     window.__designLayoutBaseline = JSON.stringify(getLayout());
     emitSvgLayoutChanged();
