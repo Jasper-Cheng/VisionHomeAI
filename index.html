@@ -510,6 +510,10 @@
             maxlength="120"
           />
         </label>
+        <p class="save-design-dialog__note">
+          使用 <strong>python3 scripts/dev_server.py</strong> 启动时，将写入仓库内 <strong>data/design/</strong> 并更新 manifest；若仅用静态
+          <code class="save-design-dialog__code">http.server</code>，则浏览器下载 JSON。
+        </p>
         <p id="saveDesignNameError" class="save-design-dialog__error" role="alert" hidden></p>
         <div class="save-design-dialog__actions">
           <button type="button" class="save-design-dialog__cancel" id="saveDesignCancelBtn">取消</button>

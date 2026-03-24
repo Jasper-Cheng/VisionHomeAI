@@ -14,6 +14,8 @@ export const DATA_PATHS = {
   design: "data/design",
   /** 方案清单（静态站无法枚举目录；新方案请把文件名写入 files） */
   designManifest: "data/design/manifest.json",
+  /** 本地开发服务器 scripts/dev_server.py 提供的保存接口（同源 POST） */
+  designSaveApi: "/api/design/save",
   assetsModels: "assets/models",
   assetsTextures: "assets/textures",
   /** 家具库卡片预览：`assets/thumbnails/{id}.webp|png|jpg` */

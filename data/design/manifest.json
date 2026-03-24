@@ -1,4 +1,8 @@
 {
   "schemaVersion": "1.0",
-  "files": ["project_001.json", "project_002.json"]
+  "files": [
+    "project_001.json",
+    "project_002.json",
+    "project_1774330741242.json"
+  ]
 }

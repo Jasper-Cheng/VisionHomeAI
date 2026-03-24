@@ -347,6 +347,21 @@ body.vision-home-pointer-dragging [contenteditable="true"] {
   color: rgba(255, 255, 255, 0.78);
 }
 
+.save-design-dialog__note {
+  margin: 12px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.save-design-dialog__code {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .save-design-dialog__cancel {
   padding: 0 18px;
   height: 36px;

@@ -34,7 +34,13 @@ cd /path/to/VisionHomeAI
 python3 -m http.server 8080
 ```
 
-浏览器打开：**http://localhost:8080/index.html**（或根路径 `/`）。若用 `file://` 打开或主脚本 404，页面顶部会出现提示条。
+**保存方案到仓库内 `data/design/`**（写入 JSON 并更新 `manifest.json`）请使用开发服务：
+
+```bash
+python3 scripts/dev_server.py
+```
+
+默认端口与上面相同为 **8080**（可用环境变量 `PORT` 修改）。浏览器打开：**http://localhost:8080/index.html**（或根路径 `/`）。若用 `file://` 打开或主脚本 404，页面顶部会出现提示条。
 
 ## 数据说明
 

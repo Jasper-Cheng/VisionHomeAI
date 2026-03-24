@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "id": "project_1774330741242",
+  "name": "asdsad1",
+  "description": "",
+  "createdAt": "2026-03-24T05:39:01.242Z",
+  "updatedAt": "2026-03-24T05:39:01.242Z",
+  "templateId": null,
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_001",
+      "floorId": "floor1",
+      "positionMm": [
+        1500,
+        1400
+      ],
+      "rotationDeg": 0
+    }
+  ]
+}

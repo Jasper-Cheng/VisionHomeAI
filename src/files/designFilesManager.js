@@ -69,6 +69,66 @@ export async function loadDesignProjectsFromManifest() {
 }
 
 /**
+ * 重新拉取 manifest 与方案并刷新「设计文件」侧栏（保存成功后调用）
+ */
+export async function refreshDesignProjectsFromManifest() {
+  try {
+    const entries = await loadDesignProjectsFromManifest();
+    window.__designProjects = entries;
+    mountDesignFileList(entries, { loadError: false });
+  } catch (err) {
+    console.error(err);
+    mountDesignFileList([], { loadError: true });
+  }
+}
+
+/**
+ * @param {string} filename
+ * @param {object} project
+ * @returns {Promise<{ ok: true, file: string } | { ok: false, reason: string }>}
+ */
+async function postSaveDesignToDataDir(filename, project) {
+  try {
+    const res = await fetch(DATA_PATHS.designSaveApi, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename, project }),
+    });
+    const text = await res.text();
+    let data = null;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      /* 404 HTML 等 */
+    }
+    if (!res.ok) {
+      const msg = (data && typeof data === "object" && data.error) || res.statusText || String(res.status);
+      return { ok: false, reason: msg };
+    }
+    if (!data || data.ok !== true) {
+      return { ok: false, reason: "响应无效" };
+    }
+    const file = typeof data.file === "string" && data.file.trim() ? data.file.trim() : filename;
+    return { ok: true, file };
+  } catch (e) {
+    return { ok: false, reason: String(e?.message || e) };
+  }
+}
+
+function triggerDownloadDesignJson(filename, jsonText) {
+  const blob = new Blob([jsonText], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/**
  * 渲染「文件」侧栏：data/design 下的方案 JSON
  * @param {{ file: string, project: object }[]} entries
  * @param {{ loadError?: boolean }} options
@@ -281,11 +341,11 @@ function updateSaveButtonState() {
   const dirty = baseline === undefined || cur !== baseline;
   if (!hasItems) btn.title = "画布上没有家具，无法保存";
   else if (!dirty) btn.title = "当前已与上次保存一致";
-  else btn.title = "保存方案（将下载 JSON）";
+  else btn.title = "保存方案到 data/design/（需 scripts/dev_server.py；否则下载 JSON）";
 }
 
 /**
- * 保存按钮：有家具且相对上次保存有改动时可点；弹窗输入名称后下载方案 JSON 并更新内存中的活动方案。
+ * 保存按钮：有家具且相对上次保存有改动时可点；弹窗确认后优先 POST 写入 data/design/（dev_server），失败则下载 JSON。
  */
 export function mountSaveDesignFlow() {
   if (saveDesignFlowMounted) return;
@@ -358,7 +418,7 @@ export function mountSaveDesignFlow() {
     }
   });
 
-  confirmBtn.addEventListener("click", () => {
+  confirmBtn.addEventListener("click", async () => {
     const name = String(input.value ?? "").trim();
     if (!name) {
       showError("请输入保存名称。");
@@ -383,28 +443,31 @@ export function mountSaveDesignFlow() {
         ? String(previousFile).trim()
         : `${String(project.id).replace(/[^\w.-]+/g, "_")}.json`;
     const json = `${JSON.stringify(project, null, 2)}\n`;
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+
+    hideError();
+    const saved = await postSaveDesignToDataDir(filename, project);
+    if (!saved.ok) {
+      triggerDownloadDesignJson(filename, json);
+      showError(
+        `无法写入 ${DATA_PATHS.design}/（${saved.reason}）。已改为下载 JSON。开发环境请运行：python3 scripts/dev_server.py`,
+      );
+    } else {
+      await refreshDesignProjectsFromManifest();
+    }
 
     window.__activeDesignProject = project;
-    window.__activeDesignFile = filename;
+    window.__activeDesignFile = saved.ok ? saved.file : filename;
     window.__activeDesignId = String(project.id);
     if (typeof window.svgEditorCommitSavedBaseline === "function") {
       window.svgEditorCommitSavedBaseline();
     }
     newSceneAfterSavePending = false;
     window.dispatchEvent(new CustomEvent("visionhome:design-metadata-updated"));
-    closeDialog();
-    if (runNewSceneAfterSave) {
-      window.dispatchEvent(new CustomEvent("visionhome:execute-new-scene"));
+    if (saved.ok) {
+      closeDialog();
+      if (runNewSceneAfterSave) {
+        window.dispatchEvent(new CustomEvent("visionhome:execute-new-scene"));
+      }
     }
   });
 
