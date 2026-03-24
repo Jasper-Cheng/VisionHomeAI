@@ -1,6 +1,8 @@
 {
   "schemaVersion": "1.0",
-  "projectId": "project_002",
+  "id": "project_002",
+  "name": "空白方案",
+  "description": "未绑定户型模板（templateId 为 null）的空方案占位。",
   "createdAt": "2025-03-21T12:00:00.000Z",
   "updatedAt": "2025-03-21T12:00:00.000Z",
   "templateId": null,

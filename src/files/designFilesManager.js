@@ -1,3 +1,7 @@
+/**
+ * 设计文件（方案）：在户型模板（templateId → data/floorplans）基础上的家具编辑会话 JSON。
+ * 侧栏仅罗列 manifest；打开/应用方案时应合并模板几何与本文件的 furnitureInstances 等。
+ */
 import { DATA_PATHS } from "../core/schema.js";
 
 let designFileSearchBound = false;
@@ -13,7 +17,7 @@ function bindDesignFileSearch() {
     if (!root) return;
     const q = (input.value || "").trim().toLowerCase();
     root.querySelectorAll(".file-item").forEach((item) => {
-      const haystack = [item.dataset.name, item.dataset.file, item.dataset.projectId].filter(Boolean).join(" ").toLowerCase();
+      const haystack = [item.dataset.name, item.dataset.file, item.dataset.designId].filter(Boolean).join(" ").toLowerCase();
       item.classList.toggle("is-hidden", Boolean(q && !haystack.includes(q)));
     });
   }
@@ -38,7 +42,7 @@ export async function fetchDesignFileNames() {
 }
 
 /**
- * @param {string} filename 如 project_001.json
+ * @param {string} filename 须为 <id>.json，与 JSON 内 id 字段一致
  */
 export async function fetchDesignProjectJson(filename) {
   const clean = filename.replace(/^\/+/, "");
@@ -89,20 +93,21 @@ export function mountDesignFileList(entries, options = {}) {
     const docSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>`;
 
     for (const { file, project } of entries) {
-      const pid = String(project?.projectId || file.replace(/\.json$/i, "")).trim();
-      /** 展示名即 manifest 中的文件名（不再使用 JSON 内 name 字段） */
-      const title = file;
+      const stem = file.replace(/\.json$/i, "").trim();
+      const did = String(project?.id ?? project?.projectId ?? stem).trim();
+      /** 侧栏仅展示 name；搜索仍可按 id / 文件名 / 模板匹配 */
+      const displayName = String(project?.name ?? "").trim() || "（未命名）";
       const templateId = project?.templateId != null ? String(project.templateId) : "";
-      const searchBlob = [title, pid, templateId].filter(Boolean).join(" ").toLowerCase();
+      const searchBlob = [displayName, did, file, templateId].filter(Boolean).join(" ").toLowerCase();
 
       const row = document.createElement("div");
       row.className = "file-item";
       row.dataset.name = searchBlob;
-      row.dataset.projectId = pid;
+      row.dataset.designId = did;
       row.dataset.file = file;
       row.tabIndex = 0;
       row.setAttribute("role", "button");
-      row.setAttribute("aria-label", `设计文件 ${title}`);
+      row.setAttribute("aria-label", `方案 ${displayName}，文件 ${file}`);
 
       const icon = document.createElement("span");
       icon.className = "file-icon";
@@ -111,7 +116,7 @@ export function mountDesignFileList(entries, options = {}) {
 
       const nameEl = document.createElement("span");
       nameEl.className = "file-name";
-      nameEl.textContent = title;
+      nameEl.textContent = displayName;
 
       row.appendChild(icon);
       row.appendChild(nameEl);
@@ -120,9 +125,10 @@ export function mountDesignFileList(entries, options = {}) {
       const activate = () => {
         window.__activeDesignFile = file;
         window.__activeDesignProject = project;
+        window.__activeDesignId = did;
         window.dispatchEvent(
           new CustomEvent("visionhome:design-select", {
-            detail: { file, projectId: pid, project },
+            detail: { file, id: did, projectId: did, project },
           }),
         );
       };
