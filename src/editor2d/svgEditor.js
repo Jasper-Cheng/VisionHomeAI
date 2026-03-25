@@ -1485,7 +1485,66 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const cat = window.__floorPlanCatalog;
     const entry = cat?.byId instanceof Map ? cat.byId.get(floorPlanId) : null;
     if (!entry) return;
-    applyFloorplanEntryAtWorld(entry, VIEW_W / 2, VIEW_H / 2);
+    void tryApplyFloorplanEntryAtCenter(entry);
+  }
+
+  function hasFloorplanOnCanvas() {
+    return floorplanLayer.childNodes.length > 0;
+  }
+
+  async function canReplaceExistingFloorplan(nextEntry) {
+    if (!hasFloorplanOnCanvas()) return true;
+    const nextId = String(nextEntry?.id ?? "").trim();
+    const curId = String(getCurrentFloorplanId() ?? "").trim();
+    if (nextId && curId && nextId === curId) return true;
+    return await requestReplaceFloorplanConfirm();
+  }
+
+  function requestReplaceFloorplanConfirm() {
+    const dlg = document.getElementById("replaceFloorplanDialog");
+    const cancelBtn = document.getElementById("replaceFloorplanCancel");
+    const confirmBtn = document.getElementById("replaceFloorplanConfirm");
+    if (!dlg || !cancelBtn || !confirmBtn) {
+      return Promise.resolve(window.confirm("当前场景中已有户型，是否替换？"));
+    }
+    return new Promise((resolve) => {
+      let settled = false;
+      function cleanup() {
+        cancelBtn.removeEventListener("click", onCancel);
+        confirmBtn.removeEventListener("click", onConfirm);
+        dlg.removeEventListener("cancel", onCancel);
+      }
+      function finish(ok) {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        try {
+          if (typeof dlg.close === "function") dlg.close();
+          else dlg.removeAttribute("open");
+        } catch (_) {
+          /* ignore */
+        }
+        resolve(ok);
+      }
+      function onCancel() {
+        finish(false);
+      }
+      function onConfirm() {
+        finish(true);
+      }
+      cancelBtn.addEventListener("click", onCancel);
+      confirmBtn.addEventListener("click", onConfirm);
+      dlg.addEventListener("cancel", onCancel);
+      if (typeof dlg.showModal === "function") dlg.showModal();
+      else dlg.setAttribute("open", "");
+    });
+  }
+
+  async function tryApplyFloorplanEntryAtCenter(entry) {
+    if (!entry) return false;
+    if (!(await canReplaceExistingFloorplan(entry))) return false;
+    applyFloorplanEntryAtWorld(entry);
+    return true;
   }
 
   /** 编辑模式：从家具库拖到 SVG 画布上松开 → 落在指针处（家具不入 3D，仅从侧栏进 2D） */
@@ -1647,7 +1706,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     }
   }
 
-  function endFloorplanLibraryDrag(e) {
+  async function endFloorplanLibraryDrag(e) {
     if (!pendingFloorplanDrag || e.pointerId !== pendingFloorplanDrag.pointerId) return;
     removeFloorplanDragGhost();
     const p = pendingFloorplanDrag;
@@ -1666,8 +1725,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const cat = window.__floorPlanCatalog;
     const entry = cat?.byId instanceof Map ? cat.byId.get(p.floorPlanId) : null;
     if (!entry) return;
-
-    applyFloorplanEntryAtWorld(entry);
+    await tryApplyFloorplanEntryAtCenter(entry);
   }
 
   document.addEventListener(
@@ -1685,7 +1743,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       if (e.shiftKey) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        addFloorplanFromLibraryAtCenter(floorPlanId);
+        void addFloorplanFromLibraryAtCenter(floorPlanId);
         return;
       }
 
