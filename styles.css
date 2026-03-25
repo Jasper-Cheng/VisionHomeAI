@@ -740,6 +740,14 @@ a.avatar:hover {
   outline: none;
 }
 
+.svg-floorplan-floor.is-active-floor {
+  opacity: 1;
+}
+
+.svg-floorplan-floor.is-inactive-floor {
+  opacity: 0.35;
+}
+
 .svg-floorplan-hit {
   pointer-events: all;
 }

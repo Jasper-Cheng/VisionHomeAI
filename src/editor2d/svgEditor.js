@@ -237,6 +237,33 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return floors[normalizeFloorIndex(entry, indexLike)] ?? floors[0] ?? null;
   }
 
+  function getEntryBBoxCm(entry) {
+    const floors = getFloorsFromEntry(entry);
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const fl of floors) {
+      const b = getFloorBBoxCm(fl);
+      if (!b) continue;
+      minX = Math.min(minX, b.minX);
+      minY = Math.min(minY, b.minY);
+      maxX = Math.max(maxX, b.maxX);
+      maxY = Math.max(maxY, b.maxY);
+    }
+    if (!Number.isFinite(minX) || !Number.isFinite(minY)) return null;
+    return {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      cx: (minX + maxX) / 2,
+      cy: (minY + maxY) / 2,
+      w: maxX - minX,
+      h: maxY - minY,
+    };
+  }
+
   function getActiveFloorIdForFurniture() {
     const id = getCurrentFloorId();
     if (id) return id;
@@ -1399,7 +1426,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const floorIndex = normalizeFloorIndex(entry, options.floorIndex);
     const floor = getCurrentFloorFromEntry(entry, floorIndex);
     if (!floor) return;
-    const bbox = getFloorBBoxCm(floor);
+    const bbox = getEntryBBoxCm(entry);
     if (!bbox) return;
     const availW = Math.max(40, VIEW_W - 2 * FLOORPLAN_PAD);
     const availH = Math.max(40, VIEW_H - 2 * FLOORPLAN_PAD);
@@ -1458,9 +1485,18 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     hit.setAttribute("fill", "transparent");
 
     const planUnitsPerWorldGrid = GRID / s;
-    appendFloorGeometryToGroup(floor, xform, {
-      planUnitsPerWorldGrid,
-      dimensionLabelInverseScale: 1 / s,
+    floors.forEach((fl, i) => {
+      const floorG = document.createElementNS(svgNS, "g");
+      floorG.setAttribute("class", "svg-floorplan-floor");
+      floorG.setAttribute("data-floor-index", String(i));
+      if (fl?.id != null && String(fl.id).trim()) floorG.setAttribute("data-floor-id", String(fl.id).trim());
+      floorG.classList.toggle("is-active-floor", i === floorIndex);
+      floorG.classList.toggle("is-inactive-floor", i !== floorIndex);
+      appendFloorGeometryToGroup(fl, floorG, {
+        planUnitsPerWorldGrid,
+        dimensionLabelInverseScale: i === floorIndex ? 1 / s : undefined,
+      });
+      xform.appendChild(floorG);
     });
     xform.appendChild(hit);
     root.appendChild(xform);
