@@ -209,6 +209,26 @@ function polygonAreaCm2(pts) {
 }
 
 /**
+ * 单层户型投影面积（㎡）：各房间 polygon 面积之和（cm² → ㎡）
+ * @param {object} floor
+ * @returns {number}
+ */
+export function getFloorFootprintAreaM2(floor) {
+  if (!floor || typeof floor !== "object") return 0;
+  let sumCm2 = 0;
+  for (const room of floor.rooms || []) {
+    const poly = room?.polygon;
+    if (!Array.isArray(poly) || poly.length < 3) continue;
+    const pts = poly
+      .filter((p) => Array.isArray(p) && p.length >= 2)
+      .map((p) => [Number(p[0]), Number(p[1])])
+      .filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]));
+    sumCm2 += polygonAreaCm2(pts);
+  }
+  return sumCm2 / 10000;
+}
+
+/**
  * 户型尺寸标注（房间外包框 cm、面积㎡；墙段长度 cm）；inversePlanScale = 1/s 抵消画布 scale(s) 使字号可读
  * @param {object} floor
  * @param {SVGGElement} innerG

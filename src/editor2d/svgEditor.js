@@ -3,7 +3,7 @@
  * 画布 3000×3000 cm（1 用户单位 = 1 cm）；家具尺寸来自 data/furniture/（cm）。
  * 有户型底图时，墙体/房间在 `svg-floorplan-xform` 内乘 scale(s)；家具组须乘同一 s，否则标注 cm 与视觉比例不一致。
  */
-import { appendFloorGeometryToGroup, getFloorBBoxCm, getPrimaryFloor } from "../floorplan/floorplanSvg.js";
+import { appendFloorGeometryToGroup, getFloorBBoxCm, getFloorFootprintAreaM2 } from "../floorplan/floorplanSvg.js";
 import { getFurnitureThumbnailUrls } from "../furniture/furnitureManager.js";
 import { getFurnitureDisplayName, getSvgStyleForItem } from "../furniture/svgStyle.js";
 
@@ -17,6 +17,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const undoBtn = document.querySelector("[data-svg-undo]");
   const redoBtn = document.querySelector("[data-svg-redo]");
   const gridToggleBtn = document.getElementById("svgGridToggleBtn");
+  const canvasWrap = svg?.closest?.(".svg-editor-canvas-wrap") ?? null;
 
   /** 墙层 / 家具层不再写在 index.html；户型底图在网格之上、家具之下 */
   function svgEditorFail(reason) {
@@ -212,32 +213,128 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   let historyDebounceTimer = null;
 
   let gridVisible = true;
+  let currentFloorplanEntry = null;
+  let currentFloorIndex = 0;
+  let floorLevelDock = null;
+  let floorLevelRow = null;
+
+  function getFloorsFromEntry(entry) {
+    const floors = entry?.floors;
+    return Array.isArray(floors) ? floors : [];
+  }
+
+  function normalizeFloorIndex(entry, indexLike) {
+    const floors = getFloorsFromEntry(entry);
+    if (!floors.length) return 0;
+    const n = Math.trunc(Number(indexLike));
+    if (!Number.isFinite(n)) return 0;
+    return Math.min(Math.max(n, 0), floors.length - 1);
+  }
+
+  function getCurrentFloorFromEntry(entry, indexLike) {
+    const floors = getFloorsFromEntry(entry);
+    if (!floors.length) return null;
+    return floors[normalizeFloorIndex(entry, indexLike)] ?? floors[0] ?? null;
+  }
+
+  function formatFloorAreaM2Display(m2) {
+    if (!Number.isFinite(m2) || m2 <= 0) return "—";
+    if (m2 >= 100) return `${Math.round(m2)}`;
+    if (m2 >= 10) return `${m2.toFixed(1)}`;
+    return `${m2.toFixed(2)}`;
+  }
+
+  /** 一层一行文案：一层·层高 280cm·面积 280㎡ */
+  function formatFloorTabLine(floor, indexFallback) {
+    const name = String(floor?.name || "").trim() || `第 ${indexFallback + 1} 层`;
+    const areaM2 = getFloorFootprintAreaM2(floor);
+    const areaBit = `面积 ${formatFloorAreaM2Display(areaM2)}㎡`;
+    return [name, areaBit].filter(Boolean).join("·");
+  }
+
+  function updateFloorLevelControls() {
+    if (!floorLevelDock || !floorLevelRow) return;
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    floorLevelRow.replaceChildren();
+    if (!floors.length) {
+      floorLevelDock.hidden = true;
+      return;
+    }
+    floorLevelDock.hidden = false;
+    const active = normalizeFloorIndex(currentFloorplanEntry, currentFloorIndex);
+    floors.forEach((fl, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "svg-floor-level-tab";
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", i === active ? "true" : "false");
+      btn.dataset.floorIndex = String(i);
+      btn.textContent = formatFloorTabLine(fl, i);
+      btn.title = `切换到 ${String(fl?.name || "").trim() || `第 ${i + 1} 层`}`;
+      if (i === active) btn.classList.add("is-active");
+      btn.addEventListener("click", () => {
+        if (i === currentFloorIndex && currentFloorplanEntry) return;
+        if (currentFloorplanEntry) {
+          applyFloorplanEntryAtWorld(currentFloorplanEntry, VIEW_W / 2, VIEW_H / 2, { floorIndex: i });
+        }
+      });
+      floorLevelRow.appendChild(btn);
+    });
+  }
+
+  function ensureFloorLevelControls() {
+    if (!canvasWrap || floorLevelDock) return;
+    const dock = document.createElement("div");
+    dock.className = "svg-floor-level-dock";
+    dock.hidden = true;
+    dock.setAttribute("aria-label", "楼层");
+
+    const row = document.createElement("div");
+    row.className = "svg-floor-level-row";
+    row.setAttribute("role", "tablist");
+    row.setAttribute("aria-label", "选择楼层");
+
+    floorLevelDock = dock;
+    floorLevelRow = row;
+    dock.appendChild(row);
+    canvasWrap.appendChild(dock);
+    updateFloorLevelControls();
+  }
 
   function serializeEditorSnapshot() {
     return JSON.stringify({
       v: 1,
       furniture: getLayout(),
       floorPlanId: getCurrentFloorplanId(),
+      floorLevelIndex: getCurrentFloorLevelIndex(),
     });
   }
 
   /**
    * @param {unknown} parsed JSON.parse 结果
-   * @returns {{ furniture: unknown[], floorPlanId: string | null | undefined } | null}
+   * @returns {{ furniture: unknown[], floorPlanId: string | null | undefined, floorLevelIndex: number | null | undefined } | null}
    */
   function normalizeHistorySnapshot(parsed) {
     if (Array.isArray(parsed)) {
-      return { furniture: parsed, floorPlanId: undefined };
+      return { furniture: parsed, floorPlanId: undefined, floorLevelIndex: undefined };
     }
     if (parsed && typeof parsed === "object" && Array.isArray(parsed.furniture)) {
       const id = /** @type {{ floorPlanId?: unknown }} */ (parsed).floorPlanId;
+      const floorLevelRaw = /** @type {{ floorLevelIndex?: unknown }} */ (parsed).floorLevelIndex;
+      let floorLevelIndex = undefined;
+      if (floorLevelRaw === null) {
+        floorLevelIndex = null;
+      } else if (floorLevelRaw !== undefined) {
+        const n = Math.trunc(Number(floorLevelRaw));
+        floorLevelIndex = Number.isFinite(n) && n >= 0 ? n : 0;
+      }
       if (id === undefined) {
-        return { furniture: parsed.furniture, floorPlanId: undefined };
+        return { furniture: parsed.furniture, floorPlanId: undefined, floorLevelIndex };
       }
       if (id === null || String(id).trim() === "") {
-        return { furniture: parsed.furniture, floorPlanId: null };
+        return { furniture: parsed.furniture, floorPlanId: null, floorLevelIndex };
       }
-      return { furniture: parsed.furniture, floorPlanId: String(id).trim() };
+      return { furniture: parsed.furniture, floorPlanId: String(id).trim(), floorLevelIndex };
     }
     return null;
   }
@@ -249,7 +346,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       if (state.floorPlanId) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(state.floorPlanId) : null;
-        if (entry) applyFloorplanEntryAtWorld(entry);
+        if (entry) applyFloorplanEntryAtWorld(entry, undefined, undefined, { floorIndex: state.floorLevelIndex });
         else clearFloorplanLayerContent();
       } else {
         clearFloorplanLayerContent();
@@ -727,6 +824,9 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function clearFloorplanLayerContent() {
     clearFloorplanSelection();
     floorplanLayer.replaceChildren();
+    currentFloorplanEntry = null;
+    currentFloorIndex = 0;
+    updateFloorLevelControls();
     syncAllFurnitureTransformsToFloorplan();
     if (historyReady && !isRestoring) pushHistorySnapshot();
   }
@@ -1264,10 +1364,12 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   /**
    * 将户型目录条目（厘米几何）缩放落入 viewBox；户型中心固定在画布逻辑中心（忽略传入坐标，兼容旧 API）
    */
-  function applyFloorplanEntryAtWorld(entry, _worldX, _worldY) {
+  function applyFloorplanEntryAtWorld(entry, _worldX, _worldY, options = {}) {
     let worldX = snap(VIEW_W / 2);
     let worldY = snap(VIEW_H / 2);
-    const floor = getPrimaryFloor(entry);
+    const floors = getFloorsFromEntry(entry);
+    const floorIndex = normalizeFloorIndex(entry, options.floorIndex);
+    const floor = getCurrentFloorFromEntry(entry, floorIndex);
     if (!floor) return;
     const bbox = getFloorBBoxCm(floor);
     if (!bbox) return;
@@ -1302,6 +1404,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (entry?.id != null && String(entry.id).trim()) {
       root.setAttribute("data-floor-plan-id", String(entry.id).trim());
     }
+    if (floor.id != null && String(floor.id).trim()) root.setAttribute("data-floor-id", String(floor.id).trim());
+    root.setAttribute("data-floor-index", String(floorIndex));
     root.setAttribute("tabindex", "-1");
     root.setAttribute("aria-label", "户型底图（固定在画布中心），Delete 删除");
 
@@ -1333,10 +1437,13 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     xform.appendChild(hit);
     root.appendChild(xform);
     floorplanLayer.appendChild(root);
+    currentFloorplanEntry = entry;
+    currentFloorIndex = floorIndex;
+    updateFloorLevelControls();
 
     window.dispatchEvent(
       new CustomEvent("visionhome:floorplan-applied-to-svg", {
-        detail: { id: entry?.id != null ? String(entry.id) : "" },
+        detail: { id: entry?.id != null ? String(entry.id) : "", floorIndex, floorId: String(floor.id ?? "") },
       }),
     );
 
@@ -1594,6 +1701,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return JSON.stringify({
       furniture: getLayout(),
       floorPlanId: getCurrentFloorplanId(),
+      floorLevelIndex: getCurrentFloorLevelIndex(),
     });
   }
 
@@ -1644,12 +1752,22 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       : projectToSvgLayout(project);
 
     let fpId = null;
+    let floorLevelIndex = 0;
     if (hasSvgEditor && Object.prototype.hasOwnProperty.call(se, "floorPlanId")) {
       const v = se.floorPlanId;
       fpId = v != null && String(v).trim() ? String(v).trim() : null;
+      const lv = Math.trunc(Number(se.floorLevelIndex));
+      if (Number.isFinite(lv) && lv >= 0) floorLevelIndex = lv;
     } else {
       const t = project.templateId;
       fpId = t != null && String(t).trim() ? String(t).trim() : null;
+      const floorIdToIndex = new Map(
+        getFloorsFromEntry(window.__floorPlanCatalog?.byId instanceof Map ? window.__floorPlanCatalog.byId.get(fpId) : null).map(
+          (f, i) => [String(f?.id || ""), i],
+        ),
+      );
+      const fromActive = String(project?.activeFloorId ?? "").trim();
+      if (fromActive && floorIdToIndex.has(fromActive)) floorLevelIndex = floorIdToIndex.get(fromActive) ?? 0;
     }
 
     isRestoring = true;
@@ -1657,7 +1775,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       if (fpId) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
-        if (entry) applyFloorplanEntryAtWorld(entry);
+        if (entry) applyFloorplanEntryAtWorld(entry, undefined, undefined, { floorIndex: floorLevelIndex });
         else clearFloorplanLayerContent();
       } else {
         clearFloorplanLayerContent();
@@ -1734,9 +1852,28 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * 从 sessionStorage 等恢复 2D 编辑态（户型 id + 家具 + 视图 + 网格 + 未保存基线 + 可选撤销栈）
-   * @param {{ version?: number, furnitureLayout?: unknown[], undoHistory?: { entries: string[], index: number }, floorPlanId?: string | null, view?: { tx?: number, ty?: number, scale?: number }, gridVisible?: boolean, designLayoutBaseline?: string }} payload
+   * @param {{ version?: number, furnitureLayout?: unknown[], undoHistory?: { entries: string[], index: number }, floorPlanId?: string | null, floorLevelIndex?: number | null, view?: { tx?: number, ty?: number, scale?: number }, gridVisible?: boolean, designLayoutBaseline?: string }} payload
    */
   function restoreEditorSession(payload) {
+    function applyFloorplanByPayload() {
+      const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
+      const floorLevelIndex = Math.max(0, Math.trunc(Number(payload.floorLevelIndex) || 0));
+      if (fpId) {
+        const cat = window.__floorPlanCatalog;
+        const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
+        if (entry) {
+          applyFloorplanEntryAtWorld(entry, undefined, undefined, { floorIndex: floorLevelIndex });
+          return;
+        }
+      }
+      clearFloorplanSelection();
+      floorplanLayer.replaceChildren();
+      currentFloorplanEntry = null;
+      currentFloorIndex = 0;
+      updateFloorLevelControls();
+      syncAllFurnitureTransformsToFloorplan();
+    }
+
     if (!payload || Number(payload.version) !== 1) return;
 
     const v = payload.view;
@@ -1770,19 +1907,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       if (idx < 0 || idx >= entries.length) {
         isRestoring = true;
         try {
-          const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
-          if (fpId) {
-            const cat = window.__floorPlanCatalog;
-            const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
-            if (entry) applyFloorplanEntryAtWorld(entry);
-            else {
-              clearFloorplanSelection();
-              floorplanLayer.replaceChildren();
-            }
-          } else {
-            clearFloorplanSelection();
-            floorplanLayer.replaceChildren();
-          }
+          applyFloorplanByPayload();
         } finally {
           isRestoring = false;
         }
@@ -1802,19 +1927,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
         historyReady = true;
         isRestoring = true;
         try {
-          const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
-          if (fpId) {
-            const cat = window.__floorPlanCatalog;
-            const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
-            if (entry) applyFloorplanEntryAtWorld(entry);
-            else {
-              clearFloorplanSelection();
-              floorplanLayer.replaceChildren();
-            }
-          } else {
-            clearFloorplanSelection();
-            floorplanLayer.replaceChildren();
-          }
+          applyFloorplanByPayload();
         } finally {
           isRestoring = false;
         }
@@ -1832,19 +1945,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     } else {
       isRestoring = true;
       try {
-        const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
-        if (fpId) {
-          const cat = window.__floorPlanCatalog;
-          const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
-          if (entry) applyFloorplanEntryAtWorld(entry);
-          else {
-            clearFloorplanSelection();
-            floorplanLayer.replaceChildren();
-          }
-        } else {
-          clearFloorplanSelection();
-          floorplanLayer.replaceChildren();
-        }
+        applyFloorplanByPayload();
       } finally {
         isRestoring = false;
       }
@@ -1855,6 +1956,17 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function getCurrentFloorplanId() {
     const el = floorplanLayer.querySelector(".svg-floorplan-root[data-floor-plan-id]");
     const id = el?.getAttribute("data-floor-plan-id")?.trim();
+    return id || null;
+  }
+
+  function getCurrentFloorLevelIndex() {
+    if (!currentFloorplanEntry) return null;
+    return normalizeFloorIndex(currentFloorplanEntry, currentFloorIndex);
+  }
+
+  function getCurrentFloorId() {
+    const el = floorplanLayer.querySelector(".svg-floorplan-root[data-floor-id]");
+    const id = el?.getAttribute("data-floor-id")?.trim();
     return id || null;
   }
 
@@ -1899,9 +2011,12 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorGetGridVisible = () => gridVisible;
   window.svgEditorSetGridVisible = setGridVisible;
   window.svgEditorGetCurrentFloorplanId = getCurrentFloorplanId;
+  window.svgEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
+  window.svgEditorGetCurrentFloorId = getCurrentFloorId;
   window.svgEditorRestoreSession = restoreEditorSession;
   window.svgEditorGetUndoHistory = () => ({ entries: [...history], index: historyIndex });
   window.svgEditorFlushHistoryDebounce = flushHistoryDebounce;
+  ensureFloorLevelControls();
 
   select(null);
   initHistory();

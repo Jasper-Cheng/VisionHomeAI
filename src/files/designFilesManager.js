@@ -227,8 +227,13 @@ function currentDesignBaselineFingerprint() {
     return window.svgEditorGetDesignBaselineFingerprint();
   }
   const getLayout = window.svgEditorGetLayout;
+  const getFloorLevel = window.svgEditorGetCurrentFloorLevelIndex;
   const layout = typeof getLayout === "function" ? getLayout() : [];
-  return JSON.stringify({ furniture: layout, floorPlanId: null });
+  return JSON.stringify({
+    furniture: layout,
+    floorPlanId: null,
+    floorLevelIndex: typeof getFloorLevel === "function" ? getFloorLevel() : null,
+  });
 }
 
 export function canSaveCurrentDesign() {
@@ -334,7 +339,9 @@ function collectSvgEditorState(layout) {
   const getV = window.svgEditorGetViewTransform;
   const getGrid = window.svgEditorGetGridVisible;
   const getSize = window.svgEditorGetViewSize;
+  const getFloorLevel = window.svgEditorGetCurrentFloorLevelIndex;
   const floorPlanId = typeof getFp === "function" ? getFp() : null;
+  const floorLevelIndex = typeof getFloorLevel === "function" ? getFloorLevel() : null;
   let view = { tx: 0, ty: 0, scale: 1 };
   if (typeof getV === "function") {
     const v = getV();
@@ -354,6 +361,7 @@ function collectSvgEditorState(layout) {
   return {
     version: 1,
     floorPlanId,
+    floorLevelIndex,
     view,
     gridVisible: typeof getGrid === "function" ? !!getGrid() : true,
     viewBox: {
@@ -370,7 +378,14 @@ function buildProjectPayload(name, layout) {
   const activeFile = window.__activeDesignFile;
   const isExisting = Boolean(activeFile && prev && typeof prev === "object");
   const id = isExisting ? String(prev.id ?? activeFile.replace(/\.json$/i, "")).trim() : `project_${Date.now()}`;
-  const floorId = prev?.activeFloorId != null ? String(prev.activeFloorId) : "floor1";
+  const floorIdFromCanvas =
+    typeof window.svgEditorGetCurrentFloorId === "function" ? window.svgEditorGetCurrentFloorId() : null;
+  const floorId =
+    floorIdFromCanvas != null && String(floorIdFromCanvas).trim()
+      ? String(floorIdFromCanvas).trim()
+      : prev?.activeFloorId != null
+        ? String(prev.activeFloorId)
+        : "floor1";
   const furnitureInstances = layoutToFurnitureInstances(layout, floorId);
   const base = isExisting ? { ...prev } : {};
   const fpFromCanvas =
