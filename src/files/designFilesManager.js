@@ -321,7 +321,7 @@ function layoutToFurnitureInstances(layout, floorId) {
   return (Array.isArray(layout) ? layout : []).map((item, i) => ({
     instanceId: `fi_${i + 1}`,
     furnitureId: item.model,
-    floorId: fid,
+    floorId: item?.floorId != null && String(item.floorId).trim() ? String(item.floorId).trim() : fid,
     positionCm: [item.x, item.y],
     rotationDeg: item.rotation ?? 0,
   }));
@@ -354,6 +354,7 @@ function collectSvgEditorState(layout) {
   const viewBox = typeof getSize === "function" ? getSize() : { width: 3000, height: 3000 };
   const furniture = (Array.isArray(layout) ? layout : []).map((item) => ({
     model: String(item.model ?? "").trim(),
+    floorId: item?.floorId != null && String(item.floorId).trim() ? String(item.floorId).trim() : null,
     x: Number(item.x) || 0,
     y: Number(item.y) || 0,
     rotation: Number(item.rotation ?? 0) || 0,

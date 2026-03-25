@@ -237,6 +237,14 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return floors[normalizeFloorIndex(entry, indexLike)] ?? floors[0] ?? null;
   }
 
+  function getActiveFloorIdForFurniture() {
+    const id = getCurrentFloorId();
+    if (id) return id;
+    const floor = getCurrentFloorFromEntry(currentFloorplanEntry, currentFloorIndex);
+    if (floor?.id != null && String(floor.id).trim()) return String(floor.id).trim();
+    return "floor1";
+  }
+
   function formatFloorAreaM2Display(m2) {
     if (!Number.isFinite(m2) || m2 <= 0) return "—";
     if (m2 >= 100) return `${Math.round(m2)}`;
@@ -408,8 +416,9 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function rebuildFromLayout(layout) {
     furnitureLayer.replaceChildren();
     for (const item of layout) {
-      appendFurnitureItem(item.model, item.x, item.y, item.rotation ?? 0);
+      appendFurnitureItem(item.model, item.x, item.y, item.rotation ?? 0, item.floorId ?? null);
     }
+    updateFurnitureVisibilityForActiveFloor();
   }
 
   function applyHistoryIndex(i) {
@@ -827,6 +836,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     currentFloorplanEntry = null;
     currentFloorIndex = 0;
     updateFloorLevelControls();
+    updateFurnitureVisibilityForActiveFloor();
     syncAllFurnitureTransformsToFloorplan();
     if (historyReady && !isRestoring) pushHistorySnapshot();
   }
@@ -856,7 +866,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     syncPropertiesPanelForSelection(selectedEl);
   }
 
-  function appendFurnitureItem(type, cx, cy, rotationDeg = 0) {
+  function appendFurnitureItem(type, cx, cy, rotationDeg = 0, floorId = null) {
     const item = byId.get(type);
     if (!item) return null;
     let def = getSvgStyleForItem(item);
@@ -898,6 +908,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.classList.add("svg-furniture");
     g.setAttribute("data-model", type);
+    const fid = String(floorId ?? getActiveFloorIdForFurniture()).trim() || "floor1";
+    g.setAttribute("data-floor-id", fid);
     g.setAttribute("data-rot", String(rot));
     g.setAttribute("role", "button");
     g.setAttribute("tabindex", "0");
@@ -1018,6 +1030,21 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return g;
   }
 
+  function updateFurnitureVisibilityForActiveFloor() {
+    const activeFloorId = getCurrentFloorId();
+    const hasFloor = Boolean(activeFloorId);
+    let selectedHidden = false;
+    furnitureLayer.querySelectorAll(".svg-furniture").forEach((el) => {
+      const fid = String(el.getAttribute("data-floor-id") || "").trim();
+      const visible = !hasFloor || !fid || fid === activeFloorId;
+      el.style.display = visible ? "" : "none";
+      if (!visible && el === selectedEl) selectedHidden = true;
+    });
+    if (selectedHidden) {
+      select(null);
+    }
+  }
+
   function createFurnitureGroup(type, cx, cy) {
     const g = appendFurnitureItem(type, cx, cy, 0);
     if (g) select(g);
@@ -1026,6 +1053,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
 
   function addFurniture(type, cx = VIEW_W / 2, cy = VIEW_H / 2) {
     const g = createFurnitureGroup(type, cx, cy);
+    updateFurnitureVisibilityForActiveFloor();
     if (g && historyReady) pushHistorySnapshot();
     return g;
   }
@@ -1440,6 +1468,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     currentFloorplanEntry = entry;
     currentFloorIndex = floorIndex;
     updateFloorLevelControls();
+    updateFurnitureVisibilityForActiveFloor();
 
     window.dispatchEvent(
       new CustomEvent("visionhome:floorplan-applied-to-svg", {
@@ -1689,6 +1718,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       const pos = parseTranslate(g);
       return {
         model: g.getAttribute("data-model"),
+        floorId: String(g.getAttribute("data-floor-id") || "").trim() || null,
         x: pos.x,
         y: pos.y,
         rotation: getRotation(g),
@@ -1705,19 +1735,18 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     });
   }
 
-  /** 方案 JSON furnitureInstances → 画布布局（仅当前 activeFloorId），坐标 cm */
+  /** 方案 JSON furnitureInstances → 画布布局（全部楼层），坐标 cm */
   function projectToSvgLayout(project) {
-    const floorId = project?.activeFloorId != null ? String(project.activeFloorId) : "floor1";
     const inst = project?.furnitureInstances;
     if (!Array.isArray(inst)) return [];
     return inst
-      .filter((fi) => !fi?.floorId || String(fi.floorId) === floorId)
       .map((fi) => {
         const pc = Array.isArray(fi.positionCm) && fi.positionCm.length >= 2 ? fi.positionCm : null;
         const x = pc ? Number(pc[0]) || 0 : 0;
         const y = pc ? Number(pc[1]) || 0 : 0;
         return {
           model: String(fi.furnitureId ?? fi.modelId ?? "").trim(),
+          floorId: fi?.floorId != null && String(fi.floorId).trim() ? String(fi.floorId).trim() : "floor1",
           x,
           y,
           rotation: Number(fi.rotationDeg ?? fi.rotation ?? 0) || 0,
@@ -1731,6 +1760,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return arr
       .map((row) => ({
         model: String(row?.model ?? row?.furnitureId ?? "").trim(),
+        floorId: row?.floorId != null && String(row.floorId).trim() ? String(row.floorId).trim() : "floor1",
         x: Number(row?.x),
         y: Number(row?.y),
         rotation: Number(row?.rotation ?? row?.rotationDeg ?? 0) || 0,
