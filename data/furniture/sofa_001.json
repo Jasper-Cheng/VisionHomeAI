@@ -21,6 +21,7 @@
     "x": 0.5,
     "y": 0.5
   },
+  "price": 3980,
   "placement": {
     "allowRooms": [
       "living",

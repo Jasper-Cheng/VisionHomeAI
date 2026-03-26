@@ -4,7 +4,7 @@
   "name": "1",
   "description": "",
   "createdAt": "2026-03-26T07:37:59.724Z",
-  "updatedAt": "2026-03-26T07:52:11.843Z",
+  "updatedAt": "2026-03-26T08:14:47.663Z",
   "templateId": "villa_3floor",
   "activeFloorId": "floor2",
   "floorplanSnapshot": null,
@@ -44,8 +44,8 @@
       "furnitureId": "sofa_001",
       "floorId": "floor1",
       "positionCm": [
-        1380,
-        2305
+        1437,
+        1475
       ],
       "rotationDeg": 0
     },
@@ -64,8 +64,8 @@
       "furnitureId": "bed_001",
       "floorId": "floor2",
       "positionCm": [
-        1334,
-        1661
+        1332,
+        1659
       ],
       "rotationDeg": 0
     }
@@ -75,11 +75,11 @@
     "floorPlanId": "villa_3floor",
     "floorLevelIndex": 1,
     "view": {
-      "tx": 0,
-      "ty": 0,
-      "scale": 1.3970709462714075
+      "tx": -143.20114570851496,
+      "ty": -169.56349623051923,
+      "scale": 2.016805229831216
     },
-    "gridVisible": true,
+    "gridVisible": false,
     "viewBox": {
       "width": 3000,
       "height": 3000
@@ -109,8 +109,8 @@
       {
         "model": "sofa_001",
         "floorId": "floor1",
-        "x": 1380,
-        "y": 2305,
+        "x": 1437,
+        "y": 1475,
         "rotation": 0
       },
       {
@@ -123,8 +123,8 @@
       {
         "model": "bed_001",
         "floorId": "floor2",
-        "x": 1334,
-        "y": 1661,
+        "x": 1332,
+        "y": 1659,
         "rotation": 0
       }
     ]

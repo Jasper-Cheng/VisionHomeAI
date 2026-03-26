@@ -909,6 +909,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     gWorld.add(hit);
 
     activeFloorId = floor?.id != null && String(floor.id).trim() ? String(floor.id).trim() : null;
+    updateBottomUI();
 
     window.dispatchEvent(
       new CustomEvent("visionhome:floorplan-applied-to-svg", {
@@ -1051,7 +1052,144 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       appendFurnitureItem(item.model, item.x, item.y, item.rotation ?? 0, item.floorId ?? null);
     }
     updateFurnitureFloorVisibility();
+    updateBottomUI();
   }
+
+  // ── 底部实时预算 & 空间利用率 ──────────────────────────────────────
+  function updateBottomUI() {
+    const priceEl   = document.getElementById("bottomUiPrice");
+    const pctEl     = document.getElementById("bottomUiRatePercent");
+    const levelEl   = document.getElementById("bottomUiRateLevel");
+    if (!priceEl && !pctEl) return;
+
+    // 1. 家具总价
+    let totalPrice = 0;
+    let furnitureAreaCm2 = 0;
+    furnitureRoot.children.forEach((g) => {
+      if (!g.userData?.isFurniture) return;
+      const item = byId.get(g.userData.modelType);
+      const price = Number(item?.price ?? 0);
+      if (price > 0) totalPrice += price;
+      // 用 footprint 矩形近似面积（hw/hh 单位 cm）
+      const hw = g.userData.footprint?.hw ?? 0;
+      const hh = g.userData.footprint?.hh ?? 0;
+      furnitureAreaCm2 += hw * hh * 4;
+    });
+
+    if (priceEl) {
+      priceEl.textContent = `¥${totalPrice.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    // 2. 空间利用率 = 家具总面积 / 户型总房间面积
+    let floorAreaCm2 = 0;
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    for (const fl of floors) {
+      for (const room of fl.rooms ?? []) {
+        const poly = room?.polygon;
+        if (!Array.isArray(poly) || poly.length < 3) continue;
+        let area = 0;
+        for (let i = 0; i < poly.length; i++) {
+          const [ax, ay] = poly[i];
+          const [bx, by] = poly[(i + 1) % poly.length];
+          area += ax * by - bx * ay;
+        }
+        floorAreaCm2 += Math.abs(area) / 2;
+      }
+    }
+
+    if (pctEl || levelEl) {
+      const pct = floorAreaCm2 > 0 ? Math.min(100, Math.round((furnitureAreaCm2 / floorAreaCm2) * 100)) : 0;
+      if (pctEl) pctEl.textContent = `${pct}%`;
+      if (levelEl) {
+        let level = "-";
+        if (floorAreaCm2 > 0) {
+          if      (pct >= 60) level = "拥挤";
+          else if (pct >= 40) level = "紧凑";
+          else if (pct >= 20) level = "优秀";
+          else if (pct >= 8)  level = "适中";
+          else                level = "稀疏";
+        }
+        levelEl.textContent = level;
+      }
+    }
+  }
+
+  // ── 预算明细弹出窗 ────────────────────────────────────────────────
+  function openBomPopup() {
+    const popup   = document.getElementById("bomPopup");
+    const list    = document.getElementById("bomPopupList");
+    const total   = document.getElementById("bomPopupTotal");
+    if (!popup || !list) return;
+
+    list.replaceChildren();
+    let sum = 0;
+
+    // 按家具名称聚合（相同型号合计数量）
+    const tally = new Map(); // modelType → { name, price, count }
+    furnitureRoot.children.forEach((g) => {
+      if (!g.userData?.isFurniture) return;
+      const modelType = g.userData.modelType;
+      const item  = byId.get(modelType);
+      const name  = item ? getFurnitureDisplayName(item) : (modelType || "家具");
+      const price = Number(item?.price ?? 0);
+      if (tally.has(modelType)) {
+        tally.get(modelType).count += 1;
+      } else {
+        tally.set(modelType, { name, price, count: 1 });
+      }
+    });
+
+    if (tally.size === 0) {
+      const empty = document.createElement("li");
+      empty.className = "bom-popup__item";
+      empty.style.justifyContent = "center";
+      empty.style.color = "rgba(255,255,255,0.35)";
+      empty.textContent = "暂无家具";
+      list.appendChild(empty);
+    } else {
+      for (const { name, price, count } of tally.values()) {
+        const li = document.createElement("li");
+        li.className = "bom-popup__item";
+        const nameEl = document.createElement("span");
+        nameEl.className = "bom-popup__item-name";
+        nameEl.textContent = count > 1 ? `${name} ×${count}` : name;
+        const priceEl = document.createElement("span");
+        const subtotal = price * count;
+        sum += subtotal;
+        priceEl.className = "bom-popup__item-price";
+        priceEl.textContent = subtotal > 0
+          ? `¥${subtotal.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          : "—";
+        li.appendChild(nameEl);
+        li.appendChild(priceEl);
+        list.appendChild(li);
+      }
+    }
+
+    if (total) {
+      total.textContent = `¥${sum.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    popup.hidden = false;
+  }
+
+  function closeBomPopup() {
+    const popup = document.getElementById("bomPopup");
+    if (popup) popup.hidden = true;
+  }
+
+  document.getElementById("bottomUiBudgetTrigger")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const popup = document.getElementById("bomPopup");
+    popup?.hidden ? openBomPopup() : closeBomPopup();
+  });
+  document.getElementById("bomPopupClose")?.addEventListener("click", closeBomPopup);
+  document.addEventListener("click", (e) => {
+    const popup = document.getElementById("bomPopup");
+    const trigger = document.getElementById("bottomUiBudgetTrigger");
+    if (!popup?.hidden && !popup.contains(e.target) && e.target !== trigger && !trigger?.contains(e.target)) {
+      closeBomPopup();
+    }
+  });
 
   function updateFurnitureFloorVisibility() {
     const hasFloor = Boolean(activeFloorId);
@@ -1389,6 +1527,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const g = appendFurnitureItem(modelId, xCm, yCm, 0);
     if (g) selectFurniture(g);
     updateFurnitureFloorVisibility();
+    updateBottomUI();
     if (historyReady) pushHistorySnapshot();
     return g;
   }
@@ -1400,6 +1539,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     disposeObject3D(selectedGroup);
     selectedGroup = null;
     syncPropertiesPanelForSelection(null);
+    updateBottomUI();
     if (historyReady) pushHistorySnapshot();
   }
 
@@ -1659,11 +1799,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!entry) return false;
     const nextId = String(entry?.id ?? "").trim();
     const curId = String(getCurrentFloorplanId() ?? "").trim();
-    // 只有在“确实在替换旧户型”时才清空家具：当 nextId === curId 时通常不需要清空
-    const shouldClearFurniture = Boolean(currentFloorplanEntry) && !(nextId && curId && nextId === curId);
-    if (!(await canReplaceExistingFloorplan(entry))) return false;
-    if (shouldClearFurniture) {
-      // 替换户型前先删除旧家具，避免旧家具残留到新户型楼层逻辑里
+    const isSameFloorplan = nextId && curId && nextId === curId;
+    const hasFloorplan = Boolean(currentFloorplanEntry);
+    const hasFurniture = furnitureRoot.children.some((c) => c.userData?.isFurniture);
+
+    // 需要弹窗确认：① 替换不同户型，② 无户型但场景有家具
+    const needsConfirm = (hasFloorplan && !isSameFloorplan) || (!hasFloorplan && hasFurniture);
+
+    if (needsConfirm && !(await requestReplaceFloorplanConfirm())) return false;
+
+    if (needsConfirm) {
       rebuildFromLayout([]);
       selectFurniture(null);
     }

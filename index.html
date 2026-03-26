@@ -293,12 +293,24 @@
                 class="viewer svg-editor-canvas"
                 aria-label="户型 Three.js 3D 编辑区（布局保存仍为平面 cm）"
               ></div>
+              <!-- 预算明细弹出列表 -->
+              <div id="bomPopup" class="bom-popup" hidden role="dialog" aria-label="家具预算明细">
+                <div class="bom-popup__header">
+                  <span class="bom-popup__title">预算明细 (BOM)</span>
+                  <button class="bom-popup__close" id="bomPopupClose" type="button" aria-label="关闭">✕</button>
+                </div>
+                <ul class="bom-popup__list" id="bomPopupList"></ul>
+                <div class="bom-popup__footer">
+                  <span class="bom-popup__total-label">合计</span>
+                  <span class="bom-popup__total-price" id="bomPopupTotal">¥0.00</span>
+                </div>
+              </div>
               <div class="viewer-bottom-ui" aria-hidden="true">
-                <div class="bottom-ui-left">
+                <div class="bottom-ui-left" id="bottomUiBudgetTrigger" style="cursor:pointer" title="点击查看明细">
                   <span class="bottom-ui-icon" aria-hidden="true">🏠</span>
                   <div class="bottom-ui-text">
                     <div class="bottom-ui-title">实时预算(BOM)</div>
-                    <div class="bottom-ui-price">¥12,480.00</div>
+                    <div class="bottom-ui-price" id="bottomUiPrice">¥0.00</div>
                   </div>
                 </div>
 
@@ -309,8 +321,8 @@
                   <div class="bottom-ui-text">
                     <div class="bottom-ui-link">空间利用率</div>
                     <div class="bottom-ui-rate">
-                      <span class="bottom-ui-rate-percent">78%</span>
-                      <span class="bottom-ui-rate-level">优秀</span>
+                      <span class="bottom-ui-rate-percent" id="bottomUiRatePercent">0%</span>
+                      <span class="bottom-ui-rate-level" id="bottomUiRateLevel">-</span>
                     </div>
                   </div>
                 </div>
