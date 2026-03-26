@@ -303,26 +303,29 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let hideOtherFloors = false;
   const otherLayersOpacityWrap = document.getElementById("otherLayersOpacityWrap");
   const otherLayersOpacityRange = document.getElementById("otherLayersOpacityRange");
-  // 其它楼层透明度（0~1），用于 rebuildFloorplan3D() 的非选中层材质
-  let otherLayersOpacity = 0.2;
+  // 当前选中层透明度（0~1），其余层固定 0.2
+  let activeLayerOpacity = 1.0;
+  const otherLayersOpacity = 0.2; // 非选中层固定值
   floorHideOthersToggleBtn?.classList.toggle("is-active", hideOtherFloors);
   floorHideOthersToggleBtn?.setAttribute("aria-pressed", hideOtherFloors ? "true" : "false");
   function syncOtherOpacityUi() {
     if (!otherLayersOpacityWrap) return;
-    otherLayersOpacityWrap.hidden = hideOtherFloors;
-    otherLayersOpacityWrap.setAttribute("aria-hidden", hideOtherFloors ? "true" : "false");
-    otherLayersOpacityWrap.style.display = hideOtherFloors ? "none" : "flex";
+    // 有楼层选中时显示滑块，与"仅当前层"无关
+    const show = floorSelectionEnabled;
+    otherLayersOpacityWrap.hidden = !show;
+    otherLayersOpacityWrap.setAttribute("aria-hidden", show ? "false" : "true");
+    otherLayersOpacityWrap.style.display = show ? "flex" : "none";
     if (otherLayersOpacityRange) {
-      const v = Math.round(otherLayersOpacity * 100);
+      const v = Math.round(activeLayerOpacity * 100);
       otherLayersOpacityRange.value = String(Math.max(0, Math.min(100, v)));
     }
   }
   syncOtherOpacityUi();
   otherLayersOpacityRange?.addEventListener("input", () => {
-    if (hideOtherFloors) return;
+    if (!floorSelectionEnabled) return;
     const v = Number(otherLayersOpacityRange.value);
     if (!Number.isFinite(v)) return;
-    otherLayersOpacity = Math.max(0, Math.min(1, v / 100));
+    activeLayerOpacity = Math.max(0, Math.min(1, v / 100));
     rebuildFloorplan3D();
     updateFurnitureFloorVisibility();
   });
@@ -871,7 +874,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const isActive = floorIndex >= 0 && i === floorIndex;
       // 选中层更深、更清晰：提高不透明度
       // 未选中层更淡：降低透明度
-      const opacity = floorIndex >= 0 ? (isActive ? 1 : otherLayersOpacity) : 0.2;
+      const opacity = floorIndex >= 0 ? (isActive ? activeLayerOpacity : otherLayersOpacity) : 0.2;
       const plate = buildFloorPlateMesh(fl, cx, cy, s, opacity);
       if (plate) floorG.add(plate);
       for (const room of fl.rooms || []) {
@@ -943,6 +946,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             floorSelectionEnabled = true;
             currentFloorIndex = i;
           }
+          syncOtherOpacityUi();
           setFloorLevelsVisible();
           rebuildFloorplan3D();
           updateFurnitureFloorVisibility();
@@ -974,6 +978,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     currentFloorplanEntry = null;
     currentFloorIndex = 0;
     floorSelectionEnabled = true;
+    syncOtherOpacityUi();
     rebuildFloorplan3D();
     setFloorLevelsVisible();
     updateFurnitureFloorVisibility();
@@ -985,6 +990,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     currentFloorplanEntry = entry;
     currentFloorIndex = normalizeFloorIndex(entry, options.floorIndex);
     floorSelectionEnabled = true;
+    syncOtherOpacityUi();
     rebuildFloorplan3D();
     setFloorLevelsVisible();
     updateFurnitureFloorVisibility();
@@ -1066,7 +1072,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       g.traverse((o) => {
         if (!o.isMesh || !o.material) return;
         if (isActiveFloor) activeFloorPickMeshes.push(o);
-        const op = isActiveFloor ? 1 : Math.min(1, otherLayersOpacity * 2);
+        const op = isActiveFloor ? activeLayerOpacity : Math.min(1, otherLayersOpacity * 2);
         const mats = Array.isArray(o.material) ? o.material : [o.material];
         mats.forEach((m) => {
           if (!m) return;
