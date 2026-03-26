@@ -12,16 +12,8 @@ const GRID = 1;
 const FLOORPLAN_PAD = 80;
 const FLOORPLAN_SIZE_FACTOR = 0.38;
 const MAX_HISTORY = 80;
-
-const ROOM_COLOR = {
-  default: 0x6366f1,
-  living: 0x3b82f6,
-  bedroom: 0x8b5cf6,
-  kitchen: 0xf59e0b,
-  bathroom: 0x2dd4bf,
-  dining: 0xfbbf24,
-  corridor: 0x94a3b8,
-};
+/** 户型墙体与地面挤出块统一颜色 */
+const FLOORPLAN_SURFACE_COLOR = 0xe2e8f0;
 
 function cmToSceneXZ(xCm, yCm) {
   return { x: (xCm - VIEW_W / 2) / 100, z: (yCm - VIEW_H / 2) / 100 };
@@ -139,7 +131,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const CAMERA_DEFAULT_Y = CAMERA_DEFAULT_TARGET_DISTANCE * Math.sin(CAMERA_DEFAULT_ELEVATION_RAD);
   const CAMERA_DEFAULT_Z = CAMERA_DEFAULT_TARGET_DISTANCE * Math.cos(CAMERA_DEFAULT_ELEVATION_RAD);
   camera.position.set(0, CAMERA_DEFAULT_Y, CAMERA_DEFAULT_Z);
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+    // 大场景深度精度更好，减轻近共面/阴影条纹带来的“花屏”感
+    logarithmicDepthBuffer: true,
+  });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -160,24 +157,26 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const grid = new THREE.GridHelper(80, 80, 0x3b3b3b, 0x222222);
   grid.position.y = 0.001;
   scene.add(grid);
-  // 环境光适度降低：让“受阴影影响”的明暗对比更明显
-  scene.add(new THREE.AmbientLight(0xffffff, 0.14));
-  // 半球光提供稳定的顶部/地面色差，但不要太强
-  scene.add(new THREE.HemisphereLight(0xdbeafe, 0x0b1220, 0.28));
-  const dir = new THREE.DirectionalLight(0xffffff, 1.45);
+  // 略提高填充光，压低阴影对比，减轻地面/家具投影边缘的颗粒感
+  scene.add(new THREE.AmbientLight(0xffffff, 0.22));
+  scene.add(new THREE.HemisphereLight(0xdbeafe, 0x0b1220, 0.34));
+  const dir = new THREE.DirectionalLight(0xffffff, 1.05);
   dir.position.set(14, 24, 16);
   dir.castShadow = true;
   // 扩大阴影相机覆盖范围，避免多楼层/大户型时阴影被裁切
   dir.shadow.mapSize.set(4096, 4096);
-  // 旋转视角时墙体“闪烁”多数来自 shadow acne；提高 bias/normalBias 稳定阴影
-  dir.shadow.bias = 0.00018;
-  dir.shadow.normalBias = 0.05;
+  // 家具只投射、户型地面接收；bias 过高会导致“影离地”、过低易 acne，取折中
+  dir.shadow.bias = 0.00015;
+  dir.shadow.normalBias = 0.045;
+  // PCF 软阴影半径略大，减轻阴影边缘“台阶感”
+  dir.shadow.radius = 6;
   dir.shadow.camera.near = 0.1;
   dir.shadow.camera.far = 500;
-  dir.shadow.camera.left = -80;
-  dir.shadow.camera.right = 80;
-  dir.shadow.camera.top = 80;
-  dir.shadow.camera.bottom = -80;
+  // left/right/top/bottom 每帧按场景包围盒在光照空间收紧，提高阴影贴图有效分辨率（减轻锯齿）
+  dir.shadow.camera.left = -40;
+  dir.shadow.camera.right = 40;
+  dir.shadow.camera.top = 40;
+  dir.shadow.camera.bottom = -40;
   dir.shadow.camera.updateProjectionMatrix();
   dir.target.position.set(0, 0, 0);
   scene.add(dir.target);
@@ -194,6 +193,73 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const tmpVecA = new THREE.Vector3();
   const tmpVecB = new THREE.Vector3();
   const tmpVecC = new THREE.Vector3();
+  const shadowFitCam = new THREE.Camera();
+  const shadowCorner = new THREE.Vector3();
+  const shadowSceneBbox = new THREE.Box3();
+
+  /** 将方向光正交阴影范围收紧到户型+家具包围盒（光照空间），避免 ±80m 浪费 texel 导致边缘锯齿 */
+  function fitDirectionalShadowFrustum() {
+    shadowSceneBbox.makeEmpty();
+    if (floorplanRoot.children.length) shadowSceneBbox.expandByObject(floorplanRoot);
+    if (furnitureRoot.children.length) {
+      const b2 = new THREE.Box3().setFromObject(furnitureRoot);
+      if (shadowSceneBbox.isEmpty()) shadowSceneBbox.copy(b2);
+      else shadowSceneBbox.union(b2);
+    }
+    if (shadowSceneBbox.isEmpty()) return;
+
+    const cam = dir.shadow.camera;
+    shadowFitCam.position.copy(dir.position);
+    shadowFitCam.lookAt(dir.target.position);
+    shadowFitCam.updateMatrixWorld(true);
+    const viewMat = shadowFitCam.matrixWorldInverse;
+
+    const min = shadowSceneBbox.min;
+    const max = shadowSceneBbox.max;
+    const ax = [min.x, max.x];
+    const ay = [min.y, max.y];
+    const az = [min.z, max.z];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (let i = 0; i < 2; i++) {
+      for (let j = 0; j < 2; j++) {
+        for (let k = 0; k < 2; k++) {
+          shadowCorner.set(ax[i], ay[j], az[k]);
+          shadowCorner.applyMatrix4(viewMat);
+          minX = Math.min(minX, shadowCorner.x);
+          maxX = Math.max(maxX, shadowCorner.x);
+          minY = Math.min(minY, shadowCorner.y);
+          maxY = Math.max(maxY, shadowCorner.y);
+          minZ = Math.min(minZ, shadowCorner.z);
+          maxZ = Math.max(maxZ, shadowCorner.z);
+        }
+      }
+    }
+
+    const marginXY = 2.5;
+    const marginZ = 6;
+    const minSpan = 6;
+    let spanX = maxX - minX;
+    let spanY = maxY - minY;
+    if (spanX < minSpan) {
+      const cx = (minX + maxX) * 0.5;
+      minX = cx - minSpan * 0.5;
+      maxX = cx + minSpan * 0.5;
+    }
+    if (spanY < minSpan) {
+      const cy = (minY + maxY) * 0.5;
+      minY = cy - minSpan * 0.5;
+      maxY = cy + minSpan * 0.5;
+    }
+
+    cam.left = minX - marginXY;
+    cam.right = maxX + marginXY;
+    cam.bottom = minY - marginXY;
+    cam.top = maxY + marginXY;
+    cam.near = Math.max(0.1, -maxZ - marginZ);
+    cam.far = Math.max(cam.near + 1, -minZ + marginZ);
+    cam.updateProjectionMatrix();
+  }
+
   const interactiveMeshes = [];
   const activeFloorPickMeshes = [];
 
@@ -313,9 +379,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     shape.closePath();
     const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: false });
     geo.rotateX(-Math.PI / 2);
-    const t = String(room?.type || "default").toLowerCase();
-    const col = ROOM_COLOR[t] ?? ROOM_COLOR.default;
-    const mat = stdMat(col);
+    const mat = stdMat(FLOORPLAN_SURFACE_COLOR);
     const op = floorOpacity ?? 1;
     mat.opacity = op;
     // 选中层（op=1）走不透明渲染，避免透明排序导致的“缺失/闪烁”
@@ -342,7 +406,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const hM = ((Number.isFinite(hCm) && hCm > 0 ? hCm : defaultHeightCm) * s) / 100;
     const geo = new THREE.BoxGeometry(len, hM, thickM);
     const op = floorOpacity ?? 1;
-    const mat = stdMat(0xe2e8f0);
+    const mat = stdMat(FLOORPLAN_SURFACE_COLOR);
     mat.opacity = op;
     // 选中层（op=1）走不透明渲染，避免透明排序导致的“缺失/闪烁”
     mat.transparent = op < 1;
@@ -350,8 +414,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 墙体是封闭盒体，使用单面渲染可减少双面阴影引起的闪烁
     mat.side = THREE.FrontSide;
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    // 不参与阴影：避免墙顶/长墙面上 shadow map 条纹（“花屏”）
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
     const mx = ((x1 + x2) / 2 - cx) * (s / 100);
     const mz = ((y1 + y2) / 2 - cy) * (s / 100);
     mesh.position.set(mx, hM / 2, mz);
@@ -534,7 +599,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const mat = stdMat(0x8c7cff);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    // 不参与接收阴影：避免盒体顶面/侧面出现 shadow acne 条纹（花花的感觉）
+    mesh.receiveShadow = false;
     mesh.position.y = h / 2;
     const g = new THREE.Group();
     g.userData.modelType = furnitureId;
@@ -1546,6 +1612,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       dir.target.position.set(tmpVecA.x, 0, tmpVecA.z);
       dir.target.updateMatrixWorld();
     }
+    dir.updateMatrixWorld(true);
+    fitDirectionalShadowFrustum();
     renderer.render(scene, camera);
   }
 
