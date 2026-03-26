@@ -701,6 +701,28 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     dSp.position.set(dX, LY + 0.18, (fminZ + fmaxZ) / 2);
     g.add(dSp);
 
+    // —— 层高标注（西侧，竖向）——
+    const flH = (Number.isFinite(Number(fl.height)) && fl.height > 0 ? Number(fl.height) : 280) / 100;
+    const VEXT = EXT2;         // 与总宽/深一致，放在外层
+    const VTK  = TK;
+    const vX   = fminX - VEXT; // 西侧偏移位置
+    const midZ = (fminZ + fmaxZ) / 2;
+
+    // 竖向主标注线（从楼板面到墙顶）
+    g.add(makeDimLine([new THREE.Vector3(vX, 0, midZ), new THREE.Vector3(vX, flH, midZ)]));
+    // 底部引出线
+    g.add(makeDimLine([new THREE.Vector3(fminX, 0, midZ), new THREE.Vector3(vX - VTK, 0, midZ)], 0x5599ee, 0.05, 0.04));
+    // 顶部引出线
+    g.add(makeDimLine([new THREE.Vector3(fminX, flH, midZ), new THREE.Vector3(vX - VTK, flH, midZ)], 0x5599ee, 0.05, 0.04));
+    // 底部刻度线
+    g.add(makeDimLine([new THREE.Vector3(vX - VTK, 0, midZ), new THREE.Vector3(vX + VTK, 0, midZ)]));
+    // 顶部刻度线
+    g.add(makeDimLine([new THREE.Vector3(vX - VTK, flH, midZ), new THREE.Vector3(vX + VTK, flH, midZ)]));
+    // 层高标签
+    const hSp = makeDimSprite(fmtDimCm(fl.height || 280));
+    hSp.position.set(vX, flH / 2 + 0.15, midZ);
+    g.add(hSp);
+
     return g;
   }
 
