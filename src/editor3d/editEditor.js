@@ -280,6 +280,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let historyDebounceTimer = null;
   let gridVisible = false;
   let showDimensions = false;
+  let showNames = false;
   const dimDepthTest = false; // 标注始终显示，不被模型遮挡
   let floorLevelDock = null;
   let floorLevelRow = null;
@@ -522,6 +523,30 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /** 格式化 cm 为可读字符串（>=100cm 显示 m） */
   function fmtDimCm(cm) {
     return cm >= 100 ? `${(cm / 100).toFixed(2)}m` : `${Math.round(cm)}cm`;
+  }
+
+  /**
+  /** 为指定楼层每个房间在中心放置名称标签 */
+  function buildFloorNameAnnotations(fl, cx, cy, s) {
+    const g = new THREE.Group();
+    g.userData.isNameAnnotation = true;
+    const LY = 0.12;
+    for (const room of fl.rooms ?? []) {
+      const poly = room?.polygon;
+      const name = String(room?.name ?? room?.type ?? "").trim();
+      if (!Array.isArray(poly) || poly.length < 3 || !name) continue;
+      const pts2d = poly
+        .filter((p) => Array.isArray(p) && p.length >= 2)
+        .map((p) => [(snap(Number(p[0])) - cx) * (s / 100), (snap(Number(p[1])) - cy) * (s / 100)]);
+      if (pts2d.length < 3) continue;
+      let cx2 = 0, cz2 = 0;
+      for (const [x, z] of pts2d) { cx2 += x; cz2 += z; }
+      cx2 /= pts2d.length; cz2 /= pts2d.length;
+      const sp = makeDimSprite(name, { fontSize: 22, pxPerM: 160 });
+      sp.position.set(cx2, LY, cz2);
+      g.add(sp);
+    }
+    return g;
   }
 
   /**
@@ -779,12 +804,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     dSp.position.set(dX, LY + 0.15, 0);
     g.add(dSp);
 
-    // 名称标签（家具正中心）
-    const name = item ? getFurnitureDisplayName(item) : (group.userData.modelType || "家具");
-    const nSp = makeDimSprite(name, { fontSize: 20, pxPerM: 155 });
-    nSp.position.set(0, LY + 0.10, 0);
-    g.add(nSp);
-
     return g;
   }
 
@@ -808,6 +827,36 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (btn) {
       btn.classList.toggle("is-active", showDimensions);
       btn.setAttribute("aria-pressed", String(showDimensions));
+    }
+    rebuildFloorplan3D();
+    updateFurnitureFloorVisibility();
+  }
+
+  /** 刷新所有家具的名称标注 */
+  function rebuildFurnitureNameAnnotations() {
+    furnitureRoot.children.forEach((group) => {
+      if (!group.userData?.isFurniture) return;
+      const old = group.children.filter((c) => c.userData?.isFurnitureNameAnnotation);
+      old.forEach((c) => { group.remove(c); disposeObject3D(c); });
+      if (showNames && group.visible && group.userData.isFloorActive !== false) {
+        const item = byId.get(group.userData.modelType);
+        const name = item ? getFurnitureDisplayName(item) : (group.userData.modelType || "家具");
+        const fp = extractFurnitureFootprintCm(item);
+        const fh = fp.h / 100;
+        const sp = makeDimSprite(name, { fontSize: 22, pxPerM: 160 });
+        sp.position.set(0, fh + 0.08, 0);
+        sp.userData.isFurnitureNameAnnotation = true;
+        group.add(sp);
+      }
+    });
+  }
+
+  function setNamesVisible(v) {
+    showNames = Boolean(v);
+    const btn = document.getElementById("svgNameToggleBtn");
+    if (btn) {
+      btn.classList.toggle("is-active", showNames);
+      btn.setAttribute("aria-pressed", String(showNames));
     }
     rebuildFloorplan3D();
     updateFurnitureFloorVisibility();
@@ -891,6 +940,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (showDimensions && (isActive || !floorSelectionEnabled)) {
         const dimG = buildFloorDimensions(fl, cx, cy, s);
         if (dimG) floorG.add(dimG);
+      }
+      // 名称标注：同尺寸标注显示规则
+      if (showNames && (isActive || !floorSelectionEnabled)) {
+        const nameG = buildFloorNameAnnotations(fl, cx, cy, s);
+        if (nameG) floorG.add(nameG);
       }
       // 每层楼的垂直高度（避免所有层重叠在 y=0）
       const fidRaw = String(fl?.id ?? "").trim() || `floor${i + 1}`;
@@ -1115,6 +1169,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   // ── 预算明细弹出窗 ────────────────────────────────────────────────
+  function setBomArrow(open) {
+    const arrow = document.getElementById("bomArrow");
+    if (arrow) arrow.textContent = open ? "▼" : "▲";
+  }
+
   function openBomPopup() {
     const popup   = document.getElementById("bomPopup");
     const list    = document.getElementById("bomPopupList");
@@ -1170,11 +1229,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       total.textContent = `¥${sum.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     popup.hidden = false;
+    setBomArrow(true);
   }
 
   function closeBomPopup() {
     const popup = document.getElementById("bomPopup");
     if (popup) popup.hidden = true;
+    setBomArrow(false);
   }
 
   document.getElementById("bottomUiBudgetTrigger")?.addEventListener("click", (e) => {
@@ -1223,6 +1284,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     });
     if (selectedGroup && selectedGroup.userData?.isFloorActive === false) selectFurniture(null);
     rebuildFurnitureDimAnnotations();
+    rebuildFurnitureNameAnnotations();
   }
 
   function getLayout() {
@@ -2201,6 +2263,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorSetDimensionsVisible = setDimensionsVisible;
 
   document.getElementById("svgDimToggleBtn")?.addEventListener("click", () => setDimensionsVisible(!showDimensions));
+  document.getElementById("svgNameToggleBtn")?.addEventListener("click", () => setNamesVisible(!showNames));
   window.svgEditorGetCurrentFloorplanId = getCurrentFloorplanId;
   window.svgEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
   window.svgEditorGetCurrentFloorId = getCurrentFloorId;

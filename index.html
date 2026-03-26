@@ -196,10 +196,8 @@
               <div class="svg-editor-toolbar-left">
                 <span class="svg-editor-title">户型 3D</span>
                 <span class="svg-editor-hint">
-                  <span class="svg-editor-hint__line"
-                    >家具/户型：<strong>拖到视口</strong>放置（户型落在<strong>中心</strong>）· 点击户型区域后<strong>Delete</strong>删户型 · <strong>Shift+点击</strong>侧栏快速放置</span>
-                  <span class="svg-editor-hint__line"
-                    >· 家具双击旋转 · <strong>方向键</strong>按格移动 · <strong>滚轮</strong>缩放视角 · 左键拖空白旋转 · <strong>Ctrl+Z</strong>撤销</span>
+                  <span class="svg-editor-hint__line"><strong>拖拽</strong> 放置家具/户型 &nbsp;·&nbsp; <strong>Delete</strong> 删除户型 &nbsp;·&nbsp; <strong>Shift+点击</strong> 快速放置</span>
+                  <span class="svg-editor-hint__line"><strong>双击</strong> 旋转家具 &nbsp;·&nbsp; <strong>方向键</strong> 移动家具 &nbsp;·&nbsp; <strong>滚轮</strong> 缩放 &nbsp;·&nbsp; <strong>左键拖</strong> 旋转视角 &nbsp;·&nbsp; <strong>中键拖</strong> 平移 &nbsp;·&nbsp; <strong>Ctrl+Z</strong> 撤销 &nbsp;·&nbsp; <strong>Ctrl+Shift+Z</strong> 重做</span>
                 </span>
               </div>
               <div
@@ -267,6 +265,16 @@
                 </button>
                 <button
                   type="button"
+                  class="svg-view-btn svg-view-btn--wide"
+                  id="svgNameToggleBtn"
+                  title="显示/隐藏名称标注"
+                  aria-label="显示或隐藏名称标注"
+                  aria-pressed="false"
+                >
+                  名称
+                </button>
+                <button
+                  type="button"
                   class="svg-view-btn svg-view-btn--wide is-active"
                   id="svgGridToggleBtn"
                   data-svg-grid-toggle
@@ -309,7 +317,7 @@
                 <div class="bottom-ui-left" id="bottomUiBudgetTrigger" style="cursor:pointer" title="点击查看明细">
                   <span class="bottom-ui-icon" aria-hidden="true">🏠</span>
                   <div class="bottom-ui-text">
-                    <div class="bottom-ui-title">实时预算(BOM)</div>
+                    <div class="bottom-ui-title">实时预算(BOM) <span id="bomArrow" style="font-size:10px;opacity:0.6;">▲</span></div>
                     <div class="bottom-ui-price" id="bottomUiPrice">¥0.00</div>
                   </div>
                 </div>

@@ -1124,7 +1124,8 @@ a.avatar:hover {
   margin: 0;
   padding: 6px 0;
   overflow-y: auto;
-  flex: 1;
+  flex: 0 0 auto;
+  max-height: 220px;
 }
 
 .bom-popup__item {
@@ -1200,6 +1201,12 @@ a.avatar:hover {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  pointer-events: auto;
+}
+
+/* 弹出的预算明细也需要响应点击 */
+.bom-popup {
+  pointer-events: auto;
 }
 
 .bottom-ui-divider {
