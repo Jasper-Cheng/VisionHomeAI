@@ -1942,6 +1942,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const rect = container.getBoundingClientRect();
     const { clientX: x, clientY: y } = e;
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return;
+    if (!floorSelectionEnabled) return;
     if (!byId.has(p.model)) return;
     const cm = intersectPlaneCm(x, y, getPlacementPlaneWorldY());
     if (cm) addFurniture(p.model, cm.x, cm.y);
@@ -1982,6 +1983,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const panel = card.closest?.(".side-panel[data-panel='assets']");
         if (!panel || !panel.classList.contains("is-visible") || !isEditViewActive()) return;
         if (e.shiftKey) {
+          if (!floorSelectionEnabled) return;
           e.preventDefault();
           e.stopImmediatePropagation();
           const n = Math.floor(Math.random() * 5) - 2, m = Math.floor(Math.random() * 5) - 2;

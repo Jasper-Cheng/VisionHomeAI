@@ -1075,7 +1075,7 @@ a.avatar:hover {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(14px + 64px + 10px); /* bottom-ui 高度之上 */
+  bottom: calc(14px + 64px + 4px); /* bottom-ui 高度之上 */
   z-index: 50;
   width: 280px;
   max-height: 320px;
