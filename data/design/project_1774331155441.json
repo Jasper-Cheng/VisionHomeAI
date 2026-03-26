@@ -4,8 +4,8 @@
   "name": "阿萨德撒",
   "description": "",
   "createdAt": "2026-03-24T05:45:55.441Z",
-  "updatedAt": "2026-03-24T05:48:53.736Z",
-  "templateId": "apartment_2b1l",
+  "updatedAt": "2026-03-26T02:51:45.570Z",
+  "templateId": "villa_3floor",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
   "furnitureInstances": [
@@ -13,22 +13,143 @@
       "instanceId": "fi_1",
       "furnitureId": "table_001",
       "floorId": "floor1",
-      "rotationDeg": 0,
       "positionCm": [
-        130.0,
-        114.0
-      ]
+        988,
+        1188
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "table_001",
+      "floorId": "floor1",
+      "positionCm": [
+        1821,
+        1135
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_3",
+      "furnitureId": "sofa_001",
+      "floorId": "floor1",
+      "positionCm": [
+        1211,
+        1227
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_4",
+      "furnitureId": "sofa_001",
+      "floorId": "floor2",
+      "positionCm": [
+        1100,
+        1079
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_5",
+      "furnitureId": "table_001",
+      "floorId": "floor2",
+      "positionCm": [
+        1128,
+        1725
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_6",
+      "furnitureId": "sofa_001",
+      "floorId": "floor1",
+      "positionCm": [
+        975,
+        1840
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_7",
+      "furnitureId": "sofa_001",
+      "floorId": "floor2",
+      "positionCm": [
+        1489,
+        1071
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_8",
+      "furnitureId": "table_001",
+      "floorId": "floor3",
+      "positionCm": [
+        1280,
+        1394
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_9",
+      "furnitureId": "table_001",
+      "floorId": "floor3",
+      "positionCm": [
+        1281,
+        1754
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_10",
+      "furnitureId": "table_001",
+      "floorId": "floor3",
+      "positionCm": [
+        1168,
+        1820
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_11",
+      "furnitureId": "table_001",
+      "floorId": "floor3",
+      "positionCm": [
+        1510,
+        1730
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_12",
+      "furnitureId": "sofa_001",
+      "floorId": "floor3",
+      "positionCm": [
+        1087,
+        1708
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_13",
+      "furnitureId": "sofa_001",
+      "floorId": "floor3",
+      "positionCm": [
+        1461,
+        1973
+      ],
+      "rotationDeg": 0
     }
   ],
   "svgEditor": {
     "version": 1,
-    "floorPlanId": "apartment_2b1l",
+    "floorPlanId": "villa_3floor",
+    "floorLevelIndex": 0,
     "view": {
       "tx": 0,
       "ty": 0,
-      "scale": 1
+      "scale": 1.8802663398348918
     },
-    "gridVisible": true,
+    "gridVisible": false,
     "viewBox": {
       "width": 3000,
       "height": 3000
@@ -36,8 +157,93 @@
     "furniture": [
       {
         "model": "table_001",
-        "x": 130.0,
-        "y": 114.0,
+        "floorId": "floor1",
+        "x": 988,
+        "y": 1188,
+        "rotation": 0
+      },
+      {
+        "model": "table_001",
+        "floorId": "floor1",
+        "x": 1821,
+        "y": 1135,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_001",
+        "floorId": "floor1",
+        "x": 1211,
+        "y": 1227,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_001",
+        "floorId": "floor2",
+        "x": 1100,
+        "y": 1079,
+        "rotation": 0
+      },
+      {
+        "model": "table_001",
+        "floorId": "floor2",
+        "x": 1128,
+        "y": 1725,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_001",
+        "floorId": "floor1",
+        "x": 975,
+        "y": 1840,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_001",
+        "floorId": "floor2",
+        "x": 1489,
+        "y": 1071,
+        "rotation": 0
+      },
+      {
+        "model": "table_001",
+        "floorId": "floor3",
+        "x": 1280,
+        "y": 1394,
+        "rotation": 0
+      },
+      {
+        "model": "table_001",
+        "floorId": "floor3",
+        "x": 1281,
+        "y": 1754,
+        "rotation": 0
+      },
+      {
+        "model": "table_001",
+        "floorId": "floor3",
+        "x": 1168,
+        "y": 1820,
+        "rotation": 0
+      },
+      {
+        "model": "table_001",
+        "floorId": "floor3",
+        "x": 1510,
+        "y": 1730,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_001",
+        "floorId": "floor3",
+        "x": 1087,
+        "y": 1708,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_001",
+        "floorId": "floor3",
+        "x": 1461,
+        "y": 1973,
         "rotation": 0
       }
     ]

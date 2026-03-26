@@ -221,15 +221,15 @@
           <div class="file-list" id="designFileList" aria-label="设计文件列表"></div>
         </section>
         <div class="svg-editor-slot" id="svgEditorSlot">
-          <div class="svg-editor" aria-label="SVG户型编辑区">
+          <div class="svg-editor" aria-label="户型3D编辑区">
             <header class="svg-editor-toolbar">
               <div class="svg-editor-toolbar-left">
-                <span class="svg-editor-title">户型平面图</span>
+                <span class="svg-editor-title">户型 3D</span>
                 <span class="svg-editor-hint">
                   <span class="svg-editor-hint__line"
-                    >家具/户型：<strong>拖到画布</strong>放置（户型落在<strong>画布中心</strong>、不可拖动）· 户型<strong>Delete</strong>删除 · <strong>Shift+点击</strong>户型/家具</span>
+                    >家具/户型：<strong>拖到视口</strong>放置（户型落在<strong>中心</strong>）· 点击户型区域后<strong>Delete</strong>删户型 · <strong>Shift+点击</strong>侧栏快速放置</span>
                   <span class="svg-editor-hint__line"
-                    >· 家具双击旋转 · <strong>方向键</strong>按格移动 · <strong>滚轮</strong>缩放 · <strong>左键拖空白</strong>或<strong>中键</strong>平移 · <span class="svg-editor-hint__nowrap"><strong>Ctrl+Z</strong>撤销</span></span>
+                    >· 家具双击旋转 · <strong>方向键</strong>按格移动 · <strong>滚轮</strong>缩放视角 · 左键拖空白旋转 · <strong>Ctrl+Z</strong>撤销</span>
                 </span>
               </div>
               <div
@@ -237,6 +237,33 @@
                 role="toolbar"
                 aria-label="画布平移与缩放"
               >
+                <div
+                  id="otherLayersOpacityWrap"
+                  class="svg-other-opacity-wrap"
+                  hidden
+                  aria-hidden="true"
+                >
+                  <input
+                    id="otherLayersOpacityRange"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value="8"
+                    aria-label="其他层透明度"
+                    title="其他层透明度"
+                  />
+                </div>
+                <button
+                  type="button"
+                  class="svg-view-btn svg-view-btn--wide"
+                  data-svg-floor-hide-others-toggle
+                  title="仅显示当前楼层（隐藏其他层）"
+                  aria-label="仅显示当前楼层（隐藏其他层）"
+                  aria-pressed="false"
+                >
+                  仅当前层
+                </button>
                 <button
                   type="button"
                   class="svg-view-btn svg-view-btn--wide is-active"
@@ -254,70 +281,17 @@
                 <button type="button" class="svg-view-btn svg-view-btn--wide" data-svg-redo title="下一步 (Ctrl+Shift+Z)" aria-label="下一步">
                   下一步
                 </button>
-                <button
-                  type="button"
-                  class="svg-view-btn svg-view-btn--wide"
-                  data-svg-floorplan-clear
-                  title="删除画布上的户型底图"
-                  aria-label="删除户型底图"
-                >
-                  删户型
-                </button>
-                <span class="svg-view-sep" aria-hidden="true"></span>
-                <button type="button" class="svg-view-btn" data-svg-pan="left" title="向左平移" aria-label="向左平移">
-                  ←
-                </button>
-                <button type="button" class="svg-view-btn" data-svg-pan="right" title="向右平移" aria-label="向右平移">
-                  →
-                </button>
-                <button type="button" class="svg-view-btn" data-svg-pan="up" title="向上平移" aria-label="向上平移">
-                  ↑
-                </button>
-                <button type="button" class="svg-view-btn" data-svg-pan="down" title="向下平移" aria-label="向下平移">
-                  ↓
-                </button>
-                <span class="svg-view-sep" aria-hidden="true"></span>
-                <button type="button" class="svg-view-btn" data-svg-zoom="in" title="放大" aria-label="放大">
-                  +
-                </button>
-                <button type="button" class="svg-view-btn" data-svg-zoom="out" title="缩小" aria-label="缩小">
-                  −
-                </button>
                 <button type="button" class="svg-view-btn svg-view-btn--wide" data-svg-reset="1" title="复位视图" aria-label="复位视图">
                   复位
                 </button>
               </div>
             </header>
             <div class="svg-editor-canvas-wrap">
-              <svg
-                class="svg-editor-canvas"
-                id="svgEditorCanvas"
-                viewBox="0 0 3000 3000"
-                xmlns="http://www.w3.org/2000/svg"
-                preserveAspectRatio="xMidYMid slice"
-                aria-label="可编辑户型 SVG 画布（3000×3000 cm，1 cm 细网格与每 10 cm 主网格）"
-              >
-                <defs>
-                  <pattern id="svgEditorGrid" width="1" height="1" patternUnits="userSpaceOnUse">
-                    <path d="M 1 0 L 0 0 0 1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.35" />
-                  </pattern>
-                  <pattern id="svgEditorGridMajor" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <path
-                      d="M 10 0 L 0 0 0 10"
-                      fill="none"
-                      stroke="rgba(255,255,255,0.26)"
-                      stroke-width="1.15"
-                    />
-                  </pattern>
-                </defs>
-                <g id="svgEditorViewRoot" transform="translate(0 0) scale(1)">
-                  <rect class="svg-editor-bg" width="100%" height="100%" fill="#0d0d0d" />
-                  <g id="svgEditorGridStack" class="svg-editor-grid-layer" aria-hidden="true">
-                    <rect class="svg-editor-bg" width="100%" height="100%" fill="url(#svgEditorGrid)" />
-                    <rect class="svg-editor-bg" width="100%" height="100%" fill="url(#svgEditorGridMajor)" />
-                  </g>
-                </g>
-              </svg>
+              <div
+                id="threeEditorViewport"
+                class="viewer svg-editor-canvas"
+                aria-label="户型 Three.js 3D 编辑区（布局保存仍为平面 cm）"
+              ></div>
               <div class="viewer-bottom-ui" aria-hidden="true">
                 <div class="bottom-ui-left">
                   <span class="bottom-ui-icon" aria-hidden="true">🏠</span>
@@ -550,10 +524,21 @@
     <dialog id="replaceFloorplanDialog" class="save-design-dialog" aria-labelledby="replaceFloorplanDialogTitle">
       <div class="save-design-dialog__panel">
         <h2 id="replaceFloorplanDialogTitle" class="save-design-dialog__title">替换户型</h2>
-        <p class="save-design-dialog__hint">当前场景中已有户型，是否替换为新户型？</p>
+        <p class="save-design-dialog__hint">替换户型将清空当前场景家具。是否继续？</p>
         <div class="save-design-dialog__actions">
           <button type="button" class="save-design-dialog__cancel" id="replaceFloorplanCancel">取消</button>
           <button type="button" class="btn-primary btn-save" id="replaceFloorplanConfirm">替换</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="deleteFloorplanDialog" class="save-design-dialog" aria-labelledby="deleteFloorplanDialogTitle">
+      <div class="save-design-dialog__panel">
+        <h2 id="deleteFloorplanDialogTitle" class="save-design-dialog__title">删除户型</h2>
+        <p class="save-design-dialog__hint">确定删除当前户型吗？</p>
+        <div class="save-design-dialog__actions">
+          <button type="button" class="save-design-dialog__cancel" id="deleteFloorplanCancel">取消</button>
+          <button type="button" class="btn-primary btn-save" id="deleteFloorplanConfirm">删除</button>
         </div>
       </div>
     </dialog>

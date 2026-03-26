@@ -1,5 +1,5 @@
 /**
- * 应用入口：加载户型库 / 家具库 → 渲染侧栏 → 2D SVG 编辑 → 3D 视口
+ * 应用入口：加载户型库 / 家具库 → 渲染侧栏 → 3D 编辑（Three.js）→ 全景 3D 视口
  */
 import { loadFurnitureCatalog, mountFurnitureLibrary } from "./furniture/furnitureManager.js";
 import { loadFloorPlanCatalog, mountFloorplanLibrary } from "./floorplan/floorPlanManager.js";
@@ -10,9 +10,9 @@ import {
   mountSaveDesignFlow,
   mountSwitchDesignUnsavedFlow,
 } from "./files/designFilesManager.js";
-import { initSvgEditor } from "./editor2d/svgEditor.js";
+import { initThreeEditor } from "./editor3d/editEditor.js";
 
-/** 与 user.html 等来回导航时保留当前标签页内的 2D 编辑态（关闭标签后清除） */
+/** 与 user.html 等来回导航时保留当前标签页内的编辑态（关闭标签后清除） */
 const EDIT_SESSION_STORAGE_KEY = "visionhome:editSession:v1";
 
 function captureEditSessionForStorage() {
@@ -142,9 +142,8 @@ async function boot() {
   mountDesignFileList(designEntries, { loadError: designLoadError });
   mountHeaderCurrentDesignLabel();
 
-  /* 2D 编辑不依赖 WebGL：先初始化 SVG，避免 viewer 抛错时工具栏（网格等）全部未绑定 */
   try {
-    initSvgEditor(catalog);
+    initThreeEditor(catalog);
   } catch (err) {
     console.error(err);
     window.__visionHomeSvgEditor = { ok: false, reason: "threw", error: String(err) };

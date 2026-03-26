@@ -636,6 +636,22 @@ a.avatar:hover {
   flex-shrink: 0;
 }
 
+.svg-other-opacity-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.svg-other-opacity-wrap input[type="range"] {
+  width: 120px;
+  accent-color: rgba(109, 92, 255, 0.85);
+}
+
 .svg-floor-level-dock {
   position: absolute;
   right: 12px;
@@ -1927,6 +1943,7 @@ a.avatar:hover {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
