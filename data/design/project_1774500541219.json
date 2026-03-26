@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1774500541219",
+  "name": "刹那",
+  "description": "",
+  "createdAt": "2026-03-26T04:49:01.219Z",
+  "updatedAt": "2026-03-26T04:49:01.219Z",
+  "templateId": "villa_3floor",
+  "activeFloorId": "floor3",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "table_001",
+      "floorId": "floor1",
+      "positionCm": [
+        1093,
+        1055
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "sofa_001",
+      "floorId": "floor3",
+      "positionCm": [
+        2301,
+        1479
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_3",
+      "furnitureId": "table_001",
+      "floorId": "floor3",
+      "positionCm": [
+        1256,
+        878
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "villa_3floor",
+    "floorLevelIndex": 2,
+    "view": {
+      "tx": 0,
+      "ty": 0,
+      "scale": 1.4556186990225626
+    },
+    "gridVisible": true,
+    "viewBox": {
+      "width": 3000,
+      "height": 3000
+    },
+    "furniture": [
+      {
+        "model": "table_001",
+        "floorId": "floor1",
+        "x": 1093,
+        "y": 1055,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_001",
+        "floorId": "floor3",
+        "x": 2301,
+        "y": 1479,
+        "rotation": 0
+      },
+      {
+        "model": "table_001",
+        "floorId": "floor3",
+        "x": 1256,
+        "y": 878,
+        "rotation": 0
+      }
+    ]
+  }
+}

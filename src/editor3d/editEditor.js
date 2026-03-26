@@ -858,6 +858,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return hits.some((h) => h.object.userData?.floorplanPick);
   }
 
+  /** 当前选中楼层在世界坐标中的水平面高度（米），用于射线与“楼板平面”求交，与家具 group.position.y 一致 */
+  function getPlacementPlaneWorldY() {
+    if (!currentFloorplanEntry) return 0;
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    if (!floors.length) return 0;
+    const idx = normalizeFloorIndex(currentFloorplanEntry, currentFloorIndex);
+    const fl = floors[idx];
+    if (!fl) return 0;
+    const fidRaw = String(fl?.id ?? "").trim() || `floor${idx + 1}`;
+    return floorYOffsetById.get(normalizeFloorKey(fidRaw)) ?? 0;
+  }
+
   function intersectPlaneCm(clientX, clientY, planeY = 0) {
     const rect = container.getBoundingClientRect();
     if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return null;
@@ -1217,7 +1229,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const { clientX: x, clientY: y } = e;
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return;
     if (!byId.has(p.model)) return;
-    const cm = intersectPlaneCm(x, y);
+    const cm = intersectPlaneCm(x, y, getPlacementPlaneWorldY());
     if (cm) addFurniture(p.model, cm.x, cm.y);
   }
 
