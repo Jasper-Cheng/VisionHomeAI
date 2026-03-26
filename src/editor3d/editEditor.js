@@ -148,6 +148,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
+  // 交互约定：按住滚轮（中键）拖动执行平移
+  controls.enablePan = true;
+  controls.mouseButtons.MIDDLE = THREE.MOUSE.PAN;
   controls.target.set(0, 0, 0);
   controls.maxPolarAngle = Math.PI * 0.48;
   controls.minDistance = 2;
