@@ -414,8 +414,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 墙体是封闭盒体，使用单面渲染可减少双面阴影引起的闪烁
     mat.side = THREE.FrontSide;
     const mesh = new THREE.Mesh(geo, mat);
-    // 不参与阴影：避免墙顶/长墙面上 shadow map 条纹（“花屏”）
-    mesh.castShadow = false;
+    // 必须投射阴影，否则阴影贴图中无墙体深度，家具影子会“穿过”墙落在另一侧地面
+    mesh.castShadow = true;
+    // 不参与接收：减轻墙顶/长墙面上 shadow acne 条纹
     mesh.receiveShadow = false;
     const mx = ((x1 + x2) / 2 - cx) * (s / 100);
     const mz = ((y1 + y2) / 2 - cy) * (s / 100);
