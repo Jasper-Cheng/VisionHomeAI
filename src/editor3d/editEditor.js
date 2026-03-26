@@ -409,8 +409,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 之前误用了 /10000，导致墙体厚度缩小 100 倍，看起来几乎没有厚度。
     const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
     const thickM = Math.max(0.03, thickMRaw);
-    const hCm = Number(wall.height);
-    const hM = ((Number.isFinite(hCm) && hCm > 0 ? hCm : defaultHeightCm) * s) / 100;
+    // 墙高统一用楼层自身的 height（defaultHeightCm），确保墙顶恰好抵住上层地板，不留缝。
+    // wall.height 通常比 fl.height 小（如 300 vs 320），若用 wall.height 会出现层间缝隙。
+    const hM = defaultHeightCm / 100;
     const geo = new THREE.BoxGeometry(len, hM, thickM);
     const op = floorOpacity ?? 1;
     const mat = stdMat(FLOORPLAN_SURFACE_COLOR);
