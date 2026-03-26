@@ -265,6 +265,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   let currentFloorplanEntry = null;
   let currentFloorIndex = 0;
+  let floorSelectionEnabled = true;
   let activeFloorId = null;
   let selectedGroup = null;
   let floorplanSelected = false;
@@ -464,9 +465,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
 
     const entry = currentFloorplanEntry;
-    const floorIndex = normalizeFloorIndex(entry, currentFloorIndex);
-    const floor = getCurrentFloorFromEntry(entry, floorIndex);
-    if (!floor) return;
+    const floorIndex = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
+    const floor = floorIndex >= 0 ? getCurrentFloorFromEntry(entry, floorIndex) : null;
+    if (floorIndex >= 0 && !floor) return;
     const bbox = getEntryBBoxCm(entry);
     if (!bbox) return;
 
@@ -507,10 +508,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     });
     floors.forEach((fl, i) => {
       const floorG = new THREE.Group();
-      const isActive = i === floorIndex;
+      const isActive = floorIndex >= 0 && i === floorIndex;
       // 选中层更深、更清晰：提高不透明度
       // 未选中层更淡：降低透明度
-      const opacity = isActive ? 1 : otherLayersOpacity;
+      const opacity = floorIndex >= 0 ? (isActive ? 1 : otherLayersOpacity) : 0.2;
       const plate = buildFloorPlateMesh(fl, cx, cy, s, opacity);
       if (plate) floorG.add(plate);
       for (const room of fl.rooms || []) {
@@ -528,7 +529,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       floorG.position.y = floorYOffsetById.get(normalizeFloorKey(fidRaw)) ?? 0;
       // 未开启“仅当前层”时：所有楼层都绘制（未选中透明弱化）
       // 开启“仅当前层”时：只显示当前楼层
-      floorG.visible = !hideOtherFloors || isActive;
+      floorG.visible = !hideOtherFloors || floorIndex < 0 || isActive;
       gWorld.add(floorG);
     });
 
@@ -543,7 +544,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     window.dispatchEvent(
       new CustomEvent("visionhome:floorplan-applied-to-svg", {
-        detail: { id: entry?.id != null ? String(entry.id) : "", floorIndex, floorId: String(floor.id ?? "") },
+        detail: { id: entry?.id != null ? String(entry.id) : "", floorIndex, floorId: String(floor?.id ?? "") },
       }),
     );
   }
@@ -558,7 +559,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return;
     }
     if (floorLevelDock) floorLevelDock.hidden = false;
-    const active = normalizeFloorIndex(currentFloorplanEntry, currentFloorIndex);
+    const active = floorSelectionEnabled ? normalizeFloorIndex(currentFloorplanEntry, currentFloorIndex) : -1;
     for (let i = floors.length - 1; i >= 0; i--) {
       const fl = floors[i];
       const btn = document.createElement("button");
@@ -571,9 +572,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       btn.title = `切换到 ${name}`;
       if (i === active) btn.classList.add("is-active");
       btn.addEventListener("click", () => {
-        if (i === currentFloorIndex && currentFloorplanEntry) return;
         if (currentFloorplanEntry) {
-          currentFloorIndex = i;
+          if (i === active) floorSelectionEnabled = false;
+          else {
+            floorSelectionEnabled = true;
+            currentFloorIndex = i;
+          }
           setFloorLevelsVisible();
           rebuildFloorplan3D();
           updateFurnitureFloorVisibility();
@@ -604,6 +608,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function clearFloorplan() {
     currentFloorplanEntry = null;
     currentFloorIndex = 0;
+    floorSelectionEnabled = true;
     rebuildFloorplan3D();
     setFloorLevelsVisible();
     updateFurnitureFloorVisibility();
@@ -614,6 +619,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!entry) return;
     currentFloorplanEntry = entry;
     currentFloorIndex = normalizeFloorIndex(entry, options.floorIndex);
+    floorSelectionEnabled = true;
     rebuildFloorplan3D();
     setFloorLevelsVisible();
     updateFurnitureFloorVisibility();
@@ -838,7 +844,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       ? String(currentFloorplanEntry.id).trim() : null;
   }
   function getCurrentFloorLevelIndex() {
-    return currentFloorplanEntry ? normalizeFloorIndex(currentFloorplanEntry, currentFloorIndex) : null;
+    if (!currentFloorplanEntry || !floorSelectionEnabled) return null;
+    return normalizeFloorIndex(currentFloorplanEntry, currentFloorIndex);
   }
   function getCurrentFloorId() { return activeFloorId; }
 
@@ -951,6 +958,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function rayPickFurniture(clientX, clientY) {
+    if (!floorSelectionEnabled) return null;
     const rect = container.getBoundingClientRect();
     if (rect.width <= 0) return null;
     ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
@@ -969,6 +977,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function rayPickFloorplan(clientX, clientY) {
+    if (!floorSelectionEnabled) return false;
     const rect = container.getBoundingClientRect();
     if (rect.width <= 0) return false;
     ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
@@ -1028,6 +1037,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   function onPointerDown(e) {
     if (!isEditViewActive() || e.button !== 0) return;
+    if (!floorSelectionEnabled) {
+      // 无楼层选中态：仅预览，不允许选中户型或家具
+      selectFurniture(null);
+      floorplanSelected = false;
+      return;
+    }
     const fur = rayPickFurniture(e.clientX, e.clientY);
     if (fur) {
       selectFurniture(fur);
