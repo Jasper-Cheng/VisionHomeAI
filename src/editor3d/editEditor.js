@@ -141,6 +141,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   camera.position.set(0, CAMERA_DEFAULT_Y, CAMERA_DEFAULT_Z);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.02;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
@@ -157,10 +160,27 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const grid = new THREE.GridHelper(80, 80, 0x3b3b3b, 0x222222);
   grid.position.y = 0.001;
   scene.add(grid);
-  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.95);
-  dir.position.set(10, 22, 12);
+  // 环境光适度降低：让“受阴影影响”的明暗对比更明显
+  scene.add(new THREE.AmbientLight(0xffffff, 0.14));
+  // 半球光提供稳定的顶部/地面色差，但不要太强
+  scene.add(new THREE.HemisphereLight(0xdbeafe, 0x0b1220, 0.28));
+  const dir = new THREE.DirectionalLight(0xffffff, 1.45);
+  dir.position.set(14, 24, 16);
   dir.castShadow = true;
+  // 扩大阴影相机覆盖范围，避免多楼层/大户型时阴影被裁切
+  dir.shadow.mapSize.set(4096, 4096);
+  // 旋转视角时墙体“闪烁”多数来自 shadow acne；提高 bias/normalBias 稳定阴影
+  dir.shadow.bias = 0.00018;
+  dir.shadow.normalBias = 0.05;
+  dir.shadow.camera.near = 0.1;
+  dir.shadow.camera.far = 500;
+  dir.shadow.camera.left = -80;
+  dir.shadow.camera.right = 80;
+  dir.shadow.camera.top = 80;
+  dir.shadow.camera.bottom = -80;
+  dir.shadow.camera.updateProjectionMatrix();
+  dir.target.position.set(0, 0, 0);
+  scene.add(dir.target);
   scene.add(dir);
 
   const floorplanRoot = new THREE.Group();
@@ -171,6 +191,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
   const placementPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const tmpVecA = new THREE.Vector3();
+  const tmpVecB = new THREE.Vector3();
+  const tmpVecC = new THREE.Vector3();
   const interactiveMeshes = [];
   const activeFloorPickMeshes = [];
 
@@ -298,7 +321,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 选中层（op=1）走不透明渲染，避免透明排序导致的“缺失/闪烁”
     mat.transparent = op < 1;
     mat.depthWrite = op < 1 ? false : true;
-    mat.side = THREE.DoubleSide;
+    mat.side = THREE.FrontSide;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
     mesh.position.y = 0.02;
@@ -324,7 +347,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 选中层（op=1）走不透明渲染，避免透明排序导致的“缺失/闪烁”
     mat.transparent = op < 1;
     mat.depthWrite = op < 1 ? false : true;
-    mat.side = THREE.DoubleSide;
+    // 墙体是封闭盒体，使用单面渲染可减少双面阴影引起的闪烁
+    mat.side = THREE.FrontSide;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -441,7 +465,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     if (floorLevelDock) floorLevelDock.hidden = false;
     const active = normalizeFloorIndex(currentFloorplanEntry, currentFloorIndex);
-    floors.forEach((fl, i) => {
+    for (let i = floors.length - 1; i >= 0; i--) {
+      const fl = floors[i];
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "svg-floor-level-tab";
@@ -462,7 +487,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         }
       });
       floorLevelRow.appendChild(btn);
-    });
+    }
   }
 
   function ensureFloorLevelControls() {
@@ -1503,6 +1528,24 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
+    // 让主光随相机方位变化：用户旋转视角时，墙体/家具阴影也会有明显变化
+    tmpVecA.copy(controls.target);
+    tmpVecB.copy(camera.position).sub(tmpVecA);
+    // 仅使用水平朝向，避免俯仰导致光线跳变
+    const lenXZ = Math.hypot(tmpVecB.x, tmpVecB.z);
+    if (lenXZ > 1e-6) {
+      tmpVecC.set(tmpVecB.x / lenXZ, 0, tmpVecB.z / lenXZ);
+      const LIGHT_RADIUS = 26;
+      const LIGHT_HEIGHT = 30;
+      // 从相机前方斜射向目标，旋转视角时阴影方向跟随变化
+      dir.position.set(
+        tmpVecA.x + tmpVecC.x * LIGHT_RADIUS,
+        LIGHT_HEIGHT,
+        tmpVecA.z + tmpVecC.z * LIGHT_RADIUS,
+      );
+      dir.target.position.set(tmpVecA.x, 0, tmpVecA.z);
+      dir.target.updateMatrixWorld();
+    }
     renderer.render(scene, camera);
   }
 
