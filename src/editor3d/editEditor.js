@@ -279,6 +279,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let isRestoring = false;
   let historyDebounceTimer = null;
   let gridVisible = false;
+  let showDimensions = false;
   let floorLevelDock = null;
   let floorLevelRow = null;
   // 楼层垂直偏移（场景单位：米）。key 对齐 furniture 的 floorId（如 "floor1"）。
@@ -460,6 +461,156 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return mesh;
   }
 
+  // ============================================================
+  // 尺寸标注辅助函数
+  // ============================================================
+
+  /** 画带圆角的矩形路径（canvas 2d ctx） */
+  function _dimRoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  }
+
+  /** 创建始终面向相机的文字 Sprite，用于尺寸标注 */
+  function makeDimSprite(text, opts = {}) {
+    const fontSize = opts.fontSize ?? 24;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const font = `bold ${fontSize}px sans-serif`;
+    ctx.font = font;
+    const tw = Math.ceil(ctx.measureText(text).width);
+    const pad = 9;
+    canvas.width = tw + pad * 2;
+    canvas.height = fontSize + pad * 2;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(8,14,40,0.80)";
+    _dimRoundRect(ctx, 0, 0, canvas.width, canvas.height, 6);
+    ctx.fill();
+    ctx.font = font;
+    ctx.fillStyle = "#cce0ff";
+    ctx.fillText(text, pad, fontSize + pad * 0.45);
+    const tex = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+    const sprite = new THREE.Sprite(mat);
+    const PX = opts.pxPerM ?? 180;
+    sprite.scale.set(canvas.width / PX, canvas.height / PX, 1);
+    return sprite;
+  }
+
+  /** 创建虚线 Line（LineDashedMaterial），depthTest=false 始终可见 */
+  function makeDimLine(pts, color = 0x5599ee, dash = 0.14, gap = 0.0001) {
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineDashedMaterial({ color, dashSize: dash, gapSize: gap, transparent: true, opacity: 0.92, depthTest: false });
+    const ln = new THREE.Line(geo, mat);
+    ln.computeLineDistances();
+    return ln;
+  }
+
+  /** 格式化 cm 为可读字符串（>=100cm 显示 m） */
+  function fmtDimCm(cm) {
+    return cm >= 100 ? `${(cm / 100).toFixed(2)}m` : `${Math.round(cm)}cm`;
+  }
+
+  /**
+   * 为指定楼层构建尺寸标注 Group（作为 floorG 的子节点）。
+   * 每个房间：虚线轮廓 + 宽/深标注线 + 文字 Sprite。
+   */
+  function buildFloorDimensions(fl, cx, cy, s) {
+    const g = new THREE.Group();
+    const LY = 0.07;   // 略高于楼板，避免 Z-fighting
+    const EXT = 0.30;  // 标注线延伸量（米）
+    const TK = 0.09;   // 刻度线半长
+
+    for (const room of fl.rooms ?? []) {
+      const poly = room?.polygon;
+      if (!Array.isArray(poly) || poly.length < 3) continue;
+      const pts2d = poly
+        .filter((p) => Array.isArray(p) && p.length >= 2)
+        .map((p) => [(snap(Number(p[0])) - cx) * (s / 100), (snap(Number(p[1])) - cy) * (s / 100)]);
+      if (pts2d.length < 3) continue;
+
+      // 房间虚线轮廓（较淡）
+      const outPts = [...pts2d, pts2d[0]].map(([x, z]) => new THREE.Vector3(x, LY, z));
+      g.add(makeDimLine(outPts, 0x7799cc, 0.07, 0.05));
+
+      // 计算平面包围盒
+      let bminX = Infinity, bminZ = Infinity, bmaxX = -Infinity, bmaxZ = -Infinity;
+      for (const [x, z] of pts2d) {
+        bminX = Math.min(bminX, x); bmaxX = Math.max(bmaxX, x);
+        bminZ = Math.min(bminZ, z); bmaxZ = Math.max(bmaxZ, z);
+      }
+      const widthCm = (bmaxX - bminX) / (s / 100);
+      const depthCm = (bmaxZ - bminZ) / (s / 100);
+      // 用 Shoelace 公式计算多边形真实面积（cm²）
+      let areaCm2 = 0;
+      const rawPts = poly.filter((p) => Array.isArray(p) && p.length >= 2).map((p) => [snap(Number(p[0])), snap(Number(p[1]))]);
+      for (let _i = 0; _i < rawPts.length; _i++) {
+        const [ax, ay] = rawPts[_i];
+        const [bx, by] = rawPts[(_i + 1) % rawPts.length];
+        areaCm2 += ax * by - bx * ay;
+      }
+      areaCm2 = Math.abs(areaCm2) / 2;
+      const areaM2 = areaCm2 / 10000;
+
+      // —— 宽度标注（+Z 方向，房间南侧）——
+      const wZ = bmaxZ + EXT;
+      // 主标注线
+      g.add(makeDimLine([new THREE.Vector3(bminX, LY, wZ), new THREE.Vector3(bmaxX, LY, wZ)]));
+      // 引出线
+      g.add(makeDimLine([new THREE.Vector3(bminX, LY, bmaxZ), new THREE.Vector3(bminX, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
+      g.add(makeDimLine([new THREE.Vector3(bmaxX, LY, bmaxZ), new THREE.Vector3(bmaxX, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
+      // 刻度线
+      g.add(makeDimLine([new THREE.Vector3(bminX, LY, wZ - TK), new THREE.Vector3(bminX, LY, wZ + TK)]));
+      g.add(makeDimLine([new THREE.Vector3(bmaxX, LY, wZ - TK), new THREE.Vector3(bmaxX, LY, wZ + TK)]));
+      // 文字
+      const wSp = makeDimSprite(fmtDimCm(widthCm));
+      wSp.position.set((bminX + bmaxX) / 2, LY + 0.18, wZ);
+      g.add(wSp);
+
+      // —— 深度标注（+X 方向，房间东侧）——
+      const dX = bmaxX + EXT;
+      g.add(makeDimLine([new THREE.Vector3(dX, LY, bminZ), new THREE.Vector3(dX, LY, bmaxZ)]));
+      g.add(makeDimLine([new THREE.Vector3(bmaxX, LY, bminZ), new THREE.Vector3(dX + TK, LY, bminZ)], 0x5599ee, 0.05, 0.04));
+      g.add(makeDimLine([new THREE.Vector3(bmaxX, LY, bmaxZ), new THREE.Vector3(dX + TK, LY, bmaxZ)], 0x5599ee, 0.05, 0.04));
+      g.add(makeDimLine([new THREE.Vector3(dX, LY, bminZ - TK), new THREE.Vector3(dX, LY, bminZ + TK)]));
+      g.add(makeDimLine([new THREE.Vector3(dX, LY, bmaxZ - TK), new THREE.Vector3(dX, LY, bmaxZ + TK)]));
+      const dSp = makeDimSprite(fmtDimCm(depthCm));
+      dSp.position.set(dX, LY + 0.18, (bminZ + bmaxZ) / 2);
+      g.add(dSp);
+
+      // 面积居中
+      const areaLabel = `${areaM2.toFixed(2)}㎡`;
+      const centerX = (bminX + bmaxX) / 2;
+      const centerZ = (bminZ + bmaxZ) / 2;
+      const aSp = makeDimSprite(areaLabel, { fontSize: 20, pxPerM: 155 });
+      aSp.position.set(centerX, LY + 0.10, centerZ);
+      g.add(aSp);
+    }
+    return g;
+  }
+
+  function setDimensionsVisible(v) {
+    showDimensions = Boolean(v);
+    const btn = document.getElementById("svgDimToggleBtn");
+    if (btn) {
+      btn.classList.toggle("is-active", showDimensions);
+      btn.setAttribute("aria-pressed", String(showDimensions));
+    }
+    rebuildFloorplan3D();
+    updateFurnitureFloorVisibility();
+  }
+
+  // ============================================================
+
   function rebuildFloorplan3D() {
     clearInteractiveList();
     disposeObject3D(floorplanRoot);
@@ -530,6 +681,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       for (const w of fl.walls || []) {
         const m = buildWallMesh(w, cx, cy, s, defaultH, opacity);
         if (m) floorG.add(m);
+      }
+            // 尺寸标注：仅当前选中楼层，开关控制
+      if (showDimensions && floorSelectionEnabled && isActive) {
+        const dimG = buildFloorDimensions(fl, cx, cy, s);
+        if (dimG) floorG.add(dimG);
       }
       // 每层楼的垂直高度（避免所有层重叠在 y=0）
       const fidRaw = String(fl?.id ?? "").trim() || `floor${i + 1}`;
@@ -1687,6 +1843,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorToggleGrid = () => setGridVisible(!gridVisible);
   window.svgEditorGetGridVisible = () => gridVisible;
   window.svgEditorSetGridVisible = setGridVisible;
+  window.svgEditorToggleDimensions = () => setDimensionsVisible(!showDimensions);
+  window.svgEditorSetDimensionsVisible = setDimensionsVisible;
+
+  document.getElementById("svgDimToggleBtn")?.addEventListener("click", () => setDimensionsVisible(!showDimensions));
   window.svgEditorGetCurrentFloorplanId = getCurrentFloorplanId;
   window.svgEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
   window.svgEditorGetCurrentFloorId = getCurrentFloorId;
