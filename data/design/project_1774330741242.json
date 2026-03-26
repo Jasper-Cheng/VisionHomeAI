@@ -4,8 +4,8 @@
   "name": "asdsad1",
   "description": "",
   "createdAt": "2026-03-24T05:39:01.242Z",
-  "updatedAt": "2026-03-24T05:39:01.242Z",
-  "templateId": null,
+  "updatedAt": "2026-03-26T07:51:47.177Z",
+  "templateId": "studio_open_48",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
   "furnitureInstances": [
@@ -13,16 +13,17 @@
       "instanceId": "fi_1",
       "furnitureId": "sofa_001",
       "floorId": "floor1",
-      "rotationDeg": 0,
       "positionCm": [
-        150.0,
-        140.0
-      ]
+        1477,
+        1101
+      ],
+      "rotationDeg": 0
     }
   ],
   "svgEditor": {
     "version": 1,
-    "floorPlanId": null,
+    "floorPlanId": "studio_open_48",
+    "floorLevelIndex": 0,
     "view": {
       "tx": 0,
       "ty": 0,
@@ -36,8 +37,9 @@
     "furniture": [
       {
         "model": "sofa_001",
-        "x": 150.0,
-        "y": 140.0,
+        "floorId": "floor1",
+        "x": 1477,
+        "y": 1101,
         "rotation": 0
       }
     ]

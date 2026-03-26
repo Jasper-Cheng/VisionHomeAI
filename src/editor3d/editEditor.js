@@ -280,6 +280,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let historyDebounceTimer = null;
   let gridVisible = false;
   let showDimensions = false;
+  const dimDepthTest = false; // 标注始终显示，不被模型遮挡
   let floorLevelDock = null;
   let floorLevelRow = null;
   // 楼层垂直偏移（场景单位：米）。key 对齐 furniture 的 floorId（如 "floor1"）。
@@ -499,7 +500,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     ctx.fillStyle = "#cce0ff";
     ctx.fillText(text, pad, fontSize + pad * 0.45);
     const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: true, depthWrite: false });
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: dimDepthTest, depthWrite: false });
     const sprite = new THREE.Sprite(mat);
     const PX = opts.pxPerM ?? 180;
     sprite.scale.set(canvas.width / PX, canvas.height / PX, 1);
@@ -509,7 +510,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /** 创建虚线 Line（LineDashedMaterial），depthTest=false 始终可见 */
   function makeDimLine(pts, color = 0x5599ee, dash = 0.14, gap = 0.0001) {
     const geo = new THREE.BufferGeometry().setFromPoints(pts);
-    const mat = new THREE.LineDashedMaterial({ color, dashSize: dash, gapSize: gap, transparent: true, opacity: 0.92, depthTest: true });
+    const mat = new THREE.LineDashedMaterial({ color, dashSize: dash, gapSize: gap, transparent: true, opacity: 0.92, depthTest: dimDepthTest });
     const ln = new THREE.Line(geo, mat);
     ln.computeLineDistances();
     return ln;
@@ -703,6 +704,79 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return g;
   }
 
+  /**
+   * 为单个家具 Group 创建本地坐标系下的尺寸标注 Group。
+   * 标注随家具旋转一起变化。
+   */
+  function buildFurnitureDimAnnotation(group) {
+    const item = byId.get(group.userData.modelType);
+    const fp = extractFurnitureFootprintCm(item);
+    const hw = fp.hw / 100; // 半宽（米）
+    const hh = fp.hh / 100; // 半深（米）
+    const fh = fp.h  / 100; // 家具高度（米）
+
+    const LY  = fh + 0.03; // 略高于家具顶面
+    const EXT = 0.18; // 标注线外伸量
+    const TK  = 0.06; // 刻度线半长
+
+    const g = new THREE.Group();
+    g.userData.isFurnitureDimAnnotation = true;
+
+    // 虚线轮廓
+    const corners = [
+      new THREE.Vector3(-hw, LY, -hh),
+      new THREE.Vector3( hw, LY, -hh),
+      new THREE.Vector3( hw, LY,  hh),
+      new THREE.Vector3(-hw, LY,  hh),
+      new THREE.Vector3(-hw, LY, -hh),
+    ];
+    g.add(makeDimLine(corners, 0x7799cc, 0.07, 0.05));
+
+    // 宽度标注（南侧）
+    const wZ = hh + EXT;
+    g.add(makeDimLine([new THREE.Vector3(-hw, LY, wZ), new THREE.Vector3(hw, LY, wZ)]));
+    g.add(makeDimLine([new THREE.Vector3(-hw, LY, hh), new THREE.Vector3(-hw, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
+    g.add(makeDimLine([new THREE.Vector3( hw, LY, hh), new THREE.Vector3( hw, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
+    g.add(makeDimLine([new THREE.Vector3(-hw, LY, wZ - TK), new THREE.Vector3(-hw, LY, wZ + TK)]));
+    g.add(makeDimLine([new THREE.Vector3( hw, LY, wZ - TK), new THREE.Vector3( hw, LY, wZ + TK)]));
+    const wSp = makeDimSprite(fmtDimCm(fp.w), { fontSize: 18, pxPerM: 140 });
+    wSp.position.set(0, LY + 0.15, wZ);
+    g.add(wSp);
+
+    // 深度标注（东侧）
+    const dX = hw + EXT;
+    g.add(makeDimLine([new THREE.Vector3(dX, LY, -hh), new THREE.Vector3(dX, LY, hh)]));
+    g.add(makeDimLine([new THREE.Vector3(hw, LY, -hh), new THREE.Vector3(dX + TK, LY, -hh)], 0x5599ee, 0.05, 0.04));
+    g.add(makeDimLine([new THREE.Vector3(hw, LY,  hh), new THREE.Vector3(dX + TK, LY,  hh)], 0x5599ee, 0.05, 0.04));
+    g.add(makeDimLine([new THREE.Vector3(dX - TK, LY, -hh), new THREE.Vector3(dX + TK, LY, -hh)]));
+    g.add(makeDimLine([new THREE.Vector3(dX - TK, LY,  hh), new THREE.Vector3(dX + TK, LY,  hh)]));
+    const dSp = makeDimSprite(fmtDimCm(fp.d), { fontSize: 18, pxPerM: 140 });
+    dSp.position.set(dX, LY + 0.15, 0);
+    g.add(dSp);
+
+    // 名称标签（家具正中心）
+    const name = item ? getFurnitureDisplayName(item) : (group.userData.modelType || "家具");
+    const nSp = makeDimSprite(name, { fontSize: 20, pxPerM: 155 });
+    nSp.position.set(0, LY + 0.10, 0);
+    g.add(nSp);
+
+    return g;
+  }
+
+  /** 刷新所有家具的尺寸标注（showDimensions 切换或楼层切换时调用）。 */
+  function rebuildFurnitureDimAnnotations() {
+    furnitureRoot.children.forEach((group) => {
+      if (!group.userData?.isFurniture) return;
+      // 移除旧标注
+      const old = group.children.filter((c) => c.userData?.isFurnitureDimAnnotation);
+      old.forEach((c) => { group.remove(c); disposeObject3D(c); });
+      // 仅当 showDimensions 且该楼层可选中时显示
+      if (showDimensions && group.visible && group.userData.isFloorActive !== false) {
+        group.add(buildFurnitureDimAnnotation(group));
+      }
+    });
+  }
+
   function setDimensionsVisible(v) {
     showDimensions = Boolean(v);
     const btn = document.getElementById("svgDimToggleBtn");
@@ -713,6 +787,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     rebuildFloorplan3D();
     updateFurnitureFloorVisibility();
   }
+
 
   // ============================================================
 
@@ -787,8 +862,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const m = buildWallMesh(w, cx, cy, s, defaultH, opacity);
         if (m) floorG.add(m);
       }
-            // 尺寸标注：仅当前选中楼层，开关控制
-      if (showDimensions && floorSelectionEnabled && isActive) {
+            // 尺寸标注：选中某楼层时只画当前层；无楼层选中时画所有楼层
+      if (showDimensions && (isActive || !floorSelectionEnabled)) {
         const dimG = buildFloorDimensions(fl, cx, cy, s);
         if (dimG) floorG.add(dimG);
       }
@@ -981,6 +1056,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       });
     });
     if (selectedGroup && selectedGroup.userData?.isFloorActive === false) selectFurniture(null);
+    rebuildFurnitureDimAnnotations();
   }
 
   function getLayout() {
