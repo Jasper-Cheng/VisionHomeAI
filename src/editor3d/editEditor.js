@@ -426,6 +426,32 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return mesh;
   }
 
+  /** 按楼层 bbox 生成连续楼板，确保二/三层也有完整地板可见 */
+  function buildFloorPlateMesh(fl, cx, cy, s, floorOpacity) {
+    const b = getFloorBBoxCm(fl);
+    if (!b) return null;
+    const w = Math.max(0.08, (Math.max(1, b.maxX - b.minX) * s) / 100);
+    const d = Math.max(0.08, (Math.max(1, b.maxY - b.minY) * s) / 100);
+    const geo = new THREE.PlaneGeometry(w, d);
+    const mat = stdMat(FLOORPLAN_SURFACE_COLOR);
+    const op = floorOpacity ?? 1;
+    mat.opacity = op;
+    mat.transparent = op < 1;
+    mat.depthWrite = op < 1 ? false : true;
+    mat.side = THREE.FrontSide;
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    // 轻微抬高，避免与其它共面几何出现 Z-fighting
+    mesh.position.set(
+      ((b.minX + b.maxX) * 0.5 - cx) * (s / 100),
+      0.003,
+      ((b.minY + b.maxY) * 0.5 - cy) * (s / 100),
+    );
+    mesh.receiveShadow = true;
+    mesh.userData.floorplanPick = true;
+    return mesh;
+  }
+
   function rebuildFloorplan3D() {
     clearInteractiveList();
     disposeObject3D(floorplanRoot);
@@ -485,6 +511,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       // 选中层更深、更清晰：提高不透明度
       // 未选中层更淡：降低透明度
       const opacity = isActive ? 1 : otherLayersOpacity;
+      const plate = buildFloorPlateMesh(fl, cx, cy, s, opacity);
+      if (plate) floorG.add(plate);
       for (const room of fl.rooms || []) {
         const m = buildRoomMesh(room, cx, cy, s, opacity);
         if (m) floorG.add(m);
