@@ -499,7 +499,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     ctx.fillStyle = "#cce0ff";
     ctx.fillText(text, pad, fontSize + pad * 0.45);
     const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: true, depthWrite: false });
     const sprite = new THREE.Sprite(mat);
     const PX = opts.pxPerM ?? 180;
     sprite.scale.set(canvas.width / PX, canvas.height / PX, 1);
@@ -509,7 +509,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /** 创建虚线 Line（LineDashedMaterial），depthTest=false 始终可见 */
   function makeDimLine(pts, color = 0x5599ee, dash = 0.14, gap = 0.0001) {
     const geo = new THREE.BufferGeometry().setFromPoints(pts);
-    const mat = new THREE.LineDashedMaterial({ color, dashSize: dash, gapSize: gap, transparent: true, opacity: 0.92, depthTest: false });
+    const mat = new THREE.LineDashedMaterial({ color, dashSize: dash, gapSize: gap, transparent: true, opacity: 0.92, depthTest: true });
     const ln = new THREE.Line(geo, mat);
     ln.computeLineDistances();
     return ln;
@@ -526,10 +526,47 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    */
   function buildFloorDimensions(fl, cx, cy, s) {
     const g = new THREE.Group();
-    const LY = 0.07;   // 略高于楼板，避免 Z-fighting
-    const EXT = 0.30;  // 标注线延伸量（米）
-    const TK = 0.09;   // 刻度线半长
+    const LY   = 0.07;  // 略高于楼板
+    const EXT1 = 0.18;  // 分段标注线延伸量（内层）
+    const EXT2 = 0.50;  // 总标注线延伸量（外层）
+    const TK   = 0.07;  // 刻度线半长
+    const SNAP_TOL = 0.001; // 去重容差（米）
 
+    // 收集楼层包围盒，以及每侧边界上紧贴的房间断点
+    let fminX = Infinity, fminZ = Infinity, fmaxX = -Infinity, fmaxZ = -Infinity;
+
+    /** 将浮点坐标归一化到 SNAP_TOL 精度 */
+    const key = (v) => Math.round(v / SNAP_TOL) * SNAP_TOL;
+
+    // 先第一遍：仅算楼层包围盒
+    for (const room of fl.rooms ?? []) {
+      const poly = room?.polygon;
+      if (!Array.isArray(poly) || poly.length < 3) continue;
+      for (const p of poly) {
+        if (!Array.isArray(p) || p.length < 2) continue;
+        const x = (snap(Number(p[0])) - cx) * (s / 100);
+        const z = (snap(Number(p[1])) - cy) * (s / 100);
+        fminX = Math.min(fminX, x); fmaxX = Math.max(fmaxX, x);
+        fminZ = Math.min(fminZ, z); fmaxZ = Math.max(fmaxZ, z);
+      }
+    }
+
+    if (!Number.isFinite(fminX)) return g;
+
+    // 每侧各自的断点集合（只含紧贴该侧边界的房间端点）
+    const EDGE_TOL = 0.05; // 判断"紧贴"的容差（米）
+    const xSouth = new Set(); // 紧贴南侧（bmaxZ ≈ fmaxZ）的房间 X 端点
+    const xNorth = new Set(); // 紧贴北侧（bminZ ≈ fminZ）的房间 X 端点
+    const zEast  = new Set(); // 紧贴东侧（bmaxX ≈ fmaxX）的房间 Z 端点
+    const zWest  = new Set(); // 紧贴西侧（bminX ≈ fminX）的房间 Z 端点
+
+    // 确保端点包含楼层整体边界
+    xSouth.add(key(fminX)); xSouth.add(key(fmaxX));
+    xNorth.add(key(fminX)); xNorth.add(key(fmaxX));
+    zEast.add(key(fminZ));  zEast.add(key(fmaxZ));
+    zWest.add(key(fminZ));  zWest.add(key(fmaxZ));
+
+    // 第二遍：绘制轮廓、面积，并按侧收集断点
     for (const room of fl.rooms ?? []) {
       const poly = room?.polygon;
       if (!Array.isArray(poly) || poly.length < 3) continue;
@@ -538,19 +575,23 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         .map((p) => [(snap(Number(p[0])) - cx) * (s / 100), (snap(Number(p[1])) - cy) * (s / 100)]);
       if (pts2d.length < 3) continue;
 
-      // 房间虚线轮廓（较淡）
+      // 房间虚线轮廓
       const outPts = [...pts2d, pts2d[0]].map(([x, z]) => new THREE.Vector3(x, LY, z));
       g.add(makeDimLine(outPts, 0x7799cc, 0.07, 0.05));
 
-      // 计算平面包围盒
       let bminX = Infinity, bminZ = Infinity, bmaxX = -Infinity, bmaxZ = -Infinity;
       for (const [x, z] of pts2d) {
         bminX = Math.min(bminX, x); bmaxX = Math.max(bmaxX, x);
         bminZ = Math.min(bminZ, z); bmaxZ = Math.max(bmaxZ, z);
       }
-      const widthCm = (bmaxX - bminX) / (s / 100);
-      const depthCm = (bmaxZ - bminZ) / (s / 100);
-      // 用 Shoelace 公式计算多边形真实面积（cm²）
+
+      // 按侧边收集该房间的端点
+      if (bmaxZ >= fmaxZ - EDGE_TOL) { xSouth.add(key(bminX)); xSouth.add(key(bmaxX)); }
+      if (bminZ <= fminZ + EDGE_TOL) { xNorth.add(key(bminX)); xNorth.add(key(bmaxX)); }
+      if (bmaxX >= fmaxX - EDGE_TOL) { zEast.add(key(bminZ));  zEast.add(key(bmaxZ)); }
+      if (bminX <= fminX + EDGE_TOL) { zWest.add(key(bminZ));  zWest.add(key(bmaxZ)); }
+
+      // 用 Shoelace 公式计算真实面积
       let areaCm2 = 0;
       const rawPts = poly.filter((p) => Array.isArray(p) && p.length >= 2).map((p) => [snap(Number(p[0])), snap(Number(p[1]))]);
       for (let _i = 0; _i < rawPts.length; _i++) {
@@ -558,43 +599,107 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const [bx, by] = rawPts[(_i + 1) % rawPts.length];
         areaCm2 += ax * by - bx * ay;
       }
-      areaCm2 = Math.abs(areaCm2) / 2;
-      const areaM2 = areaCm2 / 10000;
+      const areaM2 = Math.abs(areaCm2) / 2 / 10000;
 
-      // —— 宽度标注（+Z 方向，房间南侧）——
-      const wZ = bmaxZ + EXT;
-      // 主标注线
-      g.add(makeDimLine([new THREE.Vector3(bminX, LY, wZ), new THREE.Vector3(bmaxX, LY, wZ)]));
-      // 引出线
-      g.add(makeDimLine([new THREE.Vector3(bminX, LY, bmaxZ), new THREE.Vector3(bminX, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
-      g.add(makeDimLine([new THREE.Vector3(bmaxX, LY, bmaxZ), new THREE.Vector3(bmaxX, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
-      // 刻度线
-      g.add(makeDimLine([new THREE.Vector3(bminX, LY, wZ - TK), new THREE.Vector3(bminX, LY, wZ + TK)]));
-      g.add(makeDimLine([new THREE.Vector3(bmaxX, LY, wZ - TK), new THREE.Vector3(bmaxX, LY, wZ + TK)]));
-      // 文字
-      const wSp = makeDimSprite(fmtDimCm(widthCm));
-      wSp.position.set((bminX + bmaxX) / 2, LY + 0.18, wZ);
-      g.add(wSp);
-
-      // —— 深度标注（+X 方向，房间东侧）——
-      const dX = bmaxX + EXT;
-      g.add(makeDimLine([new THREE.Vector3(dX, LY, bminZ), new THREE.Vector3(dX, LY, bmaxZ)]));
-      g.add(makeDimLine([new THREE.Vector3(bmaxX, LY, bminZ), new THREE.Vector3(dX + TK, LY, bminZ)], 0x5599ee, 0.05, 0.04));
-      g.add(makeDimLine([new THREE.Vector3(bmaxX, LY, bmaxZ), new THREE.Vector3(dX + TK, LY, bmaxZ)], 0x5599ee, 0.05, 0.04));
-      g.add(makeDimLine([new THREE.Vector3(dX, LY, bminZ - TK), new THREE.Vector3(dX, LY, bminZ + TK)]));
-      g.add(makeDimLine([new THREE.Vector3(dX, LY, bmaxZ - TK), new THREE.Vector3(dX, LY, bmaxZ + TK)]));
-      const dSp = makeDimSprite(fmtDimCm(depthCm));
-      dSp.position.set(dX, LY + 0.18, (bminZ + bmaxZ) / 2);
-      g.add(dSp);
-
-      // 面积居中
-      const areaLabel = `${areaM2.toFixed(2)}㎡`;
-      const centerX = (bminX + bmaxX) / 2;
-      const centerZ = (bminZ + bmaxZ) / 2;
-      const aSp = makeDimSprite(areaLabel, { fontSize: 20, pxPerM: 155 });
-      aSp.position.set(centerX, LY + 0.10, centerZ);
+      // 面积标签置于下边中间（X 居中，Z 靠近南侧边）
+      const INSET_Z = 0.18;
+      const aSp = makeDimSprite(`${areaM2.toFixed(2)}㎡`, { fontSize: 20, pxPerM: 155 });
+      aSp.position.set((bminX + bmaxX) / 2, LY + 0.10, bmaxZ - INSET_Z);
       g.add(aSp);
     }
+
+    // 各侧断点排序
+    const xs_south = [...xSouth].sort((a, b) => a - b);
+    const xs_north = [...xNorth].sort((a, b) => a - b);
+    const zs_east  = [...zEast].sort((a, b) => a - b);
+    const zs_west  = [...zWest].sort((a, b) => a - b);
+
+    /**
+     * 画一组分段尺寸线。
+     * side: 'south' | 'north' | 'east' | 'west'
+     *   south/north → 沿 X 轴分段，固定 Z 位置
+     *   east/west   → 沿 Z 轴分段，固定 X 位置
+     */
+    function drawSegments(breaks, side, fixedVal) {
+      const tickH = TK * 0.8;
+      // 向外偏移方向：south/east 为正，north/west 为负
+      const sign = (side === 'south' || side === 'east') ? 1 : -1;
+      const lineOff = sign * EXT1;
+      const isHoriz = side === 'south' || side === 'north'; // 沿 X 轴方向
+
+      for (let i = 0; i < breaks.length - 1; i++) {
+        const a = breaks[i], b = breaks[i + 1];
+        const segCm = (b - a) / (s / 100);
+        if (segCm < 1) continue;
+
+        const mid = (a + b) / 2;
+        let p1, p2, pLead1, pLead2, pTick1a, pTick1b, pTick2a, pTick2b, pLabel;
+
+        if (isHoriz) {
+          // south / north：标注线沿 X，固定在 Z = fixedVal + lineOff
+          const lineZ = fixedVal + lineOff;
+          p1 = new THREE.Vector3(a, LY, lineZ);
+          p2 = new THREE.Vector3(b, LY, lineZ);
+          pLead1 = [new THREE.Vector3(a, LY, fixedVal), new THREE.Vector3(a, LY, lineZ + sign * tickH)];
+          pLead2 = [new THREE.Vector3(b, LY, fixedVal), new THREE.Vector3(b, LY, lineZ + sign * tickH)];
+          pTick1a = new THREE.Vector3(a, LY, lineZ - tickH); pTick1b = new THREE.Vector3(a, LY, lineZ + tickH);
+          pTick2a = new THREE.Vector3(b, LY, lineZ - tickH); pTick2b = new THREE.Vector3(b, LY, lineZ + tickH);
+          pLabel = new THREE.Vector3(mid, LY + 0.15, lineZ);
+        } else {
+          // east / west：标注线沿 Z，固定在 X = fixedVal + lineOff
+          const lineX = fixedVal + lineOff;
+          p1 = new THREE.Vector3(lineX, LY, a);
+          p2 = new THREE.Vector3(lineX, LY, b);
+          pLead1 = [new THREE.Vector3(fixedVal, LY, a), new THREE.Vector3(lineX + sign * tickH, LY, a)];
+          pLead2 = [new THREE.Vector3(fixedVal, LY, b), new THREE.Vector3(lineX + sign * tickH, LY, b)];
+          pTick1a = new THREE.Vector3(lineX - tickH, LY, a); pTick1b = new THREE.Vector3(lineX + tickH, LY, a);
+          pTick2a = new THREE.Vector3(lineX - tickH, LY, b); pTick2b = new THREE.Vector3(lineX + tickH, LY, b);
+          pLabel = new THREE.Vector3(lineX, LY + 0.15, mid);
+        }
+
+        g.add(makeDimLine([p1, p2]));
+        g.add(makeDimLine(pLead1, 0x5599ee, 0.05, 0.04));
+        g.add(makeDimLine(pLead2, 0x5599ee, 0.05, 0.04));
+        g.add(makeDimLine([pTick1a, pTick1b]));
+        g.add(makeDimLine([pTick2a, pTick2b]));
+        const sp = makeDimSprite(fmtDimCm(segCm), { fontSize: 18, pxPerM: 140 });
+        sp.position.copy(pLabel);
+        g.add(sp);
+      }
+    }
+
+    // 分段标注（内层，各侧只用紧贴该侧的房间断点）
+    drawSegments(xs_south, 'south', fmaxZ); // 南
+    drawSegments(xs_north, 'north', fminZ); // 北
+    drawSegments(zs_east,  'east',  fmaxX); // 东
+    drawSegments(zs_west,  'west',  fminX); // 西
+
+    // 总尺寸（外层，更远一圈）
+    const totalWCm = (fmaxX - fminX) / (s / 100);
+    const totalDCm = (fmaxZ - fminZ) / (s / 100);
+
+    // 总宽（南侧外层）
+    const wZ = fmaxZ + EXT2;
+    g.add(makeDimLine([new THREE.Vector3(fminX, LY, wZ), new THREE.Vector3(fmaxX, LY, wZ)]));
+    g.add(makeDimLine([new THREE.Vector3(fminX, LY, fmaxZ), new THREE.Vector3(fminX, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
+    g.add(makeDimLine([new THREE.Vector3(fmaxX, LY, fmaxZ), new THREE.Vector3(fmaxX, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
+    g.add(makeDimLine([new THREE.Vector3(fminX, LY, wZ - TK), new THREE.Vector3(fminX, LY, wZ + TK)]));
+    g.add(makeDimLine([new THREE.Vector3(fmaxX, LY, wZ - TK), new THREE.Vector3(fmaxX, LY, wZ + TK)]));
+    const wSp = makeDimSprite(fmtDimCm(totalWCm));
+    wSp.position.set((fminX + fmaxX) / 2, LY + 0.18, wZ);
+    g.add(wSp);
+
+    // 总深（东侧外层）
+    const dX = fmaxX + EXT2;
+    g.add(makeDimLine([new THREE.Vector3(dX, LY, fminZ), new THREE.Vector3(dX, LY, fmaxZ)]));
+    g.add(makeDimLine([new THREE.Vector3(fmaxX, LY, fminZ), new THREE.Vector3(dX + TK, LY, fminZ)], 0x5599ee, 0.05, 0.04));
+    g.add(makeDimLine([new THREE.Vector3(fmaxX, LY, fmaxZ), new THREE.Vector3(dX + TK, LY, fmaxZ)], 0x5599ee, 0.05, 0.04));
+    g.add(makeDimLine([new THREE.Vector3(dX, LY, fminZ - TK), new THREE.Vector3(dX, LY, fminZ + TK)]));
+    g.add(makeDimLine([new THREE.Vector3(dX, LY, fmaxZ - TK), new THREE.Vector3(dX, LY, fmaxZ + TK)]));
+    const dSp = makeDimSprite(fmtDimCm(totalDCm));
+    dSp.position.set(dX, LY + 0.18, (fminZ + fmaxZ) / 2);
+    g.add(dSp);
+
     return g;
   }
 
