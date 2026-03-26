@@ -1072,7 +1072,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       g.traverse((o) => {
         if (!o.isMesh || !o.material) return;
         if (isActiveFloor) activeFloorPickMeshes.push(o);
-        const op = isActiveFloor ? activeLayerOpacity : Math.min(1, otherLayersOpacity * 2);
+        const op = isActiveFloor ? 1 : Math.min(1, otherLayersOpacity * 2);
         const mats = Array.isArray(o.material) ? o.material : [o.material];
         mats.forEach((m) => {
           if (!m) return;

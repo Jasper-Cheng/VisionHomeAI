@@ -142,21 +142,6 @@
             <div class="asset-grid floorplan-asset-grid" id="floorPlanGrid" aria-label="户型列表"></div>
           </div>
 
-          <div class="panel-footer">
-            <div class="ai-box">
-              <div class="ai-top">
-                <span class="ai-badge">AI 推荐</span>
-              </div>
-              <div class="ai-tags" aria-label="常用户型特征">
-                <button class="ai-tag" type="button">南北通透</button>
-                <button class="ai-tag" type="button">全明边套</button>
-                <button class="ai-tag" type="button">动静分区</button>
-                <button class="ai-tag" type="button">LDK 一体</button>
-                <button class="ai-tag" type="button">双卫</button>
-                <button class="ai-tag" type="button">大面宽</button>
-              </div>
-            </div>
-          </div>
         </section>
 
         <section class="side-panel" data-panel="assets" aria-label="家具库面板">
@@ -180,21 +165,6 @@
             <div class="asset-grid furniture-asset-grid" id="furnitureAssetGrid" aria-label="家具列表"></div>
           </div>
 
-          <div class="panel-footer">
-            <div class="ai-box">
-              <div class="ai-top">
-                <span class="ai-badge">AI 推荐</span>
-              </div>
-              <div class="ai-tags" aria-label="常用风格">
-                <button class="ai-tag" type="button">现代简约</button>
-                <button class="ai-tag" type="button">北欧</button>
-                <button class="ai-tag" type="button">原木</button>
-                <button class="ai-tag" type="button">轻奢</button>
-                <button class="ai-tag" type="button">工业风</button>
-                <button class="ai-tag" type="button">奶油风</button>
-              </div>
-            </div>
-          </div>
         </section>
 
         <section class="side-panel" data-panel="files" aria-label="设计文件面板">
@@ -237,6 +207,27 @@
                 role="toolbar"
                 aria-label="画布平移与缩放"
               >
+                <div class="svg-style-recommend-wrap" id="svgStyleRecommendWrap">
+                  <button
+                    type="button"
+                    class="svg-view-btn svg-view-btn--wide"
+                    id="svgStyleRecommendBtn"
+                    title="推荐家具风格"
+                    aria-label="推荐家具风格"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  >
+                    推荐风格
+                  </button>
+                  <div class="svg-style-dropdown" id="svgStyleDropdown" hidden role="menu" aria-label="风格标签">
+                    <button class="svg-style-tag" type="button" role="menuitem">现代简约</button>
+                    <button class="svg-style-tag" type="button" role="menuitem">北欧</button>
+                    <button class="svg-style-tag" type="button" role="menuitem">原木</button>
+                    <button class="svg-style-tag" type="button" role="menuitem">轻奢</button>
+                    <button class="svg-style-tag" type="button" role="menuitem">工业风</button>
+                    <button class="svg-style-tag" type="button" role="menuitem">奶油风</button>
+                  </div>
+                </div>
                 <div
                   id="otherLayersOpacityWrap"
                   class="svg-other-opacity-wrap"
@@ -574,6 +565,43 @@
       });
     </script>
     <script src="./src/core/appShell.js"></script>
+    <script>
+      (function () {
+        const btn = document.getElementById("svgStyleRecommendBtn");
+        const dropdown = document.getElementById("svgStyleDropdown");
+        if (!btn || !dropdown) return;
+
+        function openDropdown() {
+          dropdown.hidden = false;
+          btn.setAttribute("aria-expanded", "true");
+          btn.classList.add("is-active");
+        }
+        function closeDropdown() {
+          dropdown.hidden = true;
+          btn.setAttribute("aria-expanded", "false");
+          btn.classList.remove("is-active");
+        }
+
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          dropdown.hidden ? openDropdown() : closeDropdown();
+        });
+
+        // 点击外部关闭
+        document.addEventListener("click", function (e) {
+          if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) {
+            closeDropdown();
+          }
+        });
+
+        // 点击标签：切换选中态，可多选
+        dropdown.addEventListener("click", function (e) {
+          const tag = e.target.closest(".svg-style-tag");
+          if (!tag) return;
+          tag.classList.toggle("is-active");
+        });
+      })();
+    </script>
   </body>
 </html>
 

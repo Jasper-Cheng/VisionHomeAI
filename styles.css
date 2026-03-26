@@ -652,6 +652,58 @@ a.avatar:hover {
   accent-color: rgba(109, 92, 255, 0.85);
 }
 
+/* 推荐风格按钮 + 下拉菜单 */
+.svg-style-recommend-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.svg-style-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px;
+  min-width: 160px;
+  background: rgba(24, 24, 40, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+}
+
+.svg-style-dropdown[hidden] {
+  display: none;
+}
+
+.svg-style-tag {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(109, 92, 255, 0.45);
+  background: rgba(109, 92, 255, 0.12);
+  color: rgba(200, 190, 255, 0.9);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.svg-style-tag:hover {
+  background: rgba(109, 92, 255, 0.32);
+  border-color: rgba(109, 92, 255, 0.8);
+  color: #fff;
+}
+
+.svg-style-tag.is-active {
+  background: rgba(109, 92, 255, 0.55);
+  border-color: #6d5cff;
+  color: #fff;
+}
+
 .svg-floor-level-dock {
   position: absolute;
   right: 12px;
