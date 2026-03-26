@@ -402,7 +402,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const len = Math.hypot(dx, dz);
     if (len < 1e-6) return null;
     const th = Number(wall.thickness);
-    const thickM = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 10000;
+    // wall.thickness 单位是 cm：先按户型缩放，再从 cm -> m（/100）
+    // 之前误用了 /10000，导致墙体厚度缩小 100 倍，看起来几乎没有厚度。
+    const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
+    const thickM = Math.max(0.03, thickMRaw);
     const hCm = Number(wall.height);
     const hM = ((Number.isFinite(hCm) && hCm > 0 ? hCm : defaultHeightCm) * s) / 100;
     const geo = new THREE.BoxGeometry(len, hM, thickM);
