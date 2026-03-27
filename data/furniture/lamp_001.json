@@ -33,5 +33,116 @@
     ],
     "snapToWall": false,
     "minDistanceToWall": 5.0
+  },
+  "config": {
+    "materials": [
+      {
+        "id": "metal",
+        "name": "金属灯体",
+        "material": {
+          "roughness": 0.54,
+          "metalness": 0.45
+        },
+        "textures": [
+          {
+            "id": "matte",
+            "name": "磨砂",
+            "texture": {},
+            "colors": [
+              {
+                "id": "black",
+                "name": "曜黑",
+                "hex": "#1E1E1E",
+                "assets": {
+                  "albedo": "assets/textures/lamp_001/metal/matte/black/color.jpg"
+                }
+              },
+              {
+                "id": "gold",
+                "name": "香槟金",
+                "hex": "#C9A227",
+                "assets": {
+                  "albedo": "assets/textures/lamp_001/metal/matte/gold/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "fabric",
+        "name": "布艺灯罩",
+        "material": {
+          "roughness": 0.89,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "linen",
+            "name": "亚麻",
+            "texture": {},
+            "colors": [
+              {
+                "id": "white",
+                "name": "柔白",
+                "hex": "#F2F0EB",
+                "assets": {
+                  "albedo": "assets/textures/lamp_001/fabric/linen/white/color.jpg"
+                }
+              },
+              {
+                "id": "cream",
+                "name": "奶油",
+                "hex": "#EDE6D6",
+                "assets": {
+                  "albedo": "assets/textures/lamp_001/fabric/linen/cream/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "skus": [
+    {
+      "id": "LMP-MET-MAT-BLK",
+      "name": "金属磨砂曜黑",
+      "materialId": "metal",
+      "textureId": "matte",
+      "colorId": "black",
+      "price": 680,
+      "stock": 20
+    },
+    {
+      "id": "LMP-MET-MAT-GLD",
+      "name": "金属磨砂香槟金",
+      "materialId": "metal",
+      "textureId": "matte",
+      "colorId": "gold",
+      "price": 800,
+      "stock": 12
+    },
+    {
+      "id": "LMP-FAB-LIN-WHT",
+      "name": "布艺亚麻柔白",
+      "materialId": "fabric",
+      "textureId": "linen",
+      "colorId": "white",
+      "price": 760,
+      "stock": 15
+    },
+    {
+      "id": "LMP-FAB-LIN-CRM",
+      "name": "布艺亚麻奶油",
+      "materialId": "fabric",
+      "textureId": "linen",
+      "colorId": "cream",
+      "price": 760,
+      "stock": 15
+    }
+  ],
+  "selection": {
+    "skuId": "LMP-MET-MAT-BLK"
   }
 }

@@ -1,6 +1,12 @@
 import * as THREE from "three";
 import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 import { getFurnitureTags } from "../furniture/furnitureManager.js";
+import {
+  applyFurnitureAppearanceToGroup,
+  hasFurnitureMaterialConfig,
+  normalizeFurnitureSelection,
+  resolveFurnitureSelectionDetail,
+} from "../furniture/furnitureConfig.js";
 
 (() => {
   const container = document.getElementById("viewer");
@@ -66,6 +72,37 @@ import { getFurnitureTags } from "../furniture/furnitureManager.js";
   const propDimH = document.getElementById("propDimH");
   const propTagsSection = document.getElementById("propTagsSection");
   const propFurnitureTags = document.getElementById("propFurnitureTags");
+  const propAppearanceBody = document.getElementById("propAppearanceBody");
+  const propAppearanceHint = document.getElementById("propAppearanceHint");
+
+  function syncViewerAppearancePanel(root) {
+    if (!propAppearanceBody) return;
+    propAppearanceBody.replaceChildren();
+    if (propAppearanceHint) propAppearanceHint.hidden = true;
+    if (!root) {
+      if (propAppearanceHint) propAppearanceHint.hidden = false;
+      return;
+    }
+    const byId = catalog?.byId instanceof Map ? catalog.byId : new Map();
+    const item = byId.get(root.userData.modelType);
+    if (!item || !hasFurnitureMaterialConfig(item)) {
+      if (propAppearanceHint) propAppearanceHint.hidden = false;
+      return;
+    }
+    const sel = normalizeFurnitureSelection(item, root.userData.furnitureSelection);
+    const det = resolveFurnitureSelectionDetail(item, sel);
+    const cur = document.createElement("div");
+    cur.className = "prop-appearance-current";
+    const skuNameOnly =
+      (det.skuName && String(det.skuName).trim()) ||
+      [det.materialName, det.textureName, det.colorName].filter(Boolean).join(" · ") ||
+      "—";
+    const nameEl = document.createElement("div");
+    nameEl.className = "prop-appearance-sku-name";
+    nameEl.textContent = skuNameOnly;
+    cur.appendChild(nameEl);
+    propAppearanceBody.appendChild(cur);
+  }
 
   function syncPropTagsPanel(item) {
     if (!propTagsSection || !propFurnitureTags) return;
@@ -409,6 +446,10 @@ import { getFurnitureTags } from "../furniture/furnitureManager.js";
     group.traverse((obj) => {
       if (obj.isMesh) obj.userData.__root = group;
     });
+    if (entry && hasFurnitureMaterialConfig(entry)) {
+      group.userData.furnitureSelection = normalizeFurnitureSelection(entry, null);
+      applyFurnitureAppearanceToGroup(THREE, group, entry);
+    }
     return group;
   };
 
@@ -477,6 +518,7 @@ import { getFurnitureTags } from "../furniture/furnitureManager.js";
     if (propDimD) propDimD.textContent = dash;
     if (propDimH) propDimH.textContent = dash;
     syncPropTagsPanel(null);
+    syncViewerAppearancePanel(null);
   };
 
   const updatePropertiesFromRoot = (root) => {
@@ -505,6 +547,7 @@ import { getFurnitureTags } from "../furniture/furnitureManager.js";
       }
     }
     syncPropTagsPanel(item);
+    syncViewerAppearancePanel(root);
   };
 
   const applyPropertiesToRoot = (root) => {

@@ -32,5 +32,104 @@
     ],
     "snapToWall": true,
     "minDistanceToWall": 5.0
+  },
+  "config": {
+    "materials": [
+      {
+        "id": "fabric",
+        "name": "布艺",
+        "material": {
+          "roughness": 0.9,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "linen",
+            "name": "亚麻",
+            "texture": {
+              "normal": "assets/textures/fabric/linen/normal.jpg",
+              "roughnessMap": "assets/textures/fabric/linen/rough.jpg"
+            },
+            "colors": [
+              {
+                "id": "gray",
+                "name": "浅灰",
+                "hex": "#BFBFBF",
+                "assets": {
+                  "albedo": "assets/textures/fabric/linen/gray/color.jpg"
+                }
+              },
+              {
+                "id": "beige",
+                "name": "米色",
+                "hex": "#F5F5DC",
+                "assets": {
+                  "albedo": "assets/textures/fabric/linen/beige/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "leather",
+        "name": "皮革",
+        "material": {
+          "roughness": 0.4,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "smooth",
+            "name": "光面皮",
+            "texture": {
+              "normal": "assets/textures/leather/smooth/normal.jpg"
+            },
+            "colors": [
+              {
+                "id": "brown",
+                "name": "棕色",
+                "hex": "#8B5A2B",
+                "assets": {
+                  "albedo": "assets/textures/leather/smooth/brown/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "skus": [
+    {
+      "id": "BED-FAB-LIN-GRAY",
+      "name": "布艺亚麻浅灰",
+      "materialId": "fabric",
+      "textureId": "linen",
+      "colorId": "gray",
+      "price": 2580,
+      "stock": 10
+    },
+    {
+      "id": "BED-FAB-LIN-BEIGE",
+      "name": "布艺亚麻米色",
+      "materialId": "fabric",
+      "textureId": "linen",
+      "colorId": "beige",
+      "price": 2680,
+      "stock": 8
+    },
+    {
+      "id": "BED-LEA-SMO-BROWN",
+      "name": "皮革光面棕色",
+      "materialId": "leather",
+      "textureId": "smooth",
+      "colorId": "brown",
+      "price": 2880,
+      "stock": 5
+    }
+  ],
+  "selection": {
+    "skuId": "BED-FAB-LIN-GRAY"
   }
 }

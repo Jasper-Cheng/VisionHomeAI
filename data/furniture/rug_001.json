@@ -32,5 +32,116 @@
     ],
     "snapToWall": false,
     "minDistanceToWall": 5.0
+  },
+  "config": {
+    "materials": [
+      {
+        "id": "wool",
+        "name": "混纺羊毛",
+        "material": {
+          "roughness": 0.91,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "loop",
+            "name": "圈绒",
+            "texture": {},
+            "colors": [
+              {
+                "id": "beige",
+                "name": "燕麦米",
+                "hex": "#D4C4B0",
+                "assets": {
+                  "albedo": "assets/textures/rug_001/wool/loop/beige/color.jpg"
+                }
+              },
+              {
+                "id": "gray",
+                "name": "云雾灰",
+                "hex": "#9E9E9E",
+                "assets": {
+                  "albedo": "assets/textures/rug_001/wool/loop/gray/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "synthetic",
+        "name": "化纤易洁",
+        "material": {
+          "roughness": 0.835,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "cut",
+            "name": "割绒",
+            "texture": {},
+            "colors": [
+              {
+                "id": "navy",
+                "name": "藏蓝",
+                "hex": "#2C3E5C",
+                "assets": {
+                  "albedo": "assets/textures/rug_001/synthetic/cut/navy/color.jpg"
+                }
+              },
+              {
+                "id": "terracotta",
+                "name": "陶土",
+                "hex": "#B87D4A",
+                "assets": {
+                  "albedo": "assets/textures/rug_001/synthetic/cut/terracotta/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "skus": [
+    {
+      "id": "RUG-WOO-LOP-BEI",
+      "name": "羊毛圈绒燕麦米",
+      "materialId": "wool",
+      "textureId": "loop",
+      "colorId": "beige",
+      "price": 1280,
+      "stock": 14
+    },
+    {
+      "id": "RUG-WOO-LOP-GRY",
+      "name": "羊毛圈绒云雾灰",
+      "materialId": "wool",
+      "textureId": "loop",
+      "colorId": "gray",
+      "price": 1460,
+      "stock": 10
+    },
+    {
+      "id": "RUG-SYN-CUT-NVY",
+      "name": "化纤割绒藏蓝",
+      "materialId": "synthetic",
+      "textureId": "cut",
+      "colorId": "navy",
+      "price": 1080,
+      "stock": 20
+    },
+    {
+      "id": "RUG-SYN-CUT-TER",
+      "name": "化纤割绒陶土",
+      "materialId": "synthetic",
+      "textureId": "cut",
+      "colorId": "terracotta",
+      "price": 1080,
+      "stock": 20
+    }
+  ],
+  "selection": {
+    "skuId": "RUG-WOO-LOP-BEI"
   }
 }

@@ -5,6 +5,12 @@ import * as THREE from "three";
 import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 import { getFloorBBoxCm } from "../floorplan/floorplanSvg.js";
 import { getFurnitureDisplayName, getFurnitureTags } from "../furniture/furnitureManager.js";
+import {
+  applyFurnitureAppearanceToGroup,
+  hasFurnitureMaterialConfig,
+  normalizeFurnitureSelection,
+  resolveFurnitureSelectionDetail,
+} from "../furniture/furnitureConfig.js";
 
 const VIEW_W = 3000;
 const VIEW_H = 3000;
@@ -440,6 +446,129 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const propDimH = document.getElementById("propDimH");
   const propTagsSection = document.getElementById("propTagsSection");
   const propFurnitureTags = document.getElementById("propFurnitureTags");
+  const propAppearanceBody = document.getElementById("propAppearanceBody");
+  const propAppearanceHint = document.getElementById("propAppearanceHint");
+
+  function syncPropPanelAppearance(group, item) {
+    if (!propAppearanceBody) return;
+    propAppearanceBody.replaceChildren();
+    if (propAppearanceHint) propAppearanceHint.hidden = true;
+    if (!item || !hasFurnitureMaterialConfig(item)) {
+      if (propAppearanceHint) propAppearanceHint.hidden = false;
+      return;
+    }
+    if (!group) return;
+    if (!group.userData.furnitureSelection) {
+      group.userData.furnitureSelection = normalizeFurnitureSelection(item, null);
+    }
+    const sel = normalizeFurnitureSelection(item, group.userData.furnitureSelection);
+    group.userData.furnitureSelection = sel;
+    const det = resolveFurnitureSelectionDetail(item, sel);
+
+    const cur = document.createElement("div");
+    cur.className = "prop-appearance-current";
+    const skuNameOnly =
+      (det.skuName && String(det.skuName).trim()) ||
+      [det.materialName, det.textureName, det.colorName].filter(Boolean).join(" · ") ||
+      "—";
+    const nameEl = document.createElement("div");
+    nameEl.className = "prop-appearance-sku-name";
+    nameEl.textContent = skuNameOnly;
+    cur.appendChild(nameEl);
+    propAppearanceBody.appendChild(cur);
+
+    const pick = document.createElement("div");
+    pick.className = "prop-appearance-pick";
+
+    const mats = item.config.materials ?? [];
+    const matRow = document.createElement("div");
+    matRow.className = "prop-appearance-row";
+    matRow.appendChild(Object.assign(document.createElement("span"), { className: "prop-appearance-row-label", textContent: "材质" }));
+    const matBtns = document.createElement("div");
+    matBtns.className = "prop-appearance-chips";
+    for (const m of mats) {
+      if (!m?.id) continue;
+      const id = String(m.id).trim();
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "prop-appearance-chip" + (id === sel.materialId ? " is-selected" : "");
+      b.textContent = String(m.name ?? m.id);
+      b.addEventListener("click", () => {
+        const next = normalizeFurnitureSelection(item, { materialId: id, textureId: "", colorId: "" });
+        group.userData.furnitureSelection = next;
+        applyFurnitureAppearanceToGroup(THREE, group, item);
+        syncPropPanelAppearance(group, item);
+        if (historyReady) schedulePushHistory();
+      });
+      matBtns.appendChild(b);
+    }
+    matRow.appendChild(matBtns);
+    pick.appendChild(matRow);
+
+    const mat = mats.find((m) => m && String(m.id ?? "").trim() === sel.materialId);
+    const textures = Array.isArray(mat?.textures) ? mat.textures : [];
+    if (textures.length) {
+      const texRow = document.createElement("div");
+      texRow.className = "prop-appearance-row";
+      texRow.appendChild(Object.assign(document.createElement("span"), { className: "prop-appearance-row-label", textContent: "面料" }));
+      const texBtns = document.createElement("div");
+      texBtns.className = "prop-appearance-chips";
+      for (const t of textures) {
+        if (!t?.id) continue;
+        const tid = String(t.id).trim();
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "prop-appearance-chip" + (tid === sel.textureId ? " is-selected" : "");
+        b.textContent = String(t.name ?? t.id);
+        b.addEventListener("click", () => {
+          const next = normalizeFurnitureSelection(item, { materialId: sel.materialId, textureId: tid, colorId: "" });
+          group.userData.furnitureSelection = next;
+          applyFurnitureAppearanceToGroup(THREE, group, item);
+          syncPropPanelAppearance(group, item);
+          if (historyReady) schedulePushHistory();
+        });
+        texBtns.appendChild(b);
+      }
+      texRow.appendChild(texBtns);
+      pick.appendChild(texRow);
+    }
+
+    const tex = textures.find((t) => t && String(t.id ?? "").trim() === sel.textureId);
+    const colors = Array.isArray(tex?.colors) ? tex.colors : [];
+    if (colors.length) {
+      const colRow = document.createElement("div");
+      colRow.className = "prop-appearance-row prop-appearance-row--colors";
+      colRow.appendChild(Object.assign(document.createElement("span"), { className: "prop-appearance-row-label", textContent: "颜色" }));
+      const sw = document.createElement("div");
+      sw.className = "prop-appearance-swatches";
+      for (const col of colors) {
+        if (!col?.id) continue;
+        const cid = String(col.id).trim();
+        const hex = col.hex != null ? String(col.hex).trim() : "#888";
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "prop-appearance-swatch" + (cid === sel.colorId ? " is-selected" : "");
+        b.style.setProperty("--swatch", hex.startsWith("#") ? hex : `#${hex}`);
+        b.title = `${String(col.name ?? col.id)} ${hex}`;
+        b.addEventListener("click", () => {
+          const next = normalizeFurnitureSelection(item, {
+            materialId: sel.materialId,
+            textureId: sel.textureId,
+            colorId: cid,
+          });
+          group.userData.furnitureSelection = next;
+          applyFurnitureAppearanceToGroup(THREE, group, item);
+          syncPropPanelAppearance(group, item);
+          if (historyReady) schedulePushHistory();
+        });
+        sw.appendChild(b);
+      }
+      colRow.appendChild(sw);
+      pick.appendChild(colRow);
+    }
+
+    propAppearanceBody.appendChild(pick);
+  }
 
   function syncPropPanelTagsFromItem(item) {
     if (!propTagsSection || !propFurnitureTags) return;
@@ -1284,7 +1413,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   function appendFurnitureItem(modelId, xCm, yCm, rotationDeg = 0, floorId = null, opts = {}) {
     if (!byId.has(modelId)) return null;
-    const fp = extractFurnitureFootprintCm(byId.get(modelId));
+    const item = byId.get(modelId);
+    const fp = extractFurnitureFootprintCm(item);
     const group = createFurnitureMesh(modelId);
     group.userData.isFurniture = true;
     group.userData.footprint = { hw: fp.hw, hh: fp.hh };
@@ -1293,6 +1423,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (rot < 0) rot += 360;
     group.userData.rotDeg = rot;
     setFurnitureFromLayoutCm(group, xCm, yCm, rot, opts);
+    if (hasFurnitureMaterialConfig(item)) {
+      group.userData.furnitureSelection = normalizeFurnitureSelection(item, null);
+      applyFurnitureAppearanceToGroup(THREE, group, item);
+    }
     furnitureRoot.add(group);
     registerFurnitureMeshes(group);
     return group;
@@ -1639,12 +1773,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       propertiesPanel.classList.remove("is-visible");
       if (propertiesName) propertiesName.textContent = "未选择";
       syncPropPanelDimsFromItem(null);
+      syncPropPanelAppearance(null, null);
       return;
     }
     propertiesPanel.classList.add("is-visible");
     const item = byId.get(group.userData.modelType);
     if (propertiesName) propertiesName.textContent = item ? getFurnitureDisplayName(item) : group.userData.modelType || "家具";
     syncPropPanelDimsFromItem(item);
+    syncPropPanelAppearance(group, item);
     const o = sceneXZToCenteredCm(group.position.x, group.position.z);
     const rot = group.userData.rotDeg ?? 0;
     if (propInputX) propInputX.value = String(Math.round(o.x));

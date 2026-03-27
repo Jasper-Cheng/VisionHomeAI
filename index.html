@@ -406,39 +406,9 @@
 
             <div class="prop-divider"></div>
 
-            <div class="prop-section">
-              <div class="prop-section-title">材质与面料</div>
-              <div class="prop-material-tiles">
-                <button class="prop-material-tile is-selected" type="button" data-material="fabric" aria-label="白色布艺">
-                  <span class="material-preview material-fabric"></span>
-                </button>
-                <button class="prop-material-tile" type="button" data-material="leather" aria-label="棕橙皮革">
-                  <span class="material-preview material-leather"></span>
-                </button>
-                <button class="prop-material-tile" type="button" data-material="velvet" aria-label="深蓝丝绒">
-                  <span class="material-preview material-velvet"></span>
-                </button>
-                <button class="prop-material-tile prop-material-add" type="button" aria-label="添加材质">
-                  <span class="material-add-icon">+</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="prop-section">
-              <div class="prop-section-title">颜色系列</div>
-              <div class="prop-color-row">
-                <div class="prop-color-swatches">
-                  <button class="prop-color-swatch is-selected" type="button" data-color="#8c7cff" style="--swatch:#8c7cff" aria-label="紫色"></button>
-                  <button class="prop-color-swatch" type="button" data-color="#6b7280" style="--swatch:#6b7280" aria-label="灰色"></button>
-                  <button class="prop-color-swatch" type="button" data-color="#14b8a6" style="--swatch:#14b8a6" aria-label="青绿"></button>
-                  <button class="prop-color-swatch" type="button" data-color="#f97316" style="--swatch:#f97316" aria-label="橙色"></button>
-                  <button class="prop-color-swatch" type="button" data-color="#f5f5dc" style="--swatch:#f5f5dc" aria-label="米白"></button>
-                </div>
-                <div class="prop-color-divider"></div>
-                <button class="prop-color-custom" type="button" aria-label="自定义颜色">
-                  <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a9 9 0 0 1 9 9c0 .46-.04-.92-.1-1.36a5.389 5.389 0 0 0-1.01 2.27 6.998 6.998 0 0 1 2.09 2.04C21.95 12.28 22 12.64 22 13a9 9 0 0 1-9 9c-.36 0-.72-.05-1.07-.14a6.998 6.998 0 0 1-2.04-2.09 5.391 5.391 0 0 0-2.27 1.01c.44.06.9.1 1.36.1a9 9 0 0 0 9-9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 0 1.01-2.27 6.998 6.998 0 0 1-2.09-2.04C20.05 11.72 20 11.36 20 11a9 9 0 0 0-9-9c-.36 0-.72.05-1.07.14a6.998 6.998 0 0 1 2.04 2.09 5.391 5.391 0 0 0 2.27-1.01C11.54 3.04 12 3 12.46 3H12Z"/></svg>
-                </button>
-              </div>
+            <div class="prop-section prop-appearance-section" id="propAppearanceSection">
+              <p class="prop-appearance-hint" id="propAppearanceHint" hidden>JSON 中未配置 <code>config.materials</code> 时，此区域不显示方案。</p>
+              <div class="prop-appearance-body" id="propAppearanceBody" aria-live="polite"></div>
             </div>
           </div>
         </section>

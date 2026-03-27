@@ -32,5 +32,116 @@
     ],
     "snapToWall": false,
     "minDistanceToWall": 5.0
+  },
+  "config": {
+    "materials": [
+      {
+        "id": "wood",
+        "name": "实木贴皮",
+        "material": {
+          "roughness": 0.62,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "oak",
+            "name": "橡木纹",
+            "texture": {},
+            "colors": [
+              {
+                "id": "natural",
+                "name": "原木色",
+                "hex": "#C4A574",
+                "assets": {
+                  "albedo": "assets/textures/table_001/wood/oak/natural/color.jpg"
+                }
+              },
+              {
+                "id": "walnut",
+                "name": "胡桃",
+                "hex": "#5D4037",
+                "assets": {
+                  "albedo": "assets/textures/table_001/wood/oak/walnut/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "metal",
+        "name": "金属支架",
+        "material": {
+          "roughness": 0.53,
+          "metalness": 0.14
+        },
+        "textures": [
+          {
+            "id": "powder",
+            "name": "粉末喷涂",
+            "texture": {},
+            "colors": [
+              {
+                "id": "black",
+                "name": "哑光黑",
+                "hex": "#2C2C2C",
+                "assets": {
+                  "albedo": "assets/textures/table_001/metal/powder/black/color.jpg"
+                }
+              },
+              {
+                "id": "white",
+                "name": "哑光白",
+                "hex": "#ECECEC",
+                "assets": {
+                  "albedo": "assets/textures/table_001/metal/powder/white/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "skus": [
+    {
+      "id": "TBL-WOO-OAK-NAT",
+      "name": "实木橡木原木色",
+      "materialId": "wood",
+      "textureId": "oak",
+      "colorId": "natural",
+      "price": 880,
+      "stock": 15
+    },
+    {
+      "id": "TBL-WOO-OAK-WAL",
+      "name": "实木橡木胡桃色",
+      "materialId": "wood",
+      "textureId": "oak",
+      "colorId": "walnut",
+      "price": 1200,
+      "stock": 8
+    },
+    {
+      "id": "TBL-MET-POW-BLK",
+      "name": "金属喷涂哑光黑",
+      "materialId": "metal",
+      "textureId": "powder",
+      "colorId": "black",
+      "price": 1030,
+      "stock": 10
+    },
+    {
+      "id": "TBL-MET-POW-WHT",
+      "name": "金属喷涂哑光白",
+      "materialId": "metal",
+      "textureId": "powder",
+      "colorId": "white",
+      "price": 1030,
+      "stock": 10
+    }
+  ],
+  "selection": {
+    "skuId": "TBL-WOO-OAK-NAT"
   }
 }

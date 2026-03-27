@@ -34,5 +34,116 @@
     ],
     "snapToWall": false,
     "minDistanceToWall": 5.0
+  },
+  "config": {
+    "materials": [
+      {
+        "id": "ceramic",
+        "name": "陶瓷盆",
+        "material": {
+          "roughness": 0.7,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "matte",
+            "name": "哑光釉",
+            "texture": {},
+            "colors": [
+              {
+                "id": "white",
+                "name": "乳白",
+                "hex": "#F5F5F0",
+                "assets": {
+                  "albedo": "assets/textures/plant_001/ceramic/matte/white/color.jpg"
+                }
+              },
+              {
+                "id": "terracotta",
+                "name": "陶土",
+                "hex": "#C67B5C",
+                "assets": {
+                  "albedo": "assets/textures/plant_001/ceramic/matte/terracotta/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "plastic",
+        "name": "树脂盆",
+        "material": {
+          "roughness": 0.625,
+          "metalness": 0.065
+        },
+        "textures": [
+          {
+            "id": "simple",
+            "name": "简约",
+            "texture": {},
+            "colors": [
+              {
+                "id": "gray",
+                "name": "岩灰",
+                "hex": "#7D7D7D",
+                "assets": {
+                  "albedo": "assets/textures/plant_001/plastic/simple/gray/color.jpg"
+                }
+              },
+              {
+                "id": "black",
+                "name": "炭黑",
+                "hex": "#333333",
+                "assets": {
+                  "albedo": "assets/textures/plant_001/plastic/simple/black/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "skus": [
+    {
+      "id": "PLT-CER-MAT-WHT",
+      "name": "陶瓷哑光乳白",
+      "materialId": "ceramic",
+      "textureId": "matte",
+      "colorId": "white",
+      "price": 360,
+      "stock": 30
+    },
+    {
+      "id": "PLT-CER-MAT-TER",
+      "name": "陶瓷哑光陶土",
+      "materialId": "ceramic",
+      "textureId": "matte",
+      "colorId": "terracotta",
+      "price": 400,
+      "stock": 25
+    },
+    {
+      "id": "PLT-PLA-SIM-GRY",
+      "name": "树脂简约岩灰",
+      "materialId": "plastic",
+      "textureId": "simple",
+      "colorId": "gray",
+      "price": 330,
+      "stock": 40
+    },
+    {
+      "id": "PLT-PLA-SIM-BLK",
+      "name": "树脂简约炭黑",
+      "materialId": "plastic",
+      "textureId": "simple",
+      "colorId": "black",
+      "price": 330,
+      "stock": 40
+    }
+  ],
+  "selection": {
+    "skuId": "PLT-CER-MAT-WHT"
   }
 }

@@ -1525,6 +1525,156 @@ a.avatar:hover {
   border: 1px solid rgba(109, 92, 255, 0.35);
 }
 
+.prop-appearance-hint {
+  margin: 0 0 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.prop-appearance-hint code {
+  font-size: 10px;
+  color: rgba(200, 190, 255, 0.85);
+}
+
+.prop-appearance-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prop-appearance-current {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* 与 .prop-section-title（如「产品标签」）同系：浅灰、粗体、无衬线、无底框 */
+.prop-appearance-sku-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.4;
+}
+
+.prop-appearance-current-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.prop-appearance-current-row:last-child {
+  margin-bottom: 0;
+}
+
+.prop-appearance-current-label {
+  min-width: 40px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+}
+
+.prop-appearance-current-value {
+  font-weight: 700;
+  color: rgba(235, 233, 255, 0.92);
+}
+
+.prop-appearance-color-swatch-inline {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.prop-appearance-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prop-appearance-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prop-appearance-row-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.prop-appearance-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.prop-appearance-chip {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.prop-appearance-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.prop-appearance-chip.is-selected {
+  border-color: rgba(109, 92, 255, 0.55);
+  background: rgba(109, 92, 255, 0.22);
+  color: rgba(245, 244, 255, 0.98);
+}
+
+.prop-appearance-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.prop-appearance-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: var(--swatch, #888);
+  cursor: pointer;
+  padding: 0;
+  box-sizing: border-box;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.prop-appearance-swatch:hover {
+  transform: scale(1.06);
+}
+
+.prop-appearance-swatch.is-selected {
+  border-color: rgba(252, 211, 77, 0.95);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+.prop-appearance-viewer-note {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.42);
+  line-height: 1.4;
+}
+
 /* Section titles */
 .prop-section {
   padding: 14px 0;
