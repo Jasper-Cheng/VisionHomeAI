@@ -20,6 +20,11 @@
     "y": 0.5
   },
   "price": 1280,
+  "tags": [
+    "多尺寸",
+    "防滑底",
+    "多色可选"
+  ],
   "placement": {
     "allowRooms": [
       "living",

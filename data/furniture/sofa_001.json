@@ -22,6 +22,12 @@
     "y": 0.5
   },
   "price": 3980,
+  "tags": [
+    "多色可选",
+    "可拆洗",
+    "尺寸可调",
+    "高精度"
+  ],
   "placement": {
     "allowRooms": [
       "living",

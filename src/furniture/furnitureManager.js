@@ -34,6 +34,23 @@ export function resolveModelUrl(modelPathFromRoot) {
 }
 
 /**
+ * 家具 JSON 可选 `tags: string[]`，用于属性面板展示（如定制能力、卖点）
+ * @param {object | null | undefined} item
+ * @returns {string[]}
+ */
+export function getFurnitureTags(item) {
+  if (!item || typeof item !== "object") return [];
+  const raw = item.tags;
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  for (const t of raw) {
+    const s = String(t ?? "").trim();
+    if (s) out.push(s);
+  }
+  return out;
+}
+
+/**
  * 家具预览图 URL 列表：仅当 JSON 配置了 `thumbnail` 时返回该路径；未配置则返回空数组（不请求图片，仅显示彩色骨架）。
  */
 export function getFurnitureThumbnailUrls(item) {

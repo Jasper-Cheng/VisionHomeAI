@@ -20,6 +20,12 @@
     "y": 0.5
   },
   "price": 2580,
+  "tags": [
+    "圆角可定制",
+    "尺寸可调",
+    "多色可选",
+    "高精度"
+  ],
   "placement": {
     "allowRooms": [
       "bedroom"

@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 import { getFloorBBoxCm } from "../floorplan/floorplanSvg.js";
-import { getFurnitureDisplayName } from "../furniture/furnitureManager.js";
+import { getFurnitureDisplayName, getFurnitureTags } from "../furniture/furnitureManager.js";
 
 const VIEW_W = 3000;
 const VIEW_H = 3000;
@@ -438,6 +438,25 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const propDimW = document.getElementById("propDimW");
   const propDimD = document.getElementById("propDimD");
   const propDimH = document.getElementById("propDimH");
+  const propTagsSection = document.getElementById("propTagsSection");
+  const propFurnitureTags = document.getElementById("propFurnitureTags");
+
+  function syncPropPanelTagsFromItem(item) {
+    if (!propTagsSection || !propFurnitureTags) return;
+    propFurnitureTags.replaceChildren();
+    const tags = getFurnitureTags(item);
+    if (!tags.length) {
+      propTagsSection.hidden = true;
+      return;
+    }
+    propTagsSection.hidden = false;
+    for (const text of tags) {
+      const span = document.createElement("span");
+      span.className = "prop-tag";
+      span.textContent = text;
+      propFurnitureTags.appendChild(span);
+    }
+  }
 
   function syncPropPanelDimsFromItem(item) {
     const dash = "—";
@@ -446,12 +465,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (propDimW) propDimW.textContent = dash;
       if (propDimD) propDimD.textContent = dash;
       if (propDimH) propDimH.textContent = dash;
+      syncPropPanelTagsFromItem(null);
       return;
     }
     const fp = extractFurnitureFootprintCm(item);
     if (propDimW) propDimW.textContent = String(Math.round(fp.w));
     if (propDimD) propDimD.textContent = String(Math.round(fp.d));
     if (propDimH) propDimH.textContent = String(Math.round(fp.h));
+    syncPropPanelTagsFromItem(item);
   }
   const undoBtn = document.querySelector("[data-svg-undo]");
   const redoBtn = document.querySelector("[data-svg-redo]");

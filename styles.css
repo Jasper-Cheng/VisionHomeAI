@@ -1497,6 +1497,34 @@ a.avatar:hover {
   color: rgba(235, 233, 255, 0.92);
 }
 
+/* 家具 JSON tags → 属性面板 */
+.prop-tags-wrap {
+  padding-top: 4px;
+  padding-bottom: 0;
+}
+
+.prop-tags-wrap[hidden] {
+  display: none !important;
+}
+
+.prop-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.prop-tag {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: rgba(220, 218, 255, 0.95);
+  background: rgba(109, 92, 255, 0.18);
+  border: 1px solid rgba(109, 92, 255, 0.35);
+}
+
 /* Section titles */
 .prop-section {
   padding: 14px 0;

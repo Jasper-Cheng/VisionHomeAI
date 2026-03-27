@@ -20,6 +20,11 @@
     "y": 0.5
   },
   "price": 880,
+  "tags": [
+    "原木纹理",
+    "尺寸可调",
+    "多色可选"
+  ],
   "placement": {
     "allowRooms": [
       "living",

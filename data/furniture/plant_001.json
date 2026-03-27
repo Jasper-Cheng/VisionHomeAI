@@ -20,6 +20,11 @@
     "y": 0.5
   },
   "price": 360,
+  "tags": [
+    "仿真叶片",
+    "易打理",
+    "多盆器可选"
+  ],
   "placement": {
     "allowRooms": [
       "living",

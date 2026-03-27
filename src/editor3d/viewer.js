@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
+import { getFurnitureTags } from "../furniture/furnitureManager.js";
 
 (() => {
   const container = document.getElementById("viewer");
@@ -63,6 +64,25 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
   const propDimW = document.getElementById("propDimW");
   const propDimD = document.getElementById("propDimD");
   const propDimH = document.getElementById("propDimH");
+  const propTagsSection = document.getElementById("propTagsSection");
+  const propFurnitureTags = document.getElementById("propFurnitureTags");
+
+  function syncPropTagsPanel(item) {
+    if (!propTagsSection || !propFurnitureTags) return;
+    propFurnitureTags.replaceChildren();
+    const tags = getFurnitureTags(item);
+    if (!tags.length) {
+      propTagsSection.hidden = true;
+      return;
+    }
+    propTagsSection.hidden = false;
+    for (const text of tags) {
+      const span = document.createElement("span");
+      span.className = "prop-tag";
+      span.textContent = text;
+      propFurnitureTags.appendChild(span);
+    }
+  }
 
   function extractDimsFromCatalogItem(item) {
     if (!item || typeof item !== "object") return { w: 100, d: 100, h: 80 };
@@ -456,6 +476,7 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
     if (propDimW) propDimW.textContent = dash;
     if (propDimD) propDimD.textContent = dash;
     if (propDimH) propDimH.textContent = dash;
+    syncPropTagsPanel(null);
   };
 
   const updatePropertiesFromRoot = (root) => {
@@ -483,6 +504,7 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
         if (propDimH) propDimH.textContent = dash;
       }
     }
+    syncPropTagsPanel(item);
   };
 
   const applyPropertiesToRoot = (root) => {

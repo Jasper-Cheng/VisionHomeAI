@@ -20,6 +20,11 @@
     "y": 0.5
   },
   "price": 680,
+  "tags": [
+    "三色温",
+    "可调高度",
+    "多色可选"
+  ],
   "placement": {
     "allowRooms": [
       "living",

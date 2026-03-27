@@ -5,7 +5,7 @@ export const DATA_PATHS = {
   /** 户型库：manifest.json 与同目录下各 <id>.json */
   floorplansManifest: "data/floorplans/manifest.json",
   floorplansDir: "data/floorplans",
-  /** 家具库：manifest.json 与同目录下各 <id>.json */
+  /** 家具库：manifest.json 与同目录下各 <id>.json（可选 tags: string[] 供属性面板展示） */
   furnitureManifest: "data/furniture/manifest.json",
   furnitureDir: "data/furniture",
   /**
