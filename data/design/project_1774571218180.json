@@ -4,7 +4,7 @@
   "name": "李杰的方案",
   "description": "",
   "createdAt": "2026-03-27T00:26:58.180Z",
-  "updatedAt": "2026-03-27T00:26:58.180Z",
+  "updatedAt": "2026-03-27T04:43:38.936Z",
   "templateId": "apartment_2b1l",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -14,8 +14,38 @@
       "furnitureId": "sofa_001",
       "floorId": "floor1",
       "positionCm": [
-        1222,
-        1029
+        412,
+        -328
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "sofa_001",
+      "floorId": "floor1",
+      "positionCm": [
+        412,
+        -81
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_3",
+      "furnitureId": "table_001",
+      "floorId": "floor1",
+      "positionCm": [
+        409,
+        254
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_4",
+      "furnitureId": "bed_001",
+      "floorId": "floor1",
+      "positionCm": [
+        160,
+        203
       ],
       "rotationDeg": 0
     }
@@ -25,11 +55,11 @@
     "floorPlanId": "apartment_2b1l",
     "floorLevelIndex": 0,
     "view": {
-      "tx": 1.5469576118885952e-118,
-      "ty": -2.0361530852990243e-118,
-      "scale": 1.3970709462713986
+      "tx": 0,
+      "ty": 0,
+      "scale": 1.5464108196772728
     },
-    "gridVisible": false,
+    "gridVisible": true,
     "viewBox": {
       "width": 3000,
       "height": 3000
@@ -38,8 +68,29 @@
       {
         "model": "sofa_001",
         "floorId": "floor1",
-        "x": 1222,
-        "y": 1029,
+        "x": 412,
+        "y": -328,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_001",
+        "floorId": "floor1",
+        "x": 412,
+        "y": -81,
+        "rotation": 0
+      },
+      {
+        "model": "table_001",
+        "floorId": "floor1",
+        "x": 409,
+        "y": 254,
+        "rotation": 0
+      },
+      {
+        "model": "bed_001",
+        "floorId": "floor1",
+        "x": 160,
+        "y": 203,
         "rotation": 0
       }
     ]

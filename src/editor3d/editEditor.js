@@ -8,6 +8,8 @@ import { getFurnitureDisplayName } from "../furniture/furnitureManager.js";
 
 const VIEW_W = 3000;
 const VIEW_H = 3000;
+/** 编辑区平面半宽/半深（cm），原点在画布中心，与 Three 场景 XZ=0 对齐 */
+const CENTER_HALF = VIEW_W / 2;
 const GRID = 1;
 const FLOORPLAN_PAD = 80;
 const FLOORPLAN_SIZE_FACTOR = 0.38;
@@ -15,11 +17,32 @@ const MAX_HISTORY = 80;
 /** 户型墙体与地面挤出块统一颜色 */
 const FLOORPLAN_SURFACE_COLOR = 0xe2e8f0;
 
-function cmToSceneXZ(xCm, yCm) {
+/** 户型世界摆放等：画布 cm（左上角为 0）↔ 场景米 */
+function canvasCmToSceneXZ(xCm, yCm) {
   return { x: (xCm - VIEW_W / 2) / 100, z: (yCm - VIEW_H / 2) / 100 };
 }
-function sceneXZToCm(x, z) {
+function sceneXZToCanvasCm(x, z) {
   return { x: x * 100 + VIEW_W / 2, y: z * 100 + VIEW_H / 2 };
+}
+
+/** 家具布局：以编辑区中心为原点的 cm（约 [-1500,1500]）↔ 场景米 */
+function centeredCmToSceneXZ(cx, cy) {
+  return { x: cx / 100, z: cy / 100 };
+}
+function sceneXZToCenteredCm(x, z) {
+  return { x: x * 100, y: z * 100 };
+}
+function centeredToCanvasCm(cx, cy) {
+  return { x: cx + CENTER_HALF, y: cy + CENTER_HALF };
+}
+function canvasCmToCentered(xCm, yCm) {
+  return { x: xCm - CENTER_HALF, y: yCm - CENTER_HALF };
+}
+
+function clampFurnitureCentered(cx, cy, rotDeg, hw, hh) {
+  const canvas = centeredToCanvasCm(cx, cy);
+  const c = clampFurnitureToCanvas(canvas.x, canvas.y, rotDeg, hw, hh);
+  return canvasCmToCentered(c.x, c.y);
 }
 function snap(v) {
   return Math.round(v / GRID) * GRID;
@@ -391,7 +414,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const key = normalizeFloorKey(floorId ?? "floor1");
     const segments = wallSnapSegmentsByFloorId.get(key);
     if (!segments || !segments.length) return { x: cx, y: cy };
-    const pts = furnitureWallSnapSamplePointsCm(cx, cy, rotDeg, hw, hh);
+    const cc = centeredToCanvasCm(cx, cy);
+    const pts = furnitureWallSnapSamplePointsCm(cc.x, cc.y, rotDeg, hw, hh);
     let best = null;
     for (const p of pts) {
       for (const seg of segments) {
@@ -1051,7 +1075,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const bbox = getEntryBBoxCm(entry);
     if (!bbox) return;
     const gWorld = new THREE.Group();
-    const pos = cmToSceneXZ(worldX, worldY);
+    const pos = canvasCmToSceneXZ(worldX, worldY);
     gWorld.position.set(pos.x, 0, pos.z);
     floorplanRoot.add(gWorld);
 
@@ -1222,15 +1246,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return g;
   }
 
-  function setFurnitureFromLayoutCm(group, xCm, yCm, rotDeg, opts = {}) {
+  /** x,y 为以编辑区中心为原点的 cm（约 [-1500,1500]） */
+  function setFurnitureFromLayoutCm(group, cx, cy, rotDeg, opts = {}) {
     const wallSnap = Boolean(opts.wallSnap);
     const fp = group.userData.footprint;
-    let c = clampFurnitureToCanvas(xCm, yCm, rotDeg, fp.hw, fp.hh);
+    let c = clampFurnitureCentered(cx, cy, rotDeg, fp.hw, fp.hh);
     if (wallSnap) {
       c = snapFurnitureCenterToWalls(c.x, c.y, rotDeg, fp.hw, fp.hh, group.userData.floorId);
-      c = clampFurnitureToCanvas(c.x, c.y, rotDeg, fp.hw, fp.hh);
+      c = clampFurnitureCentered(c.x, c.y, rotDeg, fp.hw, fp.hh);
     }
-    const p = cmToSceneXZ(c.x, c.y);
+    const p = centeredCmToSceneXZ(c.x, c.y);
     group.position.x = p.x;
     group.position.z = p.z;
     group.rotation.y = (-rotDeg * Math.PI) / 180;
@@ -1449,13 +1474,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const out = [];
     furnitureRoot.children.forEach((g) => {
       if (!g.userData?.isFurniture) return;
-      const cm = sceneXZToCm(g.position.x, g.position.z);
+      const cm = sceneXZToCenteredCm(g.position.x, g.position.z);
       out.push({
         model: g.userData.modelType,
         floorId: String(g.userData.floorId || "").trim() || null,
-        x: cm.x,
-        y: cm.y,
-        rotation: g.userData.rotDeg ?? 0,
+        x: Math.round(cm.x),
+        y: Math.round(cm.y),
+        rotation: Math.round(g.userData.rotDeg ?? 0),
       });
     });
     return out;
@@ -1599,11 +1624,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const item = byId.get(group.userData.modelType);
     if (propertiesName) propertiesName.textContent = item ? getFurnitureDisplayName(item) : group.userData.modelType || "家具";
     syncPropPanelDimsFromItem(item);
-    const cm = sceneXZToCm(group.position.x, group.position.z);
+    const o = sceneXZToCenteredCm(group.position.x, group.position.z);
     const rot = group.userData.rotDeg ?? 0;
-    if (propInputX) propInputX.value = String(Math.round(cm.x));
-    if (propInputZ) propInputZ.value = String(Math.round(cm.y));
-    if (propInputRotY) propInputRotY.value = String(rot);
+    if (propInputX) propInputX.value = String(Math.round(o.x));
+    if (propInputZ) propInputZ.value = String(Math.round(o.y));
+    if (propInputRotY) propInputRotY.value = String(Math.round(rot));
   }
 
   function selectFurniture(group) {
@@ -1636,18 +1661,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const x = parseFloat(propInputX?.value ?? "");
     const zField = parseFloat(propInputZ?.value ?? "");
     const deg = parseFloat(propInputRotY?.value ?? "");
-    const cm = sceneXZToCm(selectedGroup.position.x, selectedGroup.position.z);
-    const nx = Number.isFinite(x) ? x : cm.x;
-    const ny = Number.isFinite(zField) ? zField : cm.y;
+    const cur = sceneXZToCenteredCm(selectedGroup.position.x, selectedGroup.position.z);
+    const ox = Number.isFinite(x) ? Math.round(x) : Math.round(cur.x);
+    const oy = Number.isFinite(zField) ? Math.round(zField) : Math.round(cur.y);
     let rot = selectedGroup.userData.rotDeg ?? 0;
     if (Number.isFinite(deg)) {
       rot = Math.round(deg) % 360;
       if (rot < 0) rot += 360;
     }
     selectedGroup.userData.rotDeg = rot;
-    const fp = selectedGroup.userData.footprint;
-    const c = clampFurnitureToCanvas(nx, ny, rot, fp.hw, fp.hh);
-    setFurnitureFromLayoutCm(selectedGroup, c.x, c.y, rot);
+    setFurnitureFromLayoutCm(selectedGroup, ox, oy, rot, { wallSnap: false });
     schedulePushHistory();
     return true;
   }
@@ -1741,11 +1764,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // Plane: normal.dot(point) + constant = 0
     placementPlane.constant = -planeY;
     if (!raycaster.ray.intersectPlane(placementPlane, pt)) return null;
-    const cm = sceneXZToCm(pt.x, pt.z);
+    const cm = sceneXZToCenteredCm(pt.x, pt.z);
     return { x: snap(cm.x), y: snap(cm.y) };
   }
 
-  function addFurniture(modelId, xCm = VIEW_W / 2, yCm = VIEW_H / 2) {
+  function addFurniture(modelId, xCm = 0, yCm = 0) {
     const g = appendFurnitureItem(modelId, xCm, yCm, 0, null, { wallSnap: wallSnapEnabled });
     if (g) selectFurniture(g);
     updateFurnitureFloorVisibility();
@@ -1784,7 +1807,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       // 避免切换楼层后，因为射线与不同高度平面求交导致的落点偏移
       const planeY = fur.position?.y ?? 0;
       const startCm = intersectPlaneCm(e.clientX, e.clientY, planeY);
-      const curCm = sceneXZToCm(fur.position.x, fur.position.z);
+      const curCm = sceneXZToCenteredCm(fur.position.x, fur.position.z);
       const offsetX = startCm ? startCm.x - curCm.x : 0;
       const offsetY = startCm ? startCm.y - curCm.y : 0;
       dragState = {
@@ -1818,7 +1841,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 使用初始 offset 保持拖拽锚点一致（不同楼层时避免落点偏移）
     const adjX = cm.x - (dragState.offsetCm?.x ?? 0);
     const adjY = cm.y - (dragState.offsetCm?.y ?? 0);
-    const c = clampFurnitureToCanvas(adjX, adjY, rot, fp.hw, fp.hh);
+    const c = clampFurnitureCentered(adjX, adjY, rot, fp.hw, fp.hh);
     setFurnitureFromLayoutCm(g, c.x, c.y, rot, { wallSnap: wallSnapEnabled });
     syncPropertiesPanelForSelection(g);
   }
@@ -1843,9 +1866,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     let r = (fur.userData.rotDeg ?? 0) + 90;
     r %= 360;
     fur.userData.rotDeg = r;
-    const cm = sceneXZToCm(fur.position.x, fur.position.z);
+    const cm = sceneXZToCenteredCm(fur.position.x, fur.position.z);
     const fp = fur.userData.footprint;
-    const c = clampFurnitureToCanvas(cm.x, cm.y, r, fp.hw, fp.hh);
+    const c = clampFurnitureCentered(cm.x, cm.y, r, fp.hw, fp.hh);
     setFurnitureFromLayoutCm(fur, c.x, c.y, r, { wallSnap: wallSnapEnabled });
     syncPropertiesPanelForSelection(fur);
     if (historyReady) pushHistorySnapshot();
@@ -1869,7 +1892,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const k = e.key;
       if (k === "ArrowLeft" || k === "ArrowRight" || k === "ArrowUp" || k === "ArrowDown") {
         e.preventDefault();
-        const cm = sceneXZToCm(selectedGroup.position.x, selectedGroup.position.z);
+        const cm = sceneXZToCenteredCm(selectedGroup.position.x, selectedGroup.position.z);
         let dx = 0, dy = 0;
         if (k === "ArrowLeft") dx = -GRID;
         else if (k === "ArrowRight") dx = GRID;
@@ -1877,7 +1900,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         else if (k === "ArrowDown") dy = GRID;
         const rot = selectedGroup.userData.rotDeg ?? 0;
         const fp = selectedGroup.userData.footprint;
-        const c = clampFurnitureToCanvas(cm.x + dx, cm.y + dy, rot, fp.hw, fp.hh);
+        const c = clampFurnitureCentered(cm.x + dx, cm.y + dy, rot, fp.hw, fp.hh);
         setFurnitureFromLayoutCm(selectedGroup, c.x, c.y, rot, { wallSnap: wallSnapEnabled });
         syncPropertiesPanelForSelection(selectedGroup);
         schedulePushHistory();
@@ -2147,7 +2170,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           e.preventDefault();
           e.stopImmediatePropagation();
           const n = Math.floor(Math.random() * 5) - 2, m = Math.floor(Math.random() * 5) - 2;
-          addFurniture(card.dataset.model, VIEW_W / 2 + n * GRID, VIEW_H / 2 + m * GRID);
+          addFurniture(card.dataset.model, n * GRID, m * GRID);
           return;
         }
         if (!e.isPrimary) return;
@@ -2192,9 +2215,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         return {
           model: String(fi.furnitureId ?? fi.modelId ?? "").trim(),
           floorId: fi?.floorId != null && String(fi.floorId).trim() ? String(fi.floorId).trim() : "floor1",
-          x: pc ? Number(pc[0]) || 0 : 0,
-          y: pc ? Number(pc[1]) || 0 : 0,
-          rotation: Number(fi.rotationDeg ?? fi.rotation ?? 0) || 0,
+          x: pc ? Math.round(Number(pc[0]) || 0) : 0,
+          y: pc ? Math.round(Number(pc[1]) || 0) : 0,
+          rotation: Math.round(Number(fi.rotationDeg ?? fi.rotation ?? 0) || 0),
         };
       })
       .filter((row) => row.model);
@@ -2206,9 +2229,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       .map((row) => ({
         model: String(row?.model ?? row?.furnitureId ?? "").trim(),
         floorId: row?.floorId != null && String(row.floorId).trim() ? String(row.floorId).trim() : "floor1",
-        x: Number(row?.x),
-        y: Number(row?.y),
-        rotation: Number(row?.rotation ?? row?.rotationDeg ?? 0) || 0,
+        x: Math.round(Number(row?.x)),
+        y: Math.round(Number(row?.y)),
+        rotation: Math.round(Number(row?.rotation ?? row?.rotationDeg ?? 0) || 0),
       }))
       .filter((r) => r.model && Number.isFinite(r.x) && Number.isFinite(r.y));
   }

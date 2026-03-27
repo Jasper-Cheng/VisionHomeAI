@@ -100,6 +100,14 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const VIEW_W = 3000;
   const VIEW_H = 3000;
   const GRID = 1;
+  /** 与 3D 一致：布局 x,y 以编辑区中心为原点（cm）；SVG transform 仍用画布坐标 */
+  const CENTER_HALF = VIEW_W / 2;
+  function centeredToCanvas(cx, cy) {
+    return { x: cx + CENTER_HALF, y: cy + CENTER_HALF };
+  }
+  function canvasToCentered(x, y) {
+    return { x: x - CENTER_HALF, y: y - CENTER_HALF };
+  }
 
   /** 与户型 `translate(..) scale(s)` 一致；无户型时为 1 */
   function getActiveFloorplanScale() {
@@ -829,9 +837,10 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     }
     syncPropPanelDimsFromItem(item);
     const pos = parseTranslate(g);
+    const ctr = canvasToCentered(pos.x, pos.y);
     const rot = getRotation(g);
-    if (propInputX) propInputX.value = String(Math.round(pos.x));
-    if (propInputZ) propInputZ.value = String(Math.round(pos.y));
+    if (propInputX) propInputX.value = String(Math.round(ctr.x));
+    if (propInputZ) propInputZ.value = String(Math.round(ctr.y));
     if (propInputRotY) propInputRotY.value = String(rot);
   }
 
@@ -851,9 +860,11 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const zField = parseFloat(propInputZ?.value ?? "");
     const deg = parseFloat(propInputRotY?.value ?? "");
     const pos = parseTranslate(selectedEl);
-    const nx = Number.isFinite(x) ? x : pos.x;
-    const ny = Number.isFinite(zField) ? zField : pos.y;
-    const c = clampPosition(selectedEl, nx, ny);
+    const cur = canvasToCentered(pos.x, pos.y);
+    const nx = Number.isFinite(x) ? Math.round(x) : Math.round(cur.x);
+    const ny = Number.isFinite(zField) ? Math.round(zField) : Math.round(cur.y);
+    const canvas = centeredToCanvas(nx, ny);
+    const c = clampPosition(selectedEl, canvas.x, canvas.y);
     let rot = getRotation(selectedEl);
     if (Number.isFinite(deg)) {
       rot = Math.round(deg) % 360;
@@ -1075,7 +1086,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     g.appendChild(shape);
     g.appendChild(dimG);
 
-    const pos = clampPosition(g, cx, cy);
+    const canvas = centeredToCanvas(cx, cy);
+    const pos = clampPosition(g, canvas.x, canvas.y);
     g.setAttribute("transform", formatFurnitureTransform(pos.x, pos.y, rot));
     furnitureLayer.appendChild(g);
     return g;
@@ -1102,7 +1114,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return g;
   }
 
-  function addFurniture(type, cx = VIEW_W / 2, cy = VIEW_H / 2) {
+  function addFurniture(type, cx = 0, cy = 0) {
     const g = createFurnitureGroup(type, cx, cy);
     updateFurnitureVisibilityForActiveFloor();
     if (g && historyReady) pushHistorySnapshot();
@@ -1122,7 +1134,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (!byId.has(model)) return;
     const n = Math.floor(Math.random() * 5) - 2;
     const m = Math.floor(Math.random() * 5) - 2;
-    addFurniture(model, VIEW_W / 2 + n * GRID, VIEW_H / 2 + m * GRID);
+    addFurniture(model, n * GRID, m * GRID);
   }
 
   function endDrag(e) {
@@ -1163,8 +1175,9 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     const c = clampPosition(dragState.el, nx, ny);
     const r = getRotation(dragState.el);
     dragState.el.setAttribute("transform", formatFurnitureTransform(c.x, c.y, r));
-    if (propInputX) propInputX.value = String(Math.round(c.x));
-    if (propInputZ) propInputZ.value = String(Math.round(c.y));
+    const ctr = canvasToCentered(c.x, c.y);
+    if (propInputX) propInputX.value = String(Math.round(ctr.x));
+    if (propInputZ) propInputZ.value = String(Math.round(ctr.y));
   }
 
   function onMiddlePanMove(e) {
@@ -1674,7 +1687,8 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return;
     if (!byId.has(p.model)) return;
     const wpt = clientToWorld(x, y);
-    addFurniture(p.model, wpt.x, wpt.y);
+    const ctr = canvasToCentered(wpt.x, wpt.y);
+    addFurniture(p.model, ctr.x, ctr.y);
   }
 
   /** Shift+点击：加入画布中心附近；普通拖拽：松手在 SVG 上则落到该点 */
@@ -1834,12 +1848,13 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   function getLayout() {
     return Array.from(furnitureLayer.querySelectorAll(".svg-furniture")).map((g) => {
       const pos = parseTranslate(g);
+      const ctr = canvasToCentered(pos.x, pos.y);
       return {
         model: g.getAttribute("data-model"),
         floorId: String(g.getAttribute("data-floor-id") || "").trim() || null,
-        x: pos.x,
-        y: pos.y,
-        rotation: getRotation(g),
+        x: Math.round(ctr.x),
+        y: Math.round(ctr.y),
+        rotation: Math.round(getRotation(g)),
       };
     });
   }
@@ -1860,14 +1875,14 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     return inst
       .map((fi) => {
         const pc = Array.isArray(fi.positionCm) && fi.positionCm.length >= 2 ? fi.positionCm : null;
-        const x = pc ? Number(pc[0]) || 0 : 0;
-        const y = pc ? Number(pc[1]) || 0 : 0;
+        const x = pc ? Math.round(Number(pc[0]) || 0) : 0;
+        const y = pc ? Math.round(Number(pc[1]) || 0) : 0;
         return {
           model: String(fi.furnitureId ?? fi.modelId ?? "").trim(),
           floorId: fi?.floorId != null && String(fi.floorId).trim() ? String(fi.floorId).trim() : "floor1",
           x,
           y,
-          rotation: Number(fi.rotationDeg ?? fi.rotation ?? 0) || 0,
+          rotation: Math.round(Number(fi.rotationDeg ?? fi.rotation ?? 0) || 0),
         };
       })
       .filter((row) => row.model);
@@ -1879,9 +1894,9 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
       .map((row) => ({
         model: String(row?.model ?? row?.furnitureId ?? "").trim(),
         floorId: row?.floorId != null && String(row.floorId).trim() ? String(row.floorId).trim() : "floor1",
-        x: Number(row?.x),
-        y: Number(row?.y),
-        rotation: Number(row?.rotation ?? row?.rotationDeg ?? 0) || 0,
+        x: Math.round(Number(row?.x)),
+        y: Math.round(Number(row?.y)),
+        rotation: Math.round(Number(row?.rotation ?? row?.rotationDeg ?? 0) || 0),
       }))
       .filter((r) => r.model && Number.isFinite(r.x) && Number.isFinite(r.y));
   }

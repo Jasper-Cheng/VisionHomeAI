@@ -464,9 +464,9 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
     const ry = root.rotation?.y ?? 0;
     const deg = (ry * 180) / Math.PI;
 
-    if (propInputX) propInputX.value = p.x.toFixed(2);
-    if (propInputZ) propInputZ.value = p.z.toFixed(2);
-    if (propInputRotY) propInputRotY.value = deg.toFixed(2);
+    if (propInputX) propInputX.value = String(Math.round(p.x * 100));
+    if (propInputZ) propInputZ.value = String(Math.round(p.z * 100));
+    if (propInputRotY) propInputRotY.value = String(Math.round(deg));
 
     const byId = catalog?.byId instanceof Map ? catalog.byId : new Map();
     const item = byId.get(root.userData.modelType);
@@ -487,12 +487,12 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 
   const applyPropertiesToRoot = (root) => {
     if (!root) return;
-    const x = parseFloat(propInputX?.value) || 0;
-    const z = parseFloat(propInputZ?.value) || 0;
+    const xCm = parseFloat(propInputX?.value);
+    const zCm = parseFloat(propInputZ?.value);
     const deg = parseFloat(propInputRotY?.value) || 0;
     const rad = (deg * Math.PI) / 180;
-    root.position.x = x;
-    root.position.z = z;
+    root.position.x = Number.isFinite(xCm) ? xCm / 100 : root.position.x;
+    root.position.z = Number.isFinite(zCm) ? zCm / 100 : root.position.z;
     root.rotation.y = rad;
   };
 
