@@ -14,8 +14,7 @@
 │   └── design/           # 用户方案 JSON（户型模板 + 家具编辑）+ manifest.json
 ├── src/
 │   ├── core/             # schema、catalogLoader（manifest + 多文件加载）
-│   ├── editor2d/         # 2D / SVG（svgEditor.js + renderer 占位）
-│   ├── editor3d/         # 3D（viewer.js + loader 占位）
+│   ├── editor3d/         # 3D 编辑（editEditor.js + viewer.js）
 │   ├── floorplan/        # 户型库加载与侧栏挂载
 │   ├── furniture/        # 家具库、SVG 样式
 │   ├── files/            # 设计文件清单加载与侧栏挂载

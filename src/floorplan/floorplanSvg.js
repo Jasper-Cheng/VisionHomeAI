@@ -1,5 +1,5 @@
 /**
- * 单层 floors[i] → SVG 局部几何（厘米坐标，与画布 3000×3000 cm 一致；由 svgEditor 外层 transform 缩放平移）
+ * 单层 floors[i] → SVG 局部几何（厘米坐标，与画布 3000×3000 cm 一致；可与视图 transform 组合）
  * 遍历该层内 rooms / walls / doors / windows / furnitures；3D 属性（height、elevation 等）不参与 2D 绘制。
  */
 

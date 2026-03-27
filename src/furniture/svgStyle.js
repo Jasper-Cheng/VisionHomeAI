@@ -1,5 +1,5 @@
 /**
- * 2D SVG 家具占位样式（无 fetch 依赖，供 svgEditor 与家具库 UI 共用）
+ * 2D SVG 家具占位样式（无 fetch 依赖，供家具库 UI 等共用）
  */
 
 /** JSON category → 中文（标签 / Tab） */
@@ -72,7 +72,7 @@ export function getFurnitureLibraryCardLabel(item) {
 
 /**
  * 家具 JSON 可选 `polygon`：[[x,y],…] 或 [{x,y},…]，单位 cm，原点 = 外轮廓轴对齐包围盒中心（与 anchor 0.5/0.5 一致）
- * 仅本模块内部使用；svgEditor 内另有副本，避免跨模块命名导出在 Chrome 强缓存下不一致
+ * 仅本模块内部使用
  * @returns {{ x: number, y: number }[] | null}
  */
 function parseFurniturePolygonPoints(item) {
@@ -111,7 +111,7 @@ export function getSvgStyleForItem(item) {
     d /= 10;
   }
   const h = Number(sz.height);
-  /* 画布 1 单位 = 1 cm；外接尺寸只认 size，polygon 仅决定外形（svgEditor 内再缩放到此外接框） */
+  /* 画布 1 单位 = 1 cm；外接尺寸只认 size，polygon 仅决定外形 */
   const hw = Math.max(8, w / 2);
   const hh = Math.max(8, d / 2);
   const polyPts = parseFurniturePolygonPoints(item);
