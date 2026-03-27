@@ -54,6 +54,64 @@ function getEntryBBoxCm(entry) {
   if (!Number.isFinite(minX)) return null;
   return { minX, minY, maxX, maxY, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, w: maxX - minX, h: maxY - minY };
 }
+
+/** 与 rebuildFloorplan3D 中一致的户型在画布坐标系（cm）下的缩放与平移 */
+function computeFloorplanCanvasPlacement(entry) {
+  const bbox = getEntryBBoxCm(entry);
+  if (!bbox) return null;
+  const availW = Math.max(40, VIEW_W - 2 * FLOORPLAN_PAD);
+  const availH = Math.max(40, VIEW_H - 2 * FLOORPLAN_PAD);
+  let s = bbox.w > 1e-6 && bbox.h > 1e-6 ? Math.min(availW / bbox.w, availH / bbox.h) : 1;
+  s *= FLOORPLAN_SIZE_FACTOR;
+  s = Math.min(Math.max(s, 0.02), 4);
+  if (bbox.w > 1e-6) {
+    const nw = Math.max(1, Math.round((s * bbox.w) / GRID));
+    s = (nw * GRID) / bbox.w;
+    s = Math.min(Math.max(s, 0.02), 4);
+  }
+  let worldX = snap(VIEW_W / 2);
+  let worldY = snap(VIEW_H / 2);
+  const wxMin = worldX + s * (bbox.minX - bbox.cx);
+  const wyMin = worldY + s * (bbox.minY - bbox.cy);
+  worldX += Math.round(wxMin / GRID) * GRID - wxMin;
+  worldY += Math.round(wyMin / GRID) * GRID - wyMin;
+  return { worldX, worldY, s, cx: bbox.cx, cy: bbox.cy };
+}
+
+function closestPointOnSegment2D(px, py, ax, ay, bx, by) {
+  const abx = bx - ax;
+  const aby = by - ay;
+  const apx = px - ax;
+  const apy = py - ay;
+  const ab2 = abx * abx + aby * aby;
+  if (ab2 < 1e-12) return { x: ax, y: ay };
+  let t = (apx * abx + apy * aby) / ab2;
+  t = Math.max(0, Math.min(1, t));
+  return { x: ax + t * abx, y: ay + t * aby };
+}
+
+/** 家具底面四角 + 四边中点（画布 cm），用于墙体磁吸 */
+function furnitureWallSnapSamplePointsCm(cx, cy, rotDeg, hw, hh) {
+  const lc = [
+    [-hw, -hh],
+    [hw, -hh],
+    [hw, hh],
+    [-hw, hh],
+  ];
+  const out = [];
+  for (const [lx, ly] of lc) {
+    const p = rotateYLocal(lx, ly, rotDeg);
+    out.push({ x: cx + p.x, y: cy + p.z });
+  }
+  for (let i = 0; i < 4; i++) {
+    const [x1, y1] = lc[i];
+    const [x2, y2] = lc[(i + 1) % 4];
+    const p = rotateYLocal((x1 + x2) / 2, (y1 + y2) / 2, rotDeg);
+    out.push({ x: cx + p.x, y: cy + p.z });
+  }
+  return out;
+}
+
 function extractFurnitureFootprintCm(item) {
   if (!item || typeof item !== "object") return { w: 100, d: 100, h: 80, hw: 50, hh: 50 };
   const raw = item.size;
@@ -281,6 +339,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let gridVisible = false;
   let showDimensions = false;
   let showNames = false;
+  /** 家具拖曳/方向键/放置时是否沿墙磁吸 */
+  let wallSnapEnabled = true;
   const dimDepthTest = false; // 标注始终显示，不被模型遮挡
   let floorLevelDock = null;
   let floorLevelRow = null;
@@ -289,6 +349,57 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let floorElevationBaseCm = 0;
   function normalizeFloorKey(id) {
     return String(id ?? "").trim().toLowerCase();
+  }
+
+  /** 墙体中心线（画布 cm），按楼层 id 缓存，用于家具拖曳磁吸 */
+  const WALL_SNAP_THRESHOLD_CM = 32;
+  const wallSnapSegmentsByFloorId = new Map();
+
+  function rebuildWallSnapData(entry) {
+    wallSnapSegmentsByFloorId.clear();
+    if (!entry) return;
+    const placement = computeFloorplanCanvasPlacement(entry);
+    if (!placement) return;
+    const { worldX, worldY, s, cx, cy } = placement;
+    const floors = getFloorsFromEntry(entry);
+    floors.forEach((fl, i) => {
+      const fidRaw = String(fl?.id ?? "").trim() || `floor${i + 1}`;
+      const key = normalizeFloorKey(fidRaw);
+      const list = [];
+      for (const w of fl.walls || []) {
+        if (!Array.isArray(w?.start) || w.start.length < 2 || !Array.isArray(w?.end) || w.end.length < 2) continue;
+        const x1 = snap(Number(w.start[0]));
+        const y1 = snap(Number(w.start[1]));
+        const x2 = snap(Number(w.end[0]));
+        const y2 = snap(Number(w.end[1]));
+        const ax = worldX + s * (x1 - cx);
+        const ay = worldY + s * (y1 - cy);
+        const bx = worldX + s * (x2 - cx);
+        const by = worldY + s * (y2 - cy);
+        if (Math.hypot(bx - ax, by - ay) < 1e-3) continue;
+        list.push({ ax, ay, bx, by });
+      }
+      wallSnapSegmentsByFloorId.set(key, list);
+    });
+  }
+
+  function snapFurnitureCenterToWalls(cx, cy, rotDeg, hw, hh, floorId) {
+    const key = normalizeFloorKey(floorId ?? "floor1");
+    const segments = wallSnapSegmentsByFloorId.get(key);
+    if (!segments || !segments.length) return { x: cx, y: cy };
+    const pts = furnitureWallSnapSamplePointsCm(cx, cy, rotDeg, hw, hh);
+    let best = null;
+    for (const p of pts) {
+      for (const seg of segments) {
+        const q = closestPointOnSegment2D(p.x, p.y, seg.ax, seg.ay, seg.bx, seg.by);
+        const d = Math.hypot(p.x - q.x, p.y - q.y);
+        if (d < WALL_SNAP_THRESHOLD_CM && (!best || d < best.d)) {
+          best = { dx: q.x - p.x, dy: q.y - p.y, d };
+        }
+      }
+    }
+    if (!best) return { x: cx, y: cy };
+    return { x: cx + best.dx, y: cy + best.dy };
   }
 
   const propertiesPanel = document.getElementById("propertiesPanel");
@@ -874,6 +985,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     updateFurnitureFloorVisibility();
   }
 
+  function setWallSnapEnabled(v) {
+    wallSnapEnabled = Boolean(v);
+    const btn = document.getElementById("svgWallSnapToggleBtn");
+    if (btn) {
+      btn.classList.toggle("is-active", wallSnapEnabled);
+      btn.setAttribute("aria-pressed", String(wallSnapEnabled));
+    }
+  }
 
   // ============================================================
 
@@ -885,6 +1004,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!currentFloorplanEntry) {
       floorYOffsetById.clear();
       floorElevationBaseCm = 0;
+      rebuildWallSnapData(null);
       return;
     }
 
@@ -892,26 +1012,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const floorIndex = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
     const floor = floorIndex >= 0 ? getCurrentFloorFromEntry(entry, floorIndex) : null;
     if (floorIndex >= 0 && !floor) return;
+    const placement = computeFloorplanCanvasPlacement(entry);
+    if (!placement) return;
+    const { worldX, worldY, s, cx, cy } = placement;
     const bbox = getEntryBBoxCm(entry);
     if (!bbox) return;
-
-    const availW = Math.max(40, VIEW_W - 2 * FLOORPLAN_PAD);
-    const availH = Math.max(40, VIEW_H - 2 * FLOORPLAN_PAD);
-    let s = bbox.w > 1e-6 && bbox.h > 1e-6 ? Math.min(availW / bbox.w, availH / bbox.h) : 1;
-    s *= FLOORPLAN_SIZE_FACTOR;
-    s = Math.min(Math.max(s, 0.02), 4);
-    if (bbox.w > 1e-6) {
-      const nw = Math.max(1, Math.round((s * bbox.w) / GRID));
-      s = (nw * GRID) / bbox.w;
-      s = Math.min(Math.max(s, 0.02), 4);
-    }
-    let worldX = snap(VIEW_W / 2), worldY = snap(VIEW_H / 2);
-    const wxMin = worldX + s * (bbox.minX - bbox.cx);
-    const wyMin = worldY + s * (bbox.minY - bbox.cy);
-    worldX += Math.round(wxMin / GRID) * GRID - wxMin;
-    worldY += Math.round(wyMin / GRID) * GRID - wyMin;
-
-    const cx = bbox.cx, cy = bbox.cy;
     const gWorld = new THREE.Group();
     const pos = cmToSceneXZ(worldX, worldY);
     gWorld.position.set(pos.x, 0, pos.z);
@@ -975,6 +1080,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     gWorld.add(hit);
 
     activeFloorId = floor?.id != null && String(floor.id).trim() ? String(floor.id).trim() : null;
+    rebuildWallSnapData(entry);
     updateBottomUI();
 
     window.dispatchEvent(
@@ -1081,16 +1187,21 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return g;
   }
 
-  function setFurnitureFromLayoutCm(group, xCm, yCm, rotDeg) {
+  function setFurnitureFromLayoutCm(group, xCm, yCm, rotDeg, opts = {}) {
+    const wallSnap = Boolean(opts.wallSnap);
     const fp = group.userData.footprint;
-    const c = clampFurnitureToCanvas(xCm, yCm, rotDeg, fp.hw, fp.hh);
+    let c = clampFurnitureToCanvas(xCm, yCm, rotDeg, fp.hw, fp.hh);
+    if (wallSnap) {
+      c = snapFurnitureCenterToWalls(c.x, c.y, rotDeg, fp.hw, fp.hh, group.userData.floorId);
+      c = clampFurnitureToCanvas(c.x, c.y, rotDeg, fp.hw, fp.hh);
+    }
     const p = cmToSceneXZ(c.x, c.y);
     group.position.x = p.x;
     group.position.z = p.z;
     group.rotation.y = (-rotDeg * Math.PI) / 180;
   }
 
-  function appendFurnitureItem(modelId, xCm, yCm, rotationDeg = 0, floorId = null) {
+  function appendFurnitureItem(modelId, xCm, yCm, rotationDeg = 0, floorId = null, opts = {}) {
     if (!byId.has(modelId)) return null;
     const fp = extractFurnitureFootprintCm(byId.get(modelId));
     const group = createFurnitureMesh(modelId);
@@ -1100,7 +1211,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     let rot = Math.round(Number(rotationDeg) || 0) % 360;
     if (rot < 0) rot += 360;
     group.userData.rotDeg = rot;
-    setFurnitureFromLayoutCm(group, xCm, yCm, rot);
+    setFurnitureFromLayoutCm(group, xCm, yCm, rot, opts);
     furnitureRoot.add(group);
     registerFurnitureMeshes(group);
     return group;
@@ -1115,7 +1226,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
     });
     for (const item of layout) {
-      appendFurnitureItem(item.model, item.x, item.y, item.rotation ?? 0, item.floorId ?? null);
+      appendFurnitureItem(item.model, item.x, item.y, item.rotation ?? 0, item.floorId ?? null, { wallSnap: false });
     }
     updateFurnitureFloorVisibility();
     updateBottomUI();
@@ -1598,7 +1709,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function addFurniture(modelId, xCm = VIEW_W / 2, yCm = VIEW_H / 2) {
-    const g = appendFurnitureItem(modelId, xCm, yCm, 0);
+    const g = appendFurnitureItem(modelId, xCm, yCm, 0, null, { wallSnap: wallSnapEnabled });
     if (g) selectFurniture(g);
     updateFurnitureFloorVisibility();
     updateBottomUI();
@@ -1671,7 +1782,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const adjX = cm.x - (dragState.offsetCm?.x ?? 0);
     const adjY = cm.y - (dragState.offsetCm?.y ?? 0);
     const c = clampFurnitureToCanvas(adjX, adjY, rot, fp.hw, fp.hh);
-    setFurnitureFromLayoutCm(g, c.x, c.y, rot);
+    setFurnitureFromLayoutCm(g, c.x, c.y, rot, { wallSnap: wallSnapEnabled });
     syncPropertiesPanelForSelection(g);
   }
 
@@ -1698,7 +1809,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const cm = sceneXZToCm(fur.position.x, fur.position.z);
     const fp = fur.userData.footprint;
     const c = clampFurnitureToCanvas(cm.x, cm.y, r, fp.hw, fp.hh);
-    setFurnitureFromLayoutCm(fur, c.x, c.y, r);
+    setFurnitureFromLayoutCm(fur, c.x, c.y, r, { wallSnap: wallSnapEnabled });
     syncPropertiesPanelForSelection(fur);
     if (historyReady) pushHistorySnapshot();
   });
@@ -1730,7 +1841,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const rot = selectedGroup.userData.rotDeg ?? 0;
         const fp = selectedGroup.userData.footprint;
         const c = clampFurnitureToCanvas(cm.x + dx, cm.y + dy, rot, fp.hw, fp.hh);
-        setFurnitureFromLayoutCm(selectedGroup, c.x, c.y, rot);
+        setFurnitureFromLayoutCm(selectedGroup, c.x, c.y, rot, { wallSnap: wallSnapEnabled });
         syncPropertiesPanelForSelection(selectedGroup);
         schedulePushHistory();
         return;
@@ -2275,8 +2386,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorSetGridVisible = setGridVisible;
   window.svgEditorToggleDimensions = () => setDimensionsVisible(!showDimensions);
   window.svgEditorSetDimensionsVisible = setDimensionsVisible;
+  window.svgEditorToggleWallSnap = () => setWallSnapEnabled(!wallSnapEnabled);
+  window.svgEditorSetWallSnapEnabled = setWallSnapEnabled;
+  window.svgEditorGetWallSnapEnabled = () => wallSnapEnabled;
 
   document.getElementById("svgDimToggleBtn")?.addEventListener("click", () => setDimensionsVisible(!showDimensions));
+  document.getElementById("svgWallSnapToggleBtn")?.addEventListener("click", () => setWallSnapEnabled(!wallSnapEnabled));
   document.getElementById("svgNameToggleBtn")?.addEventListener("click", () => setNamesVisible(!showNames));
   window.svgEditorGetCurrentFloorplanId = getCurrentFloorplanId;
   window.svgEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
