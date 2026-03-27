@@ -109,9 +109,7 @@
       "name": "实木橡木原木色",
       "materialId": "wood",
       "textureId": "oak",
-      "colorId": "natural",
-      "price": 880,
-      "stock": 15
+      "colorId": "natural"
     },
     {
       "id": "TBL-WOO-OAK-WAL",
@@ -119,8 +117,7 @@
       "materialId": "wood",
       "textureId": "oak",
       "colorId": "walnut",
-      "price": 1200,
-      "stock": 8
+      "markup": 320
     },
     {
       "id": "TBL-MET-POW-BLK",
@@ -128,8 +125,7 @@
       "materialId": "metal",
       "textureId": "powder",
       "colorId": "black",
-      "price": 1030,
-      "stock": 10
+      "markup": 150
     },
     {
       "id": "TBL-MET-POW-WHT",
@@ -137,8 +133,7 @@
       "materialId": "metal",
       "textureId": "powder",
       "colorId": "white",
-      "price": 1030,
-      "stock": 10
+      "markup": 150
     }
   ],
   "selection": {

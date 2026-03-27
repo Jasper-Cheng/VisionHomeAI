@@ -114,9 +114,7 @@
       "name": "布艺雪尼尔浅灰",
       "materialId": "fabric",
       "textureId": "chenille",
-      "colorId": "light_gray",
-      "price": 3980,
-      "stock": 12
+      "colorId": "light_gray"
     },
     {
       "id": "SOF-FAB-CHE-BEI",
@@ -124,8 +122,7 @@
       "materialId": "fabric",
       "textureId": "chenille",
       "colorId": "beige",
-      "price": 4180,
-      "stock": 10
+      "markup": 200
     },
     {
       "id": "SOF-LEA-SMO-BRN",
@@ -133,8 +130,7 @@
       "materialId": "leather",
       "textureId": "smooth",
       "colorId": "brown",
-      "price": 4780,
-      "stock": 6
+      "markup": 800
     },
     {
       "id": "SOF-LEA-SMO-BLK",
@@ -142,8 +138,7 @@
       "materialId": "leather",
       "textureId": "smooth",
       "colorId": "black",
-      "price": 4780,
-      "stock": 6
+      "markup": 800
     }
   ],
   "selection": {

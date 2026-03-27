@@ -109,9 +109,7 @@
       "name": "羊毛圈绒燕麦米",
       "materialId": "wool",
       "textureId": "loop",
-      "colorId": "beige",
-      "price": 1280,
-      "stock": 14
+      "colorId": "beige"
     },
     {
       "id": "RUG-WOO-LOP-GRY",
@@ -119,8 +117,7 @@
       "materialId": "wool",
       "textureId": "loop",
       "colorId": "gray",
-      "price": 1460,
-      "stock": 10
+      "markup": 180
     },
     {
       "id": "RUG-SYN-CUT-NVY",
@@ -128,8 +125,7 @@
       "materialId": "synthetic",
       "textureId": "cut",
       "colorId": "navy",
-      "price": 1080,
-      "stock": 20
+      "markup": -200
     },
     {
       "id": "RUG-SYN-CUT-TER",
@@ -137,8 +133,7 @@
       "materialId": "synthetic",
       "textureId": "cut",
       "colorId": "terracotta",
-      "price": 1080,
-      "stock": 20
+      "markup": -200
     }
   ],
   "selection": {

@@ -1550,12 +1550,34 @@ a.avatar:hover {
   background: transparent;
 }
 
+.prop-appearance-sku-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 /* 与 .prop-section-title（如「产品标签」）同系：浅灰、粗体、无衬线、无底框 */
 .prop-appearance-sku-name {
+  flex: 1;
+  min-width: 0;
   font-size: 12px;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.62);
   line-height: 1.4;
+}
+
+.prop-appearance-sku-markup {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(252, 211, 77, 0.88);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.prop-appearance-sku-markup.is-negative {
+  color: rgba(134, 239, 172, 0.82);
 }
 
 .prop-appearance-current-row {

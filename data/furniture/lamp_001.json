@@ -110,9 +110,7 @@
       "name": "金属磨砂曜黑",
       "materialId": "metal",
       "textureId": "matte",
-      "colorId": "black",
-      "price": 680,
-      "stock": 20
+      "colorId": "black"
     },
     {
       "id": "LMP-MET-MAT-GLD",
@@ -120,8 +118,7 @@
       "materialId": "metal",
       "textureId": "matte",
       "colorId": "gold",
-      "price": 800,
-      "stock": 12
+      "markup": 120
     },
     {
       "id": "LMP-FAB-LIN-WHT",
@@ -129,8 +126,7 @@
       "materialId": "fabric",
       "textureId": "linen",
       "colorId": "white",
-      "price": 760,
-      "stock": 15
+      "markup": 80
     },
     {
       "id": "LMP-FAB-LIN-CRM",
@@ -138,8 +134,7 @@
       "materialId": "fabric",
       "textureId": "linen",
       "colorId": "cream",
-      "price": 760,
-      "stock": 15
+      "markup": 80
     }
   ],
   "selection": {

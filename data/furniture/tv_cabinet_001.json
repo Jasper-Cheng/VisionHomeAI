@@ -109,9 +109,7 @@
       "name": "木饰面胡桃木",
       "materialId": "wood",
       "textureId": "veneer",
-      "colorId": "walnut",
-      "price": 1680,
-      "stock": 10
+      "colorId": "walnut"
     },
     {
       "id": "TV-WOO-VEN-OAK",
@@ -119,8 +117,7 @@
       "materialId": "wood",
       "textureId": "veneer",
       "colorId": "oak",
-      "price": 1940,
-      "stock": 8
+      "markup": 260
     },
     {
       "id": "TV-LAC-MAT-WHT",
@@ -128,8 +125,7 @@
       "materialId": "lacquer",
       "textureId": "matte",
       "colorId": "white",
-      "price": 2080,
-      "stock": 6
+      "markup": 400
     },
     {
       "id": "TV-LAC-MAT-BLK",
@@ -137,8 +133,7 @@
       "materialId": "lacquer",
       "textureId": "matte",
       "colorId": "black",
-      "price": 2080,
-      "stock": 6
+      "markup": 400
     }
   ],
   "selection": {

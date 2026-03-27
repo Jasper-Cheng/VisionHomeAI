@@ -106,9 +106,7 @@
       "name": "布艺亚麻浅灰",
       "materialId": "fabric",
       "textureId": "linen",
-      "colorId": "gray",
-      "price": 2580,
-      "stock": 10
+      "colorId": "gray"
     },
     {
       "id": "BED-FAB-LIN-BEIGE",
@@ -116,8 +114,7 @@
       "materialId": "fabric",
       "textureId": "linen",
       "colorId": "beige",
-      "price": 2680,
-      "stock": 8
+      "markup": 100
     },
     {
       "id": "BED-LEA-SMO-BROWN",
@@ -125,8 +122,7 @@
       "materialId": "leather",
       "textureId": "smooth",
       "colorId": "brown",
-      "price": 2880,
-      "stock": 5
+      "markup": 300
     }
   ],
   "selection": {

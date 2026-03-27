@@ -3,6 +3,7 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 import { getFurnitureTags } from "../furniture/furnitureManager.js";
 import {
   applyFurnitureAppearanceToGroup,
+  formatSkuMarkupLabel,
   hasFurnitureMaterialConfig,
   normalizeFurnitureSelection,
   resolveFurnitureSelectionDetail,
@@ -97,10 +98,23 @@ import {
       (det.skuName && String(det.skuName).trim()) ||
       [det.materialName, det.textureName, det.colorName].filter(Boolean).join(" · ") ||
       "—";
-    const nameEl = document.createElement("div");
+    const line = document.createElement("div");
+    line.className = "prop-appearance-sku-line";
+    const nameEl = document.createElement("span");
     nameEl.className = "prop-appearance-sku-name";
     nameEl.textContent = skuNameOnly;
-    cur.appendChild(nameEl);
+    line.appendChild(nameEl);
+    const markupLabel =
+      det.skuMarkup != null ? formatSkuMarkupLabel(det.skuMarkup) : "";
+    if (markupLabel) {
+      const mk = document.createElement("span");
+      mk.className =
+        "prop-appearance-sku-markup" +
+        (det.skuMarkup != null && det.skuMarkup < 0 ? " is-negative" : "");
+      mk.textContent = markupLabel;
+      line.appendChild(mk);
+    }
+    cur.appendChild(line);
     propAppearanceBody.appendChild(cur);
   }
 

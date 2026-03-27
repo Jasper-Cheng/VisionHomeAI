@@ -200,8 +200,8 @@ export function resolveFurnitureSelectionDetail(item, sel) {
     hex: "#888888",
     skuId: "",
     skuName: "",
-    price: 0,
-    stock: 0,
+    /** 相对家具条目 `price` 的加价（元），可负；无 SKU 或未定义时为 null */
+    skuMarkup: null,
     materialParams: null,
   };
   if (!item || !sel) return empty;
@@ -231,10 +231,25 @@ export function resolveFurnitureSelectionDetail(item, sel) {
     hex,
     skuId: sku ? String(sku.id ?? "").trim() : String(sel.skuId ?? "").trim(),
     skuName: sku != null ? String(sku.name ?? "").trim() : "",
-    price: sku != null ? Number(sku.price) || 0 : 0,
-    stock: sku != null && Number.isFinite(Number(sku.stock)) ? Number(sku.stock) : 0,
+    skuMarkup: (() => {
+      if (sku == null) return null;
+      if (!Object.prototype.hasOwnProperty.call(sku, "markup")) return 0;
+      const n = Number(sku.markup);
+      return Number.isFinite(n) ? n : 0;
+    })(),
     materialParams,
   };
+}
+
+/**
+ * 加价展示文案（非 0 时用于面板右侧）；正数 +¥n，负数 −¥|n|
+ * @param {number} markup
+ * @returns {string}
+ */
+export function formatSkuMarkupLabel(markup) {
+  if (!Number.isFinite(markup) || markup === 0) return "";
+  if (markup > 0) return `+¥${Math.round(markup)}`;
+  return `−¥${Math.round(Math.abs(markup))}`;
 }
 
 export function resolveTextureAssetUrl(pathFromRoot) {

@@ -111,9 +111,7 @@
       "name": "陶瓷哑光乳白",
       "materialId": "ceramic",
       "textureId": "matte",
-      "colorId": "white",
-      "price": 360,
-      "stock": 30
+      "colorId": "white"
     },
     {
       "id": "PLT-CER-MAT-TER",
@@ -121,8 +119,7 @@
       "materialId": "ceramic",
       "textureId": "matte",
       "colorId": "terracotta",
-      "price": 400,
-      "stock": 25
+      "markup": 40
     },
     {
       "id": "PLT-PLA-SIM-GRY",
@@ -130,8 +127,7 @@
       "materialId": "plastic",
       "textureId": "simple",
       "colorId": "gray",
-      "price": 330,
-      "stock": 40
+      "markup": -30
     },
     {
       "id": "PLT-PLA-SIM-BLK",
@@ -139,8 +135,7 @@
       "materialId": "plastic",
       "textureId": "simple",
       "colorId": "black",
-      "price": 330,
-      "stock": 40
+      "markup": -30
     }
   ],
   "selection": {
