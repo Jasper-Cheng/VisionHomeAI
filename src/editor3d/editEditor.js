@@ -512,6 +512,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         group.userData.furnitureSelection = next;
         applyFurnitureAppearanceToGroup(THREE, group, item);
         syncPropPanelAppearance(group, item);
+        updateBottomUI();
         if (historyReady) schedulePushHistory();
       });
       matBtns.appendChild(b);
@@ -539,6 +540,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           group.userData.furnitureSelection = next;
           applyFurnitureAppearanceToGroup(THREE, group, item);
           syncPropPanelAppearance(group, item);
+          updateBottomUI();
           if (historyReady) schedulePushHistory();
         });
         texBtns.appendChild(b);
@@ -573,6 +575,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           group.userData.furnitureSelection = next;
           applyFurnitureAppearanceToGroup(THREE, group, item);
           syncPropPanelAppearance(group, item);
+          updateBottomUI();
           if (historyReady) schedulePushHistory();
         });
         sw.appendChild(b);
@@ -1462,19 +1465,30 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   // ── 底部实时预算 & 空间利用率 ──────────────────────────────────────
+  /** 单件：条目 `price` + 当前 SKU `markup`（有材质配置时） */
+  function getFurnitureLinePrice(item, group) {
+    const base = Number(item?.price ?? 0);
+    if (!item || base <= 0) return 0;
+    if (!hasFurnitureMaterialConfig(item)) return base;
+    const sel = normalizeFurnitureSelection(item, group?.userData?.furnitureSelection);
+    const det = resolveFurnitureSelectionDetail(item, sel);
+    const m = det.skuMarkup != null ? det.skuMarkup : 0;
+    return base + (Number.isFinite(m) ? m : 0);
+  }
+
   function updateBottomUI() {
     const priceEl   = document.getElementById("bottomUiPrice");
     const pctEl     = document.getElementById("bottomUiRatePercent");
     const levelEl   = document.getElementById("bottomUiRateLevel");
     if (!priceEl && !pctEl) return;
 
-    // 1. 家具总价
+    // 1. 家具总价（含 SKU 加价）
     let totalPrice = 0;
     let furnitureAreaCm2 = 0;
     furnitureRoot.children.forEach((g) => {
       if (!g.userData?.isFurniture) return;
       const item = byId.get(g.userData.modelType);
-      const price = Number(item?.price ?? 0);
+      const price = getFurnitureLinePrice(item, g);
       if (price > 0) totalPrice += price;
       // 用 footprint 矩形近似面积（hw/hh 单位 cm）
       const hw = g.userData.footprint?.hw ?? 0;
@@ -1518,6 +1532,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         levelEl.textContent = level;
       }
     }
+
+    refreshBomPopupIfOpen();
   }
 
   // ── 预算明细弹出窗 ────────────────────────────────────────────────
@@ -1526,27 +1542,36 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (arrow) arrow.textContent = open ? "▼" : "▲";
   }
 
-  function openBomPopup() {
-    const popup   = document.getElementById("bomPopup");
-    const list    = document.getElementById("bomPopupList");
-    const total   = document.getElementById("bomPopupTotal");
-    if (!popup || !list) return;
-
+  /** 重填 BOM 列表与合计（与底部总价口径一致：base + SKU markup） */
+  function fillBomPopupContent() {
+    const list = document.getElementById("bomPopupList");
+    const total = document.getElementById("bomPopupTotal");
+    if (!list) return 0;
     list.replaceChildren();
     let sum = 0;
 
-    // 按家具名称聚合（相同型号合计数量）
-    const tally = new Map(); // modelType → { name, price, count }
+    const tally = new Map(); // key → { name, line, count, skuName, markup, baseUnit }
     furnitureRoot.children.forEach((g) => {
       if (!g.userData?.isFurniture) return;
       const modelType = g.userData.modelType;
-      const item  = byId.get(modelType);
-      const name  = item ? getFurnitureDisplayName(item) : (modelType || "家具");
-      const price = Number(item?.price ?? 0);
-      if (tally.has(modelType)) {
-        tally.get(modelType).count += 1;
+      const item = byId.get(modelType);
+      const name = item ? getFurnitureDisplayName(item) : (modelType || "家具");
+      const line = getFurnitureLinePrice(item, g);
+      const baseUnit = Number(item?.price ?? 0);
+      let key = modelType;
+      let skuName = "";
+      let markup = 0;
+      if (item && hasFurnitureMaterialConfig(item)) {
+        const sel = normalizeFurnitureSelection(item, g.userData.furnitureSelection);
+        key = `${modelType}\0${sel?.skuId ? String(sel.skuId) : ""}`;
+        const det = resolveFurnitureSelectionDetail(item, sel);
+        skuName = String(det.skuName ?? "").trim();
+        markup = det.skuMarkup != null && Number.isFinite(det.skuMarkup) ? det.skuMarkup : 0;
+      }
+      if (tally.has(key)) {
+        tally.get(key).count += 1;
       } else {
-        tally.set(modelType, { name, price, count: 1 });
+        tally.set(key, { name, line, count: 1, skuName, markup, baseUnit });
       }
     });
 
@@ -1557,29 +1582,84 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       empty.style.color = "rgba(255,255,255,0.35)";
       empty.textContent = "暂无家具";
       list.appendChild(empty);
-    } else {
-      for (const { name, price, count } of tally.values()) {
-        const li = document.createElement("li");
-        li.className = "bom-popup__item";
-        const nameEl = document.createElement("span");
-        nameEl.className = "bom-popup__item-name";
-        nameEl.textContent = count > 1 ? `${name} ×${count}` : name;
-        const priceEl = document.createElement("span");
-        const subtotal = price * count;
-        sum += subtotal;
-        priceEl.className = "bom-popup__item-price";
-        priceEl.textContent = subtotal > 0
-          ? `¥${subtotal.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-          : "—";
-        li.appendChild(nameEl);
-        li.appendChild(priceEl);
-        list.appendChild(li);
+      if (total) total.textContent = "¥0.00";
+      return 0;
+    }
+
+    const fmtBomYuan = (n) =>
+      `¥${n.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    for (const { name, line, count, skuName, markup, baseUnit } of tally.values()) {
+      const li = document.createElement("li");
+      li.className = "bom-popup__item";
+      const label = skuName
+        ? count > 1
+          ? `${name}（${skuName}）×${count}`
+          : `${name}（${skuName}）`
+        : count > 1
+          ? `${name} ×${count}`
+          : name;
+      const subtotal = line * count;
+      sum += subtotal;
+      const baseTotal = (Number.isFinite(baseUnit) ? baseUnit : 0) * count;
+      const hasMk = Number.isFinite(markup) && markup !== 0;
+
+      const nameCol = document.createElement("div");
+      nameCol.className = "bom-popup__item-name";
+      const titleEl = document.createElement("div");
+      titleEl.className = "bom-popup__item-title";
+      titleEl.textContent = label;
+      nameCol.appendChild(titleEl);
+
+      const priceCol = document.createElement("div");
+      priceCol.className = "bom-popup__item-prices";
+
+      if (hasMk) {
+        const mkEl = document.createElement("div");
+        mkEl.className = "bom-popup__item-markup" + (markup < 0 ? " is-negative" : "");
+        const mkTotal = markup * count;
+        mkEl.textContent =
+          count <= 1
+            ? `加价 ${formatSkuMarkupLabel(markup)}`
+            : `加价 ${formatSkuMarkupLabel(markup)}/件，合计 ${formatSkuMarkupLabel(mkTotal)}`;
+        nameCol.appendChild(mkEl);
+
+        const strike = document.createElement("span");
+        strike.className = "bom-popup__item-price bom-popup__item-price--strike";
+        strike.textContent = baseTotal > 0 ? fmtBomYuan(baseTotal) : "—";
+        const finalEl = document.createElement("span");
+        finalEl.className = "bom-popup__item-price bom-popup__item-price--final";
+        finalEl.textContent = subtotal > 0 ? fmtBomYuan(subtotal) : "—";
+        priceCol.appendChild(strike);
+        priceCol.appendChild(finalEl);
+      } else {
+        const p = document.createElement("span");
+        p.className = "bom-popup__item-price";
+        p.textContent = subtotal > 0 ? fmtBomYuan(subtotal) : "—";
+        priceCol.appendChild(p);
       }
+
+      li.appendChild(nameCol);
+      li.appendChild(priceCol);
+      list.appendChild(li);
     }
 
     if (total) {
       total.textContent = `¥${sum.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
+    return sum;
+  }
+
+  function refreshBomPopupIfOpen() {
+    const popup = document.getElementById("bomPopup");
+    if (!popup || popup.hidden) return;
+    fillBomPopupContent();
+  }
+
+  function openBomPopup() {
+    const popup = document.getElementById("bomPopup");
+    if (!popup) return;
+    fillBomPopupContent();
     popup.hidden = false;
     setBomArrow(true);
   }

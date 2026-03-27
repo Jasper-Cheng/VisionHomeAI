@@ -1087,7 +1087,7 @@ a.avatar:hover {
   transform: translateX(-50%);
   bottom: calc(14px + 64px + 4px); /* bottom-ui 高度之上 */
   z-index: 50;
-  width: 280px;
+  width: min(360px, calc(100vw - 32px));
   max-height: 320px;
   display: flex;
   flex-direction: column;
@@ -1141,25 +1141,68 @@ a.avatar:hover {
 .bom-popup__item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 5px 14px;
   font-size: 12px;
   color: rgba(200,200,220,0.85);
-  gap: 8px;
+  gap: 10px;
 }
 .bom-popup__item:hover { background: rgba(255,255,255,0.05); }
 
 .bom-popup__item-name {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bom-popup__item-prices {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 4px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.bom-popup__item-title {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.4;
+  color: rgba(200, 200, 220, 0.88);
+}
+
+.bom-popup__item-markup {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: rgba(252, 211, 77, 0.88);
+  font-variant-numeric: tabular-nums;
+}
+
+.bom-popup__item-markup.is-negative {
+  color: rgba(134, 239, 172, 0.82);
 }
 
 .bom-popup__item-price {
-  color: rgba(180, 200, 255, 0.9);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  color: rgba(180, 200, 255, 0.9);
+}
+
+.bom-popup__item-price--strike {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  opacity: 0.5;
+  color: rgba(160, 170, 200, 0.65);
+}
+
+.bom-popup__item-price--final {
+  font-weight: 700;
+  color: rgba(200, 215, 255, 0.98);
 }
 
 .bom-popup__footer {
