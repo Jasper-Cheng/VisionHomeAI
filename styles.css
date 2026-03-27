@@ -1463,68 +1463,38 @@ a.avatar:hover {
   border-color: rgba(109, 92, 255, 0.5);
 }
 
-.prop-scale-row {
+/* 家具尺寸（只读，cm） */
+.prop-dim-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 10px;
-  padding: 8px 0;
+  margin-top: 10px;
+  margin-bottom: 2px;
 }
 
-.prop-scale-label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.78);
+.prop-dim-item {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.prop-dim-label {
+  display: block;
+  font-size: 10px;
   font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
 }
 
-/* Toggle switch */
-.prop-toggle {
-  position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 22px;
-  flex-shrink: 0;
-}
-
-.prop-toggle-input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.prop-toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #2a2a2a;
-  border-radius: 999px;
-  transition: 0.2s;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.prop-toggle-slider::before {
-  content: "";
-  position: absolute;
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 50%;
-  transition: 0.2s;
-}
-
-.prop-toggle-input:checked + .prop-toggle-slider {
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
-  border-color: rgba(109, 92, 255, 0.6);
-}
-
-.prop-toggle-input:checked + .prop-toggle-slider::before {
-  transform: translateX(18px);
-  background: #fff;
+.prop-dim-value {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: rgba(235, 233, 255, 0.92);
 }
 
 /* Section titles */
@@ -1661,40 +1631,6 @@ a.avatar:hover {
 .prop-color-custom svg {
   width: 14px;
   height: 14px;
-}
-
-/* Advanced settings rows */
-.prop-setting-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #2a2a2a;
-  margin-bottom: 8px;
-}
-
-.prop-setting-row:last-child {
-  margin-bottom: 0;
-}
-
-.prop-setting-icon {
-  width: 18px;
-  height: 18px;
-  color: rgba(255, 255, 255, 0.6);
-  flex-shrink: 0;
-}
-
-.prop-setting-icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-.prop-setting-text {
-  flex: 1 1 auto;
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
 }
 
 /* 与右侧属性面板一致：absolute 叠在左侧，不占 flex 宽度，中间编辑区宽度不随库面板显隐变化 */

@@ -77,6 +77,24 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
   const propInputX = propertiesPanel?.querySelector('input[data-prop="x"]');
   const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
   const propInputRotY = propertiesPanel?.querySelector('input[data-prop="rotY"]');
+  const propDimW = document.getElementById("propDimW");
+  const propDimD = document.getElementById("propDimD");
+  const propDimH = document.getElementById("propDimH");
+
+  function syncPropPanelDimsFromItem(item) {
+    const dash = "—";
+    if (!propDimW && !propDimD && !propDimH) return;
+    if (!item) {
+      if (propDimW) propDimW.textContent = dash;
+      if (propDimD) propDimD.textContent = dash;
+      if (propDimH) propDimH.textContent = dash;
+      return;
+    }
+    const fp = extractFurnitureFootprintCm(item);
+    if (propDimW) propDimW.textContent = String(Math.round(fp.w));
+    if (propDimD) propDimD.textContent = String(Math.round(fp.d));
+    if (propDimH) propDimH.textContent = String(Math.round(fp.h));
+  }
 
   /** 与 index.html 中 SVG viewBox 一致：3000×3000 cm，1 用户单位 = 1 cm；GRID = 1 即 1cm 吸附 */
   const VIEW_W = 3000;
@@ -138,24 +156,28 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
    */
   function extractFurnitureFootprintCm(item) {
     if (!item || typeof item !== "object") {
-      return { w: 100, d: 100, hw: 50, hh: 50 };
+      return { w: 100, d: 100, h: 80, hw: 50, hh: 50 };
     }
     const raw = item.size;
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-      return { w: 100, d: 100, hw: 50, hh: 50 };
+      return { w: 100, d: 100, h: 80, hw: 50, hh: 50 };
     }
     let w = Number(raw.widthCm ?? raw.width ?? raw.w);
     let d = Number(raw.depthCm ?? raw.depth ?? raw.d ?? raw.length);
+    let h = Number(raw.heightCm ?? raw.height ?? raw.h);
     if (!Number.isFinite(w) || w <= 0) w = 210;
     if (!Number.isFinite(d) || d <= 0) d = 90;
+    if (!Number.isFinite(h) || h <= 0) h = 80;
     /* 误把 mm 写进标为 cm 的字段时常见 ≥600 */
     if (w > 600 || d > 600) {
       w /= 10;
       d /= 10;
     }
+    if (h > 600) h /= 10;
     return {
       w,
       d,
+      h,
       hw: Math.max(8, w / 2),
       hh: Math.max(8, d / 2),
     };
@@ -796,6 +818,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (!g || !furnitureLayer.contains(g)) {
       propertiesPanel.classList.remove("is-visible");
       if (propertiesName) propertiesName.textContent = "未选择";
+      syncPropPanelDimsFromItem(null);
       return;
     }
     propertiesPanel.classList.add("is-visible");
@@ -804,6 +827,7 @@ export function initSvgEditor(catalog = { items: [], byId: new Map() }) {
     if (propertiesName) {
       propertiesName.textContent = item ? getFurnitureDisplayName(item) : getFootprint(id).longName || id || "家具";
     }
+    syncPropPanelDimsFromItem(item);
     const pos = parseTranslate(g);
     const rot = getRotation(g);
     if (propInputX) propInputX.value = String(Math.round(pos.x));

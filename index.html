@@ -383,12 +383,20 @@
                 <input class="prop-input" type="text" data-prop="rotY" value="0" />
               </div>
             </div>
-            <div class="prop-scale-row">
-              <span class="prop-scale-label">等比例缩放</span>
-              <label class="prop-toggle">
-                <input type="checkbox" class="prop-toggle-input" data-prop="uniformScale" checked />
-                <span class="prop-toggle-slider"></span>
-              </label>
+
+            <div class="prop-dim-row" aria-label="家具尺寸（厘米）">
+              <div class="prop-dim-item">
+                <span class="prop-dim-label">宽</span>
+                <span class="prop-dim-value" id="propDimW">—</span>
+              </div>
+              <div class="prop-dim-item">
+                <span class="prop-dim-label">深</span>
+                <span class="prop-dim-value" id="propDimD">—</span>
+              </div>
+              <div class="prop-dim-item">
+                <span class="prop-dim-label">高</span>
+                <span class="prop-dim-value" id="propDimH">—</span>
+              </div>
             </div>
 
             <div class="prop-divider"></div>
@@ -425,30 +433,6 @@
                 <button class="prop-color-custom" type="button" aria-label="自定义颜色">
                   <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a9 9 0 0 1 9 9c0 .46-.04-.92-.1-1.36a5.389 5.389 0 0 0-1.01 2.27 6.998 6.998 0 0 1 2.09 2.04C21.95 12.28 22 12.64 22 13a9 9 0 0 1-9 9c-.36 0-.72-.05-1.07-.14a6.998 6.998 0 0 1-2.04-2.09 5.391 5.391 0 0 0-2.27 1.01c.44.06.9.1 1.36.1a9 9 0 0 0 9-9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 0 1.01-2.27 6.998 6.998 0 0 1-2.09-2.04C20.05 11.72 20 11.36 20 11a9 9 0 0 0-9-9c-.36 0-.72.05-1.07.14a6.998 6.998 0 0 1 2.04 2.09 5.391 5.391 0 0 0 2.27-1.01C11.54 3.04 12 3 12.46 3H12Z"/></svg>
                 </button>
-              </div>
-            </div>
-
-            <div class="prop-section">
-              <div class="prop-section-title">高级设置</div>
-              <div class="prop-setting-row">
-                <span class="prop-setting-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path fill="currentColor" d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.95-3.05 7.44-7 7.93v2.02c5.05-.5 9-4.76 9-9.95 0-5.19-3.95-9.45-9-9.95ZM11 19.93v-2.02c-3.95-.49-7-3.84-7-7.93 0-3.95 3.05-7.44 7-7.93V2.05c-5.05.5-9 4.76-9 9.95 0 5.19 3.95 9.45 9 9.95Zm2-14.88V4.05c2.7.12 5.16 1.39 6.86 3.48l-1.43 1.43A7.93 7.93 0 0 0 13 5.05Zm-4.43 4.43 1.43-1.43A7.93 7.93 0 0 0 11 18.95v1.99c2.7-.12 5.16-1.39 6.86-3.48l-1.43-1.43A5.97 5.97 0 0 1 13 17.05Z"/></svg>
-                </span>
-                <span class="prop-setting-text">开启磁吸吸附</span>
-                <label class="prop-toggle">
-                  <input type="checkbox" class="prop-toggle-input" data-prop="magneticSnap" checked />
-                  <span class="prop-toggle-slider"></span>
-                </label>
-              </div>
-              <div class="prop-setting-row">
-                <span class="prop-setting-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm-1 17.93c-3.95-.49-7-3.84-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93Zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39Z"/></svg>
-                </span>
-                <span class="prop-setting-text">穿模检测反馈</span>
-                <label class="prop-toggle">
-                  <input type="checkbox" class="prop-toggle-input" data-prop="collisionFeedback" />
-                  <span class="prop-toggle-slider"></span>
-                </label>
               </div>
             </div>
           </div>

@@ -411,6 +411,24 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const propInputX = propertiesPanel?.querySelector('input[data-prop="x"]');
   const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
   const propInputRotY = propertiesPanel?.querySelector('input[data-prop="rotY"]');
+  const propDimW = document.getElementById("propDimW");
+  const propDimD = document.getElementById("propDimD");
+  const propDimH = document.getElementById("propDimH");
+
+  function syncPropPanelDimsFromItem(item) {
+    const dash = "—";
+    if (!propDimW && !propDimD && !propDimH) return;
+    if (!item) {
+      if (propDimW) propDimW.textContent = dash;
+      if (propDimD) propDimD.textContent = dash;
+      if (propDimH) propDimH.textContent = dash;
+      return;
+    }
+    const fp = extractFurnitureFootprintCm(item);
+    if (propDimW) propDimW.textContent = String(Math.round(fp.w));
+    if (propDimD) propDimD.textContent = String(Math.round(fp.d));
+    if (propDimH) propDimH.textContent = String(Math.round(fp.h));
+  }
   const undoBtn = document.querySelector("[data-svg-undo]");
   const redoBtn = document.querySelector("[data-svg-redo]");
   const gridToggleBtn = document.getElementById("svgGridToggleBtn");
@@ -1574,11 +1592,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!group || !group.userData?.isFurniture) {
       propertiesPanel.classList.remove("is-visible");
       if (propertiesName) propertiesName.textContent = "未选择";
+      syncPropPanelDimsFromItem(null);
       return;
     }
     propertiesPanel.classList.add("is-visible");
     const item = byId.get(group.userData.modelType);
     if (propertiesName) propertiesName.textContent = item ? getFurnitureDisplayName(item) : group.userData.modelType || "家具";
+    syncPropPanelDimsFromItem(item);
     const cm = sceneXZToCm(group.position.x, group.position.z);
     const rot = group.userData.rotDeg ?? 0;
     if (propInputX) propInputX.value = String(Math.round(cm.x));

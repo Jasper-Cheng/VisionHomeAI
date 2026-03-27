@@ -60,6 +60,27 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
   const propInputX = propertiesPanel?.querySelector('input[data-prop="x"]');
   const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
   const propInputRotY = propertiesPanel?.querySelector('input[data-prop="rotY"]');
+  const propDimW = document.getElementById("propDimW");
+  const propDimD = document.getElementById("propDimD");
+  const propDimH = document.getElementById("propDimH");
+
+  function extractDimsFromCatalogItem(item) {
+    if (!item || typeof item !== "object") return { w: 100, d: 100, h: 80 };
+    const raw = item.size;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { w: 100, d: 100, h: 80 };
+    let w = Number(raw.widthCm ?? raw.width ?? raw.w);
+    let d = Number(raw.depthCm ?? raw.depth ?? raw.d ?? raw.length);
+    let h = Number(raw.heightCm ?? raw.height ?? raw.h);
+    if (!Number.isFinite(w) || w <= 0) w = 210;
+    if (!Number.isFinite(d) || d <= 0) d = 90;
+    if (!Number.isFinite(h) || h <= 0) h = 80;
+    if (w > 600 || d > 600) {
+      w /= 10;
+      d /= 10;
+    }
+    if (h > 600) h /= 10;
+    return { w, d, h };
+  }
 
   /** 与家具 JSON 的 category 一致，用于 3D 占位几何与编码前缀 */
   const MODEL_PREFIX = {
@@ -431,6 +452,10 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
     state.selectedRoot = null;
     if (propertiesPanel) propertiesPanel.classList.remove("is-visible");
     if (propertiesName) propertiesName.textContent = "未选择";
+    const dash = "—";
+    if (propDimW) propDimW.textContent = dash;
+    if (propDimD) propDimD.textContent = dash;
+    if (propDimH) propDimH.textContent = dash;
   };
 
   const updatePropertiesFromRoot = (root) => {
@@ -442,6 +467,22 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
     if (propInputX) propInputX.value = p.x.toFixed(2);
     if (propInputZ) propInputZ.value = p.z.toFixed(2);
     if (propInputRotY) propInputRotY.value = deg.toFixed(2);
+
+    const byId = catalog?.byId instanceof Map ? catalog.byId : new Map();
+    const item = byId.get(root.userData.modelType);
+    if (propDimW || propDimD || propDimH) {
+      if (item) {
+        const fp = extractDimsFromCatalogItem(item);
+        if (propDimW) propDimW.textContent = String(Math.round(fp.w));
+        if (propDimD) propDimD.textContent = String(Math.round(fp.d));
+        if (propDimH) propDimH.textContent = String(Math.round(fp.h));
+      } else {
+        const dash = "—";
+        if (propDimW) propDimW.textContent = dash;
+        if (propDimD) propDimD.textContent = dash;
+        if (propDimH) propDimH.textContent = dash;
+      }
+    }
   };
 
   const applyPropertiesToRoot = (root) => {
