@@ -1673,16 +1673,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   document.getElementById("bottomUiBudgetTrigger")?.addEventListener("click", (e) => {
     e.stopPropagation();
     const popup = document.getElementById("bomPopup");
-    popup?.hidden ? openBomPopup() : closeBomPopup();
+    if (popup?.hidden) openBomPopup();
   });
   document.getElementById("bomPopupClose")?.addEventListener("click", closeBomPopup);
-  document.addEventListener("click", (e) => {
-    const popup = document.getElementById("bomPopup");
-    const trigger = document.getElementById("bottomUiBudgetTrigger");
-    if (!popup?.hidden && !popup.contains(e.target) && e.target !== trigger && !trigger?.contains(e.target)) {
-      closeBomPopup();
-    }
-  });
 
   function updateFurnitureFloorVisibility() {
     const hasFloor = Boolean(activeFloorId);
