@@ -243,6 +243,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   scene.add(dir.target);
   scene.add(dir);
 
+  /** 方向光阴影开关（与工具栏「光影」同步） */
+  let shadowsEnabled = true;
+
   const floorplanRoot = new THREE.Group();
   scene.add(floorplanRoot);
   const furnitureRoot = new THREE.Group();
@@ -260,6 +263,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /** 将方向光正交阴影范围收紧到户型+家具包围盒（光照空间），避免 ±80m 浪费 texel 导致边缘锯齿 */
   function fitDirectionalShadowFrustum() {
+    if (!shadowsEnabled) return;
     shadowSceneBbox.makeEmpty();
     if (floorplanRoot.children.length) shadowSceneBbox.expandByObject(floorplanRoot);
     if (furnitureRoot.children.length) {
@@ -991,6 +995,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (btn) {
       btn.classList.toggle("is-active", wallSnapEnabled);
       btn.setAttribute("aria-pressed", String(wallSnapEnabled));
+    }
+  }
+
+  function setShadowsEnabled(v) {
+    shadowsEnabled = Boolean(v);
+    renderer.shadowMap.enabled = shadowsEnabled;
+    dir.castShadow = shadowsEnabled;
+    const btn = document.getElementById("svgShadowToggleBtn");
+    if (btn) {
+      btn.classList.toggle("is-active", shadowsEnabled);
+      btn.setAttribute("aria-pressed", String(shadowsEnabled));
     }
   }
 
@@ -2389,9 +2404,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorToggleWallSnap = () => setWallSnapEnabled(!wallSnapEnabled);
   window.svgEditorSetWallSnapEnabled = setWallSnapEnabled;
   window.svgEditorGetWallSnapEnabled = () => wallSnapEnabled;
+  window.svgEditorToggleShadows = () => setShadowsEnabled(!shadowsEnabled);
+  window.svgEditorSetShadowsEnabled = setShadowsEnabled;
+  window.svgEditorGetShadowsEnabled = () => shadowsEnabled;
 
   document.getElementById("svgDimToggleBtn")?.addEventListener("click", () => setDimensionsVisible(!showDimensions));
   document.getElementById("svgWallSnapToggleBtn")?.addEventListener("click", () => setWallSnapEnabled(!wallSnapEnabled));
+  document.getElementById("svgShadowToggleBtn")?.addEventListener("click", () => setShadowsEnabled(!shadowsEnabled));
   document.getElementById("svgNameToggleBtn")?.addEventListener("click", () => setNamesVisible(!showNames));
   window.svgEditorGetCurrentFloorplanId = getCurrentFloorplanId;
   window.svgEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
