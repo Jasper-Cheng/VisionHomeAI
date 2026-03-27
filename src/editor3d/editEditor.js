@@ -804,6 +804,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     dSp.position.set(dX, LY + 0.15, 0);
     g.add(dSp);
 
+    // 高度标注（西侧，竖向，从地面到顶面）
+    const midZ = 0;
+    const vX = -hw - EXT;
+    g.add(makeDimLine([new THREE.Vector3(vX, 0, midZ), new THREE.Vector3(vX, fh, midZ)]));
+    g.add(makeDimLine([new THREE.Vector3(-hw, 0, midZ), new THREE.Vector3(vX - TK, 0, midZ)], 0x5599ee, 0.05, 0.04));
+    g.add(makeDimLine([new THREE.Vector3(-hw, fh, midZ), new THREE.Vector3(vX - TK, fh, midZ)], 0x5599ee, 0.05, 0.04));
+    g.add(makeDimLine([new THREE.Vector3(vX - TK, 0, midZ), new THREE.Vector3(vX + TK, 0, midZ)]));
+    g.add(makeDimLine([new THREE.Vector3(vX - TK, fh, midZ), new THREE.Vector3(vX + TK, fh, midZ)]));
+    const hSp = makeDimSprite(fmtDimCm(fp.h), { fontSize: 18, pxPerM: 140 });
+    hSp.position.set(vX, fh / 2 + 0.15, midZ);
+    g.add(hSp);
+
     return g;
   }
 
