@@ -1146,7 +1146,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function ensureFloorLevelControls() {
-    if (!canvasWrap || floorLevelDock) return;
+    const slot = document.getElementById("svgEditorSlot");
+    if (!slot || floorLevelDock) return;
     const dock = document.createElement("div");
     dock.className = "svg-floor-level-dock";
     dock.hidden = true;
@@ -1158,7 +1159,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     floorLevelDock = dock;
     floorLevelRow = row;
     dock.appendChild(row);
-    canvasWrap.appendChild(dock);
+    // 挂在 slot 上、属性面板之后，z-index 可高于 .properties-panel，避免被遮挡
+    slot.appendChild(dock);
     setFloorLevelsVisible();
   }
 

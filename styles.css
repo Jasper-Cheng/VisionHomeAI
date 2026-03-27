@@ -477,6 +477,8 @@ a.avatar:hover {
 
 /* 编辑模式：SVG 户型编辑区（吃掉左右栏之间的剩余宽度并撑满高度） */
 .svg-editor-slot {
+  position: relative;
+  z-index: 0;
   flex: 1 1 0%;
   min-width: 0;
   width: 100%;
@@ -712,7 +714,8 @@ a.avatar:hover {
   bottom: 12px;
   top: auto;
   transform: none;
-  z-index: 8;
+  /* 高于 .properties-panel(6)，且挂到 .svg-editor-slot 内，避免被属性面板盖住 */
+  z-index: 22;
   width: min(22vw, 140px);
   padding: 0;
   border: 0;
@@ -721,6 +724,11 @@ a.avatar:hover {
   backdrop-filter: none;
   box-shadow: none;
   pointer-events: auto;
+}
+
+/* 属性面板打开时：停靠在画布右下角（面板左侧），不叠在面板内容区上 */
+.svg-editor-slot:has(#propertiesPanel.is-visible) .svg-floor-level-dock {
+  right: calc(var(--side-panel-width, 320px) + 12px);
 }
 
 .svg-floor-level-row {
