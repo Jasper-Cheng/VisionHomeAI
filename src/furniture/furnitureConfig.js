@@ -279,7 +279,8 @@ export function applyFurnitureAppearanceToGroup(THREE, group, item) {
     if (!o.isMesh || !o.material) return;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     mats.forEach((m) => {
-      if (m.color) m.color.copy(c);
+      /* 有 albedo 贴图的 GLB 不覆盖 color，避免冲掉纹理色调 */
+      if (m.color && !m.map) m.color.copy(c);
       const mp = det.materialParams;
       if (mp && typeof mp === "object") {
         if (Number.isFinite(mp.roughness)) m.roughness = mp.roughness;

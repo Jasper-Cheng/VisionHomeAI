@@ -12,6 +12,8 @@ import {
   normalizeFurnitureSelection,
   resolveFurnitureSelectionDetail,
 } from "../furniture/furnitureConfig.js";
+import { GLTFLoader } from "../../assets/vendor/GLTFLoader.js";
+import { resolveModelUrl } from "../furniture/furnitureManager.js";
 
 const VIEW_W = 3000;
 const VIEW_H = 3000;
@@ -156,6 +158,34 @@ function extractFurnitureFootprintCm(item) {
   if (h > 600) h /= 10;
   return { w, d, h, hw: Math.max(8, w / 2), hh: Math.max(8, d / 2) };
 }
+
+/**
+ * 将 GLTF 场景缩放到目标尺寸（米）并落底：底面 y=0，水平居中。
+ * width→X，height→Y，depth→Z（与 BoxGeometry(w,h,d) 一致）
+ */
+function fitGltfToFootprint(root, widthM, heightM, depthM) {
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(root);
+  if (!box.isEmpty()) {
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    if (size.x > 1e-6 && size.y > 1e-6 && size.z > 1e-6) {
+      const sx = widthM / size.x;
+      const sy = heightM / size.y;
+      const sz = depthM / size.z;
+      root.scale.setScalar(Math.min(sx, sy, sz));
+      root.updateMatrixWorld(true);
+    }
+  }
+  const box2 = new THREE.Box3().setFromObject(root);
+  if (box2.isEmpty()) return;
+  const cx = (box2.min.x + box2.max.x) / 2;
+  const cz = (box2.min.z + box2.max.z) / 2;
+  root.position.x -= cx;
+  root.position.z -= cz;
+  root.position.y -= box2.min.y;
+}
+
 function rotateYLocal(x, z, deg) {
   const rad = (deg * Math.PI) / 180;
   const c = Math.cos(rad), s = Math.sin(rad);
@@ -686,12 +716,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (activeFloorPickMeshes[i].userData.__furnitureRoot === group) activeFloorPickMeshes.splice(i, 1);
     }
   }
+  function disposeMaterialMaps(material) {
+    if (!material || typeof material !== "object") return;
+    for (const key of Object.keys(material)) {
+      const v = material[key];
+      if (v && typeof v === "object" && v.isTexture) v.dispose?.();
+    }
+  }
   function disposeObject3D(obj) {
     obj.traverse((o) => {
       if (o.geometry) o.geometry.dispose?.();
       if (o.material) {
         const mats = Array.isArray(o.material) ? o.material : [o.material];
-        mats.forEach((m) => m.dispose?.());
+        mats.forEach((m) => {
+          disposeMaterialMaps(m);
+          m.dispose?.();
+        });
       }
     });
   }
@@ -1401,20 +1441,46 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (historyReady && !isRestoring) pushHistorySnapshot();
   }
 
-  function createFurnitureMesh(furnitureId) {
+  async function createFurnitureMesh(furnitureId) {
     const item = byId.get(furnitureId);
     const fp = extractFurnitureFootprintCm(item);
     const w = fp.w / 100, d = fp.d / 100, h = fp.h / 100;
+    const g = new THREE.Group();
+    g.userData.modelType = furnitureId;
+    const modelPath = item?.model != null ? String(item.model).trim() : "";
+    if (modelPath) {
+      try {
+        const loader = new GLTFLoader();
+        const gltf = await loader.loadAsync(resolveModelUrl(modelPath));
+        const root = gltf.scene;
+        fitGltfToFootprint(root, w, h, d);
+        root.traverse((o) => {
+          if (o.isMesh) {
+            o.castShadow = true;
+            o.receiveShadow = false;
+          }
+        });
+        g.add(root);
+        if (hasFurnitureMaterialConfig(item)) {
+          g.userData.furnitureSelection = normalizeFurnitureSelection(item, null);
+          applyFurnitureAppearanceToGroup(THREE, g, item);
+        }
+        return g;
+      } catch (err) {
+        console.warn("[VisionHome] 家具模型加载失败:", furnitureId, err);
+      }
+    }
     const geo = new THREE.BoxGeometry(w, h, d);
     const mat = stdMat(0x8c7cff);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
-    // 不参与接收阴影：避免盒体顶面/侧面出现 shadow acne 条纹（花花的感觉）
     mesh.receiveShadow = false;
     mesh.position.y = h / 2;
-    const g = new THREE.Group();
-    g.userData.modelType = furnitureId;
     g.add(mesh);
+    if (hasFurnitureMaterialConfig(item)) {
+      g.userData.furnitureSelection = normalizeFurnitureSelection(item, null);
+      applyFurnitureAppearanceToGroup(THREE, g, item);
+    }
     return g;
   }
 
@@ -1433,11 +1499,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     group.rotation.y = (-rotDeg * Math.PI) / 180;
   }
 
-  function appendFurnitureItem(modelId, xCm, yCm, rotationDeg = 0, floorId = null, opts = {}) {
+  async function appendFurnitureItem(modelId, xCm, yCm, rotationDeg = 0, floorId = null, opts = {}) {
     if (!byId.has(modelId)) return null;
     const item = byId.get(modelId);
     const fp = extractFurnitureFootprintCm(item);
-    const group = createFurnitureMesh(modelId);
+    const group = await createFurnitureMesh(modelId);
     group.userData.isFurniture = true;
     group.userData.footprint = { hw: fp.hw, hh: fp.hh };
     group.userData.floorId = String(floorId ?? getActiveFloorIdForFurniture()).trim() || "floor1";
@@ -1445,16 +1511,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (rot < 0) rot += 360;
     group.userData.rotDeg = rot;
     setFurnitureFromLayoutCm(group, xCm, yCm, rot, opts);
-    if (hasFurnitureMaterialConfig(item)) {
-      group.userData.furnitureSelection = normalizeFurnitureSelection(item, null);
-      applyFurnitureAppearanceToGroup(THREE, group, item);
-    }
     furnitureRoot.add(group);
     registerFurnitureMeshes(group);
     return group;
   }
 
-  function rebuildFromLayout(layout) {
+  async function rebuildFromLayout(layout) {
     furnitureRoot.children.slice().forEach((ch) => {
       if (ch.userData?.isFurniture) {
         unregisterFurnitureGroup(ch);
@@ -1462,8 +1524,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         disposeObject3D(ch);
       }
     });
-    for (const item of layout) {
-      appendFurnitureItem(item.model, item.x, item.y, item.rotation ?? 0, item.floorId ?? null, { wallSnap: false });
+    for (const row of layout) {
+      await appendFurnitureItem(row.model, row.x, row.y, row.rotation ?? 0, row.floorId ?? null, { wallSnap: false });
     }
     updateFurnitureFloorVisibility();
     updateBottomUI();
@@ -1759,7 +1821,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return null;
   }
 
-  function applyHistorySnapshotState(state) {
+  async function applyHistorySnapshotState(state) {
     if (!state) return;
     if (state.floorPlanId !== undefined) {
       if (state.floorPlanId) {
@@ -1770,8 +1832,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } else clearFloorplan();
     }
     const furn = Array.isArray(state.furniture) ? state.furniture : [];
-    isRestoring = true;
-    try { rebuildFromLayout(furn); } finally { isRestoring = false; }
+    await rebuildFromLayout(furn);
   }
 
   function pushHistorySnapshot() {
@@ -1808,28 +1869,32 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (redoBtn) redoBtn.disabled = true;
   }
 
-  function applyHistoryIndex(i) {
+  async function applyHistoryIndex(i) {
     let state;
     try { state = normalizeHistorySnapshot(JSON.parse(history[i])); } catch { state = null; }
     if (!state) return;
     isRestoring = true;
-    try { applyHistorySnapshotState(state); } finally { isRestoring = false; }
+    try {
+      await applyHistorySnapshotState(state);
+    } finally {
+      isRestoring = false;
+    }
     selectFurniture(null);
     if (undoBtn) undoBtn.disabled = historyIndex <= 0;
     if (redoBtn) redoBtn.disabled = historyIndex >= history.length - 1;
     emitLayoutChanged();
   }
 
-  function undo() {
+  async function undo() {
     if (historyIndex <= 0) return;
     historyIndex--;
-    applyHistoryIndex(historyIndex);
+    await applyHistoryIndex(historyIndex);
   }
 
-  function redo() {
+  async function redo() {
     if (historyIndex >= history.length - 1) return;
     historyIndex++;
-    applyHistoryIndex(historyIndex);
+    await applyHistoryIndex(historyIndex);
   }
 
   function setGridVisible(visible) {
@@ -2018,8 +2083,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return { x: snap(cm.x), y: snap(cm.y) };
   }
 
-  function addFurniture(modelId, xCm = 0, yCm = 0) {
-    const g = appendFurnitureItem(modelId, xCm, yCm, 0, null, { wallSnap: wallSnapEnabled });
+  async function addFurniture(modelId, xCm = 0, yCm = 0) {
+    const g = await appendFurnitureItem(modelId, xCm, yCm, 0, null, { wallSnap: wallSnapEnabled });
     if (g) selectFurniture(g);
     updateFurnitureFloorVisibility();
     updateBottomUI();
@@ -2206,8 +2271,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     updateFurnitureFloorVisibility();
     syncOtherOpacityUi();
   });
-  undoBtn?.addEventListener("click", () => undo());
-  redoBtn?.addEventListener("click", () => redo());
+  undoBtn?.addEventListener("click", () => { void undo(); });
+  redoBtn?.addEventListener("click", () => { void redo(); });
   document.querySelectorAll("[data-svg-floorplan-clear]").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (currentFloorplanEntry) void tryClearCurrentFloorplanWithConfirm();
@@ -2304,7 +2369,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (needsConfirm && !(await requestReplaceFloorplanConfirm())) return false;
 
     if (needsConfirm) {
-      rebuildFromLayout([]);
+      await rebuildFromLayout([]);
       selectFurniture(null);
     }
     applyFloorplanEntryAtWorld(entry);
@@ -2378,7 +2443,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!floorSelectionEnabled) return;
     if (!byId.has(p.model)) return;
     const cm = intersectPlaneCm(x, y, getPlacementPlaneWorldY());
-    if (cm) addFurniture(p.model, cm.x, cm.y);
+    if (cm) void addFurniture(p.model, cm.x, cm.y).catch((err) => console.warn("[VisionHome] addFurniture:", err));
   }
 
   function onFpMove(e) {
@@ -2420,7 +2485,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           e.preventDefault();
           e.stopImmediatePropagation();
           const n = Math.floor(Math.random() * 5) - 2, m = Math.floor(Math.random() * 5) - 2;
-          addFurniture(card.dataset.model, n * GRID, m * GRID);
+          void addFurniture(card.dataset.model, n * GRID, m * GRID).catch((err) => console.warn("[VisionHome] addFurniture:", err));
           return;
         }
         if (!e.isPrimary) return;
@@ -2486,7 +2551,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       .filter((r) => r.model && Number.isFinite(r.x) && Number.isFinite(r.y));
   }
 
-  function applyFromDesignProject(project) {
+  async function applyFromDesignProject(project) {
     if (!project || typeof project !== "object") return;
     const se = project.svgEditor;
     const hasSvgEditor = se && typeof se === "object" && Number(se.version) === 1;
@@ -2521,7 +2586,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (entry) applyFloorplanEntryAtWorld(entry, undefined, undefined, { floorIndex: floorLevelIndex });
         else clearFloorplan();
       } else clearFloorplan();
-      rebuildFromLayout(layout);
+      await rebuildFromLayout(layout);
       if (hasSvgEditor && se.view && typeof se.view === "object") {
         const tx = Number(se.view.tx), ty = Number(se.view.ty), sc = Number(se.view.scale);
         if (Number.isFinite(tx) && Number.isFinite(ty) && Number.isFinite(sc)) setViewTransform(se.view);
@@ -2539,9 +2604,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     window.__selectFloorplanLibraryCardById?.(fpId || "");
   }
 
-  function applyExternalLayout(layout, options = {}) {
+  async function applyExternalLayout(layout, options = {}) {
     isRestoring = true;
-    try { rebuildFromLayout(Array.isArray(layout) ? layout : []); } finally { isRestoring = false; }
+    try {
+      await rebuildFromLayout(Array.isArray(layout) ? layout : []);
+    } finally {
+      isRestoring = false;
+    }
     selectFurniture(null);
     initHistory();
     historyReady = true;
@@ -2567,7 +2636,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return true;
   }
 
-  function restoreEditorSession(payload) {
+  async function restoreEditorSession(payload) {
     function applyFloorplanByPayload() {
       const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
       const floorLevelIndex = Math.max(0, Math.trunc(Number(payload.floorLevelIndex) || 0));
@@ -2607,7 +2676,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (idx < 0 || idx >= entries.length) {
         isRestoring = true;
         try { applyFloorplanByPayload(); } finally { isRestoring = false; }
-        applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
+        await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
         return;
       }
       historyReady = false;
@@ -2617,12 +2686,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       try {
         const state = normalizeHistorySnapshot(JSON.parse(history[historyIndex]));
         if (!state) throw new Error("bad");
-        applyHistorySnapshotState(state);
+        await applyHistorySnapshotState(state);
       } catch {
         historyReady = true;
         isRestoring = true;
         try { applyFloorplanByPayload(); } finally { isRestoring = false; }
-        applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
+        await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
         return;
       }
       isRestoring = false;
@@ -2636,17 +2705,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     } else {
       isRestoring = true;
       try { applyFloorplanByPayload(); } finally { isRestoring = false; }
-      applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
+      await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
     }
   }
 
   window.addEventListener("visionhome:design-select", (e) => {
     const project = e.detail?.project;
-    if (project) applyFromDesignProject(project);
+    if (project) void applyFromDesignProject(project);
   });
   window.addEventListener("visionhome:design-new", () => {
     clearFloorplan();
-    applyExternalLayout([]);
+    void applyExternalLayout([]);
   });
 
   function animate() {

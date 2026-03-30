@@ -95,7 +95,7 @@ function tryRestoreEditSession() {
     window.__activeDesignProject = des.project ?? null;
   }
 
-  window.svgEditorRestoreSession(data);
+  void window.svgEditorRestoreSession(data).catch((err) => console.warn("[VisionHome] restore session:", err));
 
   window.dispatchEvent(new CustomEvent("visionhome:design-metadata-updated"));
 
