@@ -14,6 +14,7 @@ import {
   resolveFurnitureSelectionDetail,
 } from "../furniture/furnitureConfig.js";
 import { GLTFLoader } from "../../assets/vendor/GLTFLoader.js";
+import { RoomEnvironment } from "../../assets/vendor/RoomEnvironment.js";
 import { resolveModelUrl } from "../furniture/furnitureManager.js";
 
 const VIEW_W = 3000;
@@ -268,6 +269,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
+
+  /** IBL：室内环境贴图，提升 MeshStandard / PBR 漫反射与高光填充，减轻“发灰发黑” */
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  const roomEnvironment = new RoomEnvironment(renderer);
+  const envRt = pmremGenerator.fromScene(roomEnvironment, 0.04);
+  roomEnvironment.dispose();
+  scene.environment = envRt.texture;
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
