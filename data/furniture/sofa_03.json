@@ -1,0 +1,81 @@
+{
+  "id": "sofa_03",
+  "name": "现代布艺沙发（2K）",
+  "category": "sofa",
+  "model": "assets/models/sofa_03_2k.glb",
+  "thumbnail": "assets/thumbnails/sofa_03.png",
+  "size": {
+    "width": 220.0,
+    "depth": 94.0,
+    "height": 85.0
+  },
+  "polygon": [
+    [-110, -47],
+    [110, -47],
+    [110, 47],
+    [-110, 47]
+  ],
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "price": 4580,
+  "tags": [
+    "PBR 贴图",
+    "高精度",
+    "客厅"
+  ],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "study"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 5.0
+  },
+  "config": {
+    "materials": [
+      {
+        "id": "fabric",
+        "name": "布艺",
+        "material": {
+          "roughness": 0.85,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "pbr_2k",
+            "name": "2K PBR",
+            "texture": {
+              "roughness": "assets/textures/sofa_03_rough_2k.jpg",
+              "normal": "assets/textures/sofa_03_nor_gl_2k.exr",
+              "opacity": "assets/textures/sofa_03_opacity_2k.png"
+            },
+            "colors": [
+              {
+                "id": "default",
+                "name": "默认",
+                "hex": "#8B7B6B",
+                "assets": {
+                  "albedo": "assets/textures/sofa_03_diff_2k.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "skus": [
+    {
+      "id": "SOF-03-PBR-DEF",
+      "name": "布艺 2K 默认",
+      "materialId": "fabric",
+      "textureId": "pbr_2k",
+      "colorId": "default"
+    }
+  ],
+  "selection": {
+    "skuId": "SOF-03-PBR-DEF"
+  }
+}
