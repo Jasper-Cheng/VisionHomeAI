@@ -2183,6 +2183,11 @@ a.avatar:hover {
   -webkit-user-drag: none;
 }
 
+/* 多层：下→上为一层→更高层（正视叠层），每层独立缩放于横带内 */
+.asset-thumb .floorplan-thumb-svg--multi {
+  shape-rendering: geometricPrecision;
+}
+
 .asset-thumb .thumb-skeleton {
   position: absolute;
   inset: 0;
