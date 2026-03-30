@@ -275,7 +275,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /** IBL：室内环境贴图，提升 MeshStandard / PBR 漫反射与高光填充，减轻“发灰发黑” */
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
   const roomEnvironment = new RoomEnvironment(renderer);
-  const envRt = pmremGenerator.fromScene(roomEnvironment, 0.06);
+  /* fromScene 第二参为模糊半径（弧度）；过大时 PMREM 内部高斯核采样数会超过 MAX_SAMPLES(20) 并 console.warn */
+  const envRt = pmremGenerator.fromScene(roomEnvironment, 0.04);
   roomEnvironment.dispose();
   scene.environment = envRt.texture;
 
