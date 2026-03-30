@@ -53,9 +53,25 @@
             },
             "colors": [
               {
-                "id": "default",
-                "name": "默认",
+                "id": "oat",
+                "name": "燕麦驼",
                 "hex": "#8B7B6B",
+                "assets": {
+                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg"
+                }
+              },
+              {
+                "id": "slate",
+                "name": "石墨灰",
+                "hex": "#5A5754",
+                "assets": {
+                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg"
+                }
+              },
+              {
+                "id": "ivory",
+                "name": "象牙白",
+                "hex": "#D4CFC4",
                 "assets": {
                   "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg"
                 }
@@ -71,9 +87,25 @@
             },
             "colors": [
               {
-                "id": "default",
-                "name": "默认",
+                "id": "cocoa",
+                "name": "深咖色",
                 "hex": "#2a221c",
+                "assets": {
+                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png"
+                }
+              },
+              {
+                "id": "caramel",
+                "name": "焦糖棕",
+                "hex": "#6B4423",
+                "assets": {
+                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png"
+                }
+              },
+              {
+                "id": "midnight",
+                "name": "午夜黑",
+                "hex": "#141210",
                 "assets": {
                   "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png"
                 }
@@ -86,21 +118,52 @@
   },
   "skus": [
     {
-      "id": "SOF-03-DHH-DEF",
-      "name": "布艺 · 大提花布 · 默认",
+      "id": "SOF-03-DHH-OAT",
+      "name": "布艺 · 大提花布 · 燕麦驼",
       "materialId": "fabric",
       "textureId": "dahuahua",
-      "colorId": "default"
+      "colorId": "oat"
     },
     {
-      "id": "SOF-03-LEA-DEF",
-      "name": "布艺 · 皮革 · 默认",
+      "id": "SOF-03-DHH-SLA",
+      "name": "布艺 · 大提花布 · 石墨灰",
+      "materialId": "fabric",
+      "textureId": "dahuahua",
+      "colorId": "slate"
+    },
+    {
+      "id": "SOF-03-DHH-IVO",
+      "name": "布艺 · 大提花布 · 象牙白",
+      "materialId": "fabric",
+      "textureId": "dahuahua",
+      "colorId": "ivory",
+      "markup": 380
+    },
+    {
+      "id": "SOF-03-LEA-COC",
+      "name": "布艺 · 皮革 · 深咖色",
       "materialId": "fabric",
       "textureId": "leather",
-      "colorId": "default"
+      "colorId": "cocoa"
+    },
+    {
+      "id": "SOF-03-LEA-CAR",
+      "name": "布艺 · 皮革 · 焦糖棕",
+      "materialId": "fabric",
+      "textureId": "leather",
+      "colorId": "caramel",
+      "markup": 420
+    },
+    {
+      "id": "SOF-03-LEA-MID",
+      "name": "布艺 · 皮革 · 午夜黑",
+      "materialId": "fabric",
+      "textureId": "leather",
+      "colorId": "midnight",
+      "markup": 520
     }
   ],
   "selection": {
-    "skuId": "SOF-03-DHH-DEF"
+    "skuId": "SOF-03-DHH-OAT"
   }
 }
