@@ -48,7 +48,7 @@
             "name": "2K PBR",
             "texture": {
               "roughness": "assets/textures/sofa_03_rough_2k.jpg",
-              "normal": "assets/textures/sofa_03_nor_gl_2k.exr",
+              "normal": "assets/textures/sofa_03_nor_gl_2k.png",
               "opacity": "assets/textures/sofa_03_opacity_2k.png"
             },
             "colors": [

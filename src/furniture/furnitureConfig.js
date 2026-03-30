@@ -260,6 +260,100 @@ export function resolveTextureAssetUrl(pathFromRoot) {
 }
 
 /**
+ * GLB 载入后：用条目中的 albedo + roughness（及可选 normal）路径替换为 MeshStandardMaterial。
+ * diffuse：sRGB；roughness：线性数据；normal：NoColorSpace（切线空间法线，如 OpenGL / gl 朝向）。
+ * 各 mesh 使用贴图 clone，便于 dispose 时不互相踩引用。
+ * @returns {Promise<boolean>} 是否成功应用外部 PBR
+ */
+export async function applyFurnitureGltfPbrMaps(THREE, root, item) {
+  if (!root || !item || !hasFurnitureMaterialConfig(item)) return false;
+  const sel = normalizeFurnitureSelection(item, null);
+  if (!sel) return false;
+  const det = resolveFurnitureSelectionDetail(item, sel);
+  const albedoPath = det.color?.assets?.albedo;
+  const texLayer = det.texture?.texture;
+  const roughnessPath =
+    texLayer && typeof texLayer === "object" && texLayer.roughness != null
+      ? String(texLayer.roughness).trim()
+      : "";
+  const normalPath =
+    texLayer && typeof texLayer === "object" && texLayer.normal != null
+      ? String(texLayer.normal).trim()
+      : "";
+  if (!albedoPath || !roughnessPath) return false;
+
+  const loader = new THREE.TextureLoader();
+  const au = resolveTextureAssetUrl(albedoPath);
+  const ru = resolveTextureAssetUrl(roughnessPath);
+  let diffTex;
+  let roughTex;
+  let normalTex = null;
+  try {
+    diffTex = await loader.loadAsync(au);
+    roughTex = await loader.loadAsync(ru);
+  } catch (e) {
+    console.warn("[VisionHome] PBR 贴图加载失败:", e);
+    return false;
+  }
+
+  diffTex.colorSpace = THREE.SRGBColorSpace;
+  roughTex.colorSpace = THREE.LinearSRGBColorSpace;
+  diffTex.flipY = false;
+  roughTex.flipY = false;
+
+  if (normalPath) {
+    try {
+      normalTex = await loader.loadAsync(resolveTextureAssetUrl(normalPath));
+      normalTex.colorSpace = THREE.NoColorSpace;
+      normalTex.flipY = false;
+    } catch (e) {
+      console.warn("[VisionHome] normal 贴图加载失败:", e);
+    }
+  }
+
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    const old = o.material;
+    const list = Array.isArray(old) ? old : [old];
+    const next = list.map(() => {
+      const map = diffTex.clone();
+      const roughnessMap = roughTex.clone();
+      map.colorSpace = THREE.SRGBColorSpace;
+      roughnessMap.colorSpace = THREE.LinearSRGBColorSpace;
+      map.flipY = false;
+      roughnessMap.flipY = false;
+      return new THREE.MeshStandardMaterial({
+        map,
+        roughnessMap,
+        roughness: 1.0,
+        metalness: 0.0,
+        ...(normalTex
+          ? {
+              normalMap: normalTex.clone(),
+              normalScale: new THREE.Vector2(1, 1),
+            }
+          : {}),
+      });
+    });
+    list.forEach((m) => {
+      disposeSingleMaterialMaps(m);
+      m.dispose?.();
+    });
+    o.material = next.length === 1 ? next[0] : next;
+  });
+
+  return true;
+}
+
+function disposeSingleMaterialMaps(material) {
+  if (!material || typeof material !== "object") return;
+  for (const key of Object.keys(material)) {
+    const v = material[key];
+    if (v && typeof v === "object" && v.isTexture) v.dispose?.();
+  }
+}
+
+/**
  * @param {typeof import("three")} THREE
  * @param {import("three").Object3D} group
  * @param {object} item
@@ -283,8 +377,12 @@ export function applyFurnitureAppearanceToGroup(THREE, group, item) {
       if (m.color && !m.map) m.color.copy(c);
       const mp = det.materialParams;
       if (mp && typeof mp === "object") {
-        if (Number.isFinite(mp.roughness)) m.roughness = mp.roughness;
-        if (Number.isFinite(mp.metalness)) m.metalness = mp.metalness;
+        /* 已挂 roughnessMap 时由贴图主导，不覆盖 roughness（保持 1.0 配合贴图） */
+        const lockedPbr = m.map && m.roughnessMap;
+        if (!lockedPbr) {
+          if (Number.isFinite(mp.roughness)) m.roughness = mp.roughness;
+          if (Number.isFinite(mp.metalness)) m.metalness = mp.metalness;
+        }
       }
     });
   });

@@ -7,6 +7,7 @@ import { getFloorBBoxCm } from "../floorplan/floorplanSvg.js";
 import { getFurnitureDisplayName, getFurnitureTags } from "../furniture/furnitureManager.js";
 import {
   applyFurnitureAppearanceToGroup,
+  applyFurnitureGltfPbrMaps,
   formatSkuMarkupLabel,
   hasFurnitureMaterialConfig,
   normalizeFurnitureSelection,
@@ -1463,6 +1464,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         g.add(root);
         if (hasFurnitureMaterialConfig(item)) {
           g.userData.furnitureSelection = normalizeFurnitureSelection(item, null);
+          await applyFurnitureGltfPbrMaps(THREE, root, item);
           applyFurnitureAppearanceToGroup(THREE, g, item);
         }
         return g;
