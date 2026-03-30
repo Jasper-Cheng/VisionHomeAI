@@ -2,13 +2,6 @@
   "schemaVersion": "1.0",
   "source": "furnitureLibrary.json",
   "files": [
-    "sofa_001.json",
-    "sofa_03.json",
-    "table_001.json",
-    "bed_001.json",
-    "lamp_001.json",
-    "rug_001.json",
-    "tv_cabinet_001.json",
-    "plant_001.json"
+    "sofa_03.json"
   ]
 }

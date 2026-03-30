@@ -172,7 +172,7 @@ import {
 
   const catalog = window.__furnitureCatalog;
   const state = {
-    currentModel: catalog?.items?.[0]?.id || "sofa_001",
+    currentModel: catalog?.items?.[0]?.id || "sofa_03",
     dragging: false,
     mode: null, // "move"（家具仅从侧栏拖到 2D SVG，不在此场景从卡片置入 3D）
     draggedRoot: null,
@@ -255,7 +255,7 @@ import {
 
     // Recreate
     for (const obj of snap.objects || []) {
-      const root = createModel(obj.type); // furniture id，如 sofa_001
+      const root = createModel(obj.type); // furniture id，如 sofa_03
       root.userData.__id = obj.id;
       root.userData.modelCode = obj.code ?? null;
       root.position.set(obj.pos.x, obj.pos.y, obj.pos.z);
