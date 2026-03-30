@@ -1345,10 +1345,13 @@ a.avatar:hover {
   color: rgba(167, 243, 208, 0.98);
 }
 
-.viewer canvas {
+.viewer canvas,
+#threeEditorViewport canvas {
   width: 100% !important;
   height: 100% !important;
   display: block;
+  /* 与较高 devicePixelRatio 配合，避免被设为 crisp-edges 导致边缘发硬 */
+  image-rendering: auto;
 }
 
 .content-icons {

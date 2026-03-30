@@ -20,7 +20,11 @@ import {
   camera.position.set(7, 7, 9);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const PIXEL_RATIO_CAP = 2.5;
+  function applyRendererPixelRatio() {
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO_CAP));
+  }
+  applyRendererPixelRatio();
   container.appendChild(renderer.domElement);
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -658,6 +662,7 @@ import {
     const w = container.clientWidth;
     const h = container.clientHeight;
     if (w === 0 || h === 0) return;
+    applyRendererPixelRatio();
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h, false);

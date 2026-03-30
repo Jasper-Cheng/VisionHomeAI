@@ -225,7 +225,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 大场景深度精度更好，减轻近共面/阴影条纹带来的“花屏”感
     logarithmicDepthBuffer: true,
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  /** 户型/家具视图抗锯齿：MSAA + 较高 DPR 上限（过高会明显吃 GPU） */
+  const PIXEL_RATIO_CAP = 2.5;
+  function applyRendererPixelRatio() {
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO_CAP));
+  }
+  applyRendererPixelRatio();
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.02;
@@ -1922,6 +1927,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function resizeRenderer() {
     const w = container.clientWidth, h = container.clientHeight;
     if (w === 0 || h === 0) return;
+    applyRendererPixelRatio();
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h, false);
