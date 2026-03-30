@@ -1,0 +1,142 @@
+{
+  "id": "rug_001",
+  "name": "几何抽象地毯",
+  "category": "rug",
+  "model": "assets/models/rug_001.glb",
+  "thumbnail": "assets/thumbnails/rug_001.svg",
+  "size": {
+    "width": 200.0,
+    "depth": 140.0,
+    "height": 2.0
+  },
+  "polygon": [
+    [-100, -70],
+    [100, -70],
+    [100, 70],
+    [-100, 70]
+  ],
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "price": 1280,
+  "tags": [
+    "多尺寸",
+    "防滑底",
+    "多色可选"
+  ],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 5.0
+  },
+  "config": {
+    "materials": [
+      {
+        "id": "wool",
+        "name": "混纺羊毛",
+        "material": {
+          "roughness": 0.91,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "loop",
+            "name": "圈绒",
+            "texture": {},
+            "colors": [
+              {
+                "id": "beige",
+                "name": "燕麦米",
+                "hex": "#D4C4B0",
+                "assets": {
+                  "albedo": "assets/textures/rug_001/wool/loop/beige/color.jpg"
+                }
+              },
+              {
+                "id": "gray",
+                "name": "云雾灰",
+                "hex": "#9E9E9E",
+                "assets": {
+                  "albedo": "assets/textures/rug_001/wool/loop/gray/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "synthetic",
+        "name": "化纤易洁",
+        "material": {
+          "roughness": 0.835,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "cut",
+            "name": "割绒",
+            "texture": {},
+            "colors": [
+              {
+                "id": "navy",
+                "name": "藏蓝",
+                "hex": "#2C3E5C",
+                "assets": {
+                  "albedo": "assets/textures/rug_001/synthetic/cut/navy/color.jpg"
+                }
+              },
+              {
+                "id": "terracotta",
+                "name": "陶土",
+                "hex": "#B87D4A",
+                "assets": {
+                  "albedo": "assets/textures/rug_001/synthetic/cut/terracotta/color.jpg"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "skus": [
+    {
+      "id": "RUG-WOO-LOP-BEI",
+      "name": "羊毛圈绒燕麦米",
+      "materialId": "wool",
+      "textureId": "loop",
+      "colorId": "beige"
+    },
+    {
+      "id": "RUG-WOO-LOP-GRY",
+      "name": "羊毛圈绒云雾灰",
+      "materialId": "wool",
+      "textureId": "loop",
+      "colorId": "gray",
+      "markup": 180
+    },
+    {
+      "id": "RUG-SYN-CUT-NVY",
+      "name": "化纤割绒藏蓝",
+      "materialId": "synthetic",
+      "textureId": "cut",
+      "colorId": "navy",
+      "markup": -200
+    },
+    {
+      "id": "RUG-SYN-CUT-TER",
+      "name": "化纤割绒陶土",
+      "materialId": "synthetic",
+      "textureId": "cut",
+      "colorId": "terracotta",
+      "markup": -200
+    }
+  ],
+  "selection": {
+    "skuId": "RUG-WOO-LOP-BEI"
+  }
+}

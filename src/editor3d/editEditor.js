@@ -12,8 +12,6 @@ import {
   normalizeFurnitureSelection,
   resolveFurnitureSelectionDetail,
 } from "../furniture/furnitureConfig.js";
-import { resolveModelUrl } from "../furniture/furnitureManager.js";
-import { loadGlbModel } from "./loader.js";
 
 const VIEW_W = 3000;
 const VIEW_H = 3000;
@@ -1407,72 +1405,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const item = byId.get(furnitureId);
     const fp = extractFurnitureFootprintCm(item);
     const w = fp.w / 100, d = fp.d / 100, h = fp.h / 100;
-    const g = new THREE.Group();
-    g.userData.modelType = furnitureId;
-
-    const modelPath = item?.model != null ? String(item.model).trim() : "";
-    const useGlb = modelPath && /\.(glb|gltf)$/i.test(modelPath);
-
-    if (useGlb) {
-      const ph = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), stdMat(0x8c7cff));
-      ph.castShadow = true;
-      ph.receiveShadow = false;
-      ph.position.y = h / 2;
-      ph.userData.__furniturePlaceholder = true;
-      g.add(ph);
-      g.userData.glbPending = true;
-
-      const url = resolveModelUrl(modelPath);
-      loadGlbModel(url)
-        .then((gltf) => {
-          if (!g.parent || !gltf?.scene) return;
-          unregisterFurnitureGroup(g);
-          const phOld = g.children.find((c) => c.userData?.__furniturePlaceholder);
-          if (phOld) {
-            g.remove(phOld);
-            disposeObject3D(phOld);
-          }
-          const model = gltf.scene.clone(true);
-          model.traverse((o) => {
-            if (o.isMesh) {
-              o.castShadow = true;
-              o.receiveShadow = false;
-            }
-          });
-          const box = new THREE.Box3().setFromObject(model);
-          const size = box.getSize(new THREE.Vector3());
-          const s = Math.min(
-            w / Math.max(size.x, 1e-6),
-            d / Math.max(size.z, 1e-6),
-            h / Math.max(size.y, 1e-6),
-          );
-          model.scale.setScalar(s);
-          const b2 = new THREE.Box3().setFromObject(model);
-          const c = b2.getCenter(new THREE.Vector3());
-          model.position.set(-c.x, -b2.min.y, -c.z);
-          g.add(model);
-          g.userData.glbPending = false;
-          registerFurnitureMeshes(g);
-          if (hasFurnitureMaterialConfig(item)) {
-            if (!g.userData.furnitureSelection) {
-              g.userData.furnitureSelection = normalizeFurnitureSelection(item, null);
-            }
-            applyFurnitureAppearanceToGroup(THREE, g, item);
-          }
-        })
-        .catch((err) => {
-          console.warn("VisionHome: 家具 GLB 加载失败", furnitureId, url, err);
-          g.userData.glbPending = false;
-        });
-      return g;
-    }
-
     const geo = new THREE.BoxGeometry(w, h, d);
     const mat = stdMat(0x8c7cff);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
+    // 不参与接收阴影：避免盒体顶面/侧面出现 shadow acne 条纹（花花的感觉）
     mesh.receiveShadow = false;
     mesh.position.y = h / 2;
+    const g = new THREE.Group();
+    g.userData.modelType = furnitureId;
     g.add(mesh);
     return g;
   }
@@ -1504,7 +1445,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (rot < 0) rot += 360;
     group.userData.rotDeg = rot;
     setFurnitureFromLayoutCm(group, xCm, yCm, rot, opts);
-    if (hasFurnitureMaterialConfig(item) && !group.userData.glbPending) {
+    if (hasFurnitureMaterialConfig(item)) {
       group.userData.furnitureSelection = normalizeFurnitureSelection(item, null);
       applyFurnitureAppearanceToGroup(THREE, group, item);
     }
