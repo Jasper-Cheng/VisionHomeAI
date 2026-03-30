@@ -44,12 +44,12 @@
         },
         "textures": [
           {
-            "id": "pbr_2k",
-            "name": "2K PBR",
+            "id": "dahuahua",
+            "name": "大提花布",
             "texture": {
-              "roughness": "assets/textures/sofa_03/fabric/sofa_03_rough_2k.jpg",
-              "normal": "assets/textures/sofa_03/fabric/sofa_03_nor_gl_2k.png",
-              "opacity": "assets/textures/sofa_03/fabric/sofa_03_opacity_2k.png"
+              "roughness": "assets/textures/sofa_03/fabric/sofa_03_jacquard_rough.jpg",
+              "normal": "assets/textures/sofa_03/fabric/sofa_03_jacquard_normal.png",
+              "opacity": "assets/textures/sofa_03/fabric/sofa_03_jacquard_opacity.png"
             },
             "colors": [
               {
@@ -57,7 +57,7 @@
                 "name": "默认",
                 "hex": "#8B7B6B",
                 "assets": {
-                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_diff_2k.jpg"
+                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg"
                 }
               }
             ]
@@ -68,14 +68,14 @@
   },
   "skus": [
     {
-      "id": "SOF-03-PBR-DEF",
-      "name": "布艺 2K 默认",
+      "id": "SOF-03-DHH-DEF",
+      "name": "布艺 · 大提花布 · 默认",
       "materialId": "fabric",
-      "textureId": "pbr_2k",
+      "textureId": "dahuahua",
       "colorId": "default"
     }
   ],
   "selection": {
-    "skuId": "SOF-03-PBR-DEF"
+    "skuId": "SOF-03-DHH-DEF"
   }
 }
