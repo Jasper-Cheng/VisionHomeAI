@@ -1,0 +1,33 @@
+{
+  "id": "sofa_03",
+  "name": "沙发（4K）",
+  "category": "sofa",
+  "model": "assets/models/sofa_03_4k.glb",
+  "thumbnail": "assets/thumbnails/sofa_03.png",
+  "size": {
+    "width": 220.0,
+    "depth": 95.0,
+    "height": 85.0
+  },
+  "polygon": [
+    [-110, -47.5],
+    [110, -47.5],
+    [110, 47.5],
+    [-110, 47.5]
+  ],
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "price": 0,
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "study",
+      "bedroom"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 5.0
+  }
+}

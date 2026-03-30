@@ -11,7 +11,7 @@
   "furnitureInstances": [
     {
       "instanceId": "fi_1",
-      "furnitureId": "sofa_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor1",
       "rotationDeg": 0,
       "positionCm": [
@@ -21,7 +21,7 @@
     },
     {
       "instanceId": "fi_2",
-      "furnitureId": "sofa_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor1",
       "rotationDeg": 0,
       "positionCm": [
@@ -45,13 +45,13 @@
     },
     "furniture": [
       {
-        "model": "sofa_001",
+        "model": "sofa_03",
         "x": 130.0,
         "y": 130.0,
         "rotation": 0
       },
       {
-        "model": "sofa_001",
+        "model": "sofa_03",
         "x": 172.0,
         "y": 120.0,
         "rotation": 0

@@ -11,7 +11,7 @@
   "furnitureInstances": [
     {
       "instanceId": "fi_1",
-      "furnitureId": "sofa_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
         1323.9027777777778,
@@ -21,7 +21,7 @@
     },
     {
       "instanceId": "fi_2",
-      "furnitureId": "table_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
         1187.9490740740741,
@@ -31,7 +31,7 @@
     },
     {
       "instanceId": "fi_3",
-      "furnitureId": "sofa_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
         1852.9027777777778,
@@ -41,7 +41,7 @@
     },
     {
       "instanceId": "fi_4",
-      "furnitureId": "lamp_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
         1239.4837962962963,
@@ -51,7 +51,7 @@
     },
     {
       "instanceId": "fi_5",
-      "furnitureId": "bed_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
         1782.9166666666667,
@@ -61,7 +61,7 @@
     },
     {
       "instanceId": "fi_6",
-      "furnitureId": "rug_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
         1573.9074074074074,
@@ -71,7 +71,7 @@
     },
     {
       "instanceId": "fi_7",
-      "furnitureId": "tv_cabinet_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
         1474.9074074074074,
@@ -95,43 +95,43 @@
     },
     "furniture": [
       {
-        "model": "sofa_001",
+        "model": "sofa_03",
         "x": 1323.9027777777778,
         "y": 1289.9583333333333,
         "rotation": 0
       },
       {
-        "model": "table_001",
+        "model": "sofa_03",
         "x": 1187.9490740740741,
         "y": 1135.9722222222222,
         "rotation": 0
       },
       {
-        "model": "sofa_001",
+        "model": "sofa_03",
         "x": 1852.9027777777778,
         "y": 1394.9583333333333,
         "rotation": 0
       },
       {
-        "model": "lamp_001",
+        "model": "sofa_03",
         "x": 1239.4837962962963,
         "y": 1563.4837962962963,
         "rotation": 0
       },
       {
-        "model": "bed_001",
+        "model": "sofa_03",
         "x": 1782.9166666666667,
         "y": 1599.9074074074074,
         "rotation": 0
       },
       {
-        "model": "rug_001",
+        "model": "sofa_03",
         "x": 1573.9074074074074,
         "y": 1757.9351851851852,
         "rotation": 0
       },
       {
-        "model": "tv_cabinet_001",
+        "model": "sofa_03",
         "x": 1474.9074074074074,
         "y": 1142.9814814814815,
         "rotation": 0

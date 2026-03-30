@@ -11,7 +11,7 @@
   "furnitureInstances": [
     {
       "instanceId": "fi_1",
-      "furnitureId": "table_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor2",
       "positionCm": [
         1314,
@@ -21,7 +21,7 @@
     },
     {
       "instanceId": "fi_2",
-      "furnitureId": "sofa_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor3",
       "positionCm": [
         1109,
@@ -31,7 +31,7 @@
     },
     {
       "instanceId": "fi_3",
-      "furnitureId": "table_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor3",
       "positionCm": [
         1452,
@@ -41,7 +41,7 @@
     },
     {
       "instanceId": "fi_4",
-      "furnitureId": "sofa_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
         1437,
@@ -51,7 +51,7 @@
     },
     {
       "instanceId": "fi_5",
-      "furnitureId": "sofa_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
         1620,
@@ -61,7 +61,7 @@
     },
     {
       "instanceId": "fi_6",
-      "furnitureId": "bed_001",
+      "furnitureId": "sofa_03",
       "floorId": "floor2",
       "positionCm": [
         1332,
@@ -86,42 +86,42 @@
     },
     "furniture": [
       {
-        "model": "table_001",
+        "model": "sofa_03",
         "floorId": "floor2",
         "x": 1314,
         "y": 1042,
         "rotation": 0
       },
       {
-        "model": "sofa_001",
+        "model": "sofa_03",
         "floorId": "floor3",
         "x": 1109,
         "y": 1090,
         "rotation": 0
       },
       {
-        "model": "table_001",
+        "model": "sofa_03",
         "floorId": "floor3",
         "x": 1452,
         "y": 1047,
         "rotation": 0
       },
       {
-        "model": "sofa_001",
+        "model": "sofa_03",
         "floorId": "floor1",
         "x": 1437,
         "y": 1475,
         "rotation": 0
       },
       {
-        "model": "sofa_001",
+        "model": "sofa_03",
         "floorId": "floor1",
         "x": 1620,
         "y": 1073,
         "rotation": 0
       },
       {
-        "model": "bed_001",
+        "model": "sofa_03",
         "floorId": "floor2",
         "x": 1332,
         "y": 1659,

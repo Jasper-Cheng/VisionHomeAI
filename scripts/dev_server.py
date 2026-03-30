@@ -6,8 +6,8 @@ VisionHomeAI 本地开发：提供静态资源，并将「保存方案」POST �
   python3 scripts/dev_server.py
   PORT=3000 python3 scripts/dev_server.py
 
-浏览器访问 http://localhost:8080/index.html（默认端口 8080）。
-纯静态场景仍可使用：python3 -m http.server 8080（此时保存会回退为下载 JSON）。
+浏览器访问 http://127.0.0.1:8080/index.html（默认端口 8080；勿用 file://，否则 ES Module 无法加载 src/main.js）。
+纯静态场景仍可使用：须在仓库根目录执行 python3 -m http.server 8080（否则 /src/main.js 会 404；保存会回退为下载 JSON）。
 """
 from __future__ import annotations
 
@@ -19,7 +19,28 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 
 PORT = int(os.environ.get("PORT", "8080"))
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _find_repo_root() -> str:
+    """
+    项目根目录：含 src/main.js 与 index.html。
+    仅 dirname(__file__) 两级不可靠（脚本若放在仓库根目录会指到上一级，导致 /src/main.js 404）。
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    p = here
+    for _ in range(8):
+        main_js = os.path.join(p, "src", "main.js")
+        idx = os.path.join(p, "index.html")
+        if os.path.isfile(main_js) and os.path.isfile(idx):
+            return os.path.abspath(p)
+        parent = os.path.dirname(p)
+        if parent == p:
+            break
+        p = parent
+    return os.path.abspath(os.path.dirname(here))
+
+
+ROOT = _find_repo_root()
 DESIGN_DIR = os.path.join(ROOT, "data", "design")
 MANIFEST_PATH = os.path.join(DESIGN_DIR, "manifest.json")
 
@@ -35,6 +56,18 @@ def ensure_manifest() -> None:
 
 
 class DevHTTPRequestHandler(SimpleHTTPRequestHandler):
+    """静态根目录为 ROOT（绝对路径）；保证 .js 以 application/javascript 返回，便于 ES Module。"""
+
+    extensions_map = dict(SimpleHTTPRequestHandler.extensions_map)
+    extensions_map.update(
+        {
+            ".js": "application/javascript",
+            ".mjs": "application/javascript",
+            ".json": "application/json",
+            ".wasm": "application/wasm",
+        }
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=ROOT, **kwargs)
 
@@ -109,9 +142,27 @@ class DevHTTPRequestHandler(SimpleHTTPRequestHandler):
 
 
 def main() -> None:
+    main_js = os.path.join(ROOT, "src", "main.js")
+    if not os.path.isfile(main_js):
+        print(
+            f"错误：未找到 {main_js}\n"
+            f"当前解析的项目根目录为：{ROOT}\n"
+            f"请在包含 src/main.js 与 index.html 的仓库根目录运行：python3 scripts/dev_server.py",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     os.chdir(ROOT)
-    httpd = HTTPServer(("", PORT), DevHTTPRequestHandler)
-    print(f"VisionHomeAI dev server  http://localhost:{PORT}/  (root={ROOT})")
+    try:
+        httpd = HTTPServer(("", PORT), DevHTTPRequestHandler)
+    except OSError as e:
+        print(
+            f"无法绑定端口 {PORT}：{e}\n"
+            f"可换端口：PORT=8081 python3 scripts/dev_server.py",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    print(f"VisionHomeAI dev server  http://127.0.0.1:{PORT}/index.html  (root={ROOT})")
+    print("亦可用 http://localhost:{}/ （与上同机时等价）".format(PORT))
     print("保存方案 → data/design/  + 更新 manifest.json")
     try:
         httpd.serve_forever()
