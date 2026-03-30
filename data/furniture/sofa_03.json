@@ -61,6 +61,24 @@
                 }
               }
             ]
+          },
+          {
+            "id": "leather",
+            "name": "皮革",
+            "texture": {
+              "roughness": "assets/textures/sofa_03/fabric/sofa_03_leather_rough.png",
+              "normal": "assets/textures/sofa_03/fabric/sofa_03_leather_normal.png"
+            },
+            "colors": [
+              {
+                "id": "default",
+                "name": "默认",
+                "hex": "#2a221c",
+                "assets": {
+                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png"
+                }
+              }
+            ]
           }
         ]
       }
@@ -72,6 +90,13 @@
       "name": "布艺 · 大提花布 · 默认",
       "materialId": "fabric",
       "textureId": "dahuahua",
+      "colorId": "default"
+    },
+    {
+      "id": "SOF-03-LEA-DEF",
+      "name": "布艺 · 皮革 · 默认",
+      "materialId": "fabric",
+      "textureId": "leather",
       "colorId": "default"
     }
   ],

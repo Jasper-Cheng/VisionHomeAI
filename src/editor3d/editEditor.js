@@ -556,10 +556,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       b.addEventListener("click", () => {
         const next = normalizeFurnitureSelection(item, { materialId: id, textureId: "", colorId: "" });
         group.userData.furnitureSelection = next;
-        applyFurnitureAppearanceToGroup(THREE, group, item);
-        syncPropPanelAppearance(group, item);
-        updateBottomUI();
-        if (historyReady) schedulePushHistory();
+        void refreshFurnitureVisualForConfig(group, item).then(() => {
+          syncPropPanelAppearance(group, item);
+          updateBottomUI();
+          if (historyReady) schedulePushHistory();
+        });
       });
       matBtns.appendChild(b);
     }
@@ -584,10 +585,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         b.addEventListener("click", () => {
           const next = normalizeFurnitureSelection(item, { materialId: sel.materialId, textureId: tid, colorId: "" });
           group.userData.furnitureSelection = next;
-          applyFurnitureAppearanceToGroup(THREE, group, item);
-          syncPropPanelAppearance(group, item);
-          updateBottomUI();
-          if (historyReady) schedulePushHistory();
+          void refreshFurnitureVisualForConfig(group, item).then(() => {
+            syncPropPanelAppearance(group, item);
+            updateBottomUI();
+            if (historyReady) schedulePushHistory();
+          });
         });
         texBtns.appendChild(b);
       }
@@ -619,10 +621,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             colorId: cid,
           });
           group.userData.furnitureSelection = next;
-          applyFurnitureAppearanceToGroup(THREE, group, item);
-          syncPropPanelAppearance(group, item);
-          updateBottomUI();
-          if (historyReady) schedulePushHistory();
+          void refreshFurnitureVisualForConfig(group, item).then(() => {
+            syncPropPanelAppearance(group, item);
+            updateBottomUI();
+            if (historyReady) schedulePushHistory();
+          });
         });
         sw.appendChild(b);
       }
@@ -1483,9 +1486,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           }
         });
         g.add(root);
+        g.userData.gltfRoot = root;
         if (hasFurnitureMaterialConfig(item)) {
           g.userData.furnitureSelection = normalizeFurnitureSelection(item, null);
-          await applyFurnitureGltfPbrMaps(THREE, root, item);
+          await applyFurnitureGltfPbrMaps(THREE, root, item, g.userData.furnitureSelection);
           applyFurnitureAppearanceToGroup(THREE, g, item);
         }
         return g;
@@ -1505,6 +1509,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       applyFurnitureAppearanceToGroup(THREE, g, item);
     }
     return g;
+  }
+
+  /** 属性面板切换材质/面料/颜色后：重新套 PBR 贴图（GLB）并应用 hex/粗糙度 */
+  async function refreshFurnitureVisualForConfig(group, item) {
+    if (!group || !item || !hasFurnitureMaterialConfig(item)) return;
+    const root = group.userData.gltfRoot;
+    if (root) {
+      await applyFurnitureGltfPbrMaps(THREE, root, item, group.userData.furnitureSelection);
+    }
+    applyFurnitureAppearanceToGroup(THREE, group, item);
   }
 
   /** x,y 为以编辑区中心为原点的 cm（约 [-1500,1500]） */

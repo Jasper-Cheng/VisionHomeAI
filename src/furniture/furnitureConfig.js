@@ -262,12 +262,13 @@ export function resolveTextureAssetUrl(pathFromRoot) {
 /**
  * GLB 载入后：用条目中的 albedo + roughness（及可选 normal）路径替换为 MeshStandardMaterial。
  * diffuse：sRGB；roughness：线性数据；normal：NoColorSpace（切线空间法线，如 OpenGL / gl 朝向）。
- * 各 mesh 使用贴图 clone，便于 dispose 时不互相踩引用。
+ * 多 mesh 常共享同一材质实例：必须先全部换完新材质，再按材质引用去重后 dispose，否则会提前销毁共享贴图。
+ * @param {object | null | undefined} selectionOverride 与 `group.userData.furnitureSelection` 一致；不传则回落到条目 `selection`（勿用于已选实例）
  * @returns {Promise<boolean>} 是否成功应用外部 PBR
  */
-export async function applyFurnitureGltfPbrMaps(THREE, root, item) {
+export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOverride = null) {
   if (!root || !item || !hasFurnitureMaterialConfig(item)) return false;
-  const sel = normalizeFurnitureSelection(item, null);
+  const sel = normalizeFurnitureSelection(item, selectionOverride);
   if (!sel) return false;
   const det = resolveFurnitureSelectionDetail(item, sel);
   const albedoPath = det.color?.assets?.albedo;
@@ -311,35 +312,41 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item) {
     }
   }
 
+  const normalScale = new THREE.Vector2(1, 1);
+  /** @type {Set<import("three").Material>} */
+  const oldMaterials = new Set();
+  root.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    const list = Array.isArray(o.material) ? o.material : [o.material];
+    list.forEach((m) => {
+      if (m) oldMaterials.add(m);
+    });
+  });
+
   root.traverse((o) => {
     if (!o.isMesh) return;
     const old = o.material;
     const list = Array.isArray(old) ? old : [old];
-    const next = list.map(() => {
-      const map = diffTex.clone();
-      const roughnessMap = roughTex.clone();
-      map.colorSpace = THREE.SRGBColorSpace;
-      roughnessMap.colorSpace = THREE.LinearSRGBColorSpace;
-      map.flipY = false;
-      roughnessMap.flipY = false;
-      return new THREE.MeshStandardMaterial({
-        map,
-        roughnessMap,
+    const next = list.map(() =>
+      new THREE.MeshStandardMaterial({
+        map: diffTex,
+        roughnessMap: roughTex,
         roughness: 1.0,
         metalness: 0.0,
         ...(normalTex
           ? {
-              normalMap: normalTex.clone(),
-              normalScale: new THREE.Vector2(1, 1),
+              normalMap: normalTex,
+              normalScale,
             }
           : {}),
-      });
-    });
-    list.forEach((m) => {
-      disposeSingleMaterialMaps(m);
-      m.dispose?.();
-    });
+      }),
+    );
     o.material = next.length === 1 ? next[0] : next;
+  });
+
+  oldMaterials.forEach((m) => {
+    disposeSingleMaterialMaps(m);
+    m.dispose?.();
   });
 
   return true;
