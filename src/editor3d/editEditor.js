@@ -26,7 +26,8 @@ const FLOORPLAN_PAD = 80;
 const FLOORPLAN_SIZE_FACTOR = 0.38;
 const MAX_HISTORY = 80;
 /** 户型墙体与地面挤出块统一颜色 */
-const FLOORPLAN_SURFACE_COLOR = 0xedebe7;
+/** 户型墙/地/顶面：略偏灰，避免与 IBL 叠加后发白糊成一片 */
+const FLOORPLAN_SURFACE_COLOR = 0xc9c4be;
 
 /** 户型世界摆放等：画布 cm（左上角为 0）↔ 场景米 */
 function canvasCmToSceneXZ(xCm, yCm) {
@@ -265,7 +266,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   applyRendererPixelRatio();
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.02;
+  /* IBL 加入后整体偏亮，略压曝光（与下方填充光一起折中） */
+  renderer.toneMappingExposure = 0.88;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
@@ -273,7 +275,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /** IBL：室内环境贴图，提升 MeshStandard / PBR 漫反射与高光填充，减轻“发灰发黑” */
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
   const roomEnvironment = new RoomEnvironment(renderer);
-  const envRt = pmremGenerator.fromScene(roomEnvironment, 0.04);
+  const envRt = pmremGenerator.fromScene(roomEnvironment, 0.06);
   roomEnvironment.dispose();
   scene.environment = envRt.texture;
 
@@ -293,9 +295,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   grid.position.y = 0.001;
   scene.add(grid);
   // 略提高填充光，压低阴影对比，减轻地面/家具投影边缘的颗粒感
-  scene.add(new THREE.AmbientLight(0xffffff, 0.22));
-  scene.add(new THREE.HemisphereLight(0xdbeafe, 0x0b1220, 0.34));
-  const dir = new THREE.DirectionalLight(0xffffff, 1.05);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.18));
+  scene.add(new THREE.HemisphereLight(0xdbeafe, 0x0b1220, 0.28));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.95);
   dir.position.set(14, 24, 16);
   dir.castShadow = true;
   // 扩大阴影相机覆盖范围，避免多楼层/大户型时阴影被裁切
@@ -754,6 +756,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     });
   }
 
+  /** 仅用于户型挤出：压低环境反射，减轻「户型过亮、立面无层次」 */
+  function floorplanStdMat() {
+    return new THREE.MeshStandardMaterial({
+      color: FLOORPLAN_SURFACE_COLOR,
+      roughness: 0.92,
+      metalness: 0.0,
+      envMapIntensity: 0.35,
+      emissive: new THREE.Color(0x000000),
+    });
+  }
+
   function buildRoomMesh(room, cx, cy, s, floorOpacity) {
     const poly = room?.polygon;
     if (!Array.isArray(poly) || poly.length < 3) return null;
@@ -767,7 +780,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     shape.closePath();
     const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: false });
     geo.rotateX(-Math.PI / 2);
-    const mat = stdMat(FLOORPLAN_SURFACE_COLOR);
+    const mat = floorplanStdMat();
     const op = floorOpacity ?? 1;
     mat.opacity = op;
     // 选中层（op=1）走不透明渲染，避免透明排序导致的“缺失/闪烁”
@@ -798,7 +811,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const hM = defaultHeightCm / 100;
     const geo = new THREE.BoxGeometry(len, hM, thickM);
     const op = floorOpacity ?? 1;
-    const mat = stdMat(FLOORPLAN_SURFACE_COLOR);
+    const mat = floorplanStdMat();
     mat.opacity = op;
     // 选中层（op=1）走不透明渲染，避免透明排序导致的“缺失/闪烁”
     mat.transparent = op < 1;
@@ -825,7 +838,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const w = Math.max(0.08, (Math.max(1, b.maxX - b.minX) * s) / 100);
     const d = Math.max(0.08, (Math.max(1, b.maxY - b.minY) * s) / 100);
     const geo = new THREE.PlaneGeometry(w, d);
-    const mat = stdMat(FLOORPLAN_SURFACE_COLOR);
+    const mat = floorplanStdMat();
     const op = floorOpacity ?? 1;
     mat.opacity = op;
     mat.transparent = op < 1;
