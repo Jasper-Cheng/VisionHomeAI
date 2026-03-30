@@ -380,8 +380,11 @@ export function applyFurnitureAppearanceToGroup(THREE, group, item) {
     if (!o.isMesh || !o.material) return;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     mats.forEach((m) => {
-      /* 有 albedo 贴图的 GLB 不覆盖 color，避免冲掉纹理色调 */
-      if (m.color && !m.map) m.color.copy(c);
+      /* MeshStandard：漫反射为 map × color。多色共用同一张 albedo 时需用目录 hex 乘色才能区分色款 */
+      if (m.color) {
+        m.color.copy(c);
+        m.needsUpdate = true;
+      }
       const mp = det.materialParams;
       if (mp && typeof mp === "object") {
         /* 已挂 roughnessMap 时由贴图主导，不覆盖 roughness（保持 1.0 配合贴图） */

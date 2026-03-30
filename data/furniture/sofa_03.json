@@ -89,7 +89,7 @@
               {
                 "id": "cocoa",
                 "name": "深咖色",
-                "hex": "#2a221c",
+                "hex": "#7A4A30",
                 "assets": {
                   "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png"
                 }
@@ -97,7 +97,7 @@
               {
                 "id": "caramel",
                 "name": "焦糖棕",
-                "hex": "#6B4423",
+                "hex": "#D09050",
                 "assets": {
                   "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png"
                 }
@@ -105,7 +105,7 @@
               {
                 "id": "midnight",
                 "name": "午夜黑",
-                "hex": "#141210",
+                "hex": "#1E2030",
                 "assets": {
                   "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png"
                 }
