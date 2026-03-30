@@ -22,7 +22,7 @@ const FLOORPLAN_PAD = 80;
 const FLOORPLAN_SIZE_FACTOR = 0.38;
 const MAX_HISTORY = 80;
 /** 户型墙体与地面挤出块统一颜色 */
-const FLOORPLAN_SURFACE_COLOR = 0xe2e8f0;
+const FLOORPLAN_SURFACE_COLOR = 0xedebe7;
 
 /** 户型世界摆放等：画布 cm（左上角为 0）↔ 场景米 */
 function canvasCmToSceneXZ(xCm, yCm) {
