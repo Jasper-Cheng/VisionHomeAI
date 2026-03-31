@@ -47,9 +47,9 @@
             "id": "woven",
             "name": "平织布",
             "texture": {
-              "albedo": "assets/textures/sofa_01/fabric/sofa_01_woven_diff.jpg",
-              "roughness": "assets/textures/sofa_01/fabric/sofa_01_woven_rough.jpg",
-              "normal": "assets/textures/sofa_01/fabric/sofa_01_woven_normal.jpg"
+              "albedo": "assets/textures/sofa_01/fabric/woven/sofa_01_woven_diff.jpg",
+              "roughness": "assets/textures/sofa_01/fabric/woven/sofa_01_woven_rough.jpg",
+              "normal": "assets/textures/sofa_01/fabric/woven/sofa_01_woven_normal.jpg"
             },
             "colors": [
               {
