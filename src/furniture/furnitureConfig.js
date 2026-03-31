@@ -281,26 +281,31 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOver
     texLayer && typeof texLayer === "object" && texLayer.normal != null
       ? String(texLayer.normal).trim()
       : "";
-  if (!albedoPath || !roughnessPath) return false;
+  if (!albedoPath && !roughnessPath && !normalPath) return false;
 
   const loader = new THREE.TextureLoader();
-  const au = resolveTextureAssetUrl(albedoPath);
-  const ru = resolveTextureAssetUrl(roughnessPath);
-  let diffTex;
-  let roughTex;
+  const au = albedoPath ? resolveTextureAssetUrl(albedoPath) : "";
+  const ru = roughnessPath ? resolveTextureAssetUrl(roughnessPath) : "";
+  let diffTex = null;
+  let roughTex = null;
   let normalTex = null;
+
   try {
-    diffTex = await loader.loadAsync(au);
-    roughTex = await loader.loadAsync(ru);
+    if (au) diffTex = await loader.loadAsync(au);
+    if (ru) roughTex = await loader.loadAsync(ru);
   } catch (e) {
     console.warn("[VisionHome] PBR 贴图加载失败:", e);
     return false;
   }
 
-  diffTex.colorSpace = THREE.SRGBColorSpace;
-  roughTex.colorSpace = THREE.LinearSRGBColorSpace;
-  diffTex.flipY = false;
-  roughTex.flipY = false;
+  if (diffTex) {
+    diffTex.colorSpace = THREE.SRGBColorSpace;
+    diffTex.flipY = false;
+  }
+  if (roughTex) {
+    roughTex.colorSpace = THREE.LinearSRGBColorSpace;
+    roughTex.flipY = false;
+  }
 
   if (normalPath) {
     try {
@@ -313,6 +318,14 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOver
   }
 
   const normalScale = new THREE.Vector2(1, 1);
+  const roughness = Number.isFinite(det.materialParams?.roughness) ? det.materialParams.roughness : 1.0;
+  const metalness = Number.isFinite(det.materialParams?.metalness) ? det.materialParams.metalness : 0.0;
+  let color;
+  try {
+    color = new THREE.Color(det.hex);
+  } catch {
+    color = new THREE.Color(0x888888);
+  }
   /** @type {Set<import("three").Material>} */
   const oldMaterials = new Set();
   root.traverse((o) => {
@@ -329,17 +342,18 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOver
     const list = Array.isArray(old) ? old : [old];
     const next = list.map(() =>
       new THREE.MeshStandardMaterial({
-        map: diffTex,
-        roughnessMap: roughTex,
-        roughness: 1.0,
-        metalness: 0.0,
+        color,
+        ...(diffTex ? { map: diffTex } : {}),
+        ...(roughTex ? { roughnessMap: roughTex } : {}),
+        roughness,
+        metalness,
         ...(normalTex
           ? {
               normalMap: normalTex,
               normalScale,
             }
           : {}),
-      }),
+      })
     );
     o.material = next.length === 1 ? next[0] : next;
   });
@@ -387,12 +401,8 @@ export function applyFurnitureAppearanceToGroup(THREE, group, item) {
       }
       const mp = det.materialParams;
       if (mp && typeof mp === "object") {
-        /* 已挂 roughnessMap 时由贴图主导，不覆盖 roughness（保持 1.0 配合贴图） */
-        const lockedPbr = m.map && m.roughnessMap;
-        if (!lockedPbr) {
-          if (Number.isFinite(mp.roughness)) m.roughness = mp.roughness;
-          if (Number.isFinite(mp.metalness)) m.metalness = mp.metalness;
-        }
+        if (Number.isFinite(mp.roughness)) m.roughness = mp.roughness;
+        if (Number.isFinite(mp.metalness)) m.metalness = mp.metalness;
       }
     });
   });
