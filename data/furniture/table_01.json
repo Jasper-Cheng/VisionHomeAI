@@ -1,0 +1,105 @@
+{
+  "id": "table_01",
+  "name": "胡桃木桌几（2K）",
+  "category": "table",
+  "model": "assets/models/table_01_2k.glb",
+  "thumbnail": "assets/thumbnails/table_01.png",
+  "size": {
+    "width": 130.0,
+    "depth": 60.0,
+    "height": 72.0
+  },
+  "polygon": [
+    [-65, -30],
+    [65, -30],
+    [65, 30],
+    [-65, 30]
+  ],
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "price": 2680,
+  "tags": [
+    "PBR 贴图",
+    "实木",
+    "客厅"
+  ],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "dining",
+      "study"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 8.0
+  },
+  "config": {
+    "materials": [
+      {
+        "id": "wood",
+        "name": "木质",
+        "material": {
+          "roughness": 0.62,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "walnut",
+            "name": "胡桃木",
+            "texture": {
+              "albedo": "assets/textures/table/wood/table_01_walnut_diff.jpg",
+              "roughness": "assets/textures/table/wood/table_01_walnut_rough.jpg",
+              "normal": "assets/textures/table/wood/table_01_walnut_normal.jpg"
+            },
+            "colors": [
+              {
+                "id": "natural",
+                "name": "自然胡桃",
+                "hex": "#6B4A38"
+              },
+              {
+                "id": "honey",
+                "name": "蜂蜜棕",
+                "hex": "#8B5E3C"
+              },
+              {
+                "id": "smoke",
+                "name": "烟熏深褐",
+                "hex": "#3D2E26"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "skus": [
+    {
+      "id": "TBL-01-WN-NAT",
+      "name": "木质 · 胡桃木 · 自然胡桃",
+      "materialId": "wood",
+      "textureId": "walnut",
+      "colorId": "natural"
+    },
+    {
+      "id": "TBL-01-WN-HON",
+      "name": "木质 · 胡桃木 · 蜂蜜棕",
+      "materialId": "wood",
+      "textureId": "walnut",
+      "colorId": "honey",
+      "markup": 180
+    },
+    {
+      "id": "TBL-01-WN-SMK",
+      "name": "木质 · 胡桃木 · 烟熏深褐",
+      "materialId": "wood",
+      "textureId": "walnut",
+      "colorId": "smoke",
+      "markup": 260
+    }
+  ],
+  "selection": {
+    "skuId": "TBL-01-WN-NAT"
+  }
+}
