@@ -2,9 +2,9 @@
 """
 VisionHomeAI 本地开发：提供静态资源，并将「保存方案」POST 写入 assets/data/design/ 且更新 manifest.json。
 
-用法（项目根目录）：
-  python3 scripts/dev_server.py
-  PORT=3000 python3 scripts/dev_server.py
+用法（在项目根目录执行）：
+  python3 dev_server.py
+  PORT=3000 python3 dev_server.py
 
 浏览器访问 http://localhost:8080/index.html（默认端口 8080）。
 纯静态场景仍可使用：python3 -m http.server 8080（此时保存会回退为下载 JSON）。
@@ -19,7 +19,7 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 
 PORT = int(os.environ.get("PORT", "8080"))
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.abspath(__file__))
 DESIGN_DIR = os.path.join(ROOT, "assets", "data", "design")
 MANIFEST_PATH = os.path.join(DESIGN_DIR, "manifest.json")
 
