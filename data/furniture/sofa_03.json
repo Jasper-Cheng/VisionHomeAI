@@ -47,10 +47,10 @@
             "id": "dahuahua",
             "name": "大提花布",
             "texture": {
-              "albedo": "assets/textures/sofa_03/dahuahua/diff.jpg",
-              "roughness": "assets/textures/sofa_03/dahuahua/rough.jpg",
-              "normal": "assets/textures/sofa_03/dahuahua/normal.jpg",
-              "opacity": "assets/textures/sofa_03/dahuahua/opacity.png"
+              "albedo": "assets/textures/sofa_03/fabric/dahuahua/diff.jpg",
+              "roughness": "assets/textures/sofa_03/fabric/dahuahua/rough.jpg",
+              "normal": "assets/textures/sofa_03/fabric/dahuahua/normal.jpg",
+              "opacity": "assets/textures/sofa_03/fabric/dahuahua/opacity.png"
             },
             "colors": [
               {
