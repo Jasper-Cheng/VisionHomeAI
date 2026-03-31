@@ -5,7 +5,7 @@
   "description": "",
   "createdAt": "2026-03-27T00:26:58.180Z",
   "updatedAt": "2026-03-27T04:43:38.936Z",
-  "templateId": "apartment_2b1l",
+  "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
   "furnitureInstances": [
@@ -52,7 +52,7 @@
   ],
   "svgEditor": {
     "version": 1,
-    "floorPlanId": "apartment_2b1l",
+    "floorPlanId": "apt_2b1l_compact_01",
     "floorLevelIndex": 0,
     "view": {
       "tx": 0,

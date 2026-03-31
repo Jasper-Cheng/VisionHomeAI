@@ -1,0 +1,49 @@
+{
+  "id": "apt_2b1l_compact_01",
+  "project": {
+    "id": "vision_home_template_002",
+    "name": "两居紧凑型·动静分区",
+    "unit": "cm",
+    "version": 1.0,
+    "areaM2": 78.5
+  },
+  "floors": [
+    {
+      "id": "floor1",
+      "name": "一层",
+      "elevation": 0,
+      "height": 280,
+      "rooms": [
+        { "id": "r_living", "name": "客厅", "type": "living", "polygon": [[0,400],[520,400],[520,900],[0,900]] },
+        { "id": "r_bed1", "name": "主卧", "type": "bedroom", "polygon": [[0,0],[520,0],[520,400],[0,400]] },
+        { "id": "r_bed2", "name": "次卧", "type": "bedroom", "polygon": [[520,0],[900,0],[900,400],[520,400]] },
+        { "id": "r_kitchen", "name": "厨房", "type": "kitchen", "polygon": [[520,400],[900,400],[900,650],[520,650]] },
+        { "id": "r_bath", "name": "卫生间", "type": "bathroom", "polygon": [[520,650],[700,650],[700,900],[520,900]] },
+        { "id": "r_hall", "name": "走廊", "type": "circulation", "polygon": [[700,650],[900,650],[900,900],[700,900]] }
+      ],
+      "walls": [
+        { "id": "w_ext_top", "start": [0,0], "end": [900,0], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_ext_right", "start": [900,0], "end": [900,900], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_ext_bottom", "start": [900,900], "end": [0,900], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_ext_left", "start": [0,900], "end": [0,0], "thickness": 24, "height": 280, "type": "external" },
+
+        { "id": "w_mid_h", "start": [0,400], "end": [900,400], "thickness": 12, "height": 280, "type": "internal" },
+        { "id": "w_mid_v1", "start": [520,0], "end": [520,900], "thickness": 12, "height": 280, "type": "internal" },
+        { "id": "w_mid_v2", "start": [700,650], "end": [700,900], "thickness": 12, "height": 280, "type": "internal" },
+        { "id": "w_mid_h2", "start": [520,650], "end": [900,650], "thickness": 12, "height": 280, "type": "internal" }
+      ],
+      "doors": [
+        { "id": "d_main", "wallId": "w_ext_left", "pos": 750, "width": 100, "height": 220, "name": "入户门" },
+        { "id": "d_bed1", "wallId": "w_mid_h", "pos": 120, "width": 90, "height": 210 },
+        { "id": "d_bed2", "wallId": "w_mid_h", "pos": 650, "width": 90, "height": 210 },
+        { "id": "d_kitchen", "wallId": "w_mid_v1", "pos": 500, "width": 80, "height": 210 },
+        { "id": "d_bath", "wallId": "w_mid_h2", "pos": 50, "width": 80, "height": 210 }
+      ],
+      "windows": [
+        { "id": "win_living", "wallId": "w_ext_bottom", "pos": 100, "width": 300, "height": 220, "altitude": 20 },
+        { "id": "win_bed1", "wallId": "w_ext_top", "pos": 100, "width": 200, "height": 150, "altitude": 90 },
+        { "id": "win_bed2", "wallId": "w_ext_top", "pos": 600, "width": 200, "height": 150, "altitude": 90 }
+      ]
+    }
+  ]
+}

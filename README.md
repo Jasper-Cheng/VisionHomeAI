@@ -43,7 +43,7 @@ python3 dev_server.py
 
 ## 数据说明
 
-- **户型库**：`assets/data/floorplans/manifest.json` 的 **`files`**（如 `apartment_2b1l.json`）→ 与同目录下的 **`assets/data/floorplans/<文件>`** 一一对应。新增户型：在该目录增加 `<id>.json`，并把文件名写入 manifest。工程里 **`templateId`** 对应条目的 **`id`**。
+- **户型库**：`assets/data/floorplans/manifest.json` 的 **`files`**（如 `apt_2b1l_compact_01.json`）→ 与同目录下的 **`assets/data/floorplans/<文件>`** 一一对应。新增户型：在该目录增加 `<id>.json`，并把文件名写入 manifest。工程里 **`templateId`** 对应条目的 **`id`**。
 - **家具库**：`assets/data/furniture/manifest.json` + 同目录 **`assets/data/furniture/<id>.json`**；侧栏预览仅当该条配置了 **`thumbnail`** 时加载图片，否则为骨架占位；平面图中 `data-model` 为 **`id`**。
 - **设计文件（方案）**：`assets/data/design/*.json` 表示在**户型库某一模板**上的**家具编辑会话**，不重复存整套户型几何。
   - **`schemaVersion`**：`"1.1"` 起包含 **`svgEditor`**，用于点击侧栏方案时还原户型与家具布局。旧版 `"1.0"` 无 `svgEditor` 时，仍用 **`templateId` + `furnitureInstances`** 还原。
@@ -55,4 +55,4 @@ python3 dev_server.py
   - 侧栏列表：读 **`assets/data/design/manifest.json`** 的 **`files`**，再 `fetch assets/data/design/<文件名>`。
   - **`id`** 与 **`name`**：每条方案须有唯一 **`id`**；**文件名必须为 `<id>.json`**（与 manifest 中 `files` 一致）。**`name`** 为侧栏展示标题。
   - 兼容旧数据：若仅有 **`projectId`** 而无 **`id`**，加载逻辑会回退使用 `projectId`。
-- 示例：`assets/data/design/project_001.json`（`id`: `project_001`，绑定 `apartment_2b1l` + 示例沙发实例）。
+- 示例：`assets/data/design/project_001.json`（`id`: `project_001`，绑定 `apt_2b1l_compact_01` + 示例沙发实例）。
