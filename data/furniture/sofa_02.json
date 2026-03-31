@@ -1,0 +1,104 @@
+{
+  "id": "sofa_02",
+  "name": "现代皮革沙发（2K）",
+  "category": "sofa",
+  "model": "assets/models/sofa_02_2k.glb",
+  "thumbnail": "assets/thumbnails/sofa_02.png",
+  "size": {
+    "width": 215.0,
+    "depth": 92.0,
+    "height": 84.0
+  },
+  "polygon": [
+    [-107.5, -46],
+    [107.5, -46],
+    [107.5, 46],
+    [-107.5, 46]
+  ],
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "price": 5280,
+  "tags": [
+    "PBR 贴图",
+    "皮革",
+    "客厅"
+  ],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "study"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 5.0
+  },
+  "config": {
+    "materials": [
+      {
+        "id": "leather",
+        "name": "皮革",
+        "material": {
+          "roughness": 0.42,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "napa",
+            "name": "纳帕皮",
+            "texture": {
+              "albedo": "assets/textures/sofa_02/leather/sofa_02_leather_diff.png",
+              "roughness": "assets/textures/sofa_02/leather/sofa_02_leather_rough.png",
+              "normal": "assets/textures/sofa_02/leather/sofa_02_leather_normal.png"
+            },
+            "colors": [
+              {
+                "id": "burgundy",
+                "name": "勃艮第红",
+                "hex": "#6B2334"
+              },
+              {
+                "id": "olive",
+                "name": "橄榄绿",
+                "hex": "#3D5240"
+              },
+              {
+                "id": "pearl",
+                "name": "珍珠白",
+                "hex": "#E8E2D9"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "skus": [
+    {
+      "id": "SOF-02-NAP-BUR",
+      "name": "皮革 · 纳帕皮 · 勃艮第红",
+      "materialId": "leather",
+      "textureId": "napa",
+      "colorId": "burgundy"
+    },
+    {
+      "id": "SOF-02-NAP-OLV",
+      "name": "皮革 · 纳帕皮 · 橄榄绿",
+      "materialId": "leather",
+      "textureId": "napa",
+      "colorId": "olive",
+      "markup": 420
+    },
+    {
+      "id": "SOF-02-NAP-PRL",
+      "name": "皮革 · 纳帕皮 · 珍珠白",
+      "materialId": "leather",
+      "textureId": "napa",
+      "colorId": "pearl",
+      "markup": 520
+    }
+  ],
+  "selection": {
+    "skuId": "SOF-02-NAP-BUR"
+  }
+}

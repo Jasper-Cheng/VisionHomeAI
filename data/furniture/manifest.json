@@ -3,6 +3,7 @@
   "source": "furnitureLibrary.json",
   "files": [
     "sofa_01.json",
+    "sofa_02.json",
     "sofa_03.json"
   ]
 }
