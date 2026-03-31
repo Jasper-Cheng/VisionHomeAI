@@ -84,9 +84,9 @@
             "id": "leather",
             "name": "纳帕皮",
             "texture": {
-              "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png",
-              "roughness": "assets/textures/sofa_03/fabric/sofa_03_leather_rough.png",
-              "normal": "assets/textures/sofa_03/fabric/sofa_03_leather_normal.png"
+              "albedo": "assets/textures/sofa_03/leather/sofa_03_leather_diff.png",
+              "roughness": "assets/textures/sofa_03/leather/sofa_03_leather_rough.png",
+              "normal": "assets/textures/sofa_03/leather/sofa_03_leather_normal.png"
             },
             "colors": [
               {
