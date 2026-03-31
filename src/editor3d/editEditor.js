@@ -798,43 +798,143 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return mesh;
   }
 
-  function buildWallMesh(wall, cx, cy, s, defaultHeightCm, floorOpacity) {
+  const WALL_HOLE_EPS = 1e-5;
+
+  /**
+   * 门/窗：wallId + pos（cm，从墙 start 沿中心线到洞口中心）+ width/height（cm）
+   * 转为墙体局部 X（沿墙）× Y（向上）的矩形洞，用于从墙盒体中挖空（网格剖分）。
+   */
+  function collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, lenExtendedM, hM, s) {
+    const wid = String(wall?.id ?? "").trim();
+    if (!wid || !Number.isFinite(lenCm) || lenCm < 1e-6) return [];
+    const holes = [];
+    const halfExt = lenExtendedM / 2;
+    const halfLen = lenWorld / 2;
+
+    function pushHole(x0m, x1m, y0m, y1m) {
+      const x0 = Math.max(-halfExt, Math.min(x0m, x1m));
+      const x1 = Math.min(halfExt, Math.max(x0m, x1m));
+      const ya = Math.max(0, Math.min(y0m, y1m));
+      const yb = Math.min(hM, Math.max(y0m, y1m));
+      if (x1 - x0 < WALL_HOLE_EPS || yb - ya < WALL_HOLE_EPS) return;
+      holes.push({ x0, x1, y0: ya, y1: yb });
+    }
+
+    for (const d of floor?.doors || []) {
+      if (String(d?.wallId ?? "").trim() !== wid) continue;
+      const pos = Number(d.pos);
+      const wcm = Number(d.width);
+      const hcm = Number(d.height);
+      if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) continue;
+      const wM = (wcm * s) / 100;
+      const centerX = -halfLen + (pos / lenCm) * lenWorld;
+      pushHole(centerX - wM / 2, centerX + wM / 2, 0, Math.min((hcm * s) / 100, hM));
+    }
+    for (const win of floor?.windows || []) {
+      if (String(win?.wallId ?? "").trim() !== wid) continue;
+      const pos = Number(win.pos);
+      const wcm = Number(win.width);
+      const hcm = Number(win.height);
+      const altCm = Number(win.altitude ?? win.alt ?? win.sillHeightCm ?? 0);
+      if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) continue;
+      const wM = (wcm * s) / 100;
+      const centerX = -halfLen + (pos / lenCm) * lenWorld;
+      const y0 = (altCm * s) / 100;
+      const y1 = y0 + (hcm * s) / 100;
+      pushHole(centerX - wM / 2, centerX + wM / 2, y0, y1);
+    }
+    return holes;
+  }
+
+  function mergeSplitEdges(a, b, extra) {
+    const set = new Set([a, b]);
+    for (const x of extra) {
+      if (Number.isFinite(x)) set.add(x);
+    }
+    return [...set].sort((u, v) => u - v);
+  }
+
+  function cellFullyInsideAnyHole(xa, xb, ya, yb, holes) {
+    for (const h of holes) {
+      if (xa >= h.x0 - WALL_HOLE_EPS && xb <= h.x1 + WALL_HOLE_EPS && ya >= h.y0 - WALL_HOLE_EPS && yb <= h.y1 + WALL_HOLE_EPS) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function buildWallMesh(wall, floor, cx, cy, s, defaultHeightCm, floorOpacity) {
     if (!Array.isArray(wall?.start) || wall.start.length < 2 || !Array.isArray(wall?.end) || wall.end.length < 2) return null;
     const x1 = snap(Number(wall.start[0])), y1 = snap(Number(wall.start[1]));
     const x2 = snap(Number(wall.end[0])), y2 = snap(Number(wall.end[1]));
     const dx = (x2 - x1) * (s / 100), dz = (y2 - y1) * (s / 100);
-    const len = Math.hypot(dx, dz);
-    if (len < 1e-6) return null;
+    const lenWorld = Math.hypot(dx, dz);
+    if (lenWorld < 1e-9) return null;
+    const lenCm = Math.hypot(x2 - x1, y2 - y1);
     const th = Number(wall.thickness);
-    // wall.thickness 单位是 cm：先按户型缩放，再从 cm -> m（/100）
-    // 之前误用了 /10000，导致墙体厚度缩小 100 倍，看起来几乎没有厚度。
     const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
     const thickM = Math.max(0.03, thickMRaw);
-    // 墙高统一用楼层自身的 height（defaultHeightCm），确保墙顶恰好抵住上层地板，不留缝。
-    // wall.height 通常比 fl.height 小（如 300 vs 320），若用 wall.height 会出现层间缝隙。
     const hM = defaultHeightCm / 100;
-    // 中心线两端各沿墙方向延伸半个厚度，使 90° 转角处两堵墙盒体在转角重叠，消除外侧「缺角」
-    const lenExtended = len + thickM;
-    const geo = new THREE.BoxGeometry(lenExtended, hM, thickM);
-    const op = floorOpacity ?? 1;
-    const mat = floorplanStdMat();
-    mat.opacity = op;
-    // 选中层（op=1）走不透明渲染，避免透明排序导致的“缺失/闪烁”
-    mat.transparent = op < 1;
-    mat.depthWrite = op < 1 ? false : true;
-    // 墙体是封闭盒体，使用单面渲染可减少双面阴影引起的闪烁
-    mat.side = THREE.FrontSide;
-    const mesh = new THREE.Mesh(geo, mat);
-    // 必须投射阴影，否则阴影贴图中无墙体深度，家具影子会“穿过”墙落在另一侧地面
-    mesh.castShadow = true;
-    // 不参与接收：减轻墙顶/长墙面上 shadow acne 条纹
-    mesh.receiveShadow = false;
+    const lenExtended = lenWorld + thickM;
+    const holes = collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, lenExtended, hM, s);
+
     const mx = ((x1 + x2) / 2 - cx) * (s / 100);
     const mz = ((y1 + y2) / 2 - cy) * (s / 100);
-    mesh.position.set(mx, hM / 2, mz);
-    mesh.rotation.y = Math.atan2(dz, dx);
-    mesh.userData.floorplanPick = true;
-    return mesh;
+    const rotY = Math.atan2(dz, dx);
+    const op = floorOpacity ?? 1;
+
+    function makeWallMaterial() {
+      const mat = floorplanStdMat();
+      mat.opacity = op;
+      mat.transparent = op < 1;
+      mat.depthWrite = op < 1 ? false : true;
+      mat.side = THREE.FrontSide;
+      return mat;
+    }
+
+    if (!holes.length) {
+      const geo = new THREE.BoxGeometry(lenExtended, hM, thickM);
+      const mat = makeWallMaterial();
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = false;
+      mesh.position.set(mx, hM / 2, mz);
+      mesh.rotation.y = rotY;
+      mesh.userData.floorplanPick = true;
+      return mesh;
+    }
+
+    const xs = mergeSplitEdges(-lenExtended / 2, lenExtended / 2, holes.flatMap((h) => [h.x0, h.x1]));
+    const ys = mergeSplitEdges(0, hM, holes.flatMap((h) => [h.y0, h.y1]));
+    const group = new THREE.Group();
+    group.position.set(mx, 0, mz);
+    group.rotation.y = rotY;
+    group.userData.floorplanPick = true;
+
+    for (let i = 0; i < xs.length - 1; i++) {
+      const xa = xs[i];
+      const xb = xs[i + 1];
+      if (xb - xa < WALL_HOLE_EPS) continue;
+      for (let j = 0; j < ys.length - 1; j++) {
+        const ya = ys[j];
+        const yb = ys[j + 1];
+        if (yb - ya < WALL_HOLE_EPS) continue;
+        if (cellFullyInsideAnyHole(xa, xb, ya, yb, holes)) continue;
+        const cxLocal = (xa + xb) / 2;
+        const cyLocal = (ya + yb) / 2;
+        const gw = xb - xa;
+        const gh = yb - ya;
+        const geo = new THREE.BoxGeometry(gw, gh, thickM);
+        const mat = makeWallMaterial();
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = false;
+        mesh.position.set(cxLocal, cyLocal, 0);
+        mesh.userData.floorplanPick = true;
+        group.add(mesh);
+      }
+    }
+    return group;
   }
 
   // ============================================================
@@ -1319,7 +1419,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const fh = Number(fl.height);
       const defaultH = Number.isFinite(fh) && fh > 0 ? fh : 280;
       for (const w of fl.walls || []) {
-        const m = buildWallMesh(w, cx, cy, s, defaultH, opacity);
+        const m = buildWallMesh(w, fl, cx, cy, s, defaultH, opacity);
         if (m) floorG.add(m);
       }
             // 尺寸标注：选中某楼层时只画当前层；无楼层选中时画所有楼层

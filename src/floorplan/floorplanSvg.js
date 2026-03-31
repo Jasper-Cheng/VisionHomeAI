@@ -107,6 +107,42 @@ function bboxFromOpeningLike(obj, pt) {
 }
 
 /**
+ * 门/窗挂在墙上：wallId + pos（沿墙中心线从 start 到洞口中心的 cm）+ width（cm）
+ * @param {object} obj
+ * @param {object[]} walls
+ * @returns {{ x0: number, y0: number, x1: number, y1: number } | null}
+ */
+function openingSegmentOnWall(obj, walls) {
+  if (!obj || typeof obj !== "object") return null;
+  const wid = String(obj.wallId ?? "").trim();
+  if (!wid || !Array.isArray(walls)) return null;
+  const wall = walls.find((w) => String(w?.id ?? "") === wid);
+  if (!wall || !Array.isArray(wall.start) || wall.start.length < 2 || !Array.isArray(wall.end) || wall.end.length < 2) {
+    return null;
+  }
+  const pos = Number(obj.pos);
+  const width = Number(obj.width);
+  if (!Number.isFinite(pos) || !Number.isFinite(width) || width <= 0) return null;
+  const x1 = Number(wall.start[0]);
+  const y1 = Number(wall.start[1]);
+  const x2 = Number(wall.end[0]);
+  const y2 = Number(wall.end[1]);
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  if (len < 1e-6) return null;
+  const ux = (x2 - x1) / len;
+  const uy = (y2 - y1) / len;
+  const cx = x1 + ux * pos;
+  const cy = y1 + uy * pos;
+  const hw = width / 2;
+  return {
+    x0: cx - ux * hw,
+    y0: cy - uy * hw,
+    x1: cx + ux * hw,
+    y1: cy + uy * hw,
+  };
+}
+
+/**
  * @param {object} floor
  * @returns {{ minX: number, minY: number, maxX: number, maxY: number, cx: number, cy: number, w: number, h: number } | null}
  */
@@ -131,11 +167,22 @@ export function getFloorBBoxCm(floor) {
   for (const wall of floor.walls || []) {
     bboxFromSegment(wall, pt);
   }
+  const walls = floor.walls || [];
   for (const d of floor.doors || []) {
     bboxFromOpeningLike(d, pt);
+    const seg = openingSegmentOnWall(d, walls);
+    if (seg) {
+      pt(seg.x0, seg.y0);
+      pt(seg.x1, seg.y1);
+    }
   }
   for (const w of floor.windows || []) {
     bboxFromOpeningLike(w, pt);
+    const seg = openingSegmentOnWall(w, walls);
+    if (seg) {
+      pt(seg.x0, seg.y0);
+      pt(seg.x1, seg.y1);
+    }
   }
   for (const f of floor.furnitures || []) {
     bboxFromPolygon(f?.polygon, pt);
@@ -407,9 +454,9 @@ function appendLineIfValid(innerG, x1, y1, x2, y2, className, strokeWidth, dataA
 }
 
 /**
- * 绘制 opening：优先 polygon → 线段 start/end → position + length + angleDeg
+ * 绘制 opening：优先 polygon → 线段 start/end → wallId+pos+width → position + length + angleDeg
  */
-function appendOpening(innerG, obj, className, defaultStroke, snapCoord = identitySnapCoord) {
+function appendOpening(innerG, obj, className, defaultStroke, snapCoord = identitySnapCoord, walls = null) {
   if (!obj || typeof obj !== "object") return;
   if (Array.isArray(obj.polygon) && obj.polygon.length >= 3) {
     appendPolygonIfValid(innerG, obj.polygon, className, {
@@ -425,6 +472,22 @@ function appendOpening(innerG, obj, className, defaultStroke, snapCoord = identi
       Number(obj.start[1]),
       Number(obj.end[0]),
       Number(obj.end[1]),
+      className,
+      Number.isFinite(sw) && sw > 0 ? sw : defaultStroke,
+      { "data-opening-id": String(obj.id || "") },
+      snapCoord,
+    );
+    return;
+  }
+  const wallSeg = openingSegmentOnWall(obj, walls);
+  if (wallSeg) {
+    const sw = Number(obj.strokeWidthCm ?? obj.strokeWidthMm ?? obj.frameThicknessCm ?? obj.frameThicknessMm ?? defaultStroke);
+    appendLineIfValid(
+      innerG,
+      wallSeg.x0,
+      wallSeg.y0,
+      wallSeg.x1,
+      wallSeg.y1,
       className,
       Number.isFinite(sw) && sw > 0 ? sw : defaultStroke,
       { "data-opening-id": String(obj.id || "") },
@@ -569,14 +632,16 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
     );
   }
 
+  const wallsForOpenings = floor.walls || [];
+
   /* 3. 窗 */
   for (const win of floor.windows || []) {
-    appendOpening(innerG, win, "svg-floor-window", 6, snapCoord);
+    appendOpening(innerG, win, "svg-floor-window", 6, snapCoord, wallsForOpenings);
   }
 
   /* 4. 门 */
   for (const door of floor.doors || []) {
-    appendOpening(innerG, door, "svg-floor-door", 8, snapCoord);
+    appendOpening(innerG, door, "svg-floor-door", 8, snapCoord, wallsForOpenings);
   }
 
   /* 5. 层内模板家具 */
