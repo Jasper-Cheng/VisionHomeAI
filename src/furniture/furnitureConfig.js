@@ -260,6 +260,36 @@ export function resolveTextureAssetUrl(pathFromRoot) {
 }
 
 /**
+ * 多色共用同一张 albedo 时，漫反射为 map×color；普通 hex 乘在偏棕纹理上色相很弱。
+ * 提高饱和度并略抬强度，使换色时差异更明显（有 map 时使用）。
+ * @param {typeof import("three")} THREE
+ * @param {string} hex
+ * @returns {import("three").Color}
+ */
+function tintColorForSharedAlbedoMap(THREE, hex) {
+  const c = new THREE.Color();
+  try {
+    const h = String(hex ?? "").trim();
+    c.setStyle(/^#/.test(h) ? h : `#${h}`);
+  } catch {
+    c.set(0x888888);
+  }
+  const hsl = { h: 0, s: 0, l: 0 };
+  c.getHSL(hsl);
+
+  if (hsl.l > 0.72) {
+    c.setHSL(hsl.h, Math.min(0.28, hsl.s + 0.1), 0.93);
+  } else {
+    hsl.s = Math.min(1, hsl.s * 1.62 + 0.12);
+    hsl.l = THREE.MathUtils.clamp(hsl.l * 1.06, 0.2, 0.56);
+    c.setHSL(hsl.h, hsl.s, hsl.l);
+  }
+
+  c.multiplyScalar(1.32);
+  return c;
+}
+
+/**
  * GLB 载入后：用条目中的 albedo + roughness（及可选 normal）路径替换为 MeshStandardMaterial。
  * diffuse：sRGB；roughness：线性数据；normal：NoColorSpace（切线空间法线，如 OpenGL / gl 朝向）。
  * 多 mesh 常共享同一材质实例：必须先全部换完新材质，再按材质引用去重后 dispose，否则会提前销毁共享贴图。
@@ -335,10 +365,14 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOver
   const roughness = Number.isFinite(det.materialParams?.roughness) ? det.materialParams.roughness : 1.0;
   const metalness = Number.isFinite(det.materialParams?.metalness) ? det.materialParams.metalness : 0.0;
   let color;
-  try {
-    color = new THREE.Color(det.hex);
-  } catch {
-    color = new THREE.Color(0x888888);
+  if (diffTex) {
+    color = tintColorForSharedAlbedoMap(THREE, det.hex);
+  } else {
+    try {
+      color = new THREE.Color(det.hex);
+    } catch {
+      color = new THREE.Color(0x888888);
+    }
   }
   /** @type {Set<import("three").Material>} */
   const oldMaterials = new Set();
@@ -410,7 +444,8 @@ export function applyFurnitureAppearanceToGroup(THREE, group, item) {
     mats.forEach((m) => {
       /* MeshStandard：漫反射为 map × color。多色共用同一张 albedo 时需用目录 hex 乘色才能区分色款 */
       if (m.color) {
-        m.color.copy(c);
+        const apply = m.map ? tintColorForSharedAlbedoMap(THREE, det.hex) : c;
+        m.color.copy(apply);
         m.needsUpdate = true;
       }
       const mp = det.materialParams;

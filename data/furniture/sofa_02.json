@@ -55,17 +55,17 @@
               {
                 "id": "burgundy",
                 "name": "勃艮第红",
-                "hex": "#6B2334"
+                "hex": "#8B1E3A"
               },
               {
                 "id": "olive",
                 "name": "橄榄绿",
-                "hex": "#3D5240"
+                "hex": "#1E5C44"
               },
               {
                 "id": "pearl",
                 "name": "珍珠白",
-                "hex": "#E8E2D9"
+                "hex": "#F4F0E8"
               }
             ]
           }
