@@ -48,9 +48,9 @@
             "id": "walnut",
             "name": "胡桃木",
             "texture": {
-              "albedo": "assets/textures/table_01/wood/walnut/diff.jpg",
-              "roughness": "assets/textures/table_01/wood/walnut/rough.jpg",
-              "normal": "assets/textures/table_01/wood/walnut/normal.jpg"
+              "albedo": "assets/textures/table/01/wood/walnut/diff.jpg",
+              "roughness": "assets/textures/table/01/wood/walnut/rough.jpg",
+              "normal": "assets/textures/table/01/wood/walnut/normal.jpg"
             },
             "colors": [
               {
