@@ -77,7 +77,7 @@
   "skus": [
     {
       "id": "SOF-03-DHH-IVO",
-      "name": "材质 · 布艺 · 款式 · 大提花布 · 颜色 · 象牙白",
+      "name": "布艺 · 大提花布 · 象牙白",
       "materialId": "fabric",
       "textureId": "dahuahua",
       "colorId": "ivory",
@@ -85,14 +85,14 @@
     },
     {
       "id": "SOF-03-DHH-OAT",
-      "name": "材质 · 布艺 · 款式 · 大提花布 · 颜色 · 燕麦驼",
+      "name": "布艺 · 大提花布 · 燕麦驼",
       "materialId": "fabric",
       "textureId": "dahuahua",
       "colorId": "oat"
     },
     {
       "id": "SOF-03-DHH-SLA",
-      "name": "材质 · 布艺 · 款式 · 大提花布 · 颜色 · 石墨灰",
+      "name": "布艺 · 大提花布 · 石墨灰",
       "materialId": "fabric",
       "textureId": "dahuahua",
       "colorId": "slate"

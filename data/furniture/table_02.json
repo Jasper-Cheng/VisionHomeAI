@@ -77,14 +77,14 @@
   "skus": [
     {
       "id": "TBL-02-ROW-NAT",
-      "name": "材质 · 木质 · 款式 · 条纹木 · 颜色 · 曜黑",
+      "name": "木质 · 条纹木 · 曜黑",
       "materialId": "wood",
       "textureId": "row",
       "colorId": "natural"
     },
     {
       "id": "TBL-02-ROW-HON",
-      "name": "材质 · 木质 · 款式 · 条纹木 · 颜色 · 墨绿",
+      "name": "木质 · 条纹木 · 墨绿",
       "materialId": "wood",
       "textureId": "row",
       "colorId": "honey",
@@ -92,7 +92,7 @@
     },
     {
       "id": "TBL-02-ROW-SMK",
-      "name": "材质 · 木质 · 款式 · 条纹木 · 颜色 · 紫檀紫",
+      "name": "木质 · 条纹木 · 紫檀紫",
       "materialId": "wood",
       "textureId": "row",
       "colorId": "smoke",
