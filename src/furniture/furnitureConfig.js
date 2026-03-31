@@ -295,12 +295,19 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOver
   let roughTex = null;
   let normalTex = null;
 
-  try {
-    if (au) diffTex = await loader.loadAsync(au);
-    if (ru) roughTex = await loader.loadAsync(ru);
-  } catch (e) {
-    console.warn("[VisionHome] PBR 贴图加载失败:", e);
-    return false;
+  if (au) {
+    try {
+      diffTex = await loader.loadAsync(au);
+    } catch (e) {
+      console.warn("[VisionHome] albedo 贴图加载失败:", au, e);
+    }
+  }
+  if (ru) {
+    try {
+      roughTex = await loader.loadAsync(ru);
+    } catch (e) {
+      console.warn("[VisionHome] roughness 贴图加载失败:", ru, e);
+    }
   }
 
   if (diffTex) {
@@ -321,6 +328,8 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOver
       console.warn("[VisionHome] normal 贴图加载失败:", e);
     }
   }
+
+  if (!diffTex && !roughTex && !normalTex) return false;
 
   const normalScale = new THREE.Vector2(1, 1);
   const roughness = Number.isFinite(det.materialParams?.roughness) ? det.materialParams.roughness : 1.0;

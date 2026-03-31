@@ -49,7 +49,7 @@
             "texture": {
               "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg",
               "roughness": "assets/textures/sofa_03/fabric/sofa_03_jacquard_rough.jpg",
-              "normal": "assets/textures/sofa_03/fabric/sofa_03_jacquard_normal.png",
+              "normal": "assets/textures/sofa_03/fabric/sofa_03_jacquard_normal.jpg",
               "opacity": "assets/textures/sofa_03/fabric/sofa_03_jacquard_opacity.png"
             },
             "colors": [
