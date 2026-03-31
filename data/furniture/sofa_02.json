@@ -53,6 +53,11 @@
             },
             "colors": [
               {
+                "id": "pearl",
+                "name": "珍珠白",
+                "hex": "#F4F0E8"
+              },
+              {
                 "id": "burgundy",
                 "name": "勃艮第红",
                 "hex": "#8B1E3A"
@@ -61,11 +66,6 @@
                 "id": "olive",
                 "name": "橄榄绿",
                 "hex": "#1E5C44"
-              },
-              {
-                "id": "pearl",
-                "name": "珍珠白",
-                "hex": "#F4F0E8"
               }
             ]
           }
@@ -75,11 +75,19 @@
   },
   "skus": [
     {
+      "id": "SOF-02-NAP-PRL",
+      "name": "皮革 · 纳帕皮 · 珍珠白",
+      "materialId": "leather",
+      "textureId": "napa",
+      "colorId": "pearl"
+    },
+    {
       "id": "SOF-02-NAP-BUR",
       "name": "皮革 · 纳帕皮 · 勃艮第红",
       "materialId": "leather",
       "textureId": "napa",
-      "colorId": "burgundy"
+      "colorId": "burgundy",
+      "markup": 420
     },
     {
       "id": "SOF-02-NAP-OLV",
@@ -87,18 +95,10 @@
       "materialId": "leather",
       "textureId": "napa",
       "colorId": "olive",
-      "markup": 420
-    },
-    {
-      "id": "SOF-02-NAP-PRL",
-      "name": "皮革 · 纳帕皮 · 珍珠白",
-      "materialId": "leather",
-      "textureId": "napa",
-      "colorId": "pearl",
       "markup": 520
     }
   ],
   "selection": {
-    "skuId": "SOF-02-NAP-BUR"
+    "skuId": "SOF-02-NAP-PRL"
   }
 }
