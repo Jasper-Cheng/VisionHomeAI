@@ -1,12 +1,12 @@
 {
-  "id": "apartment_2b1l",
+  "id": "apartment_2b1l_v2",
   "project": {
     "id": "template_apartment_2b1l",
-    "name": "简约两居·约89㎡",
+    "name": "简约两居·优化版",
     "unit": "cm",
-    "version": 1,
+    "version": 2,
     "category": "两居室",
-    "areaM2": 89
+    "areaM2": 88.3
   },
   "floors": [
     {
@@ -19,224 +19,53 @@
           "id": "r_bed1",
           "name": "主卧",
           "type": "bedroom",
-          "polygon": [
-            [
-              0.0,
-              0.0
-            ],
-            [
-              480.0,
-              0.0
-            ],
-            [
-              480.0,
-              420.0
-            ],
-            [
-              0.0,
-              420.0
-            ]
-          ]
+          "polygon": [[0, 0], [480, 0], [480, 420], [0, 420]]
         },
         {
           "id": "r_bed2",
           "name": "次卧",
           "type": "bedroom",
-          "polygon": [
-            [
-              480.0,
-              0.0
-            ],
-            [
-              920.0,
-              0.0
-            ],
-            [
-              920.0,
-              600.0
-            ],
-            [
-              480.0,
-              600.0
-            ]
-          ]
+          "polygon": [[480, 0], [920, 0], [920, 420], [480, 420]]
+        },
+        {
+          "id": "r_bath",
+          "name": "卫生间",
+          "type": "bathroom",
+          "polygon": [[480, 420], [650, 420], [650, 600], [480, 600]]
         },
         {
           "id": "r_living",
           "name": "客餐厅",
           "type": "living",
-          "polygon": [
-            [
-              0.0,
-              420.0
-            ],
-            [
-              480.0,
-              420.0
-            ],
-            [
-              480.0,
-              600.0
-            ],
-            [
-              300.0,
-              600.0
-            ],
-            [
-              300.0,
-              960.0
-            ],
-            [
-              0.0,
-              960.0
-            ]
-          ]
+          "polygon": [[0, 420], [480, 420], [480, 960], [0, 960]]
         },
         {
           "id": "r_kitchen",
           "name": "厨房",
           "type": "kitchen",
-          "polygon": [
-            [
-              300.0,
-              600.0
-            ],
-            [
-              920.0,
-              600.0
-            ],
-            [
-              920.0,
-              960.0
-            ],
-            [
-              300.0,
-              960.0
-            ]
-          ]
+          "polygon": [[650, 420], [920, 420], [920, 750], [650, 750]]
         }
       ],
       "walls": [
-        {
-          "id": "w_o1",
-          "start": [
-            0.0,
-            0.0
-          ],
-          "end": [
-            920.0,
-            0.0
-          ],
-          "thickness": 10.0,
-          "height": 260.0
-        },
-        {
-          "id": "w_o2",
-          "start": [
-            920.0,
-            0.0
-          ],
-          "end": [
-            920.0,
-            960.0
-          ],
-          "thickness": 10.0,
-          "height": 260.0
-        },
-        {
-          "id": "w_o3",
-          "start": [
-            920.0,
-            960.0
-          ],
-          "end": [
-            0.0,
-            960.0
-          ],
-          "thickness": 10.0,
-          "height": 260.0
-        },
-        {
-          "id": "w_o4",
-          "start": [
-            0.0,
-            960.0
-          ],
-          "end": [
-            0.0,
-            0.0
-          ],
-          "thickness": 10.0,
-          "height": 260.0
-        },
-        {
-          "id": "w_i1",
-          "start": [
-            0.0,
-            420.0
-          ],
-          "end": [
-            480.0,
-            420.0
-          ],
-          "thickness": 10.0,
-          "height": 260.0
-        },
-        {
-          "id": "w_i2",
-          "start": [
-            480.0,
-            420.0
-          ],
-          "end": [
-            480.0,
-            0.0
-          ],
-          "thickness": 10.0,
-          "height": 260.0
-        },
-        {
-          "id": "w_i3",
-          "start": [
-            480.0,
-            600.0
-          ],
-          "end": [
-            920.0,
-            600.0
-          ],
-          "thickness": 10.0,
-          "height": 260.0
-        },
-        {
-          "id": "w_i4",
-          "start": [
-            480.0,
-            420.0
-          ],
-          "end": [
-            480.0,
-            600.0
-          ],
-          "thickness": 10.0,
-          "height": 260.0
-        },
-        {
-          "id": "w_i5",
-          "start": [
-            300.0,
-            600.0
-          ],
-          "end": [
-            300.0,
-            960.0
-          ],
-          "thickness": 10.0,
-          "height": 260.0
-        }
+        { "id": "w_ext_top", "start": [0, 0], "end": [920, 0], "thickness": 24, "height": 280 },
+        { "id": "w_ext_right", "start": [920, 0], "end": [920, 960], "thickness": 24, "height": 280 },
+        { "id": "w_ext_bottom", "start": [920, 960], "end": [0, 960], "thickness": 24, "height": 280 },
+        { "id": "w_ext_left", "start": [0, 960], "end": [0, 0], "thickness": 24, "height": 280 },
+        { "id": "w_int_1", "start": [480, 0], "end": [480, 600], "thickness": 12, "height": 280 },
+        { "id": "w_int_2", "start": [0, 420], "end": [920, 420], "thickness": 12, "height": 280 },
+        { "id": "w_int_3", "start": [650, 420], "end": [650, 750], "thickness": 12, "height": 280 },
+        { "id": "w_int_4", "start": [650, 600], "end": [480, 600], "thickness": 12, "height": 280 }
       ],
-      "doors": [],
-      "windows": [],
+      "doors": [
+        { "id": "d1", "wallId": "w_int_2", "pos": 120, "width": 90, "height": 210, "name": "主卧门" },
+        { "id": "d2", "wallId": "w_int_2", "pos": 520, "width": 90, "height": 210, "name": "次卧门" },
+        { "id": "d3", "wallId": "w_int_4", "pos": 40, "width": 80, "height": 210, "name": "卫生间门" }
+      ],
+      "windows": [
+        { "id": "win1", "wallId": "w_ext_top", "pos": 100, "width": 150, "height": 140, "altitude": 90 },
+        { "id": "win2", "wallId": "w_ext_top", "pos": 600, "width": 150, "height": 140, "altitude": 90 },
+        { "id": "win3", "wallId": "w_ext_bottom", "pos": 100, "width": 240, "height": 220, "altitude": 20, "name": "客厅落地窗" }
+      ],
       "furnitures": []
     }
   ],

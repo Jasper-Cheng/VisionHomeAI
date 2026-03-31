@@ -2,16 +2,6 @@
   "schemaVersion": "1.0",
   "source": "floorPlanLibrary.json",
   "files": [
-    "apartment_2b1l.json",
-    "apartment_3b2l.json",
-    "villa_3floor.json",
-    "studio_open_48.json",
-    "narrow_2b_72.json",
-    "apartment_4b2l_168.json",
-    "flat_wide_198.json",
-    "duplex_loft_96.json",
-    "loft_single_55.json",
-    "corner_3b_108.json",
-    "senior_1b_62.json"
+    "apartment_2b1l.json"
   ]
 }
