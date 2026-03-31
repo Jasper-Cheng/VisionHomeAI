@@ -53,6 +53,14 @@
             },
             "colors": [
               {
+                "id": "ivory",
+                "name": "象牙白",
+                "hex": "#D4CFC4",
+                "assets": {
+                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg"
+                }
+              },
+              {
                 "id": "oat",
                 "name": "燕麦驼",
                 "hex": "#8B7B6B",
@@ -64,14 +72,6 @@
                 "id": "slate",
                 "name": "石墨灰",
                 "hex": "#5A5754",
-                "assets": {
-                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg"
-                }
-              },
-              {
-                "id": "ivory",
-                "name": "象牙白",
-                "hex": "#D4CFC4",
                 "assets": {
                   "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg"
                 }
@@ -118,6 +118,14 @@
   },
   "skus": [
     {
+      "id": "SOF-03-DHH-IVO",
+      "name": "布艺 · 大提花布 · 象牙白",
+      "materialId": "fabric",
+      "textureId": "dahuahua",
+      "colorId": "ivory",
+      "markup": 380
+    },
+    {
       "id": "SOF-03-DHH-OAT",
       "name": "布艺 · 大提花布 · 燕麦驼",
       "materialId": "fabric",
@@ -130,14 +138,6 @@
       "materialId": "fabric",
       "textureId": "dahuahua",
       "colorId": "slate"
-    },
-    {
-      "id": "SOF-03-DHH-IVO",
-      "name": "布艺 · 大提花布 · 象牙白",
-      "materialId": "fabric",
-      "textureId": "dahuahua",
-      "colorId": "ivory",
-      "markup": 380
     },
     {
       "id": "SOF-03-LEA-COC",
@@ -164,6 +164,6 @@
     }
   ],
   "selection": {
-    "skuId": "SOF-03-DHH-OAT"
+    "skuId": "SOF-03-DHH-IVO"
   }
 }
