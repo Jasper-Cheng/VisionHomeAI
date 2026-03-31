@@ -49,9 +49,9 @@
             "id": "oak",
             "name": "橡木",
             "texture": {
-              "albedo": "assets/textures/table_03/wood/oak/diff.jpg",
-              "roughness": "assets/textures/table_03/wood/oak/rough.jpg",
-              "normal": "assets/textures/table_03/wood/oak/normal.jpg"
+              "albedo": "assets/textures/table_03/oak/diff.jpg",
+              "roughness": "assets/textures/table_03/oak/rough.jpg",
+              "normal": "assets/textures/table_03/oak/normal.jpg"
             },
             "colors": [
               {
@@ -78,14 +78,14 @@
   "skus": [
     {
       "id": "TBL-03-OAK-NAT",
-      "name": "木质 · 橡木 · 曜黑",
+      "name": "材质 · 木质 · 款式 · 橡木 · 颜色 · 曜黑",
       "materialId": "wood",
       "textureId": "oak",
       "colorId": "natural"
     },
     {
       "id": "TBL-03-OAK-HON",
-      "name": "木质 · 橡木 · 墨绿",
+      "name": "材质 · 木质 · 款式 · 橡木 · 颜色 · 墨绿",
       "materialId": "wood",
       "textureId": "oak",
       "colorId": "honey",
@@ -93,7 +93,7 @@
     },
     {
       "id": "TBL-03-OAK-SMK",
-      "name": "木质 · 橡木 · 紫檀紫",
+      "name": "材质 · 木质 · 款式 · 橡木 · 颜色 · 紫檀紫",
       "materialId": "wood",
       "textureId": "oak",
       "colorId": "smoke",

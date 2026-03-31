@@ -48,9 +48,9 @@
             "id": "walnut",
             "name": "胡桃木",
             "texture": {
-              "albedo": "assets/textures/table_01/wood/walnut/diff.jpg",
-              "roughness": "assets/textures/table_01/wood/walnut/rough.jpg",
-              "normal": "assets/textures/table_01/wood/walnut/normal.jpg"
+              "albedo": "assets/textures/table_01/walnut/diff.jpg",
+              "roughness": "assets/textures/table_01/walnut/rough.jpg",
+              "normal": "assets/textures/table_01/walnut/normal.jpg"
             },
             "colors": [
               {
@@ -77,14 +77,14 @@
   "skus": [
     {
       "id": "TBL-01-WN-NAT",
-      "name": "木质 · 胡桃木 · 曜黑",
+      "name": "材质 · 木质 · 款式 · 胡桃木 · 颜色 · 曜黑",
       "materialId": "wood",
       "textureId": "walnut",
       "colorId": "natural"
     },
     {
       "id": "TBL-01-WN-HON",
-      "name": "木质 · 胡桃木 · 墨绿",
+      "name": "材质 · 木质 · 款式 · 胡桃木 · 颜色 · 墨绿",
       "materialId": "wood",
       "textureId": "walnut",
       "colorId": "honey",
@@ -92,7 +92,7 @@
     },
     {
       "id": "TBL-01-WN-SMK",
-      "name": "木质 · 胡桃木 · 紫檀紫",
+      "name": "材质 · 木质 · 款式 · 胡桃木 · 颜色 · 紫檀紫",
       "materialId": "wood",
       "textureId": "walnut",
       "colorId": "smoke",

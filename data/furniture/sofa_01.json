@@ -47,9 +47,9 @@
             "id": "woven",
             "name": "平织布",
             "texture": {
-              "albedo": "assets/textures/sofa_01/fabric/woven/diff.jpg",
-              "roughness": "assets/textures/sofa_01/fabric/woven/rough.jpg",
-              "normal": "assets/textures/sofa_01/fabric/woven/normal.jpg"
+              "albedo": "assets/textures/sofa_01/woven/diff.jpg",
+              "roughness": "assets/textures/sofa_01/woven/rough.jpg",
+              "normal": "assets/textures/sofa_01/woven/normal.jpg"
             },
             "colors": [
               {
@@ -76,14 +76,14 @@
   "skus": [
     {
       "id": "SOF-01-WOV-IVO",
-      "name": "布艺 · 平织布 · 象牙白",
+      "name": "材质 · 布艺 · 款式 · 平织布 · 颜色 · 象牙白",
       "materialId": "fabric",
       "textureId": "woven",
       "colorId": "ivory"
     },
     {
       "id": "SOF-01-WOV-OAT",
-      "name": "布艺 · 平织布 · 燕麦驼",
+      "name": "材质 · 布艺 · 款式 · 平织布 · 颜色 · 燕麦驼",
       "materialId": "fabric",
       "textureId": "woven",
       "colorId": "oat",
@@ -91,7 +91,7 @@
     },
     {
       "id": "SOF-01-WOV-SLA",
-      "name": "布艺 · 平织布 · 石墨灰",
+      "name": "材质 · 布艺 · 款式 · 平织布 · 颜色 · 石墨灰",
       "materialId": "fabric",
       "textureId": "woven",
       "colorId": "slate",

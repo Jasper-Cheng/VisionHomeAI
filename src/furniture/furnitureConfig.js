@@ -1,5 +1,5 @@
 /**
- * 家具 JSON：config.materials（材质光照 + textures + colors）
+ * 家具 JSON：config.materials（材质层 + 款式层 textures + 颜色层 colors）
  * 顶层 skus[]（价格/库存），selection: { skuId }
  */
 

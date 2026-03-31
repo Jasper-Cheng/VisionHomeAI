@@ -47,9 +47,9 @@
             "id": "napa",
             "name": "纳帕皮",
             "texture": {
-              "albedo": "assets/textures/sofa_02/leather/napa/diff.png",
-              "roughness": "assets/textures/sofa_02/leather/napa/rough.png",
-              "normal": "assets/textures/sofa_02/leather/napa/normal.png"
+              "albedo": "assets/textures/sofa_02/napa/diff.png",
+              "roughness": "assets/textures/sofa_02/napa/rough.png",
+              "normal": "assets/textures/sofa_02/napa/normal.png"
             },
             "colors": [
               {
@@ -76,14 +76,14 @@
   "skus": [
     {
       "id": "SOF-02-NAP-PRL",
-      "name": "皮革 · 纳帕皮 · 珍珠白",
+      "name": "材质 · 皮革 · 款式 · 纳帕皮 · 颜色 · 珍珠白",
       "materialId": "leather",
       "textureId": "napa",
       "colorId": "pearl"
     },
     {
       "id": "SOF-02-NAP-BUR",
-      "name": "皮革 · 纳帕皮 · 勃艮第红",
+      "name": "材质 · 皮革 · 款式 · 纳帕皮 · 颜色 · 勃艮第红",
       "materialId": "leather",
       "textureId": "napa",
       "colorId": "burgundy",
@@ -91,7 +91,7 @@
     },
     {
       "id": "SOF-02-NAP-OLV",
-      "name": "皮革 · 纳帕皮 · 橄榄绿",
+      "name": "材质 · 皮革 · 款式 · 纳帕皮 · 颜色 · 橄榄绿",
       "materialId": "leather",
       "textureId": "napa",
       "colorId": "olive",

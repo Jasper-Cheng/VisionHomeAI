@@ -47,10 +47,10 @@
             "id": "dahuahua",
             "name": "大提花布",
             "texture": {
-              "albedo": "assets/textures/sofa_03/fabric/dahuahua/diff.jpg",
-              "roughness": "assets/textures/sofa_03/fabric/dahuahua/rough.jpg",
-              "normal": "assets/textures/sofa_03/fabric/dahuahua/normal.jpg",
-              "opacity": "assets/textures/sofa_03/fabric/dahuahua/opacity.png"
+              "albedo": "assets/textures/sofa_03/dahuahua/diff.jpg",
+              "roughness": "assets/textures/sofa_03/dahuahua/rough.jpg",
+              "normal": "assets/textures/sofa_03/dahuahua/normal.jpg",
+              "opacity": "assets/textures/sofa_03/dahuahua/opacity.png"
             },
             "colors": [
               {
@@ -77,7 +77,7 @@
   "skus": [
     {
       "id": "SOF-03-DHH-IVO",
-      "name": "布艺 · 大提花布 · 象牙白",
+      "name": "材质 · 布艺 · 款式 · 大提花布 · 颜色 · 象牙白",
       "materialId": "fabric",
       "textureId": "dahuahua",
       "colorId": "ivory",
@@ -85,14 +85,14 @@
     },
     {
       "id": "SOF-03-DHH-OAT",
-      "name": "布艺 · 大提花布 · 燕麦驼",
+      "name": "材质 · 布艺 · 款式 · 大提花布 · 颜色 · 燕麦驼",
       "materialId": "fabric",
       "textureId": "dahuahua",
       "colorId": "oat"
     },
     {
       "id": "SOF-03-DHH-SLA",
-      "name": "布艺 · 大提花布 · 石墨灰",
+      "name": "材质 · 布艺 · 款式 · 大提花布 · 颜色 · 石墨灰",
       "materialId": "fabric",
       "textureId": "dahuahua",
       "colorId": "slate"
