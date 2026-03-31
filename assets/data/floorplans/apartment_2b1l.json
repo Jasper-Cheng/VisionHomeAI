@@ -1,11 +1,10 @@
 {
-  "id": "apartment_2b1l_v2",
+  "id": "apartment_2b1l_pro",
   "project": {
-    "id": "template_apartment_2b1l",
-    "name": "简约两居·优化版",
+    "id": "vision_home_template_001",
+    "name": "简约两居·全功能标准户型",
     "unit": "cm",
-    "version": 2,
-    "category": "两居室",
+    "version": 3.5,
     "areaM2": 88.3
   },
   "floors": [
@@ -15,58 +14,46 @@
       "elevation": 0.0,
       "height": 280.0,
       "rooms": [
-        {
-          "id": "r_bed1",
-          "name": "主卧",
-          "type": "bedroom",
-          "polygon": [[0, 0], [480, 0], [480, 420], [0, 420]]
-        },
-        {
-          "id": "r_bed2",
-          "name": "次卧",
-          "type": "bedroom",
-          "polygon": [[480, 0], [920, 0], [920, 420], [480, 420]]
-        },
-        {
-          "id": "r_bath",
-          "name": "卫生间",
-          "type": "bathroom",
-          "polygon": [[480, 420], [650, 420], [650, 600], [480, 600]]
-        },
-        {
-          "id": "r_living",
-          "name": "客餐厅",
-          "type": "living",
-          "polygon": [[0, 420], [480, 420], [480, 960], [0, 960]]
-        },
-        {
-          "id": "r_kitchen",
-          "name": "厨房",
-          "type": "kitchen",
-          "polygon": [[650, 420], [920, 420], [920, 750], [650, 750]]
-        }
+        { "id": "r_bed1", "name": "主卧", "type": "bedroom", "polygon": [[0, 0], [480, 0], [480, 420], [0, 420]] },
+        { "id": "r_bed2", "name": "次卧", "type": "bedroom", "polygon": [[480, 0], [920, 0], [920, 420], [480, 420]] },
+        { "id": "r_bath", "name": "卫生间", "type": "bathroom", "polygon": [[480, 420], [650, 420], [650, 600], [480, 600]] },
+        { "id": "r_living", "name": "客餐厅", "type": "living", "polygon": [[0, 420], [480, 420], [480, 960], [0, 960]] },
+        { "id": "r_kitchen", "name": "厨房", "type": "kitchen", "polygon": [[650, 420], [920, 420], [920, 750], [650, 750]] }
       ],
       "walls": [
-        { "id": "w_ext_top", "start": [0, 0], "end": [920, 0], "thickness": 24, "height": 280 },
-        { "id": "w_ext_right", "start": [920, 0], "end": [920, 960], "thickness": 24, "height": 280 },
-        { "id": "w_ext_bottom", "start": [920, 960], "end": [0, 960], "thickness": 24, "height": 280 },
-        { "id": "w_ext_left", "start": [0, 960], "end": [0, 0], "thickness": 24, "height": 280 },
-        { "id": "w_int_1", "start": [480, 0], "end": [480, 600], "thickness": 12, "height": 280 },
-        { "id": "w_int_2", "start": [0, 420], "end": [920, 420], "thickness": 12, "height": 280 },
-        { "id": "w_int_3", "start": [650, 420], "end": [650, 750], "thickness": 12, "height": 280 },
-        { "id": "w_int_4", "start": [650, 600], "end": [480, 600], "thickness": 12, "height": 280 }
+        { "id": "w_ext_t", "start": [0, 0], "end": [920, 0], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_ext_r", "start": [920, 0], "end": [920, 960], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_ext_b", "start": [920, 960], "end": [0, 960], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_ext_l", "start": [0, 960], "end": [0, 0], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_int_bed", "start": [480, 0], "end": [480, 420], "thickness": 12, "height": 280, "type": "internal" },
+        { "id": "w_int_horiz", "start": [0, 420], "end": [920, 420], "thickness": 12, "height": 280, "type": "internal" },
+        { "id": "w_int_bath_v", "start": [480, 420], "end": [480, 600], "thickness": 12, "height": 280, "type": "internal" },
+        { "id": "w_int_bath_h", "start": [480, 600], "end": [650, 600], "thickness": 12, "height": 280, "type": "internal" },
+        { "id": "w_int_kit_v", "start": [650, 420], "end": [650, 750], "thickness": 12, "height": 280, "type": "internal" },
+        { "id": "w_int_kit_h", "start": [650, 750], "end": [920, 750], "thickness": 12, "height": 280, "type": "internal" }
       ],
       "doors": [
-        { "id": "d1", "wallId": "w_int_2", "pos": 120, "width": 90, "height": 210, "name": "主卧门" },
-        { "id": "d2", "wallId": "w_int_2", "pos": 520, "width": 90, "height": 210, "name": "次卧门" },
-        { "id": "d3", "wallId": "w_int_4", "pos": 40, "width": 80, "height": 210, "name": "卫生间门" }
+        { "id": "d_main", "wallId": "w_ext_l", "pos": 800, "width": 100, "height": 220, "name": "入户门", "type": "entrance" },
+        { "id": "d_bed1", "wallId": "w_int_horiz", "pos": 100, "width": 90, "height": 210, "name": "主卧门" },
+        { "id": "d_bed2", "wallId": "w_int_horiz", "pos": 550, "width": 90, "height": 210, "name": "次卧门" },
+        { "id": "d_bath", "wallId": "w_int_bath_h", "pos": 40, "width": 80, "height": 210, "name": "卫生间门" },
+        { "id": "d_kit", "wallId": "w_int_kit_v", "pos": 50, "width": 80, "height": 210, "name": "厨房门" }
       ],
       "windows": [
-        { "id": "win1", "wallId": "w_ext_top", "pos": 100, "width": 150, "height": 140, "altitude": 90 },
-        { "id": "win2", "wallId": "w_ext_top", "pos": 600, "width": 150, "height": 140, "altitude": 90 },
-        { "id": "win3", "wallId": "w_ext_bottom", "pos": 100, "width": 240, "height": 220, "altitude": 20, "name": "客厅落地窗" }
+        { "id": "win_bed1", "wallId": "w_ext_t", "pos": 150, "width": 180, "height": 150, "altitude": 90 },
+        { "id": "win_bed2", "wallId": "w_ext_t", "pos": 650, "width": 150, "height": 150, "altitude": 90 },
+        { "id": "win_living", "wallId": "w_ext_b", "pos": 80, "width": 320, "height": 230, "altitude": 10, "name": "客厅阳台落地窗" }
       ],
-      "furnitures": []
+      "furnitures": [
+        {
+          "id": "init_sofa",
+          "refId": "sofa_03",
+          "name": "客厅主沙发",
+          "position": { "x": 240, "y": 650, "z": 0 },
+          "rotation": { "x": 0, "y": 0, "z": 0 },
+          "scale": { "x": 1, "y": 1, "z": 1 }
+        }
+      ]
     }
   ],
   "connections": []
