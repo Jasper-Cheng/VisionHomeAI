@@ -4,7 +4,7 @@
   "name": "阿萨德撒",
   "description": "",
   "createdAt": "2026-03-24T05:45:55.441Z",
-  "updatedAt": "2026-03-26T02:51:45.570Z",
+  "updatedAt": "2026-03-31T06:01:27.822Z",
   "templateId": "villa_3floor",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -14,8 +14,8 @@
       "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
-        988,
-        1188
+        260,
+        397
       ],
       "rotationDeg": 0
     },
@@ -24,7 +24,7 @@
       "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
-        1821,
+        1380,
         1135
       ],
       "rotationDeg": 0
@@ -55,7 +55,7 @@
       "floorId": "floor2",
       "positionCm": [
         1128,
-        1725
+        1443
       ],
       "rotationDeg": 0
     },
@@ -65,7 +65,7 @@
       "floorId": "floor1",
       "positionCm": [
         975,
-        1840
+        1443
       ],
       "rotationDeg": 0
     },
@@ -74,7 +74,7 @@
       "furnitureId": "sofa_03",
       "floorId": "floor2",
       "positionCm": [
-        1489,
+        1380,
         1071
       ],
       "rotationDeg": 0
@@ -95,7 +95,7 @@
       "floorId": "floor3",
       "positionCm": [
         1281,
-        1754
+        1443
       ],
       "rotationDeg": 0
     },
@@ -105,7 +105,7 @@
       "floorId": "floor3",
       "positionCm": [
         1168,
-        1820
+        1443
       ],
       "rotationDeg": 0
     },
@@ -114,8 +114,8 @@
       "furnitureId": "sofa_03",
       "floorId": "floor3",
       "positionCm": [
-        1510,
-        1730
+        1380,
+        1443
       ],
       "rotationDeg": 0
     },
@@ -125,7 +125,7 @@
       "floorId": "floor3",
       "positionCm": [
         1087,
-        1708
+        1443
       ],
       "rotationDeg": 0
     },
@@ -134,8 +134,8 @@
       "furnitureId": "sofa_03",
       "floorId": "floor3",
       "positionCm": [
-        1461,
-        1973
+        1380,
+        1443
       ],
       "rotationDeg": 0
     }
@@ -147,9 +147,9 @@
     "view": {
       "tx": 0,
       "ty": 0,
-      "scale": 1.8802663398348918
+      "scale": 1.1811421126564867
     },
-    "gridVisible": false,
+    "gridVisible": true,
     "viewBox": {
       "width": 3000,
       "height": 3000
@@ -158,14 +158,14 @@
       {
         "model": "sofa_03",
         "floorId": "floor1",
-        "x": 988,
-        "y": 1188,
+        "x": 260,
+        "y": 397,
         "rotation": 0
       },
       {
         "model": "sofa_03",
         "floorId": "floor1",
-        "x": 1821,
+        "x": 1380,
         "y": 1135,
         "rotation": 0
       },
@@ -187,20 +187,20 @@
         "model": "sofa_03",
         "floorId": "floor2",
         "x": 1128,
-        "y": 1725,
+        "y": 1443,
         "rotation": 0
       },
       {
         "model": "sofa_03",
         "floorId": "floor1",
         "x": 975,
-        "y": 1840,
+        "y": 1443,
         "rotation": 0
       },
       {
         "model": "sofa_03",
         "floorId": "floor2",
-        "x": 1489,
+        "x": 1380,
         "y": 1071,
         "rotation": 0
       },
@@ -215,35 +215,35 @@
         "model": "sofa_03",
         "floorId": "floor3",
         "x": 1281,
-        "y": 1754,
+        "y": 1443,
         "rotation": 0
       },
       {
         "model": "sofa_03",
         "floorId": "floor3",
         "x": 1168,
-        "y": 1820,
+        "y": 1443,
         "rotation": 0
       },
       {
         "model": "sofa_03",
         "floorId": "floor3",
-        "x": 1510,
-        "y": 1730,
+        "x": 1380,
+        "y": 1443,
         "rotation": 0
       },
       {
         "model": "sofa_03",
         "floorId": "floor3",
         "x": 1087,
-        "y": 1708,
+        "y": 1443,
         "rotation": 0
       },
       {
         "model": "sofa_03",
         "floorId": "floor3",
-        "x": 1461,
-        "y": 1973,
+        "x": 1380,
+        "y": 1443,
         "rotation": 0
       }
     ]

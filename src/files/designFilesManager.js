@@ -373,26 +373,14 @@ function isoNow() {
 }
 
 /**
- * 与 svg 画布一致的状态，供打开方案时完整还原（户型 / 视图 / 网格 / 家具列表）
+ * 写入设计文件的 SVG 编辑态：户型、楼层索引、家具列表。
+ * 视图平移/缩放、网格、逻辑画布尺寸不持久化；打开方案时使用编辑器默认视图与网格。
  */
 function collectSvgEditorState(layout) {
   const getFp = window.svgEditorGetCurrentFloorplanId;
-  const getV = window.svgEditorGetViewTransform;
-  const getGrid = window.svgEditorGetGridVisible;
-  const getSize = window.svgEditorGetViewSize;
   const getFloorLevel = window.svgEditorGetCurrentFloorLevelIndex;
   const floorPlanId = typeof getFp === "function" ? getFp() : null;
   const floorLevelIndex = typeof getFloorLevel === "function" ? getFloorLevel() : null;
-  let view = { tx: 0, ty: 0, scale: 1 };
-  if (typeof getV === "function") {
-    const v = getV();
-    view = {
-      tx: Number(v.tx) || 0,
-      ty: Number(v.ty) || 0,
-      scale: Number(v.scale) || 1,
-    };
-  }
-  const viewBox = typeof getSize === "function" ? getSize() : { width: 3000, height: 3000 };
   const furniture = (Array.isArray(layout) ? layout : []).map((item) => ({
     model: String(item.model ?? "").trim(),
     floorId: item?.floorId != null && String(item.floorId).trim() ? String(item.floorId).trim() : null,
@@ -404,12 +392,6 @@ function collectSvgEditorState(layout) {
     version: 1,
     floorPlanId,
     floorLevelIndex,
-    view,
-    gridVisible: typeof getGrid === "function" ? !!getGrid() : true,
-    viewBox: {
-      width: Number(viewBox.width) || 3000,
-      height: Number(viewBox.height) || 3000,
-    },
     furniture,
   };
 }

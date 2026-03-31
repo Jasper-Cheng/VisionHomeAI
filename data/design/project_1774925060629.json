@@ -4,7 +4,7 @@
   "name": "客户-李小姐",
   "description": "",
   "createdAt": "2026-03-31T02:44:20.629Z",
-  "updatedAt": "2026-03-31T02:47:20.605Z",
+  "updatedAt": "2026-03-31T06:00:48.030Z",
   "templateId": "apartment_2b1l",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -21,21 +21,31 @@
     },
     {
       "instanceId": "fi_2",
-      "furnitureId": "sofa_02",
-      "floorId": "floor1",
-      "positionCm": [
-        471,
-        -271
-      ],
-      "rotationDeg": 90
-    },
-    {
-      "instanceId": "fi_3",
       "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
-        -296,
-        -492
+        -155,
+        -457
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_3",
+      "furnitureId": "chair_01",
+      "floorId": "floor1",
+      "positionCm": [
+        491,
+        -422
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_4",
+      "furnitureId": "table_02",
+      "floorId": "floor1",
+      "positionCm": [
+        355,
+        -321
       ],
       "rotationDeg": 0
     }
@@ -45,9 +55,9 @@
     "floorPlanId": "apartment_2b1l",
     "floorLevelIndex": 0,
     "view": {
-      "tx": 284.9198049372517,
-      "ty": -373.28464805458583,
-      "scale": 8
+      "tx": 32.468149647414535,
+      "ty": -438.4361636664265,
+      "scale": 1.3414789575766923
     },
     "gridVisible": true,
     "viewBox": {
@@ -63,17 +73,24 @@
         "rotation": 0
       },
       {
-        "model": "sofa_02",
-        "floorId": "floor1",
-        "x": 471,
-        "y": -271,
-        "rotation": 90
-      },
-      {
         "model": "sofa_03",
         "floorId": "floor1",
-        "x": -296,
-        "y": -492,
+        "x": -155,
+        "y": -457,
+        "rotation": 0
+      },
+      {
+        "model": "chair_01",
+        "floorId": "floor1",
+        "x": 491,
+        "y": -422,
+        "rotation": 0
+      },
+      {
+        "model": "table_02",
+        "floorId": "floor1",
+        "x": 355,
+        "y": -321,
         "rotation": 0
       }
     ]

@@ -2591,6 +2591,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   async function applyFromDesignProject(project) {
     if (!project || typeof project !== "object") return;
+    const gridWasVisible = gridVisible;
     const se = project.svgEditor;
     const hasSvgEditor = se && typeof se === "object" && Number(se.version) === 1;
     const layout = hasSvgEditor && Array.isArray(se.furniture)
@@ -2625,12 +2626,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         else clearFloorplan();
       } else clearFloorplan();
       await rebuildFromLayout(layout);
-      if (hasSvgEditor && se.view && typeof se.view === "object") {
-        const tx = Number(se.view.tx), ty = Number(se.view.ty), sc = Number(se.view.scale);
-        if (Number.isFinite(tx) && Number.isFinite(ty) && Number.isFinite(sc)) setViewTransform(se.view);
-        else resetCameraView();
-      } else resetCameraView();
-      setGridVisible(hasSvgEditor && typeof se.gridVisible === "boolean" ? se.gridVisible : true);
+      resetCameraView();
+      setGridVisible(gridWasVisible);
     } finally {
       isRestoring = false;
     }

@@ -4,7 +4,7 @@
   "name": "11",
   "description": "",
   "createdAt": "2026-03-24T05:50:06.282Z",
-  "updatedAt": "2026-03-26T07:52:01.305Z",
+  "updatedAt": "2026-03-31T06:04:36.014Z",
   "templateId": "apartment_2b1l",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -14,8 +14,8 @@
       "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
-        1791,
-        1051
+        268,
+        300
       ],
       "rotationDeg": 0
     }
@@ -24,22 +24,12 @@
     "version": 1,
     "floorPlanId": "apartment_2b1l",
     "floorLevelIndex": 0,
-    "view": {
-      "tx": 0,
-      "ty": 0,
-      "scale": 1
-    },
-    "gridVisible": true,
-    "viewBox": {
-      "width": 3000,
-      "height": 3000
-    },
     "furniture": [
       {
         "model": "sofa_03",
         "floorId": "floor1",
-        "x": 1791,
-        "y": 1051,
+        "x": 268,
+        "y": 300,
         "rotation": 0
       }
     ]
