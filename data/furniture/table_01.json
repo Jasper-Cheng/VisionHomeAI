@@ -55,18 +55,18 @@
             "colors": [
               {
                 "id": "natural",
-                "name": "自然胡桃",
-                "hex": "#6B4A38"
+                "name": "曜黑",
+                "hex": "#1C1C1C"
               },
               {
                 "id": "honey",
-                "name": "蜂蜜棕",
-                "hex": "#8B5E3C"
+                "name": "墨绿",
+                "hex": "#1E5C44"
               },
               {
                 "id": "smoke",
-                "name": "烟熏深褐",
-                "hex": "#3D2E26"
+                "name": "紫檀紫",
+                "hex": "#6B2D50"
               }
             ]
           }
@@ -77,14 +77,14 @@
   "skus": [
     {
       "id": "TBL-01-WN-NAT",
-      "name": "木质 · 胡桃木 · 自然胡桃",
+      "name": "木质 · 胡桃木 · 曜黑",
       "materialId": "wood",
       "textureId": "walnut",
       "colorId": "natural"
     },
     {
       "id": "TBL-01-WN-HON",
-      "name": "木质 · 胡桃木 · 蜂蜜棕",
+      "name": "木质 · 胡桃木 · 墨绿",
       "materialId": "wood",
       "textureId": "walnut",
       "colorId": "honey",
@@ -92,7 +92,7 @@
     },
     {
       "id": "TBL-01-WN-SMK",
-      "name": "木质 · 胡桃木 · 烟熏深褐",
+      "name": "木质 · 胡桃木 · 紫檀紫",
       "materialId": "wood",
       "textureId": "walnut",
       "colorId": "smoke",
