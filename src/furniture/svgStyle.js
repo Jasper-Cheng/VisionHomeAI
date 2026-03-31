@@ -6,6 +6,7 @@
 export const CATEGORY_LABELS = {
   sofa: "沙发",
   table: "桌几",
+  chair: "座椅",
   bed: "床",
   lamp: "灯具",
   rug: "地毯",
@@ -16,6 +17,7 @@ export const CATEGORY_LABELS = {
 const CATEGORY_STYLES = {
   sofa: { fill: "rgba(109,92,255,0.42)", stroke: "rgba(140,120,255,0.95)" },
   table: { fill: "rgba(34,197,94,0.35)", stroke: "rgba(74,222,128,0.9)" },
+  chair: { fill: "rgba(56,189,248,0.34)", stroke: "rgba(125,211,252,0.92)" },
   lamp: { fill: "rgba(251,191,36,0.4)", stroke: "rgba(252,211,77,0.95)" },
   rug: { fill: "rgba(244,63,94,0.28)", stroke: "rgba(251,113,133,0.85)" },
   cabinet: { fill: "rgba(148,163,184,0.4)", stroke: "rgba(203,213,225,0.9)" },

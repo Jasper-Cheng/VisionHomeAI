@@ -161,6 +161,7 @@ import {
   const MODEL_PREFIX = {
     sofa: "SF",
     table: "TB",
+    chair: "CH",
     lamp: "LP",
     rug: "RG",
     cabinet: "TV",
@@ -371,6 +372,33 @@ import {
         const leg4 = leg1.clone();
         leg4.position.set(0.72, 0.17, 0.32);
         group.add(leg4);
+        break;
+      }
+      case "chair": {
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.06, 0.5), matWood);
+        seat.castShadow = true;
+        seat.position.y = 0.46;
+        group.add(seat);
+
+        const back = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.42, 0.06), matWood);
+        back.castShadow = true;
+        back.position.set(0, 0.7, -0.22);
+        group.add(back);
+
+        const legGeo = new THREE.BoxGeometry(0.05, 0.46, 0.05);
+        const l1 = new THREE.Mesh(legGeo, matWood);
+        l1.castShadow = true;
+        l1.position.set(-0.22, 0.23, -0.2);
+        group.add(l1);
+        const l2 = l1.clone();
+        l2.position.x = 0.22;
+        group.add(l2);
+        const l3 = l1.clone();
+        l3.position.set(-0.22, 0.23, 0.2);
+        group.add(l3);
+        const l4 = l1.clone();
+        l4.position.set(0.22, 0.23, 0.2);
+        group.add(l4);
         break;
       }
       case "lamp": {
