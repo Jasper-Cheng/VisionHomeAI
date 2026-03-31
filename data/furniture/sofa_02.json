@@ -39,7 +39,7 @@
         "id": "leather",
         "name": "皮革",
         "material": {
-          "roughness": 0.42,
+          "roughness": 1.0,
           "metalness": 0.0
         },
         "textures": [
