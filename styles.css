@@ -2053,6 +2053,8 @@ a.avatar:hover {
 .furniture-asset-grid {
   grid-auto-rows: auto;
   align-items: start;
+  /* 侧栏 flex 把网格拉高时，勿用默认 stretch 拉大行轨道，否则行与行之间会出现巨大空隙 */
+  align-content: start;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
