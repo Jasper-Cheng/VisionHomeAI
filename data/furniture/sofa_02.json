@@ -47,9 +47,9 @@
             "id": "napa",
             "name": "纳帕皮",
             "texture": {
-              "albedo": "assets/textures/sofa/02/leather/napa/diff.png",
-              "roughness": "assets/textures/sofa/02/leather/napa/rough.png",
-              "normal": "assets/textures/sofa/02/leather/napa/normal.png"
+              "albedo": "assets/textures/sofa_02/leather/napa/diff.png",
+              "roughness": "assets/textures/sofa_02/leather/napa/rough.png",
+              "normal": "assets/textures/sofa_02/leather/napa/normal.png"
             },
             "colors": [
               {
