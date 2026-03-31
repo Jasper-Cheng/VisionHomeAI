@@ -271,8 +271,13 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOver
   const sel = normalizeFurnitureSelection(item, selectionOverride);
   if (!sel) return false;
   const det = resolveFurnitureSelectionDetail(item, sel);
-  const albedoPath = det.color?.assets?.albedo;
   const texLayer = det.texture?.texture;
+  const colorAlbedoPath = det.color?.assets?.albedo;
+  const textureAlbedoPath =
+    texLayer && typeof texLayer === "object" && texLayer.albedo != null
+      ? String(texLayer.albedo).trim()
+      : "";
+  const albedoPath = colorAlbedoPath || textureAlbedoPath;
   const roughnessPath =
     texLayer && typeof texLayer === "object" && texLayer.roughness != null
       ? String(texLayer.roughness).trim()

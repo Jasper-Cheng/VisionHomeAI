@@ -47,6 +47,7 @@
             "id": "dahuahua",
             "name": "大提花布",
             "texture": {
+              "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg",
               "roughness": "assets/textures/sofa_03/fabric/sofa_03_jacquard_rough.jpg",
               "normal": "assets/textures/sofa_03/fabric/sofa_03_jacquard_normal.png",
               "opacity": "assets/textures/sofa_03/fabric/sofa_03_jacquard_opacity.png"
@@ -55,26 +56,17 @@
               {
                 "id": "ivory",
                 "name": "象牙白",
-                "hex": "#D4CFC4",
-                "assets": {
-                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg"
-                }
+                "hex": "#D4CFC4"
               },
               {
                 "id": "oat",
                 "name": "燕麦驼",
-                "hex": "#8B7B6B",
-                "assets": {
-                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg"
-                }
+                "hex": "#8B7B6B"
               },
               {
                 "id": "slate",
                 "name": "石墨灰",
-                "hex": "#5A5754",
-                "assets": {
-                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_jacquard_diff.jpg"
-                }
+                "hex": "#5A5754"
               }
             ]
           }
@@ -92,6 +84,7 @@
             "id": "leather",
             "name": "纳帕皮",
             "texture": {
+              "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png",
               "roughness": "assets/textures/sofa_03/fabric/sofa_03_leather_rough.png",
               "normal": "assets/textures/sofa_03/fabric/sofa_03_leather_normal.png"
             },
@@ -99,26 +92,17 @@
               {
                 "id": "cocoa",
                 "name": "深咖色",
-                "hex": "#7A4A30",
-                "assets": {
-                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png"
-                }
+                "hex": "#7A4A30"
               },
               {
                 "id": "caramel",
                 "name": "焦糖棕",
-                "hex": "#D09050",
-                "assets": {
-                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png"
-                }
+                "hex": "#D09050"
               },
               {
                 "id": "midnight",
                 "name": "午夜黑",
-                "hex": "#1E2030",
-                "assets": {
-                  "albedo": "assets/textures/sofa_03/fabric/sofa_03_leather_diff.png"
-                }
+                "hex": "#1E2030"
               }
             ]
           }
