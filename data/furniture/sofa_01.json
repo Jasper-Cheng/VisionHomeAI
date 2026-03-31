@@ -1,0 +1,104 @@
+{
+  "id": "sofa_01",
+  "name": "简约布艺沙发（2K）",
+  "category": "sofa",
+  "model": "assets/models/sofa_01_2k.glb",
+  "thumbnail": "assets/thumbnails/sofa_01.png",
+  "size": {
+    "width": 210.0,
+    "depth": 90.0,
+    "height": 82.0
+  },
+  "polygon": [
+    [-105, -45],
+    [105, -45],
+    [105, 45],
+    [-105, 45]
+  ],
+  "anchor": {
+    "x": 0.5,
+    "y": 0.5
+  },
+  "price": 3980,
+  "tags": [
+    "PBR 贴图",
+    "布艺",
+    "客厅"
+  ],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "study"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 5.0
+  },
+  "config": {
+    "materials": [
+      {
+        "id": "fabric",
+        "name": "布艺",
+        "material": {
+          "roughness": 0.85,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "woven",
+            "name": "平织布",
+            "texture": {
+              "albedo": "assets/textures/sofa_01/fabric/sofa_01_woven_diff.jpg",
+              "roughness": "assets/textures/sofa_01/fabric/sofa_01_woven_rough.jpg",
+              "normal": "assets/textures/sofa_01/fabric/sofa_01_woven_normal.jpg"
+            },
+            "colors": [
+              {
+                "id": "ivory",
+                "name": "象牙白",
+                "hex": "#D4CFC4"
+              },
+              {
+                "id": "oat",
+                "name": "燕麦驼",
+                "hex": "#8B7B6B"
+              },
+              {
+                "id": "slate",
+                "name": "石墨灰",
+                "hex": "#5A5754"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "skus": [
+    {
+      "id": "SOF-01-WOV-IVO",
+      "name": "布艺 · 平织布 · 象牙白",
+      "materialId": "fabric",
+      "textureId": "woven",
+      "colorId": "ivory"
+    },
+    {
+      "id": "SOF-01-WOV-OAT",
+      "name": "布艺 · 平织布 · 燕麦驼",
+      "materialId": "fabric",
+      "textureId": "woven",
+      "colorId": "oat",
+      "markup": 200
+    },
+    {
+      "id": "SOF-01-WOV-SLA",
+      "name": "布艺 · 平织布 · 石墨灰",
+      "materialId": "fabric",
+      "textureId": "woven",
+      "colorId": "slate",
+      "markup": 280
+    }
+  ],
+  "selection": {
+    "skuId": "SOF-01-WOV-IVO"
+  }
+}
