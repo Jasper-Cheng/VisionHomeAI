@@ -504,7 +504,7 @@ a.avatar:hover {
 
 .svg-editor-toolbar {
   position: relative;
-  /* 须低于 .side-panel(5) 与 .properties-panel(6)，否则会盖住左侧库面板；工具栏已用 padding 避开右侧面板区域 */
+  /* 须低于 .side-panel(5)；右侧 .properties-panel(6) 叠在工具栏上，不再为属性面板预留 padding */
   z-index: 3;
   flex-shrink: 0;
   display: flex;
@@ -522,11 +522,6 @@ a.avatar:hover {
 /* 左侧库（户型/家具/文件）叠在左侧时，顶部栏向右让出宽度 */
 .app-view--edit .app-content:has(.side-panel.is-visible) .svg-editor-toolbar {
   padding-left: calc(var(--side-panel-width, 320px) + 14px);
-}
-
-/* 属性面板叠在右侧时，顶部栏向左让出宽度 */
-.app-view--edit .app-content:has(#propertiesPanel.is-visible) .svg-editor-toolbar {
-  padding-right: calc(var(--side-panel-width, 320px) + 14px);
 }
 
 .svg-editor-toolbar-left {
