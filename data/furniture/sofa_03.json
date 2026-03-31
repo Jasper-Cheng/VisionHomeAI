@@ -2,7 +2,7 @@
   "id": "sofa_03",
   "name": "现代布艺沙发（2K）",
   "category": "sofa",
-  "model": "assets/models/sofa_03_2k.glb",
+  "model": "assets/models/sofa_03.glb",
   "thumbnail": "assets/thumbnails/sofa_03.png",
   "size": {
     "width": 220.0,

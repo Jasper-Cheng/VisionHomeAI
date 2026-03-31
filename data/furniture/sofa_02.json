@@ -2,7 +2,7 @@
   "id": "sofa_02",
   "name": "现代皮革沙发（2K）",
   "category": "sofa",
-  "model": "assets/models/sofa_02_2k.glb",
+  "model": "assets/models/sofa_02.glb",
   "thumbnail": "assets/thumbnails/sofa_02.png",
   "size": {
     "width": 215.0,

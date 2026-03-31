@@ -2,7 +2,7 @@
   "id": "table_01",
   "name": "胡桃木桌几（2K）",
   "category": "table",
-  "model": "assets/models/table_01_2k.glb",
+  "model": "assets/models/table_01.glb",
   "thumbnail": "assets/thumbnails/table_01.png",
   "size": {
     "width": 130.0,

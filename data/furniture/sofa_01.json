@@ -2,7 +2,7 @@
   "id": "sofa_01",
   "name": "简约布艺沙发（2K）",
   "category": "sofa",
-  "model": "assets/models/sofa_01_2k.glb",
+  "model": "assets/models/sofa_01.glb",
   "thumbnail": "assets/thumbnails/sofa_01.png",
   "size": {
     "width": 210.0,
