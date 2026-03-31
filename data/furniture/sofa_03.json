@@ -77,10 +77,20 @@
                 }
               }
             ]
-          },
+          }
+        ]
+      },
+      {
+        "id": "leather",
+        "name": "皮革",
+        "material": {
+          "roughness": 0.42,
+          "metalness": 0.0
+        },
+        "textures": [
           {
             "id": "leather",
-            "name": "皮革",
+            "name": "纳帕皮",
             "texture": {
               "roughness": "assets/textures/sofa_03/fabric/sofa_03_leather_rough.png",
               "normal": "assets/textures/sofa_03/fabric/sofa_03_leather_normal.png"
@@ -141,23 +151,23 @@
     },
     {
       "id": "SOF-03-LEA-COC",
-      "name": "布艺 · 皮革 · 深咖色",
-      "materialId": "fabric",
+      "name": "皮革 · 纳帕皮 · 深咖色",
+      "materialId": "leather",
       "textureId": "leather",
       "colorId": "cocoa"
     },
     {
       "id": "SOF-03-LEA-CAR",
-      "name": "布艺 · 皮革 · 焦糖棕",
-      "materialId": "fabric",
+      "name": "皮革 · 纳帕皮 · 焦糖棕",
+      "materialId": "leather",
       "textureId": "leather",
       "colorId": "caramel",
       "markup": 420
     },
     {
       "id": "SOF-03-LEA-MID",
-      "name": "布艺 · 皮革 · 午夜黑",
-      "materialId": "fabric",
+      "name": "皮革 · 纳帕皮 · 午夜黑",
+      "materialId": "leather",
       "textureId": "leather",
       "colorId": "midnight",
       "markup": 520
