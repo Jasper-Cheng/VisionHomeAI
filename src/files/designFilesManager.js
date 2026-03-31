@@ -129,6 +129,36 @@ function triggerDownloadDesignJson(filename, jsonText) {
 }
 
 /**
+ * 列表右侧时间：优先 updatedAt → createdAt → 文件名 project_<ms>
+ * @param {object | null | undefined} project
+ * @param {string} stem 无 .json 的文件名
+ */
+function formatDesignFileListTime(project, stem) {
+  /** @type {Date | null} */
+  let d = null;
+  const iso = project?.updatedAt || project?.createdAt;
+  if (iso != null && String(iso).trim()) {
+    const t = new Date(iso);
+    if (!Number.isNaN(t.getTime())) d = t;
+  }
+  if (!d) {
+    const m = String(stem).match(/(\d{13})/);
+    if (m) {
+      const t = new Date(Number(m[1]));
+      if (!Number.isNaN(t.getTime())) d = t;
+    }
+  }
+  if (!d) return "";
+  return d.toLocaleString("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+/**
  * 渲染「文件」侧栏：data/design 下的方案 JSON
  * @param {{ file: string, project: object }[]} entries
  * @param {{ loadError?: boolean }} options
@@ -178,8 +208,19 @@ export function mountDesignFileList(entries, options = {}) {
       nameEl.className = "file-name";
       nameEl.textContent = displayName;
 
+      const timeLabel = formatDesignFileListTime(project, stem);
+      const timeEl = document.createElement("span");
+      timeEl.className = "file-item-time";
+      timeEl.textContent = timeLabel;
+      timeEl.setAttribute("aria-hidden", timeLabel ? "false" : "true");
+      if (!timeLabel) timeEl.hidden = true;
+
       row.appendChild(icon);
       row.appendChild(nameEl);
+      row.appendChild(timeEl);
+      if (timeLabel) {
+        row.setAttribute("aria-label", `方案 ${displayName}，${timeLabel}，文件 ${file}`);
+      }
       list.appendChild(row);
 
       const activate = () => {

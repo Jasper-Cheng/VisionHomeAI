@@ -2451,6 +2451,17 @@ a.avatar:hover {
   flex: 1 1 auto;
 }
 
+.file-item-time {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.38);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* User page (user.html) */
 .header-inner--simple {
   justify-content: space-between;
