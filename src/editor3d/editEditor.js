@@ -544,7 +544,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const mats = item.config.materials ?? [];
     const matRow = document.createElement("div");
     matRow.className = "prop-appearance-row";
-    matRow.appendChild(Object.assign(document.createElement("span"), { className: "prop-appearance-row-label", textContent: "大类" }));
+    matRow.appendChild(Object.assign(document.createElement("span"), { className: "prop-appearance-row-label", textContent: "材质" }));
     const matBtns = document.createElement("div");
     matBtns.className = "prop-appearance-chips";
     for (const m of mats) {
@@ -573,7 +573,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (textures.length) {
       const texRow = document.createElement("div");
       texRow.className = "prop-appearance-row";
-      texRow.appendChild(Object.assign(document.createElement("span"), { className: "prop-appearance-row-label", textContent: "纹理" }));
+      texRow.appendChild(Object.assign(document.createElement("span"), { className: "prop-appearance-row-label", textContent: "款式" }));
       const texBtns = document.createElement("div");
       texBtns.className = "prop-appearance-chips";
       for (const t of textures) {
@@ -603,7 +603,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (colors.length) {
       const colRow = document.createElement("div");
       colRow.className = "prop-appearance-row prop-appearance-row--colors";
-      colRow.appendChild(Object.assign(document.createElement("span"), { className: "prop-appearance-row-label", textContent: "颜色/款式" }));
+      colRow.appendChild(Object.assign(document.createElement("span"), { className: "prop-appearance-row-label", textContent: "颜色" }));
       const sw = document.createElement("div");
       sw.className = "prop-appearance-swatches";
       for (const col of colors) {
