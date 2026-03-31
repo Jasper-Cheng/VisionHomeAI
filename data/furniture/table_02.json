@@ -48,9 +48,9 @@
             "id": "row",
             "name": "条纹木",
             "texture": {
-              "albedo": "assets/textures/table_02/wood/row/table_02_row_diff.jpg",
-              "roughness": "assets/textures/table_02/wood/row/table_02_row_rough.jpg",
-              "normal": "assets/textures/table_02/wood/row/table_02_row_normal.jpg"
+              "albedo": "assets/textures/table_02/wood/row/diff.jpg",
+              "roughness": "assets/textures/table_02/wood/row/rough.jpg",
+              "normal": "assets/textures/table_02/wood/row/normal.jpg"
             },
             "colors": [
               {
