@@ -813,7 +813,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 墙高统一用楼层自身的 height（defaultHeightCm），确保墙顶恰好抵住上层地板，不留缝。
     // wall.height 通常比 fl.height 小（如 300 vs 320），若用 wall.height 会出现层间缝隙。
     const hM = defaultHeightCm / 100;
-    const geo = new THREE.BoxGeometry(len, hM, thickM);
+    // 中心线两端各沿墙方向延伸半个厚度，使 90° 转角处两堵墙盒体在转角重叠，消除外侧「缺角」
+    const lenExtended = len + thickM;
+    const geo = new THREE.BoxGeometry(lenExtended, hM, thickM);
     const op = floorOpacity ?? 1;
     const mat = floorplanStdMat();
     mat.opacity = op;
