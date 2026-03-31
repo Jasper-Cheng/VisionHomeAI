@@ -224,7 +224,7 @@ export function mountFurnitureLibrary(catalog, options = {}) {
   if (options.loadError) {
     const msg = document.createElement("p");
     msg.className = "furniture-load-hint";
-    msg.textContent = "家具库加载失败，请检查 data/furniture/manifest.json 与同目录条目 JSON。";
+    msg.textContent = "家具库加载失败，请检查 assets/data/furniture/manifest.json 与同目录条目 JSON。";
     grid.appendChild(msg);
   }
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-VisionHomeAI 本地开发：提供静态资源，并将「保存方案」POST 写入 data/design/ 且更新 manifest.json。
+VisionHomeAI 本地开发：提供静态资源，并将「保存方案」POST 写入 assets/data/design/ 且更新 manifest.json。
 
 用法（项目根目录）：
   python3 scripts/dev_server.py
@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 
 PORT = int(os.environ.get("PORT", "8080"))
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DESIGN_DIR = os.path.join(ROOT, "data", "design")
+DESIGN_DIR = os.path.join(ROOT, "assets", "data", "design")
 MANIFEST_PATH = os.path.join(DESIGN_DIR, "manifest.json")
 
 FILENAME_OK = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]*\.json$")
@@ -112,7 +112,7 @@ def main() -> None:
     os.chdir(ROOT)
     httpd = HTTPServer(("", PORT), DevHTTPRequestHandler)
     print(f"VisionHomeAI dev server  http://localhost:{PORT}/  (root={ROOT})")
-    print("保存方案 → data/design/  + 更新 manifest.json")
+    print("保存方案 → assets/data/design/  + 更新 manifest.json")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

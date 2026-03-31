@@ -22,7 +22,7 @@ function cardDisplayName(entry) {
 }
 
 /**
- * 渲染户型库 Tab + 卡片（数据来自 data/floorplans/manifest + 同目录 JSON）
+ * 渲染户型库 Tab + 卡片（数据来自 assets/data/floorplans/manifest + 同目录 JSON）
  */
 export function mountFloorplanLibrary(catalog, options = {}) {
   const strip = document.querySelector(".floorplan-tabs");
@@ -181,7 +181,7 @@ export function mountFloorplanLibrary(catalog, options = {}) {
   if (options.loadError) {
     const msg = document.createElement("p");
     msg.className = "furniture-load-hint";
-    msg.textContent = "户型库加载失败，请检查 data/floorplans/manifest.json 与同目录条目 JSON。";
+    msg.textContent = "户型库加载失败，请检查 assets/data/floorplans/manifest.json 与同目录条目 JSON。";
     grid.appendChild(msg);
   }
 

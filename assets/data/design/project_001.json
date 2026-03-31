@@ -2,7 +2,7 @@
   "schemaVersion": "1.1",
   "id": "project_001",
   "name": "两居示例方案",
-  "description": "基于户型模板 templateId 的家具编辑方案；墙线房间来自 data/floorplans，本文件为编辑层。",
+  "description": "基于户型模板 templateId 的家具编辑方案；墙线房间来自 assets/data/floorplans，本文件为编辑层。",
   "createdAt": "2025-03-21T12:00:00.000Z",
   "updatedAt": "2026-03-26T04:37:17.425Z",
   "templateId": "villa_3floor",
