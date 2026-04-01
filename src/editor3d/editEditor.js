@@ -805,12 +805,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       shape.lineTo((pts[i][0] - cx) * (s / 100), (pts[i][1] - cy) * (s / 100));
     }
     shape.closePath();
-    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: false });
+    // 平面 ShapeGeometry：顶面与墙根齐平，无挤出薄板顶/侧三角差；ExtrudeGeometry 薄板在共边阴角易数值不齐显「台阶」
+    const geo = new THREE.ShapeGeometry(shape);
     geo.rotateX(-Math.PI / 2);
+    geo.computeVertexNormals();
     const mat = floorplanStdMat();
     const op = floorOpacity ?? 1;
     applyFloorplanSurfaceAlpha(mat, op);
-    mat.side = THREE.FrontSide;
+    // ShapeGeometry 与挤出顶盖法线朝向可能不同；双面避免从上方只看到被剔除的一面
+    mat.side = THREE.DoubleSide;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
     mesh.position.y = 0.02;
