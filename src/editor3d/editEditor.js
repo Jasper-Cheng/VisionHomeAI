@@ -1101,10 +1101,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       const areaM2 = Math.abs(areaCm2) / 2 / 10000;
 
-      // 面积标签置于下边中间（X 居中，Z 靠近南侧边）
+      // 面积标签置于下边中间（X 居中，Z 靠近南侧边），略往北（plan 上）移一点
       const INSET_Z = 0.18;
+      const AREA_LABEL_UP = 0.46;
       const aSp = makeDimSprite(`${areaM2.toFixed(2)}㎡`, { fontSize: 20, pxPerM: 155 });
-      aSp.position.set((bminX + bmaxX) / 2, LY + 0.10, bmaxZ - INSET_Z);
+      aSp.position.set((bminX + bmaxX) / 2, LY + 0.1, bmaxZ - INSET_Z - AREA_LABEL_UP);
       g.add(aSp);
     }
 

@@ -286,8 +286,9 @@ function appendFloorDimensionAnnotations(floor, innerG, snapCoord, inversePlanSc
   const inv = inversePlanScale;
   if (!Number.isFinite(inv) || inv <= 0) return;
 
-  /** 房间标注内缩（plan cm），贴在右下角内侧 */
+  /** 房间标注内缩（plan cm），贴在右下角内侧；ROOM_LABEL_UP 为相对原位的上移量 */
   const ROOM_BR_PAD = 10;
+  const ROOM_LABEL_UP = 74;
   const FLOOR_TITLE_GAP = 26;
   const WALL_OFF = 14;
 
@@ -330,7 +331,7 @@ function appendFloorDimensionAnnotations(floor, innerG, snapCoord, inversePlanSc
     const hR = Math.round(box.h);
 
     const brX = box.maxX - ROOM_BR_PAD;
-    const brY = box.maxY - ROOM_BR_PAD;
+    const brY = box.maxY - ROOM_BR_PAD - ROOM_LABEL_UP;
 
     const g = document.createElementNS(NS, "g");
     g.setAttribute("class", "svg-floor-dim-room");
