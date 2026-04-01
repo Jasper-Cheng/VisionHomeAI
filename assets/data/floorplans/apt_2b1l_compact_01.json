@@ -23,22 +23,22 @@
       "walls": [
         { "id": "w_ext_top", "start": [0,0], "end": [900,0], "thickness": 24, "height": 280, "type": "external" },
         { "id": "w_ext_right", "start": [900,0], "end": [900,900], "thickness": 24, "height": 280, "type": "external" },
-        { "id": "w_ext_bottom", "start": [900,900], "end": [0,900], "thickness": 24, "height": 280, "type": "external" },
-        { "id": "w_ext_left", "start": [0,900], "end": [0,0], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_ext_bottom", "start": [0,900], "end": [900,900], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_ext_left", "start": [0,0], "end": [0,900], "thickness": 24, "height": 280, "type": "external" },
 
         { "id": "w_mid_h_w", "start": [0,400], "end": [420,400], "thickness": 12, "height": 280, "type": "internal" },
         { "id": "w_mid_h_e", "start": [560,400], "end": [900,400], "thickness": 12, "height": 280, "type": "internal" },
         { "id": "w_mid_v1", "start": [560,0], "end": [560,650], "thickness": 12, "height": 280, "type": "internal" },
         { "id": "w_mid_v2", "start": [700,650], "end": [700,900], "thickness": 12, "height": 280, "type": "internal" },
         { "id": "w_mid_h2", "start": [560,650], "end": [900,650], "thickness": 12, "height": 280, "type": "internal" },
-        { "id": "w_ntl_h", "start": [560,220], "end": [420,220], "thickness": 12, "height": 280, "type": "internal" },
+        { "id": "w_ntl_h", "start": [420,220], "end": [560,220], "thickness": 12, "height": 280, "type": "internal" },
         { "id": "w_ntl_v", "start": [420,220], "end": [420,400], "thickness": 12, "height": 280, "type": "internal" }
       ],
       "doors": [
         {
           "id": "d_main",
           "wallId": "w_ext_bottom",
-          "pos": 280,
+          "pos": 620,
           "width": 120,
           "height": 220,
           "name": "入户门",
@@ -81,7 +81,7 @@
         {
           "id": "win_left_floor",
           "wallId": "w_ext_left",
-          "pos": 700,
+          "pos": 200,
           "width": 300,
           "height": 210,
           "altitude": 15,
@@ -90,7 +90,7 @@
         {
           "id": "win_left_small",
           "wallId": "w_ext_left",
-          "pos": 200,
+          "pos": 700,
           "width": 200,
           "height": 140,
           "altitude": 90,
