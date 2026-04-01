@@ -42,7 +42,13 @@
           "width": 120,
           "height": 220,
           "name": "入户门",
-          "type": "entrance"
+          "type": "entrance",
+          "style": {
+            "roughness": 0.55,
+            "metalness": 0.25,
+            "color": "#4a4540",
+            "texture": { "albedo": "", "roughness": "", "normal": "" }
+          }
         },
         {
           "id": "d_bath",
@@ -50,7 +56,13 @@
           "pos": 180,
           "width": 80,
           "height": 210,
-          "name": "卫生间门"
+          "name": "卫生间门",
+          "style": {
+            "roughness": 0.75,
+            "metalness": 0.04,
+            "color": "#e8e4de",
+            "texture": { "albedo": "", "roughness": "", "normal": "" }
+          }
         },
         {
           "id": "d_kitchen",
@@ -58,7 +70,13 @@
           "pos": 60,
           "width": 80,
           "height": 210,
-          "name": "厨房门"
+          "name": "厨房门",
+          "style": {
+            "roughness": 0.75,
+            "metalness": 0.04,
+            "color": "#e8e4de",
+            "texture": { "albedo": "", "roughness": "", "normal": "" }
+          }
         },
         {
           "id": "d_bed1",
@@ -66,7 +84,13 @@
           "pos": 60,
           "width": 85,
           "height": 210,
-          "name": "主卧门"
+          "name": "主卧门",
+          "style": {
+            "roughness": 0.88,
+            "metalness": 0.06,
+            "color": "#6b5344",
+            "texture": { "albedo": "", "roughness": "", "normal": "" }
+          }
         },
         {
           "id": "d_bed2",
@@ -74,7 +98,13 @@
           "pos": 310,
           "width": 85,
           "height": 210,
-          "name": "次卧门"
+          "name": "次卧门",
+          "style": {
+            "roughness": 0.88,
+            "metalness": 0.06,
+            "color": "#6b5344",
+            "texture": { "albedo": "", "roughness": "", "normal": "" }
+          }
         }
       ],
       "windows": [

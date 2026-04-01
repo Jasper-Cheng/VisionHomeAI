@@ -875,6 +875,11 @@ a.avatar:hover {
   fill: none;
 }
 
+.svg-floor-door-fill {
+  stroke: none;
+  pointer-events: none;
+}
+
 .svg-floor-door {
   fill: rgba(251, 191, 36, 0.15);
   stroke: rgba(252, 211, 77, 0.95);

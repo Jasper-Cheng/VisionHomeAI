@@ -4,6 +4,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 import { getFloorBBoxCm } from "../floorplan/floorplanSvg.js";
+import { normalizeDoorStyle } from "../floorplan/doorStyle.js";
 import { getFurnitureDisplayName, getFurnitureTags } from "../furniture/furnitureManager.js";
 import {
   applyFurnitureAppearanceToGroup,
@@ -12,6 +13,7 @@ import {
   hasFurnitureMaterialConfig,
   normalizeFurnitureSelection,
   resolveFurnitureSelectionDetail,
+  resolveTextureAssetUrl,
 } from "../furniture/furnitureConfig.js";
 import { GLTFLoader } from "../../assets/vendor/GLTFLoader.js";
 import { RoomEnvironment } from "../../assets/vendor/RoomEnvironment.js";
@@ -937,6 +939,150 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return group;
   }
 
+  /**
+   * 门洞填充材质（ns 须已通过 normalizeDoorStyle 校验）
+   */
+  function doorFillMaterialFromNs(ns, floorOpacity) {
+    let color;
+    try {
+      color = new THREE.Color(ns.color);
+    } catch {
+      return null;
+    }
+    const op = floorOpacity ?? 1;
+    const mat = new THREE.MeshStandardMaterial({
+      color,
+      roughness: ns.roughness,
+      metalness: ns.metalness,
+      envMapIntensity: 0.35,
+      emissive: new THREE.Color(0x000000),
+    });
+    if (ns.isGlass) {
+      mat.transparent = true;
+      mat.opacity = 0.42 * op;
+      mat.depthWrite = false;
+    } else {
+      mat.transparent = op < 1;
+      mat.opacity = op;
+      mat.depthWrite = op >= 1;
+    }
+    mat.side = THREE.FrontSide;
+    return mat;
+  }
+
+  /** texture 路径非空时异步加载 PBR 贴图到门洞填充 mesh */
+  function queueDoorFillTextures(mesh, ns) {
+    if (!ns) return;
+    const t = ns.texture;
+    if (!t) return;
+    const albedo = String(t.albedo ?? "").trim();
+    const rough = String(t.roughness ?? "").trim();
+    const normal = String(t.normal ?? "").trim();
+    if (!albedo && !rough && !normal) return;
+
+    const loader = new THREE.TextureLoader();
+    (async () => {
+      const mat = mesh.material;
+      if (!mat || !mat.isMeshStandardMaterial) return;
+
+      let diffTex = null;
+      let roughTex = null;
+      let normalTex = null;
+
+      if (albedo) {
+        try {
+          const au = resolveTextureAssetUrl(albedo);
+          diffTex = await loader.loadAsync(au);
+          diffTex.colorSpace = THREE.SRGBColorSpace;
+          diffTex.flipY = false;
+        } catch (e) {
+          console.warn("[VisionHome] door albedo 贴图加载失败:", e);
+        }
+      }
+      if (rough) {
+        try {
+          const ru = resolveTextureAssetUrl(rough);
+          roughTex = await loader.loadAsync(ru);
+          roughTex.colorSpace = THREE.LinearSRGBColorSpace;
+          roughTex.flipY = false;
+        } catch (e) {
+          console.warn("[VisionHome] door roughness 贴图加载失败:", e);
+        }
+      }
+      if (normal) {
+        try {
+          const nu = resolveTextureAssetUrl(normal);
+          normalTex = await loader.loadAsync(nu);
+          normalTex.colorSpace = THREE.NoColorSpace;
+          normalTex.flipY = false;
+        } catch (e) {
+          console.warn("[VisionHome] door normal 贴图加载失败:", e);
+        }
+      }
+
+      if (!diffTex && !roughTex && !normalTex) return;
+
+      if (diffTex) mat.map = diffTex;
+      if (roughTex) mat.roughnessMap = roughTex;
+      if (normalTex) {
+        mat.normalMap = normalTex;
+        mat.normalScale = new THREE.Vector2(1, 1);
+      }
+      mat.needsUpdate = true;
+    })();
+  }
+
+  function buildDoorFillGroup(door, wall, cx, cy, s, defaultHeightCm, floorOpacity) {
+    if (!door || !wall) return null;
+    const ns = normalizeDoorStyle(door.style);
+    if (!ns) return null;
+    const pos = Number(door.pos);
+    const wcm = Number(door.width);
+    const hcm = Number(door.height);
+    if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) return null;
+    const x1 = snap(Number(wall.start[0]));
+    const y1 = snap(Number(wall.start[1]));
+    const x2 = snap(Number(wall.end[0]));
+    const y2 = snap(Number(wall.end[1]));
+    const dx = (x2 - x1) * (s / 100);
+    const dz = (y2 - y1) * (s / 100);
+    const lenWorld = Math.hypot(dx, dz);
+    if (lenWorld < 1e-9) return null;
+    const lenCm = Math.hypot(x2 - x1, y2 - y1);
+    const hM = defaultHeightCm / 100;
+    const wM = (wcm * s) / 100;
+    const hDoor = Math.min((hcm * s) / 100, hM);
+    if (hDoor < WALL_HOLE_EPS) return null;
+    const th = Number(wall.thickness);
+    const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
+    const thickM = Math.max(0.03, thickMRaw);
+    const halfLen = lenWorld / 2;
+    const centerX = -halfLen + (pos / lenCm) * lenWorld;
+    const mx = ((x1 + x2) / 2 - cx) * (s / 100);
+    const mz = ((y1 + y2) / 2 - cy) * (s / 100);
+    const rotY = Math.atan2(dz, dx);
+    const group = new THREE.Group();
+    group.position.set(mx, 0, mz);
+    group.rotation.y = rotY;
+    group.userData.floorplanDoorFill = true;
+    const geo = new THREE.BoxGeometry(wM, hDoor, thickM * 0.22);
+    const mat = doorFillMaterialFromNs(ns, floorOpacity);
+    if (!mat) {
+      geo.dispose();
+      return null;
+    }
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(centerX, hDoor / 2, 0);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData.floorplanPick = true;
+    mesh.userData.floorplanDoorFill = true;
+    mesh.userData.floorplanDoorStyle = ns;
+    queueDoorFillTextures(mesh, ns);
+    group.add(mesh);
+    return group;
+  }
+
   // ============================================================
   // 尺寸标注辅助函数
   // ============================================================
@@ -1422,6 +1568,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       for (const w of fl.walls || []) {
         const m = buildWallMesh(w, fl, cx, cy, s, defaultH, opacity);
         if (m) floorG.add(m);
+      }
+      for (const d of fl.doors || []) {
+        const wid = String(d.wallId ?? "").trim();
+        const w = wid ? (fl.walls || []).find((x) => String(x?.id ?? "") === wid) : null;
+        if (!w) continue;
+        const fillG = buildDoorFillGroup(d, w, cx, cy, s, defaultH, opacity);
+        if (fillG) floorG.add(fillG);
       }
             // 尺寸标注：选中某楼层时只画当前层；无楼层选中时画所有楼层
       if (showDimensions && (isActive || !floorSelectionEnabled)) {

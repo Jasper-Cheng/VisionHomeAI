@@ -3,6 +3,8 @@
  * 遍历该层内 rooms / walls / doors / windows / furnitures；3D 属性（height、elevation 等）不参与 2D 绘制。
  */
 
+import { normalizeDoorStyle } from "./doorStyle.js";
+
 const NS = "http://www.w3.org/2000/svg";
 
 function identitySnapCoord(v) {
@@ -419,7 +421,14 @@ function appendFloorDimensionAnnotations(floor, innerG, snapCoord, inversePlanSc
   innerG.appendChild(layer);
 }
 
-function appendPolygonIfValid(innerG, poly, className, dataAttrs = {}, snapCoord = identitySnapCoord) {
+function appendPolygonIfValid(
+  innerG,
+  poly,
+  className,
+  dataAttrs = {},
+  snapCoord = identitySnapCoord,
+  extraAttrs = {},
+) {
   if (!Array.isArray(poly) || poly.length < 3) return;
   const pts = poly
     .filter((p) => Array.isArray(p) && p.length >= 2)
@@ -431,6 +440,9 @@ function appendPolygonIfValid(innerG, poly, className, dataAttrs = {}, snapCoord
   el.setAttribute("class", className);
   for (const [k, v] of Object.entries(dataAttrs)) {
     if (v != null && v !== "") el.setAttribute(k, String(v));
+  }
+  if (extraAttrs.fill != null && String(extraAttrs.fill).trim() !== "") {
+    el.setAttribute("fill", String(extraAttrs.fill));
   }
   innerG.appendChild(el);
 }
@@ -518,6 +530,47 @@ function appendOpening(innerG, obj, className, defaultStroke, snapCoord = identi
       snapCoord,
     );
   }
+}
+
+/** 门洞平面填充（墙厚方向展开四边形），颜色随 door.style（含 roughness/metalness/color/texture） */
+function appendDoorFillPolygon(innerG, door, walls, snapCoord = identitySnapCoord) {
+  const seg = openingSegmentOnWall(door, walls);
+  if (!seg) return;
+  const wid = String(door.wallId ?? "").trim();
+  const wall = walls.find((w) => String(w?.id ?? "") === wid);
+  const th = Number(wall?.thickness);
+  const half = (Number.isFinite(th) && th > 0 ? th : 12) / 2;
+  const dx = seg.x1 - seg.x0;
+  const dy = seg.y1 - seg.y0;
+  const len = Math.hypot(dx, dy);
+  if (len < 1e-6) return;
+  const nx = (-dy / len) * half;
+  const ny = (dx / len) * half;
+  const poly = [
+    [seg.x0 + nx, seg.y0 + ny],
+    [seg.x1 + nx, seg.y1 + ny],
+    [seg.x1 - nx, seg.y1 - ny],
+    [seg.x0 - nx, seg.y0 - ny],
+  ];
+  const ns = normalizeDoorStyle(door.style);
+  if (!ns) return;
+  const styleAttr =
+    door.style != null && typeof door.style === "object"
+      ? JSON.stringify(door.style)
+      : door.style != null
+        ? String(door.style)
+        : "";
+  appendPolygonIfValid(
+    innerG,
+    poly,
+    "svg-floor-door-fill",
+    {
+      "data-door-id": String(door.id || ""),
+      ...(styleAttr !== "" ? { "data-door-style": styleAttr } : {}),
+    },
+    snapCoord,
+    { fill: ns.color },
+  );
 }
 
 /**
@@ -638,6 +691,11 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
   /* 3. 窗 */
   for (const win of floor.windows || []) {
     appendOpening(innerG, win, "svg-floor-window", 6, snapCoord, wallsForOpenings);
+  }
+
+  /* 3.5 门洞填充（平面） */
+  for (const door of floor.doors || []) {
+    appendDoorFillPolygon(innerG, door, wallsForOpenings, snapCoord);
   }
 
   /* 4. 门 */
