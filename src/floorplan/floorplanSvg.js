@@ -563,9 +563,8 @@ function appendWindowFillPolygon(innerG, win, walls, snapCoord = identitySnapCoo
   const ns = normalizeWindowStyle(win.style);
   if (!ns) return;
   const rgb = hexColorToRgbComponents(ns.color);
-  const fillStr = rgb
-    ? `rgba(${rgb.r},${rgb.g},${rgb.b},${ns.opacity})`
-    : ns.color;
+  const op = Math.min(0.94, Math.max(ns.opacity, ns.opacity * 1.28 + 0.06));
+  const fillStr = rgb ? `rgba(${rgb.r},${rgb.g},${rgb.b},${op})` : ns.color;
   const styleAttr =
     win.style != null && typeof win.style === "object"
       ? JSON.stringify(win.style)
@@ -765,9 +764,9 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
     appendWindowFillPolygon(innerG, win, wallsForOpenings, snapCoord);
   }
 
-  /* 3.1 窗线 */
+  /* 3.1 窗线（笔宽与墙厚同坐标系 cm，略粗更易辨认） */
   for (const win of floor.windows || []) {
-    appendOpening(innerG, win, "svg-floor-window", 6, snapCoord, wallsForOpenings);
+    appendOpening(innerG, win, "svg-floor-window", 11, snapCoord, wallsForOpenings);
   }
 
   /* 3.5 门洞填充（平面） */
@@ -777,7 +776,7 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
 
   /* 4. 门 */
   for (const door of floor.doors || []) {
-    appendOpening(innerG, door, "svg-floor-door", 8, snapCoord, wallsForOpenings);
+    appendOpening(innerG, door, "svg-floor-door", 14, snapCoord, wallsForOpenings);
   }
 
   /* 5. 层内模板家具 */

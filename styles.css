@@ -866,8 +866,8 @@ a.avatar:hover {
 }
 
 .svg-floor-window {
-  fill: rgba(56, 189, 248, 0.2);
-  stroke: rgba(125, 211, 252, 0.95);
+  fill: rgba(56, 189, 248, 0.38);
+  stroke: rgba(224, 242, 254, 1);
   stroke-linecap: butt;
 }
 
@@ -875,27 +875,33 @@ a.avatar:hover {
   fill: none;
 }
 
+/* 窗洞填充：描边勾边，与墙面对比更明显 */
 .svg-floor-window-fill {
-  stroke: none;
+  stroke: rgba(125, 211, 252, 0.88);
+  stroke-width: 2.5;
+  paint-order: stroke fill;
   pointer-events: none;
 }
 
+/* 门洞填充：外轮廓线 + 略提高对比 */
 .svg-floor-door-fill {
-  stroke: none;
+  stroke: rgba(252, 211, 77, 0.92);
+  stroke-width: 2.5;
+  paint-order: stroke fill;
   pointer-events: none;
 }
 
 .svg-floor-door-handle {
-  fill: rgba(148, 148, 152, 0.95);
-  stroke: rgba(72, 72, 78, 0.85);
-  stroke-width: 0.8;
+  fill: rgba(210, 210, 214, 1);
+  stroke: rgba(55, 55, 62, 0.95);
+  stroke-width: 1.1;
   pointer-events: none;
 }
 
 .svg-floor-door {
-  fill: rgba(251, 191, 36, 0.15);
-  stroke: rgba(252, 211, 77, 0.95);
-  stroke-dasharray: 14 10;
+  fill: rgba(251, 191, 36, 0.32);
+  stroke: rgba(254, 240, 138, 1);
+  stroke-dasharray: 12 8;
   stroke-linecap: butt;
 }
 
@@ -2044,10 +2050,17 @@ a.avatar:hover {
   height: 0;
 }
 
-/* 户型库：标题不要 flex 撑满剩余高度，避免文字下方大块空白 */
-.floorplan-asset-grid .asset-name {
+/* 户型库：名称与面积同一行，如「两居紧凑型·85m²」 */
+.floorplan-asset-grid .floorplan-asset-label {
+  width: 100%;
   flex: 0 0 auto;
   margin-top: 6px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.82);
+  overflow-wrap: anywhere;
 }
 
 .floorplan-asset-grid .asset-card {

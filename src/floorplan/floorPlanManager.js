@@ -1,5 +1,6 @@
 import { loadItemsFromManifest } from "../core/catalogLoader.js";
 import { DATA_PATHS } from "../core/schema.js";
+import { getFloorFootprintAreaM2 } from "./floorplanSvg.js";
 import { mountFloorplanThumb } from "./floorplanPreview.js";
 
 /**
@@ -19,6 +20,26 @@ function cardDisplayName(entry) {
   const p = entry?.project;
   if (!p) return entry?.id || "户型";
   return p.name || entry.id;
+}
+
+/** @returns {number} ㎡，优先 project.areaM2，否则由首层房间 polygon 汇总 */
+function floorplanEntryAreaM2(entry) {
+  const a = Number(entry?.project?.areaM2);
+  if (Number.isFinite(a) && a > 0) return a;
+  const floor0 = Array.isArray(entry?.floors) ? entry.floors[0] : null;
+  if (floor0) {
+    const sum = getFloorFootprintAreaM2(floor0);
+    if (Number.isFinite(sum) && sum > 0) return sum;
+  }
+  return 0;
+}
+
+/** @returns {string} 如 "85m²"（m + 上标 ² U+00B2），无效则空串 */
+function formatFloorplanAreaCompact(m2) {
+  if (!Number.isFinite(m2) || m2 <= 0) return "";
+  const r = Math.round(m2 * 10) / 10;
+  if (Math.abs(r - Math.round(r)) < 1e-6) return `${Math.round(r)}m\u00B2`;
+  return `${r.toFixed(1)}m\u00B2`;
 }
 
 /**
@@ -135,6 +156,9 @@ export function mountFloorplanLibrary(catalog, options = {}) {
   (catalog.items || []).forEach((entry, idx) => {
     const p = entry.project || {};
     const display = cardDisplayName(entry);
+    const areaM2 = floorplanEntryAreaM2(entry);
+    const areaCompact = formatFloorplanAreaCompact(areaM2);
+    const cardLine = areaCompact ? `${display}·${areaCompact}` : display;
     const category = p.category || "";
     const fid = String(entry.id || "").trim();
 
@@ -143,14 +167,14 @@ export function mountFloorplanLibrary(catalog, options = {}) {
     card.draggable = false;
     card.dataset.floorPlanId = fid;
     card.dataset.category = category;
-    card.dataset.name = display.toLowerCase();
+    card.dataset.name = cardLine.toLowerCase();
     card.tabIndex = 0;
     card.setAttribute("role", "button");
     card.setAttribute("aria-pressed", "false");
-    card.setAttribute("aria-label", display);
+    card.setAttribute("aria-label", cardLine);
     card.setAttribute(
       "title",
-      [display, category ? `分类: ${category}` : ""].filter(Boolean).join("\n"),
+      [cardLine, category ? `分类: ${category}` : ""].filter(Boolean).join("\n"),
     );
 
     const thumb = document.createElement("div");
@@ -158,8 +182,8 @@ export function mountFloorplanLibrary(catalog, options = {}) {
     mountFloorplanThumb(thumb, entry, idx);
 
     const nameEl = document.createElement("div");
-    nameEl.className = "asset-name";
-    nameEl.textContent = display;
+    nameEl.className = "floorplan-asset-label";
+    nameEl.textContent = cardLine;
 
     card.appendChild(thumb);
     card.appendChild(nameEl);
