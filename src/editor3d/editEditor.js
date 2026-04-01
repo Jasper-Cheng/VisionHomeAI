@@ -971,12 +971,23 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return mat;
   }
 
-  function doorHandleMetalMaterial() {
+  /** 与 doorFillMaterialFromNs 中门扇 alpha 一致，供执手同步透明度 */
+  function effectiveDoorPanelOpacity(ns, floorOpacity) {
+    const op = floorOpacity ?? 1;
+    if (ns.isGlass) return Math.min(1, 0.42 * op);
+    return op;
+  }
+
+  function doorHandleMetalMaterial(panelOpacity) {
+    const op = Math.max(0, Math.min(1, panelOpacity));
     return new THREE.MeshStandardMaterial({
       color: 0xa8a8ad,
       metalness: 0.88,
       roughness: 0.32,
       envMapIntensity: 0.55,
+      transparent: op < 1,
+      opacity: op,
+      depthWrite: op >= 0.99,
     });
   }
 
@@ -987,9 +998,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {number} wM 门宽（m）
    * @param {number} hDoor 门高（m）
    * @param {number} doorDepth 门扇厚度（m）
+   * @param {number} panelOpacity 与门扇 mesh 相同的有效透明度（含楼层与玻璃系数）
    */
-  function addDoorHandleMeshes(group, centerX, wM, hDoor, doorDepth) {
-    const hMat = doorHandleMetalMaterial();
+  function addDoorHandleMeshes(group, centerX, wM, hDoor, doorDepth, panelOpacity) {
+    const hMat = doorHandleMetalMaterial(panelOpacity);
     const handleY = Math.min(Math.max(hDoor * 0.45, 0.35), Math.min(1.0, hDoor - 0.05));
     const handleX = centerX + wM * 0.5 - 0.08;
     const faceOut = doorDepth * 0.5 + 0.008;
@@ -1129,7 +1141,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     queueDoorFillTextures(mesh, ns);
     group.add(mesh);
     const doorDepth = thickM * 0.22;
-    addDoorHandleMeshes(group, centerX, wM, hDoor, doorDepth);
+    addDoorHandleMeshes(group, centerX, wM, hDoor, doorDepth, effectiveDoorPanelOpacity(ns, floorOpacity));
     return group;
   }
 
