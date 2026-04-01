@@ -6,6 +6,15 @@ import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 import { getFloorBBoxCm } from "../floorplan/floorplanSvg.js";
 import { normalizeDoorStyle } from "../floorplan/doorStyle.js";
 import { normalizeWindowStyle } from "../floorplan/windowStyle.js";
+import {
+  loadStyleConfig,
+  getMaterialDef,
+  resolveStyleTextureUrl,
+  resolveWallMaterialKey,
+  resolveRoomFloorMaterialKey,
+  resolveDoorMaterialKey,
+  resolveWindowMaterialKey,
+} from "../floorplan/floorplanStyle.js";
 import { getFurnitureDisplayName, getFurnitureTags } from "../furniture/furnitureManager.js";
 import {
   applyFurnitureAppearanceToGroup,
@@ -684,6 +693,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   // 当前选中层透明度（0~1），其余层固定 0.2
   let activeLayerOpacity = 1.0;
   const otherLayersOpacity = 0.2; // 非选中层固定值
+  /** 户型 3D 重建代数：异步加载 style.json 完成后若已发起更新则放弃写入 */
+  let floorplanRebuildGen = 0;
   floorHideOthersToggleBtn?.classList.toggle("is-active", hideOtherFloors);
   floorHideOthersToggleBtn?.setAttribute("aria-pressed", hideOtherFloors ? "true" : "false");
   function syncOtherOpacityUi() {
@@ -794,7 +805,148 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
   }
 
-  function buildRoomMesh(room, cx, cy, s, floorOpacity) {
+  /**
+   * 从风格包 materials 条目创建 Three 材质（可先显示颜色，贴图异步叠加）
+   * @param {object} def
+   * @param {number} floorOpacity
+   * @param {{ forGlass?: boolean, envMapIntensity?: number, side?: import("three").Side }} [options]
+   */
+  function createFloorplanMaterialFromStyleDef(def, floorOpacity, options = {}) {
+    const envMapIntensity = options.envMapIntensity ?? 0.35;
+    const floorOp = floorOpacity ?? 1;
+    const color = new THREE.Color();
+    try {
+      const h = String(def.color ?? "#cccccc").trim();
+      color.setStyle(h.startsWith("#") ? h : `#${h}`);
+    } catch {
+      color.setHex(0xcccccc);
+    }
+    const roughness = Number(def.roughness);
+    const metalness = Number(def.metalness);
+    const tr = Number(def.transmission);
+    const usePhysical =
+      options.forGlass === true &&
+      String(def.type ?? "") === "glass" &&
+      Number.isFinite(tr) &&
+      tr > 0.02;
+
+    if (usePhysical) {
+      const baseOp = Number(def.opacity);
+      const opMult = Number.isFinite(baseOp) ? baseOp : 1;
+      const mat = new THREE.MeshPhysicalMaterial({
+        color,
+        roughness: Number.isFinite(roughness) ? roughness : 0.05,
+        metalness: Number.isFinite(metalness) ? metalness : 0,
+        transmission: Math.min(1, tr),
+        thickness: 0.03,
+        ior: Number.isFinite(Number(def.ior)) ? Number(def.ior) : 1.45,
+        transparent: true,
+        opacity: Math.min(1, opMult * floorOp),
+        envMapIntensity: 0.9,
+        emissive: new THREE.Color(0x000000),
+      });
+      applyFloorplanSurfaceAlpha(mat, Math.min(1, opMult * floorOp));
+      mat.side = options.side ?? THREE.DoubleSide;
+      return mat;
+    }
+
+    const mat = new THREE.MeshStandardMaterial({
+      color,
+      roughness: Number.isFinite(roughness) ? roughness : 0.55,
+      metalness: Number.isFinite(metalness) ? metalness : 0.05,
+      envMapIntensity,
+      emissive: new THREE.Color(0x000000),
+    });
+    applyFloorplanSurfaceAlpha(mat, floorOp);
+    mat.side = options.side ?? THREE.FrontSide;
+    return mat;
+  }
+
+  /**
+   * 风格包 PBR 贴图异步加载（路径相对 assets/style/）
+   * @param {import("three").MeshStandardMaterial | import("three").MeshPhysicalMaterial} mat
+   * @param {object} def
+   * @param {{ applyUvScale?: boolean }} [opts]
+   */
+  function queueStylePackTextures(mat, def, opts = {}) {
+    const t = def.texture;
+    if (!t || typeof t !== "object") return;
+    const albedo = String(t.albedo ?? "").trim();
+    const rough = String(t.roughness ?? "").trim();
+    const normal = String(t.normal ?? "").trim();
+    if (!albedo && !rough && !normal) return;
+
+    const loader = new THREE.TextureLoader();
+    const applyUv = Boolean(opts.applyUvScale && Array.isArray(def.uvScale) && def.uvScale.length >= 2);
+
+    (async () => {
+      if (!mat?.isMeshStandardMaterial) return;
+
+      let diffTex = null;
+      let roughTex = null;
+      let normalTex = null;
+
+      if (albedo) {
+        try {
+          const au = resolveStyleTextureUrl(albedo);
+          diffTex = await loader.loadAsync(au);
+          diffTex.colorSpace = THREE.SRGBColorSpace;
+          diffTex.flipY = false;
+        } catch (e) {
+          console.warn("[VisionHome] style albedo 贴图加载失败:", e);
+        }
+      }
+      if (rough) {
+        try {
+          const ru = resolveStyleTextureUrl(rough);
+          roughTex = await loader.loadAsync(ru);
+          roughTex.colorSpace = THREE.LinearSRGBColorSpace;
+          roughTex.flipY = false;
+        } catch (e) {
+          console.warn("[VisionHome] style roughness 贴图加载失败:", e);
+        }
+      }
+      if (normal) {
+        try {
+          const nu = resolveStyleTextureUrl(normal);
+          normalTex = await loader.loadAsync(nu);
+          normalTex.colorSpace = THREE.NoColorSpace;
+          normalTex.flipY = false;
+        } catch (e) {
+          console.warn("[VisionHome] style normal 贴图加载失败:", e);
+        }
+      }
+
+      if (!diffTex && !roughTex && !normalTex) return;
+
+      if (diffTex) {
+        if (applyUv) {
+          diffTex.wrapS = diffTex.wrapT = THREE.RepeatWrapping;
+          diffTex.repeat.set(def.uvScale[0], def.uvScale[1]);
+        }
+        mat.map = diffTex;
+        mat.color.setHex(0xffffff);
+      }
+      if (roughTex) {
+        if (applyUv) {
+          roughTex.wrapS = roughTex.wrapT = THREE.RepeatWrapping;
+          roughTex.repeat.set(def.uvScale[0], def.uvScale[1]);
+        }
+        mat.roughnessMap = roughTex;
+      }
+      if (normalTex) {
+        if (applyUv) {
+          normalTex.wrapS = normalTex.wrapT = THREE.RepeatWrapping;
+          normalTex.repeat.set(def.uvScale[0], def.uvScale[1]);
+        }
+        mat.normalMap = normalTex;
+        mat.normalScale = new THREE.Vector2(1, 1);
+      }
+      mat.needsUpdate = true;
+    })();
+  }
+
+  function buildRoomMesh(room, cx, cy, s, floorOpacity, floorStyleMat) {
     const poly = room?.polygon;
     if (!Array.isArray(poly) || poly.length < 3) return null;
     const shape = new THREE.Shape();
@@ -809,7 +961,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const geo = new THREE.ShapeGeometry(shape);
     geo.rotateX(-Math.PI / 2);
     geo.computeVertexNormals();
-    const mat = floorplanStdMat();
+    const mat = floorStyleMat || floorplanStdMat();
     const op = floorOpacity ?? 1;
     applyFloorplanSurfaceAlpha(mat, op);
     // ShapeGeometry 与挤出顶盖法线朝向可能不同；双面避免从上方只看到被剔除的一面
@@ -885,7 +1037,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return false;
   }
 
-  function buildWallMesh(wall, floor, cx, cy, s, defaultHeightCm, floorOpacity) {
+  function buildWallMesh(wall, floor, cx, cy, s, defaultHeightCm, floorOpacity, wallStyleMat) {
     if (!Array.isArray(wall?.start) || wall.start.length < 2 || !Array.isArray(wall?.end) || wall.end.length < 2) return null;
     const x1 = snap(Number(wall.start[0])), y1 = snap(Number(wall.start[1]));
     const x2 = snap(Number(wall.end[0])), y2 = snap(Number(wall.end[1]));
@@ -908,6 +1060,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const op = floorOpacity ?? 1;
 
     function makeWallMaterial() {
+      if (wallStyleMat) {
+        wallStyleMat.side = THREE.FrontSide;
+        return wallStyleMat;
+      }
       const mat = floorplanStdMat();
       applyFloorplanSurfaceAlpha(mat, op);
       mat.side = THREE.FrontSide;
@@ -1108,7 +1264,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     })();
   }
 
-  function buildDoorFillGroup(door, wall, cx, cy, s, defaultHeightCm, floorOpacity) {
+  function buildDoorFillGroup(door, wall, cx, cy, s, defaultHeightCm, floorOpacity, styleDoorMat) {
     if (!door || !wall) return null;
     const ns = normalizeDoorStyle(door.style);
     const pos = Number(door.pos);
@@ -1141,7 +1297,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     group.rotation.y = rotY;
     group.userData.floorplanDoorFill = true;
     const geo = new THREE.BoxGeometry(wM, hDoor, thickM * 0.22);
-    const mat = doorFillMaterialFromNs(ns, floorOpacity);
+    const mat = styleDoorMat || doorFillMaterialFromNs(ns, floorOpacity);
     if (!mat) {
       geo.dispose();
       return null;
@@ -1153,10 +1309,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     mesh.userData.floorplanPick = true;
     mesh.userData.floorplanDoorFill = true;
     mesh.userData.floorplanDoorStyle = ns;
-    queueDoorFillTextures(mesh, ns);
+    if (!styleDoorMat) queueDoorFillTextures(mesh, ns);
     group.add(mesh);
     const doorDepth = thickM * 0.22;
-    addDoorHandleMeshes(group, centerX, wM, hDoor, doorDepth, effectiveDoorPanelOpacity(ns, floorOpacity));
+    addDoorHandleMeshes(
+      group,
+      centerX,
+      wM,
+      hDoor,
+      doorDepth,
+      styleDoorMat ? (floorOpacity ?? 1) : effectiveDoorPanelOpacity(ns, floorOpacity),
+    );
     return group;
   }
 
@@ -1260,7 +1423,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /**
    * 窗洞玻璃片（与墙体洞口一致）；无 style 时 normalizeWindowStyle 为白 clear
    */
-  function buildWindowGlassGroup(win, wall, cx, cy, s, defaultHeightCm, floorOpacity) {
+  function buildWindowGlassGroup(win, wall, cx, cy, s, defaultHeightCm, floorOpacity, styleWinMat) {
     if (!win || !wall) return null;
     const ns = normalizeWindowStyle(win.style);
     const pos = Number(win.pos);
@@ -1297,7 +1460,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     group.rotation.y = rotY;
     group.userData.floorplanWindowFill = true;
     const geo = new THREE.BoxGeometry(wM, hWinClamped, thickM * 0.22);
-    const mat = windowGlassMaterialFromNs(ns, floorOpacity);
+    const mat = styleWinMat || windowGlassMaterialFromNs(ns, floorOpacity);
     if (!mat) {
       geo.dispose();
       return null;
@@ -1309,7 +1472,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     mesh.userData.floorplanPick = true;
     mesh.userData.floorplanWindowFill = true;
     mesh.userData.floorplanWindowStyle = ns;
-    queueWindowFillTextures(mesh, ns);
+    if (!styleWinMat) queueWindowFillTextures(mesh, ns);
     group.add(mesh);
     return group;
   }
@@ -1745,7 +1908,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   // ============================================================
 
-  function rebuildFloorplan3D() {
+  async function rebuildFloorplan3D() {
+    const gen = ++floorplanRebuildGen;
     clearInteractiveList();
     disposeObject3D(floorplanRoot);
     floorplanRoot.clear();
@@ -1758,6 +1922,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
 
     const entry = currentFloorplanEntry;
+    let style = null;
+    try {
+      const sid = String(entry?.styleId ?? "").trim() || "modern_minimal_v1";
+      style = await loadStyleConfig(sid);
+    } catch (e) {
+      console.warn("[VisionHome] 风格包加载失败:", e);
+    }
+    if (gen !== floorplanRebuildGen) return;
+
     const floorIndex = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
     const floor = floorIndex >= 0 ? getCurrentFloorFromEntry(entry, floorIndex) : null;
     if (floorIndex >= 0 && !floor) return;
@@ -1790,28 +1963,56 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       // 选中层更深、更清晰：提高不透明度
       // 未选中层更淡：降低透明度
       const opacity = floorIndex >= 0 ? (isActive ? activeLayerOpacity : otherLayersOpacity) : 0.2;
+
+      const styleMatCache = new Map();
+      /** @param {string} key @param {{ forGlass?: boolean, floorUv?: boolean }} [opts] */
+      function getMaterialForKey(key, opts = {}) {
+        if (!style || !key) return null;
+        const ck = `${key}|${opts.forGlass ? "g" : ""}|${opts.floorUv ? "f" : ""}`;
+        if (styleMatCache.has(ck)) return styleMatCache.get(ck);
+        const def = getMaterialDef(style, key);
+        if (!def) return null;
+        const side = opts.floorUv || opts.forGlass ? THREE.DoubleSide : THREE.FrontSide;
+        const mat = createFloorplanMaterialFromStyleDef(def, opacity, {
+          forGlass: opts.forGlass,
+          envMapIntensity: opts.forGlass ? 0.9 : 0.35,
+          side,
+        });
+        styleMatCache.set(ck, mat);
+        queueStylePackTextures(mat, def, { applyUvScale: !!opts.floorUv });
+        return mat;
+      }
+
       for (const room of fl.rooms || []) {
-        const m = buildRoomMesh(room, cx, cy, s, opacity);
+        const fk = resolveRoomFloorMaterialKey(style, room);
+        const floorMat = fk ? getMaterialForKey(fk, { floorUv: true }) : null;
+        const m = buildRoomMesh(room, cx, cy, s, opacity, floorMat);
         if (m) floorG.add(m);
       }
       const fh = Number(fl.height);
       const defaultH = Number.isFinite(fh) && fh > 0 ? fh : 280;
       for (const w of fl.walls || []) {
-        const m = buildWallMesh(w, fl, cx, cy, s, defaultH, opacity);
+        const wk = resolveWallMaterialKey(style, w, fl);
+        const wallMat = wk ? getMaterialForKey(wk) : null;
+        const m = buildWallMesh(w, fl, cx, cy, s, defaultH, opacity, wallMat);
         if (m) floorG.add(m);
       }
       for (const d of fl.doors || []) {
         const wid = String(d.wallId ?? "").trim();
         const w = wid ? (fl.walls || []).find((x) => String(x?.id ?? "") === wid) : null;
         if (!w) continue;
-        const fillG = buildDoorFillGroup(d, w, cx, cy, s, defaultH, opacity);
+        const dk = resolveDoorMaterialKey(style, d);
+        const doorMat = dk ? getMaterialForKey(dk) : null;
+        const fillG = buildDoorFillGroup(d, w, cx, cy, s, defaultH, opacity, doorMat);
         if (fillG) floorG.add(fillG);
       }
       for (const win of fl.windows || []) {
         const wid = String(win.wallId ?? "").trim();
         const w = wid ? (fl.walls || []).find((x) => String(x?.id ?? "") === wid) : null;
         if (!w) continue;
-        const winG = buildWindowGlassGroup(win, w, cx, cy, s, defaultH, opacity);
+        const wink = resolveWindowMaterialKey(style, win, fl);
+        const winMat = wink ? getMaterialForKey(wink, { forGlass: true }) : null;
+        const winG = buildWindowGlassGroup(win, w, cx, cy, s, defaultH, opacity, winMat);
         if (winG) floorG.add(winG);
       }
             // 尺寸标注：选中某楼层时只画当前层；无楼层选中时画所有楼层
