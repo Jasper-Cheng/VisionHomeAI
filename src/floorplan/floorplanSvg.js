@@ -571,6 +571,24 @@ function appendDoorFillPolygon(innerG, door, walls, snapCoord = identitySnapCoor
     snapCoord,
     { fill: ns.color },
   );
+
+  const tH = 0.82;
+  const hx = seg.x0 + tH * (seg.x1 - seg.x0);
+  const hy = seg.y0 + tH * (seg.y1 - seg.y0);
+  const pnx = -dy / len;
+  const pny = dx / len;
+  const off = Math.min(half * 0.42, 5);
+  for (const s of [-1, 1]) {
+    const tcx = hx + s * pnx * off;
+    const tcy = hy + s * pny * off;
+    const hc = document.createElementNS(NS, "circle");
+    hc.setAttribute("cx", String(snapCoord(tcx)));
+    hc.setAttribute("cy", String(snapCoord(tcy)));
+    hc.setAttribute("r", String(snapCoord(4)));
+    hc.setAttribute("class", "svg-floor-door-handle");
+    hc.setAttribute("data-door-id", String(door.id || ""));
+    innerG.appendChild(hc);
+  }
 }
 
 /**

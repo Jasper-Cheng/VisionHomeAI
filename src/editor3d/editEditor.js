@@ -970,6 +970,53 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return mat;
   }
 
+  function doorHandleMetalMaterial() {
+    return new THREE.MeshStandardMaterial({
+      color: 0xa8a8ad,
+      metalness: 0.88,
+      roughness: 0.32,
+      envMapIntensity: 0.55,
+    });
+  }
+
+  /**
+   * 门执手：薄圆柱底座 + 水平拉条，门扇两面各一组（±Z）
+   * @param {THREE.Group} group
+   * @param {number} centerX 门扇中心沿墙局部 X
+   * @param {number} wM 门宽（m）
+   * @param {number} hDoor 门高（m）
+   * @param {number} doorDepth 门扇厚度（m）
+   */
+  function addDoorHandleMeshes(group, centerX, wM, hDoor, doorDepth) {
+    const hMat = doorHandleMetalMaterial();
+    const handleY = Math.min(Math.max(hDoor * 0.45, 0.35), Math.min(1.0, hDoor - 0.05));
+    const handleX = centerX + wM * 0.5 - 0.08;
+    const faceOut = doorDepth * 0.5 + 0.008;
+
+    const roseGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.012, 16);
+    roseGeo.rotateX(Math.PI / 2);
+    const levGeo = new THREE.BoxGeometry(0.12, 0.018, 0.024);
+
+    for (const zSign of [1, -1]) {
+      const faceZ = zSign * faceOut;
+      const roseZ = faceZ + zSign * 0.006;
+      const levZ = faceZ + zSign * 0.02;
+      const levCenterX = handleX + zSign * -0.055;
+
+      const rose = new THREE.Mesh(roseGeo, hMat);
+      rose.position.set(handleX, handleY, roseZ);
+      rose.castShadow = true;
+      rose.userData.floorplanDoorHandle = true;
+      group.add(rose);
+
+      const lev = new THREE.Mesh(levGeo, hMat);
+      lev.position.set(levCenterX, handleY, levZ);
+      lev.castShadow = true;
+      lev.userData.floorplanDoorHandle = true;
+      group.add(lev);
+    }
+  }
+
   /** texture 路径非空时异步加载 PBR 贴图到门洞填充 mesh */
   function queueDoorFillTextures(mesh, ns) {
     if (!ns) return;
@@ -1080,6 +1127,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     mesh.userData.floorplanDoorStyle = ns;
     queueDoorFillTextures(mesh, ns);
     group.add(mesh);
+    const doorDepth = thickM * 0.22;
+    addDoorHandleMeshes(group, centerX, wM, hDoor, doorDepth);
     return group;
   }
 
