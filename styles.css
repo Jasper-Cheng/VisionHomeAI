@@ -875,6 +875,11 @@ a.avatar:hover {
   fill: none;
 }
 
+.svg-floor-window-fill {
+  stroke: none;
+  pointer-events: none;
+}
+
 .svg-floor-door-fill {
   stroke: none;
   pointer-events: none;

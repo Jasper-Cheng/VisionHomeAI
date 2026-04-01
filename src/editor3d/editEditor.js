@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 import { getFloorBBoxCm } from "../floorplan/floorplanSvg.js";
 import { normalizeDoorStyle } from "../floorplan/doorStyle.js";
+import { normalizeWindowStyle } from "../floorplan/windowStyle.js";
 import { getFurnitureDisplayName, getFurnitureTags } from "../furniture/furnitureManager.js";
 import {
   applyFurnitureAppearanceToGroup,
@@ -1132,6 +1133,161 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return group;
   }
 
+  function windowGlassMaterialFromNs(ns, floorOpacity) {
+    let color;
+    try {
+      color = new THREE.Color(ns.color);
+    } catch {
+      return null;
+    }
+    const floorOp = floorOpacity ?? 1;
+    const op = Math.max(0, Math.min(1, ns.opacity * floorOp));
+    let roughness = 0.14;
+    let envMapIntensity = 0.55;
+    if (ns.type === "clear") {
+      roughness = 0.04;
+      envMapIntensity = 0.95;
+    } else if (ns.type === "frosted") {
+      roughness = 0.92;
+      envMapIntensity = 0.28;
+    } else if (ns.type === "tinted") {
+      roughness = 0.12;
+      envMapIntensity = 0.5;
+    }
+    const mat = new THREE.MeshStandardMaterial({
+      color,
+      roughness,
+      metalness: 0.02,
+      transparent: true,
+      opacity: op,
+      envMapIntensity,
+      emissive: new THREE.Color(0x000000),
+    });
+    mat.depthWrite = op >= 0.98;
+    mat.side = THREE.DoubleSide;
+    return mat;
+  }
+
+  /** 窗玻璃贴图（与门洞逻辑一致） */
+  function queueWindowFillTextures(mesh, ns) {
+    if (!ns) return;
+    const t = ns.texture;
+    if (!t) return;
+    const albedo = String(t.albedo ?? "").trim();
+    const rough = String(t.roughness ?? "").trim();
+    const normal = String(t.normal ?? "").trim();
+    if (!albedo && !rough && !normal) return;
+
+    const loader = new THREE.TextureLoader();
+    (async () => {
+      const mat = mesh.material;
+      if (!mat || !mat.isMeshStandardMaterial) return;
+
+      let diffTex = null;
+      let roughTex = null;
+      let normalTex = null;
+
+      if (albedo) {
+        try {
+          const au = resolveTextureAssetUrl(albedo);
+          diffTex = await loader.loadAsync(au);
+          diffTex.colorSpace = THREE.SRGBColorSpace;
+          diffTex.flipY = false;
+        } catch (e) {
+          console.warn("[VisionHome] window albedo 贴图加载失败:", e);
+        }
+      }
+      if (rough) {
+        try {
+          const ru = resolveTextureAssetUrl(rough);
+          roughTex = await loader.loadAsync(ru);
+          roughTex.colorSpace = THREE.LinearSRGBColorSpace;
+          roughTex.flipY = false;
+        } catch (e) {
+          console.warn("[VisionHome] window roughness 贴图加载失败:", e);
+        }
+      }
+      if (normal) {
+        try {
+          const nu = resolveTextureAssetUrl(normal);
+          normalTex = await loader.loadAsync(nu);
+          normalTex.colorSpace = THREE.NoColorSpace;
+          normalTex.flipY = false;
+        } catch (e) {
+          console.warn("[VisionHome] window normal 贴图加载失败:", e);
+        }
+      }
+
+      if (!diffTex && !roughTex && !normalTex) return;
+
+      if (diffTex) mat.map = diffTex;
+      if (roughTex) mat.roughnessMap = roughTex;
+      if (normalTex) {
+        mat.normalMap = normalTex;
+        mat.normalScale = new THREE.Vector2(1, 1);
+      }
+      mat.needsUpdate = true;
+    })();
+  }
+
+  /**
+   * 窗洞玻璃片（与墙体洞口一致），style 须含 color / texture / type / opacity
+   */
+  function buildWindowGlassGroup(win, wall, cx, cy, s, defaultHeightCm, floorOpacity) {
+    if (!win || !wall) return null;
+    const ns = normalizeWindowStyle(win.style);
+    if (!ns) return null;
+    const pos = Number(win.pos);
+    const wcm = Number(win.width);
+    const hcm = Number(win.height);
+    const altCm = Number(win.altitude ?? win.alt ?? win.sillHeightCm ?? 0);
+    if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) return null;
+    if (!Number.isFinite(altCm)) return null;
+    const x1 = snap(Number(wall.start[0]));
+    const y1 = snap(Number(wall.start[1]));
+    const x2 = snap(Number(wall.end[0]));
+    const y2 = snap(Number(wall.end[1]));
+    const dx = (x2 - x1) * (s / 100);
+    const dz = (y2 - y1) * (s / 100);
+    const lenWorld = Math.hypot(dx, dz);
+    if (lenWorld < 1e-9) return null;
+    const lenCm = Math.hypot(x2 - x1, y2 - y1);
+    const hM = defaultHeightCm / 100;
+    const wM = (wcm * s) / 100;
+    const y0 = (altCm * s) / 100;
+    const hWin = (hcm * s) / 100;
+    const hWinClamped = Math.max(0, Math.min(hWin, hM - y0));
+    if (hWinClamped < WALL_HOLE_EPS) return null;
+    const th = Number(wall.thickness);
+    const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
+    const thickM = Math.max(0.03, thickMRaw);
+    const halfLen = lenWorld / 2;
+    const centerX = -halfLen + (pos / lenCm) * lenWorld;
+    const mx = ((x1 + x2) / 2 - cx) * (s / 100);
+    const mz = ((y1 + y2) / 2 - cy) * (s / 100);
+    const rotY = Math.atan2(dz, dx);
+    const group = new THREE.Group();
+    group.position.set(mx, 0, mz);
+    group.rotation.y = rotY;
+    group.userData.floorplanWindowFill = true;
+    const geo = new THREE.BoxGeometry(wM, hWinClamped, thickM * 0.22);
+    const mat = windowGlassMaterialFromNs(ns, floorOpacity);
+    if (!mat) {
+      geo.dispose();
+      return null;
+    }
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(centerX, y0 + hWinClamped / 2, 0);
+    mesh.castShadow = false;
+    mesh.receiveShadow = true;
+    mesh.userData.floorplanPick = true;
+    mesh.userData.floorplanWindowFill = true;
+    mesh.userData.floorplanWindowStyle = ns;
+    queueWindowFillTextures(mesh, ns);
+    group.add(mesh);
+    return group;
+  }
+
   // ============================================================
   // 尺寸标注辅助函数
   // ============================================================
@@ -1624,6 +1780,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (!w) continue;
         const fillG = buildDoorFillGroup(d, w, cx, cy, s, defaultH, opacity);
         if (fillG) floorG.add(fillG);
+      }
+      for (const win of fl.windows || []) {
+        const wid = String(win.wallId ?? "").trim();
+        const w = wid ? (fl.walls || []).find((x) => String(x?.id ?? "") === wid) : null;
+        if (!w) continue;
+        const winG = buildWindowGlassGroup(win, w, cx, cy, s, defaultH, opacity);
+        if (winG) floorG.add(winG);
       }
             // 尺寸标注：选中某楼层时只画当前层；无楼层选中时画所有楼层
       if (showDimensions && (isActive || !floorSelectionEnabled)) {

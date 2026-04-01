@@ -115,7 +115,13 @@
           "width": 300,
           "height": 210,
           "altitude": 15,
-          "name": "西墙落地窗"
+          "name": "西墙落地窗",
+          "style": {
+            "color": "#9fd4ff",
+            "opacity": 0.38,
+            "type": "clear",
+            "texture": { "albedo": "", "roughness": "", "normal": "" }
+          }
         },
         {
           "id": "win_left_small",
@@ -124,7 +130,13 @@
           "width": 200,
           "height": 140,
           "altitude": 90,
-          "name": "西墙小窗"
+          "name": "西墙小窗",
+          "style": {
+            "color": "#b8e0ff",
+            "opacity": 0.42,
+            "type": "clear",
+            "texture": { "albedo": "", "roughness": "", "normal": "" }
+          }
         },
         {
           "id": "win_right_small",
@@ -133,7 +145,13 @@
           "width": 200,
           "height": 140,
           "altitude": 90,
-          "name": "东墙小窗"
+          "name": "东墙小窗",
+          "style": {
+            "color": "#b8e0ff",
+            "opacity": 0.42,
+            "type": "clear",
+            "texture": { "albedo": "", "roughness": "", "normal": "" }
+          }
         },
         {
           "id": "win_kitchen_e",
@@ -142,7 +160,13 @@
           "width": 130,
           "height": 130,
           "altitude": 100,
-          "name": "厨房窗"
+          "name": "厨房窗",
+          "style": {
+            "color": "#c8b8a0",
+            "opacity": 0.45,
+            "type": "tinted",
+            "texture": { "albedo": "", "roughness": "", "normal": "" }
+          }
         },
         {
           "id": "win_bath_e",
@@ -151,7 +175,13 @@
           "width": 100,
           "height": 100,
           "altitude": 130,
-          "name": "卫生间窗"
+          "name": "卫生间窗",
+          "style": {
+            "color": "#e8eef2",
+            "opacity": 0.55,
+            "type": "frosted",
+            "texture": { "albedo": "", "roughness": "", "normal": "" }
+          }
         }
       ]
     }

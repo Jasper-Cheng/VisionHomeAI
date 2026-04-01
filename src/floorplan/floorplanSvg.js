@@ -4,6 +4,7 @@
  */
 
 import { normalizeDoorStyle } from "./doorStyle.js";
+import { normalizeWindowStyle } from "./windowStyle.js";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -532,6 +533,59 @@ function appendOpening(innerG, obj, className, defaultStroke, snapCoord = identi
   }
 }
 
+function hexColorToRgbComponents(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+/** 窗洞平面填充（与门洞同几何），fill 随 window.style 的 color + opacity */
+function appendWindowFillPolygon(innerG, win, walls, snapCoord = identitySnapCoord) {
+  const seg = openingSegmentOnWall(win, walls);
+  if (!seg) return;
+  const wid = String(win.wallId ?? "").trim();
+  const wall = walls.find((w) => String(w?.id ?? "") === wid);
+  const th = Number(wall?.thickness);
+  const half = (Number.isFinite(th) && th > 0 ? th : 12) / 2;
+  const dx = seg.x1 - seg.x0;
+  const dy = seg.y1 - seg.y0;
+  const len = Math.hypot(dx, dy);
+  if (len < 1e-6) return;
+  const nx = (-dy / len) * half;
+  const ny = (dx / len) * half;
+  const poly = [
+    [seg.x0 + nx, seg.y0 + ny],
+    [seg.x1 + nx, seg.y1 + ny],
+    [seg.x1 - nx, seg.y1 - ny],
+    [seg.x0 - nx, seg.y0 - ny],
+  ];
+  const ns = normalizeWindowStyle(win.style);
+  if (!ns) return;
+  const rgb = hexColorToRgbComponents(ns.color);
+  const fillStr = rgb
+    ? `rgba(${rgb.r},${rgb.g},${rgb.b},${ns.opacity})`
+    : ns.color;
+  const styleAttr =
+    win.style != null && typeof win.style === "object"
+      ? JSON.stringify(win.style)
+      : win.style != null
+        ? String(win.style)
+        : "";
+  appendPolygonIfValid(
+    innerG,
+    poly,
+    "svg-floor-window-fill",
+    {
+      "data-window-id": String(win.id || ""),
+      "data-window-type": ns.type,
+      ...(styleAttr !== "" ? { "data-window-style": styleAttr } : {}),
+    },
+    snapCoord,
+    { fill: fillStr },
+  );
+}
+
 /** 门洞平面填充（墙厚方向展开四边形），颜色随 door.style（含 roughness/metalness/color/texture） */
 function appendDoorFillPolygon(innerG, door, walls, snapCoord = identitySnapCoord) {
   const seg = openingSegmentOnWall(door, walls);
@@ -706,7 +760,12 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
 
   const wallsForOpenings = floor.walls || [];
 
-  /* 3. 窗 */
+  /* 3. 窗洞填充（平面） */
+  for (const win of floor.windows || []) {
+    appendWindowFillPolygon(innerG, win, wallsForOpenings, snapCoord);
+  }
+
+  /* 3.1 窗线 */
   for (const win of floor.windows || []) {
     appendOpening(innerG, win, "svg-floor-window", 6, snapCoord, wallsForOpenings);
   }
