@@ -790,9 +790,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const mat = floorplanStdMat();
     const op = floorOpacity ?? 1;
     mat.opacity = op;
-    // 选中层（op=1）走不透明渲染，避免透明排序导致的“缺失/闪烁”
     mat.transparent = op < 1;
-    mat.depthWrite = op < 1 ? false : true;
+    // 实体半透明仍写入深度，减轻旋转时透明排序导致的缺面/穿透（depthWrite:false 时多墙体重叠易错序）
+    mat.depthWrite = true;
     mat.side = THREE.FrontSide;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
@@ -890,7 +890,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const mat = floorplanStdMat();
       mat.opacity = op;
       mat.transparent = op < 1;
-      mat.depthWrite = op < 1 ? false : true;
+      mat.depthWrite = true;
       mat.side = THREE.FrontSide;
       return mat;
     }
@@ -965,7 +965,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     } else {
       mat.transparent = op < 1;
       mat.opacity = op;
-      mat.depthWrite = op >= 1;
+      mat.depthWrite = true;
     }
     mat.side = THREE.FrontSide;
     return mat;
@@ -987,7 +987,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       envMapIntensity: 0.55,
       transparent: op < 1,
       opacity: op,
-      depthWrite: op >= 0.99,
+      depthWrite: true,
     });
   }
 
@@ -1175,7 +1175,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       envMapIntensity,
       emissive: new THREE.Color(0x000000),
     });
-    mat.depthWrite = op >= 0.98;
+    mat.depthWrite = true;
     mat.side = THREE.DoubleSide;
     return mat;
   }
@@ -2259,7 +2259,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           if (!m) return;
           m.opacity = op;
           m.transparent = op < 1;
-          m.depthWrite = op < 1 ? false : true;
+          m.depthWrite = true;
           m.needsUpdate = true;
         });
       });
