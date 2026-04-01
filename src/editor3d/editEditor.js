@@ -774,6 +774,26 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     });
   }
 
+  /**
+   * 户型实体/门扇等半透明表面：不写入深度，由透明队列按距相机排序，减轻旋转时与其它半透明面叠加导致的变色、发黑。
+   * 轻微 polygonOffset 减轻 T 字墙接缝处共面 Z-fighting。
+   */
+  function applyFloorplanSurfaceAlpha(mat, opacity) {
+    const op = Math.max(0, Math.min(1, opacity ?? 1));
+    mat.opacity = op;
+    mat.transparent = op < 1;
+    if (op < 1) {
+      mat.depthWrite = false;
+      mat.depthTest = true;
+      mat.polygonOffset = true;
+      mat.polygonOffsetFactor = 1;
+      mat.polygonOffsetUnits = 1;
+    } else {
+      mat.depthWrite = true;
+      mat.polygonOffset = false;
+    }
+  }
+
   function buildRoomMesh(room, cx, cy, s, floorOpacity) {
     const poly = room?.polygon;
     if (!Array.isArray(poly) || poly.length < 3) return null;
@@ -789,10 +809,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     geo.rotateX(-Math.PI / 2);
     const mat = floorplanStdMat();
     const op = floorOpacity ?? 1;
-    mat.opacity = op;
-    mat.transparent = op < 1;
-    // 实体半透明仍写入深度，减轻旋转时透明排序导致的缺面/穿透（depthWrite:false 时多墙体重叠易错序）
-    mat.depthWrite = true;
+    applyFloorplanSurfaceAlpha(mat, op);
     mat.side = THREE.FrontSide;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
@@ -886,9 +903,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     function makeWallMaterial() {
       const mat = floorplanStdMat();
-      mat.opacity = op;
-      mat.transparent = op < 1;
-      mat.depthWrite = true;
+      applyFloorplanSurfaceAlpha(mat, op);
       mat.side = THREE.FrontSide;
       return mat;
     }
@@ -957,13 +972,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       emissive: new THREE.Color(0x000000),
     });
     if (ns.isGlass) {
-      mat.transparent = true;
-      mat.opacity = 0.42 * op;
-      mat.depthWrite = false;
+      applyFloorplanSurfaceAlpha(mat, Math.min(1, 0.42 * op));
     } else {
-      mat.transparent = op < 1;
-      mat.opacity = op;
-      mat.depthWrite = true;
+      applyFloorplanSurfaceAlpha(mat, op);
     }
     mat.side = THREE.FrontSide;
     return mat;
@@ -978,15 +989,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   function doorHandleMetalMaterial(panelOpacity) {
     const op = Math.max(0, Math.min(1, panelOpacity));
-    return new THREE.MeshStandardMaterial({
+    const mat = new THREE.MeshStandardMaterial({
       color: 0xa8a8ad,
       metalness: 0.88,
       roughness: 0.32,
       envMapIntensity: 0.55,
-      transparent: op < 1,
-      opacity: op,
-      depthWrite: true,
+      emissive: new THREE.Color(0x000000),
     });
+    applyFloorplanSurfaceAlpha(mat, op);
+    return mat;
   }
 
   /**
@@ -1173,7 +1184,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       envMapIntensity,
       emissive: new THREE.Color(0x000000),
     });
-    mat.depthWrite = true;
+    applyFloorplanSurfaceAlpha(mat, op);
     mat.side = THREE.DoubleSide;
     return mat;
   }
@@ -2255,9 +2266,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const mats = Array.isArray(o.material) ? o.material : [o.material];
         mats.forEach((m) => {
           if (!m) return;
-          m.opacity = op;
-          m.transparent = op < 1;
-          m.depthWrite = true;
+          applyFloorplanSurfaceAlpha(m, op);
           m.needsUpdate = true;
         });
       });
