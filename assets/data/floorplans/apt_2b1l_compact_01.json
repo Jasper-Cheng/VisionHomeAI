@@ -22,17 +22,17 @@
       ],
       "walls": [
         { "id": "w_ext_top", "start": [12,0], "end": [888,0], "thickness": 24, "height": 280, "type": "external" },
-        { "id": "w_ext_right", "start": [900,12], "end": [900,888], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_ext_right", "start": [900,-12], "end": [900,912], "thickness": 24, "height": 280, "type": "external" },
         { "id": "w_ext_bottom", "start": [12,900], "end": [888,900], "thickness": 24, "height": 280, "type": "external" },
-        { "id": "w_ext_left", "start": [0,12], "end": [0,888], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_ext_left", "start": [0,-12], "end": [0,912], "thickness": 24, "height": 280, "type": "external" },
 
         { "id": "w_mid_h_w", "start": [12,400], "end": [414,400], "thickness": 12, "height": 280, "type": "internal" },
         { "id": "w_mid_h_e", "start": [566,400], "end": [888,400], "thickness": 12, "height": 280, "type": "internal" },
         { "id": "w_mid_v1", "start": [560,12], "end": [560,644], "thickness": 12, "height": 280, "type": "internal" },
         { "id": "w_mid_v2", "start": [700,656], "end": [700,888], "thickness": 12, "height": 280, "type": "internal" },
-        { "id": "w_mid_h2", "start": [566,650], "end": [888,650], "thickness": 12, "height": 280, "type": "internal" },
+        { "id": "w_mid_h2", "start": [554,650], "end": [888,650], "thickness": 12, "height": 280, "type": "internal" },
         { "id": "w_ntl_h", "start": [426,220], "end": [554,220], "thickness": 12, "height": 280, "type": "internal" },
-        { "id": "w_ntl_v", "start": [420,226], "end": [420,394], "thickness": 12, "height": 280, "type": "internal" }
+        { "id": "w_ntl_v", "start": [420,214], "end": [420,406], "thickness": 12, "height": 280, "type": "internal" }
       ],
       "doors": [
         {
@@ -81,7 +81,7 @@
         {
           "id": "d_bed1",
           "wallId": "w_ntl_v",
-          "pos": 54,
+          "pos": 66,
           "width": 85,
           "height": 210,
           "name": "主卧门",
@@ -111,7 +111,7 @@
         {
           "id": "win_left_floor",
           "wallId": "w_ext_left",
-          "pos": 188,
+          "pos": 212,
           "width": 300,
           "height": 210,
           "altitude": 15,
@@ -126,7 +126,7 @@
         {
           "id": "win_left_small",
           "wallId": "w_ext_left",
-          "pos": 688,
+          "pos": 712,
           "width": 200,
           "height": 140,
           "altitude": 90,
@@ -141,7 +141,7 @@
         {
           "id": "win_right_small",
           "wallId": "w_ext_right",
-          "pos": 688,
+          "pos": 712,
           "width": 200,
           "height": 140,
           "altitude": 90,
@@ -156,7 +156,7 @@
         {
           "id": "win_kitchen_e",
           "wallId": "w_ext_right",
-          "pos": 368,
+          "pos": 392,
           "width": 130,
           "height": 130,
           "altitude": 100,
@@ -171,7 +171,7 @@
         {
           "id": "win_bath_e",
           "wallId": "w_ext_right",
-          "pos": 88,
+          "pos": 112,
           "width": 100,
           "height": 100,
           "altitude": 130,
