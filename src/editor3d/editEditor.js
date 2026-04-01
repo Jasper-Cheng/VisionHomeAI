@@ -961,7 +961,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 门洞填充材质（ns 须已通过 normalizeDoorStyle 校验）
+   * 门洞填充材质（ns 来自 normalizeDoorStyle，缺省为白）
    */
   function doorFillMaterialFromNs(ns, floorOpacity) {
     let color;
@@ -1111,7 +1111,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function buildDoorFillGroup(door, wall, cx, cy, s, defaultHeightCm, floorOpacity) {
     if (!door || !wall) return null;
     const ns = normalizeDoorStyle(door.style);
-    if (!ns) return null;
     const pos = Number(door.pos);
     const wcm = Number(door.width);
     const hcm = Number(door.height);
@@ -1259,12 +1258,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 窗洞玻璃片（与墙体洞口一致），style 须含 color / texture / type / opacity
+   * 窗洞玻璃片（与墙体洞口一致）；无 style 时 normalizeWindowStyle 为白 clear
    */
   function buildWindowGlassGroup(win, wall, cx, cy, s, defaultHeightCm, floorOpacity) {
     if (!win || !wall) return null;
     const ns = normalizeWindowStyle(win.style);
-    if (!ns) return null;
     const pos = Number(win.pos);
     const wcm = Number(win.width);
     const hcm = Number(win.height);

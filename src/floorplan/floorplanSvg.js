@@ -561,7 +561,6 @@ function appendWindowFillPolygon(innerG, win, walls, snapCoord = identitySnapCoo
     [seg.x0 - nx, seg.y0 - ny],
   ];
   const ns = normalizeWindowStyle(win.style);
-  if (!ns) return;
   const rgb = hexColorToRgbComponents(ns.color);
   const op = Math.min(0.94, Math.max(ns.opacity, ns.opacity * 1.28 + 0.06));
   const fillStr = rgb ? `rgba(${rgb.r},${rgb.g},${rgb.b},${op})` : ns.color;
@@ -606,7 +605,6 @@ function appendDoorFillPolygon(innerG, door, walls, snapCoord = identitySnapCoor
     [seg.x0 - nx, seg.y0 - ny],
   ];
   const ns = normalizeDoorStyle(door.style);
-  if (!ns) return;
   const styleAttr =
     door.style != null && typeof door.style === "object"
       ? JSON.stringify(door.style)

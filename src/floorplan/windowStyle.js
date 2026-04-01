@@ -1,10 +1,20 @@
 /**
- * 户型窗 style：对象 { color, texture, type, opacity }，无默认值；无效则返回 null
+ * 户型窗 style：对象 { color, texture, type, opacity }；缺省或无效时统一为白色 clear 玻璃（不解析外部风格包）
  * type: clear | frosted | tinted
  * texture: { albedo, roughness, normal } 可空字符串
  */
 
 const WINDOW_TYPES = new Set(["clear", "frosted", "tinted"]);
+
+/** 无 style 或数据无效时的窗玻璃（白 / clear） */
+export function defaultWindowStyleWhite() {
+  return {
+    color: "#ffffff",
+    opacity: 0.35,
+    type: /** @type {"clear"} */ ("clear"),
+    texture: { albedo: "", roughness: "", normal: "" },
+  };
+}
 
 /**
  * @param {unknown} raw
@@ -13,23 +23,23 @@ const WINDOW_TYPES = new Set(["clear", "frosted", "tinted"]);
  *   opacity: number,
  *   type: 'clear'|'frosted'|'tinted',
  *   texture: { albedo: string, roughness: string, normal: string },
- * } | null}
+ * }}
  */
 export function normalizeWindowStyle(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return null;
+    return defaultWindowStyleWhite();
   }
   const o = /** @type {Record<string, unknown>} */ (raw);
   if (typeof o.color !== "string" || !o.color.trim()) {
-    return null;
+    return defaultWindowStyleWhite();
   }
   const op = Number(o.opacity);
   if (!Number.isFinite(op) || op < 0 || op > 1) {
-    return null;
+    return defaultWindowStyleWhite();
   }
   const typeStr = String(o.type ?? "").toLowerCase().trim();
   if (!WINDOW_TYPES.has(typeStr)) {
-    return null;
+    return defaultWindowStyleWhite();
   }
   const tex = o.texture && typeof o.texture === "object" && !Array.isArray(o.texture) ? o.texture : {};
   const t = /** @type {Record<string, unknown>} */ (tex);
