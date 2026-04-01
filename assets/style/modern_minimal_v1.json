@@ -9,7 +9,7 @@
       "roughness": 0.82,
       "metalness": 0.02,
       "texture": {
-        "albedo": "",
+        "albedo": "textures/wall/plaster_diff.jpg",
         "normal": "textures/wall/plaster_normal.jpg",
         "roughness": "textures/wall/plaster_rough.jpg"
       }
