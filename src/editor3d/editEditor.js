@@ -807,16 +807,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * 门/窗：wallId + pos（cm，从墙 start 沿中心线到洞口中心）+ width/height（cm）
    * 转为墙体局部 X（沿墙）× Y（向上）的矩形洞，用于从墙盒体中挖空（网格剖分）。
    */
-  function collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, lenExtendedM, hM, s) {
+  function collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, hM, s) {
     const wid = String(wall?.id ?? "").trim();
     if (!wid || !Number.isFinite(lenCm) || lenCm < 1e-6) return [];
     const holes = [];
-    const halfExt = lenExtendedM / 2;
     const halfLen = lenWorld / 2;
 
     function pushHole(x0m, x1m, y0m, y1m) {
-      const x0 = Math.max(-halfExt, Math.min(x0m, x1m));
-      const x1 = Math.min(halfExt, Math.max(x0m, x1m));
+      const x0 = Math.max(-halfLen, Math.min(x0m, x1m));
+      const x1 = Math.min(halfLen, Math.max(x0m, x1m));
       const ya = Math.max(0, Math.min(y0m, y1m));
       const yb = Math.min(hM, Math.max(y0m, y1m));
       if (x1 - x0 < WALL_HOLE_EPS || yb - ya < WALL_HOLE_EPS) return;
@@ -878,8 +877,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
     const thickM = Math.max(0.03, thickMRaw);
     const hM = defaultHeightCm / 100;
-    const lenExtended = lenWorld + thickM;
-    const holes = collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, lenExtended, hM, s);
+    const holes = collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, hM, s);
 
     const mx = ((x1 + x2) / 2 - cx) * (s / 100);
     const mz = ((y1 + y2) / 2 - cy) * (s / 100);
@@ -896,7 +894,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
 
     if (!holes.length) {
-      const geo = new THREE.BoxGeometry(lenExtended, hM, thickM);
+      const geo = new THREE.BoxGeometry(lenWorld, hM, thickM);
       const mat = makeWallMaterial();
       const mesh = new THREE.Mesh(geo, mat);
       mesh.castShadow = true;
@@ -907,7 +905,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return mesh;
     }
 
-    const xs = mergeSplitEdges(-lenExtended / 2, lenExtended / 2, holes.flatMap((h) => [h.x0, h.x1]));
+    const xs = mergeSplitEdges(-lenWorld / 2, lenWorld / 2, holes.flatMap((h) => [h.x0, h.x1]));
     const ys = mergeSplitEdges(0, hM, holes.flatMap((h) => [h.y0, h.y1]));
     const group = new THREE.Group();
     group.position.set(mx, 0, mz);
