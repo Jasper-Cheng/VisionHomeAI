@@ -1,5 +1,5 @@
 /**
- * 设计文件（方案）：在户型模板（templateId → assets/data/floorplans）基础上的家具编辑会话 JSON。
+ * 设计文件（方案）：在户型模板（templateId → assets/floorplans）基础上的家具编辑会话 JSON。
  * 侧栏仅罗列 manifest；打开/应用方案时应合并模板几何与本文件的 furnitureInstances 等。
  */
 import { DATA_PATHS } from "../core/schema.js";
@@ -28,7 +28,7 @@ function bindDesignFileSearch() {
 }
 
 /**
- * 拉取 assets/data/design/manifest.json，得到要加载的 JSON 文件名列表
+ * 拉取 assets/design/manifest.json，得到要加载的 JSON 文件名列表
  * @returns {Promise<string[]>}
  */
 export async function fetchDesignFileNames() {
@@ -159,7 +159,7 @@ function formatDesignFileListTime(project, stem) {
 }
 
 /**
- * 渲染「文件」侧栏：assets/data/design 下的方案 JSON
+ * 渲染「文件」侧栏：assets/design 下的方案 JSON
  * @param {{ file: string, project: object }[]} entries
  * @param {{ loadError?: boolean }} options
  */
@@ -172,12 +172,12 @@ export function mountDesignFileList(entries, options = {}) {
   if (options.loadError) {
     const p = document.createElement("p");
     p.className = "panel-empty";
-    p.textContent = "设计清单加载失败，请检查 assets/data/design/manifest.json。";
+    p.textContent = "设计清单加载失败，请检查 assets/design/manifest.json。";
     list.appendChild(p);
   } else if (!entries.length) {
     const p = document.createElement("p");
     p.className = "panel-empty";
-    p.textContent = "暂无设计文件。请在 assets/data/design/manifest.json 的 files 中加入 JSON 文件名。";
+    p.textContent = "暂无设计文件。请在 assets/design/manifest.json 的 files 中加入 JSON 文件名。";
     list.appendChild(p);
   } else {
     const docSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>`;
