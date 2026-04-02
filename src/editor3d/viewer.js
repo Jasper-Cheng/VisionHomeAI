@@ -655,32 +655,17 @@ import {
     controls.enabled = true;
   };
 
-  // UI -> currentModel
-  const cards = Array.from(document.querySelectorAll('.asset-card[data-model]'));
-  if (cards.length) {
-    const first = cards[0];
-    state.currentModel = first.dataset.model || state.currentModel;
-  }
-
-  const selectCard = (card) => {
-    const model = card?.dataset?.model;
-    if (model) state.currentModel = model;
-    cards.forEach((c) => c.classList.toggle("is-selected", c === card));
-  };
-
+  // UI -> currentModel（与 furnitureManager 中单选同步；默认第一张已由 mount 选中）
+  const prevSelectFurniture = window.__selectFurnitureLibraryCardByModel;
   window.__selectFurnitureLibraryCardByModel = (modelId) => {
-    const c = cards.find((x) => x.dataset.model === modelId);
-    if (c) selectCard(c);
+    prevSelectFurniture?.(modelId);
+    const id = String(modelId || "").trim();
+    if (id) state.currentModel = id;
   };
-
-  cards.forEach((card) => {
-    const select = () => selectCard(card);
-
-    card.addEventListener("click", select);
-    card.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") select();
-    });
-  });
+  const selectedFurniture = document.querySelector(
+    '#furnitureAssetGrid .asset-card[data-model].is-selected',
+  );
+  if (selectedFurniture?.dataset?.model) state.currentModel = selectedFurniture.dataset.model;
 
   container.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("pointermove", onPointerMove, { passive: true });

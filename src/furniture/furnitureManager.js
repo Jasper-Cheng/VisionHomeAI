@@ -142,6 +142,53 @@ export function mountFurnitureLibrary(catalog, options = {}) {
 
   const searchInput = document.querySelector('.side-panel[data-panel="assets"] .search-input');
 
+  /** @type {HTMLElement | null} */
+  let selectedFurnitureCard = null;
+
+  function furnitureCards() {
+    return grid.querySelectorAll(".asset-card[data-model]");
+  }
+
+  /**
+   * 单选家具卡片（与户型库 .is-selected 一致）
+   * @param {HTMLElement | null} card
+   */
+  function selectFurnitureCard(card) {
+    if (card != null && (!grid.contains(card) || card.classList.contains("is-hidden"))) return;
+
+    furnitureCards().forEach((c) => {
+      const on = c === card;
+      c.classList.toggle("is-selected", on);
+      c.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    selectedFurnitureCard = card;
+    const id = card?.dataset?.model?.trim() || "";
+    window.__selectedFurnitureModelId = id;
+    if (id) {
+      window.dispatchEvent(
+        new CustomEvent("visionhome:furniture-library-select", {
+          detail: { modelId: id, item: catalog.byId?.get(id) ?? null },
+        }),
+      );
+    }
+  }
+
+  function syncFurnitureSelectionAfterFilter() {
+    const visible = [...furnitureCards()].filter((c) => !c.classList.contains("is-hidden"));
+    if (!visible.length) {
+      selectFurnitureCard(null);
+      window.__selectedFurnitureModelId = "";
+      return;
+    }
+    if (
+      !selectedFurnitureCard ||
+      selectedFurnitureCard.classList.contains("is-hidden") ||
+      !grid.contains(selectedFurnitureCard)
+    ) {
+      selectFurnitureCard(visible[0]);
+    }
+  }
+
   function applyFilter() {
     const active = strip.querySelector(".tab.is-active");
     const category = active?.dataset.category ?? "";
@@ -153,6 +200,7 @@ export function mountFurnitureLibrary(catalog, options = {}) {
       const matchQ = !q || name.includes(q);
       card.classList.toggle("is-hidden", !matchCat || !matchQ);
     });
+    syncFurnitureSelectionAfterFilter();
   }
 
   strip.addEventListener("click", (e) => {
@@ -183,6 +231,7 @@ export function mountFurnitureLibrary(catalog, options = {}) {
     card.dataset.name = cardLabel.toLowerCase();
     card.tabIndex = 0;
     card.setAttribute("role", "button");
+    card.setAttribute("aria-pressed", "false");
     card.setAttribute("aria-label", cardLabel || fid);
     card.setAttribute(
       "title",
@@ -210,6 +259,18 @@ export function mountFurnitureLibrary(catalog, options = {}) {
     card.appendChild(thumb);
     card.appendChild(nameEl);
     grid.appendChild(card);
+
+    const activate = () => selectFurnitureCard(card);
+    card.addEventListener("click", (e) => {
+      e.preventDefault();
+      activate();
+    });
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        activate();
+      }
+    });
   });
 
   /* 防止子节点（如旧缓存 DOM）仍触发原生 dragstart */
@@ -229,4 +290,14 @@ export function mountFurnitureLibrary(catalog, options = {}) {
   }
 
   applyFilter();
+
+  window.__selectFurnitureLibraryCardByModel = (modelId) => {
+    const id = String(modelId || "").trim();
+    if (!id) {
+      selectFurnitureCard(null);
+      return;
+    }
+    const card = [...grid.querySelectorAll(".asset-card[data-model]")].find((c) => c.dataset.model === id);
+    if (card) selectFurnitureCard(card);
+  };
 }
