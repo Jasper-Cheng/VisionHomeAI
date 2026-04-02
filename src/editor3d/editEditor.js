@@ -2011,6 +2011,27 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return !needFullRebuild;
   }
 
+  /**
+   * 「仅当前层」开关：只更新各楼层 floor group 的 visible，不 rebuild（避免重复贴图加载）。
+   */
+  function syncHideOtherFloorsFloorplanVisibility() {
+    const entry = currentFloorplanEntry;
+    if (!entry) return;
+    const gWorld = floorplanRoot.children[0];
+    if (!gWorld?.userData?.floorplanGWorld) return;
+    const floors = getFloorsFromEntry(entry);
+    const floorGroups = [];
+    for (const c of gWorld.children) {
+      if (c.userData?.floorplanFloorGroup) floorGroups.push(c);
+    }
+    if (floorGroups.length !== floors.length) return;
+    const floorIndex = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
+    for (let i = 0; i < floorGroups.length; i++) {
+      const isActive = floorIndex >= 0 && i === floorIndex;
+      floorGroups[i].visible = !hideOtherFloors || floorIndex < 0 || isActive;
+    }
+  }
+
   async function rebuildFloorplan3D() {
     const gen = ++floorplanRebuildGen;
     clearInteractiveList();
@@ -3076,7 +3097,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     hideOtherFloors = !hideOtherFloors;
     floorHideOthersToggleBtn.classList.toggle("is-active", hideOtherFloors);
     floorHideOthersToggleBtn.setAttribute("aria-pressed", hideOtherFloors ? "true" : "false");
-    rebuildFloorplan3D();
+    syncHideOtherFloorsFloorplanVisibility();
     updateFurnitureFloorVisibility();
     syncOtherOpacityUi();
   });
