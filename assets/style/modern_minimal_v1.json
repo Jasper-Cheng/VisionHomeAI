@@ -134,7 +134,7 @@
   },
 
   "mapping": {
-    "roomTypes": {
+    "rooms": {
       "living": {
         "floor": "floor_wood_oak",
         "wall": "wall_main",

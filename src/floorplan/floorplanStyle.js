@@ -172,7 +172,7 @@ function roomPri(t) {
  * @returns {string | null}
  */
 export function resolveWallMaterialKey(style, wall, floor) {
-  const m = style?.mapping?.roomTypes;
+  const m = style?.mapping?.rooms;
   if (!m || typeof m !== "object") return null;
   const { left, right } = wallAdjacentRoomTypes(wall, floor);
   const types = [left, right].filter(Boolean);
@@ -200,7 +200,7 @@ export function resolveWallMaterialKey(style, wall, floor) {
  */
 export function resolveRoomFloorMaterialKey(style, room) {
   const rt = String(room?.type ?? "").trim();
-  const row = style?.mapping?.roomTypes?.[rt];
+  const row = style?.mapping?.rooms?.[rt];
   return row?.floor ?? null;
 }
 
