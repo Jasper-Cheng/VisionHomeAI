@@ -332,6 +332,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   scene.add(dir.target);
   scene.add(dir);
 
+  /** 户型半透明分层渲染：深度预写入（与 applyFloorplanSurfaceAlpha 的 polygonOffset 对齐） */
+  const floorplanDepthPrepassMat = new THREE.MeshDepthMaterial({
+    depthPacking: renderer.capabilities.logarithmicDepthBuffer ? THREE.RGBADepthPacking : THREE.BasicDepthPacking,
+  });
+  floorplanDepthPrepassMat.colorWrite = false;
+  floorplanDepthPrepassMat.polygonOffset = true;
+  floorplanDepthPrepassMat.polygonOffsetFactor = 1;
+  floorplanDepthPrepassMat.polygonOffsetUnits = 1;
+
   /** 方向光阴影开关（与工具栏「光影」同步） */
   let shadowsEnabled = true;
 
@@ -3499,6 +3508,61 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     void applyExternalLayout([]);
   });
 
+  /**
+   * 是否存在「户型需按半透明处理」的楼层（非 1 不透明）：此时用分层渲染（深度预写入 + 颜色）稳定遮挡。
+   */
+  function floorplanNeedsTranslucentPass() {
+    if (!floorplanRoot.children.length) return false;
+    if (!floorSelectionEnabled) return true;
+    if (activeLayerOpacity < 1 - 1e-4) return true;
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    const n = floors?.length ?? 0;
+    if (n > 1 && !hideOtherFloors && otherLayersOpacity < 1 - 1e-4) return true;
+    return false;
+  }
+
+  /**
+   * 分层渲染：先画家具+网格（不含户型），再仅对户型做深度预写入（不写颜色），最后画户型半透明颜色。
+   * 用 visible 排除户型/家具；多遍 render 时须暂时去掉 scene.background（Color）：
+   * Three.js WebGLBackground 在 background 为 Color 时会 forceClear，无视 autoClear=false，会整屏清空抹掉第一遍。
+   */
+  function renderEditorScene() {
+    const prevAutoClear = renderer.autoClear;
+    const prevBackground = scene.background;
+    try {
+      if (!floorplanNeedsTranslucentPass()) {
+        renderer.autoClear = true;
+        renderer.render(scene, camera);
+        return;
+      }
+      const saved = [];
+      renderer.autoClear = true;
+      floorplanRoot.visible = false;
+      renderer.render(scene, camera);
+      floorplanRoot.visible = true;
+      furnitureRoot.visible = false;
+      grid.visible = false;
+      renderer.autoClear = false;
+      scene.background = null;
+      floorplanRoot.traverse((obj) => {
+        if (!obj.isMesh || obj.isSkinnedMesh) return;
+        saved.push({ obj, material: obj.material });
+        obj.material = floorplanDepthPrepassMat;
+      });
+      renderer.render(scene, camera);
+      for (let i = 0; i < saved.length; i++) {
+        saved[i].obj.material = saved[i].material;
+      }
+      renderer.render(scene, camera);
+    } finally {
+      renderer.autoClear = prevAutoClear;
+      scene.background = prevBackground;
+      furnitureRoot.visible = true;
+      grid.visible = gridVisible;
+      floorplanRoot.visible = true;
+    }
+  }
+
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
@@ -3522,7 +3586,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     dir.updateMatrixWorld(true);
     fitDirectionalShadowFrustum();
-    renderer.render(scene, camera);
+    renderEditorScene();
   }
 
   window.addEventListener("resize", resizeRenderer);
