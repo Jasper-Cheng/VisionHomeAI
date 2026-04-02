@@ -1049,9 +1049,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
     const thickM = Math.max(0.03, thickMRaw);
     const hM = defaultHeightCm / 100;
-    // 端部沿墙方向各延伸半墙厚，使与相邻墙段在转角/T 字处搭接，消除中心线长度盒体在接缝处的留缝
-    const endExtendM = thickM * 0.5;
-    const lenPadded = lenWorld + 2 * endExtendM;
     const holes = collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, hM, s);
 
     const mx = ((x1 + x2) / 2 - cx) * (s / 100);
@@ -1071,7 +1068,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
 
     if (!holes.length) {
-      const geo = new THREE.BoxGeometry(lenPadded, hM, thickM);
+      const geo = new THREE.BoxGeometry(lenWorld, hM, thickM);
       const mat = makeWallMaterial();
       const mesh = new THREE.Mesh(geo, mat);
       mesh.castShadow = true;
@@ -1083,7 +1080,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
 
     const halfSpan = lenWorld / 2;
-    const xs = mergeSplitEdges(-halfSpan - endExtendM, halfSpan + endExtendM, holes.flatMap((h) => [h.x0, h.x1]));
+    const xs = mergeSplitEdges(-halfSpan, halfSpan, holes.flatMap((h) => [h.x0, h.x1]));
     const ys = mergeSplitEdges(0, hM, holes.flatMap((h) => [h.y0, h.y1]));
     const group = new THREE.Group();
     group.position.set(mx, 0, mz);
