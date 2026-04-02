@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1775098766296",
+  "name": "jasper",
+  "description": "",
+  "createdAt": "2026-04-02T02:59:26.296Z",
+  "updatedAt": "2026-04-02T02:59:26.296Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -217,
+        241
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "furniture": [
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": -217,
+        "y": 241,
+        "rotation": 0
+      }
+    ]
+  }
+}

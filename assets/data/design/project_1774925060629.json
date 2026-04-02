@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1774925060629",
+  "name": "客户-李小姐",
+  "description": "",
+  "createdAt": "2026-03-31T02:44:20.629Z",
+  "updatedAt": "2026-04-02T02:59:43.261Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_01",
+      "floorId": "floor1",
+      "positionCm": [
+        171,
+        -460
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "sofa_03",
+      "floorId": "floor1",
+      "positionCm": [
+        -155,
+        -457
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_3",
+      "furnitureId": "chair_01",
+      "floorId": "floor1",
+      "positionCm": [
+        491,
+        -422
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_4",
+      "furnitureId": "table_02",
+      "floorId": "floor1",
+      "positionCm": [
+        355,
+        -321
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "furniture": [
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": 171,
+        "y": -460,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_03",
+        "floorId": "floor1",
+        "x": -155,
+        "y": -457,
+        "rotation": 0
+      },
+      {
+        "model": "chair_01",
+        "floorId": "floor1",
+        "x": 491,
+        "y": -422,
+        "rotation": 0
+      },
+      {
+        "model": "table_02",
+        "floorId": "floor1",
+        "x": 355,
+        "y": -321,
+        "rotation": 0
+      }
+    ]
+  }
+}
