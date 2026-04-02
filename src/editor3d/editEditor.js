@@ -2,6 +2,7 @@
  * 编辑模式 Three.js：户型挤出 + 家具交互，兼容 window.svgEditor* API
  */
 import * as THREE from "three";
+import { ShapeUtils } from "three";
 import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 import { getFloorBBoxCm } from "../floorplan/floorplanSvg.js";
 import { normalizeDoorStyle, defaultDoorStyleWhite } from "../floorplan/doorStyle.js";
@@ -799,20 +800,33 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /**
    * 户型实体/门扇等半透明表面：不写入深度，由透明队列按距相机排序，减轻旋转时与其它半透明面叠加导致的变色、发黑。
    * 轻微 polygonOffset 减轻 T 字墙接缝处共面 Z-fighting。
+   * 房间地面（userData.__floorplanRoomFloorDepthWrite）在层透明度 < 1 时仍写深度，否则共边处后绘木纹会盖住厨卫瓷砖。
    */
   function applyFloorplanSurfaceAlpha(mat, opacity) {
     const op = Math.max(0, Math.min(1, opacity ?? 1));
     mat.opacity = op;
     mat.transparent = op < 1;
+    const roomFloor = mat.userData?.__floorplanRoomFloorDepthWrite === true;
     if (op < 1) {
-      mat.depthWrite = false;
-      mat.depthTest = true;
-      mat.polygonOffset = true;
-      mat.polygonOffsetFactor = 1;
-      mat.polygonOffsetUnits = 1;
+      if (roomFloor) {
+        mat.depthWrite = true;
+        mat.depthTest = true;
+        mat.polygonOffset = true;
+        mat.polygonOffsetFactor = -2;
+        mat.polygonOffsetUnits = -2;
+      } else {
+        mat.depthWrite = false;
+        mat.depthTest = true;
+        mat.polygonOffset = true;
+        mat.polygonOffsetFactor = 1;
+        mat.polygonOffsetUnits = 1;
+      }
     } else {
       mat.depthWrite = true;
+      mat.depthTest = true;
       mat.polygonOffset = false;
+      mat.polygonOffsetFactor = 0;
+      mat.polygonOffsetUnits = 0;
     }
   }
 
@@ -986,19 +1000,47 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function buildRoomMesh(room, cx, cy, s, floorOpacity, floorStyleMat) {
     const poly = room?.polygon;
     if (!Array.isArray(poly) || poly.length < 3) return null;
-    const shape = new THREE.Shape();
     const pts = poly.filter((p) => Array.isArray(p) && p.length >= 2).map((p) => [snap(Number(p[0])), snap(Number(p[1]))]);
     if (pts.length < 3) return null;
-    shape.moveTo((pts[0][0] - cx) * (s / 100), (pts[0][1] - cy) * (s / 100));
-    for (let i = 1; i < pts.length; i++) {
-      shape.lineTo((pts[i][0] - cx) * (s / 100), (pts[i][1] - cy) * (s / 100));
+    // 户型平面为屏幕坐标（Y 向下）；ShapeUtils.area / isClockWise / Earcut 按数学坐标（Y 向上）约定。
+    // 若直接用向下 Y 做剖分，凹多边形（客厅）会三角化错误，木地面盖住厨卫。剖分时用 y' = -y，顶点再还原。
+    const contourTri = pts.map((p) => {
+      const xm = (p[0] - cx) * (s / 100);
+      const ym = (p[1] - cy) * (s / 100);
+      return new THREE.Vector2(xm, -ym);
+    });
+    if (ShapeUtils.isClockWise(contourTri) === false) {
+      contourTri.reverse();
     }
-    shape.closePath();
-    // 平面 ShapeGeometry：顶面与墙根齐平，无挤出薄板顶/侧三角差；ExtrudeGeometry 薄板在共边阴角易数值不齐显「台阶」
-    const geo = new THREE.ShapeGeometry(shape);
-    geo.rotateX(-Math.PI / 2);
+    const faceList = ShapeUtils.triangulateShape(contourTri, []);
+    if (!faceList.length) return null;
+    const pos = new Float32Array(contourTri.length * 3);
+    const uv = new Float32Array(contourTri.length * 2);
+    for (let i = 0; i < contourTri.length; i++) {
+      const v = contourTri[i];
+      const px = v.x;
+      const py = -v.y;
+      pos[i * 3] = px;
+      pos[i * 3 + 1] = py;
+      pos[i * 3 + 2] = 0;
+      uv[i * 2] = px;
+      uv[i * 2 + 1] = py;
+    }
+    const idx = [];
+    for (let fi = 0; fi < faceList.length; fi++) {
+      const f = faceList[fi];
+      idx.push(f[0], f[1], f[2]);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    geo.setIndex(idx);
+    // 让地面 XZ 坐标系与墙体一致：墙体使用 mz=(y-cy)*s/100（不取反），
+    // rotateX(-PI/2) 会导致 z 变号，造成地面相对墙体位置偏移。
+    geo.rotateX(Math.PI / 2);
     geo.computeVertexNormals();
     const mat = floorStyleMat || floorplanStdMat();
+    mat.userData.__floorplanRoomFloorDepthWrite = true;
     const op = floorOpacity ?? 1;
     applyFloorplanSurfaceAlpha(mat, op);
     if (!floorStyleMat) tagFloorplanLayerOpacity(mat, op);
@@ -2203,17 +2245,25 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           envMapIntensity: opts.forGlass ? 0.9 : 0.35,
           side,
         });
+        if (opts.floorUv) {
+          mat.userData.__floorplanRoomFloorDepthWrite = true;
+          applyFloorplanSurfaceAlpha(mat, opacity);
+        }
         styleMatCache.set(ck, mat);
         queueStylePackTextures(mat, def, { applyUvScale: !!opts.floorUv });
         return mat;
       }
 
-      for (const room of fl.rooms || []) {
+      (fl.rooms || []).forEach((room, roomIdx) => {
         const fk = resolveRoomFloorMaterialKey(style, room);
         const floorMat = fk ? getMaterialForKey(fk, { floorUv: true }) : null;
         const m = buildRoomMesh(room, cx, cy, s, opacity, floorMat);
-        if (m) floorG.add(m);
-      }
+        if (m) {
+          // 凹多边形 / 共边时避免与地面 z-fighting：后建房间略抬高（毫米级）
+          m.position.y = 0.02 + roomIdx * 0.0002;
+          floorG.add(m);
+        }
+      });
       const fh = Number(fl.height);
       const defaultH = Number.isFinite(fh) && fh > 0 ? fh : 280;
       for (const w of fl.walls || []) {
