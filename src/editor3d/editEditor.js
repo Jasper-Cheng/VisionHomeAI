@@ -1902,7 +1902,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       btn.classList.toggle("is-active", showDimensions);
       btn.setAttribute("aria-pressed", String(showDimensions));
     }
-    rebuildFloorplan3D();
+    if (showDimensions && !hasFloorplanDimAnnotationGroups()) {
+      void rebuildFloorplan3D();
+    } else {
+      syncFloorAnnotationVisibility();
+    }
     updateFurnitureFloorVisibility();
   }
 
@@ -1932,7 +1936,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       btn.classList.toggle("is-active", showNames);
       btn.setAttribute("aria-pressed", String(showNames));
     }
-    rebuildFloorplan3D();
+    if (showNames && !hasFloorplanNameAnnotationGroups()) {
+      void rebuildFloorplan3D();
+    } else {
+      syncFloorAnnotationVisibility();
+    }
     updateFurnitureFloorVisibility();
   }
 
@@ -2051,11 +2059,42 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const showAnnot = !floorSelectionEnabled || isActive;
       const fg = floorGroups[i];
       for (const ch of fg.children) {
-        if (ch.userData?.isDimAnnotation || ch.userData?.isNameAnnotation) {
-          ch.visible = showAnnot;
+        if (ch.userData?.isDimAnnotation) {
+          ch.visible = showDimensions && showAnnot;
+        } else if (ch.userData?.isNameAnnotation) {
+          ch.visible = showNames && showAnnot;
         }
       }
     }
+  }
+
+  /** 场景里是否已有户型尺寸标注 Group（旧版仅在开启时生成；首次开启需 rebuild） */
+  function hasFloorplanDimAnnotationGroups() {
+    const entry = currentFloorplanEntry;
+    if (!entry) return false;
+    const gWorld = floorplanRoot.children[0];
+    if (!gWorld?.userData?.floorplanGWorld) return false;
+    for (const c of gWorld.children) {
+      if (!c.userData?.floorplanFloorGroup) continue;
+      for (const ch of c.children) {
+        if (ch.userData?.isDimAnnotation) return true;
+      }
+    }
+    return false;
+  }
+
+  function hasFloorplanNameAnnotationGroups() {
+    const entry = currentFloorplanEntry;
+    if (!entry) return false;
+    const gWorld = floorplanRoot.children[0];
+    if (!gWorld?.userData?.floorplanGWorld) return false;
+    for (const c of gWorld.children) {
+      if (!c.userData?.floorplanFloorGroup) continue;
+      for (const ch of c.children) {
+        if (ch.userData?.isNameAnnotation) return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -2201,20 +2240,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const winG = buildWindowGlassGroup(win, w, cx, cy, s, defaultH, opacity, winMat);
         if (winG) floorG.add(winG);
       }
-            // 尺寸/名称：每层都生成，用 visible 控制「仅选中楼层时只显示当前层」（切换楼层时不 rebuild）
-      if (showDimensions) {
-        const dimG = buildFloorDimensions(fl, cx, cy, s);
-        if (dimG) {
-          dimG.visible = !floorSelectionEnabled || isActive;
-          floorG.add(dimG);
-        }
+            // 尺寸/名称：每层都生成，用 visible 控制开关与「仅选中楼层时只显示当前层」（点击开关不 rebuild）
+      const dimG = buildFloorDimensions(fl, cx, cy, s);
+      if (dimG) {
+        dimG.visible = showDimensions && (!floorSelectionEnabled || isActive);
+        floorG.add(dimG);
       }
-      if (showNames) {
-        const nameG = buildFloorNameAnnotations(fl, cx, cy, s);
-        if (nameG) {
-          nameG.visible = !floorSelectionEnabled || isActive;
-          floorG.add(nameG);
-        }
+      const nameG = buildFloorNameAnnotations(fl, cx, cy, s);
+      if (nameG) {
+        nameG.visible = showNames && (!floorSelectionEnabled || isActive);
+        floorG.add(nameG);
       }
       // 每层楼的垂直高度（避免所有层重叠在 y=0）
       const fidRaw = String(fl?.id ?? "").trim() || `floor${i + 1}`;
