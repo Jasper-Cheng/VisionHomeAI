@@ -20,7 +20,7 @@ export const DATA_PATHS = {
   assetsTextures: "assets/textures",
   /** 家具库卡片预览：`assets/thumbnails/{id}.webp|png|jpg` */
   assetsThumbnails: "assets/thumbnails",
-  /** 户型渲染风格包：`assets/style/<styleId>.json` 与 `assets/style/textures/` */
+  /** 户型装饰包：`assets/style/<floorplanId>.json`（含多套 styles），贴图见 `assets/style/textures/` */
   stylesDir: "assets/style",
 };
 

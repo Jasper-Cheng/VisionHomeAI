@@ -1,0 +1,148 @@
+{
+  "floorplanId": "apt_2b1l_compact_01",
+  "styles": {
+    "modern_minimal_v1": {
+      "id": "modern_minimal_v1",
+      "name": "现代简约风",
+
+      "wall_main": {
+        "type": "paint",
+        "color": "#f5f5f5",
+        "roughness": 0.82,
+        "metalness": 0.02,
+        "texture": {
+          "albedo": "textures/wall/plaster_diff.jpg",
+          "normal": "textures/wall/plaster_normal.jpg",
+          "roughness": "textures/wall/plaster_rough.jpg"
+        }
+      },
+
+      "wall_feature_microcement": {
+        "type": "microcement",
+        "color": "#d9d6d2",
+        "roughness": 0.75,
+        "metalness": 0.05,
+        "texture": {
+          "albedo": "textures/wall/microcement_diff.jpg",
+          "normal": "textures/wall/microcement_normal.jpg",
+          "roughness": "textures/wall/microcement_rough.jpg"
+        }
+      },
+
+      "wall_tile_light": {
+        "type": "tile",
+        "color": "#eaeaea",
+        "roughness": 0.35,
+        "metalness": 0.0,
+        "texture": {
+          "albedo": "textures/tile/tile_light_diff.jpg",
+          "normal": "textures/tile/tile_light_normal.jpg",
+          "roughness": "textures/tile/tile_light_rough.jpg"
+        }
+      },
+
+      "floor_wood_oak": {
+        "type": "wood_floor",
+        "color": "#c9b8a6",
+        "roughness": 0.55,
+        "metalness": 0.0,
+        "texture": {
+          "albedo": "textures/floor/wood_oak_diff.jpg",
+          "normal": "textures/floor/wood_oak_normal.jpg",
+          "roughness": "textures/floor/wood_oak_rough.jpg"
+        },
+        "uvScale": [4, 4]
+      },
+
+      "floor_tile_gray": {
+        "type": "tile_floor",
+        "color": "#dcdcdc",
+        "roughness": 0.4,
+        "metalness": 0.0,
+        "texture": {
+          "albedo": "textures/tile/tile_gray_diff.jpg",
+          "normal": "textures/tile/tile_gray_normal.jpg",
+          "roughness": "textures/tile/tile_gray_rough.jpg"
+        },
+        "uvScale": [3, 3]
+      },
+
+      "floor_tile_dark": {
+        "type": "tile_floor",
+        "color": "#bfbfbf",
+        "roughness": 0.45,
+        "metalness": 0.0,
+        "texture": {
+          "albedo": "textures/tile/tile_dark_diff.jpg",
+          "normal": "textures/tile/tile_dark_normal.jpg",
+          "roughness": "textures/tile/tile_dark_rough.jpg"
+        },
+        "uvScale": [3, 3]
+      },
+
+      "door_entrance": {
+        "type": "metal_door",
+        "color": "#3a3a3a",
+        "roughness": 0.5,
+        "metalness": 0.2,
+        "texture": {
+          "albedo": "textures/door/metal_door_diff.jpg",
+          "normal": "textures/door/metal_door_normal.jpg",
+          "roughness": "textures/door/metal_door_rough.jpg"
+        }
+      },
+
+      "door_interior_white": {
+        "type": "paint_wood",
+        "color": "#ffffff",
+        "roughness": 0.85,
+        "metalness": 0.02,
+        "texture": {
+          "albedo": "",
+          "normal": "textures/door/metal_door_normal.jpg",
+          "roughness": "textures/door/metal_door_rough.jpg"
+        }
+      },
+
+      "glass_clear": {
+        "type": "glass",
+        "color": "#cfe8ff",
+        "opacity": 0.25,
+        "roughness": 0.05,
+        "metalness": 0.0,
+        "transmission": 0.95,
+        "ior": 1.45
+      },
+
+      "glass_frosted": {
+        "type": "glass",
+        "color": "#e8eef2",
+        "opacity": 0.6,
+        "roughness": 0.85,
+        "metalness": 0.0,
+        "transmission": 0.4,
+        "ior": 1.45
+      },
+
+      "glass_tinted": {
+        "type": "glass",
+        "color": "#d8cbb5",
+        "opacity": 0.4,
+        "roughness": 0.2,
+        "metalness": 0.0,
+        "transmission": 0.7,
+        "ior": 1.45
+      },
+
+      "furniturePreset": {
+        "style": "modern_minimal",
+        "recommended": {
+          "sofa": ["sofa_modern_light_01", "sofa_modern_gray_02"],
+          "bed": ["bed_minimal_wood_01"],
+          "table": ["table_minimal_01"],
+          "chair": ["chair_light_01"]
+        }
+      }
+    }
+  }
+}

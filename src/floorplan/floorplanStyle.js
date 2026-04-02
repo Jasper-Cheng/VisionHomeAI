@@ -1,7 +1,7 @@
 /**
- * 户型风格 JSON（assets/style/<styleId>.json）加载与 mapping → 材质 key 解析。
- * floors[].rooms[].style / walls[].style / doors[].style / windows[].style 与 mapping 中对应键一致；
- * rooms[].type、walls[].type 等为语义类型，不参与材质查表。
+ * 户型装饰 JSON（assets/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；单套为根级材质定义。
+ * loadStyleConfig(floorplanId, styleKey) 返回其中一套，供 getMaterialDef。
+ * floors[].rooms|walls|doors|windows[].style 为材质 id（与该套内根级条目同名）。
  */
 import { DATA_PATHS } from "../core/schema.js";
 
@@ -13,6 +13,12 @@ function snapCm(v) {
 
 function safeStyleId(styleId) {
   const s = String(styleId ?? "").trim();
+  if (!s || !/^[a-zA-Z0-9_-]+$/.test(s)) return "";
+  return s;
+}
+
+function safeStyleKey(key) {
+  const s = String(key ?? "").trim();
   if (!s || !/^[a-zA-Z0-9_-]+$/.test(s)) return "";
   return s;
 }
@@ -30,25 +36,34 @@ export function resolveStyleTextureUrl(relPath) {
 }
 
 /**
- * @param {string} styleId
+ * @param {string} floorplanId 与户型 id 一致，对应 assets/style/<floorplanId>.json
+ * @param {string} [styleKey] 装饰文件内 styles 的键，缺省为 modern_minimal_v1
  * @returns {Promise<object>}
  */
-export async function loadStyleConfig(styleId) {
-  const id = safeStyleId(styleId);
-  if (!id) throw new Error("Invalid styleId");
-  if (styleCache.has(id)) return styleCache.get(id);
+export async function loadStyleConfig(floorplanId, styleKey) {
+  const fp = safeStyleId(floorplanId);
+  if (!fp) throw new Error("Invalid floorplanId for decor");
+  const sk = safeStyleKey(styleKey) || "modern_minimal_v1";
+  const cacheKey = `${fp}::${sk}`;
+  if (styleCache.has(cacheKey)) return styleCache.get(cacheKey);
 
-  const url = `./${DATA_PATHS.stylesDir}/${id}.json`;
+  const url = `./${DATA_PATHS.stylesDir}/${fp}.json`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Style fetch failed: ${res.status} ${url}`);
+  if (!res.ok) throw new Error(`Decor fetch failed: ${res.status} ${url}`);
   const data = await res.json();
-  styleCache.set(id, data);
-  return data;
+  const styles = data.styles;
+  if (!styles || typeof styles !== "object") throw new Error("Decor JSON missing styles");
+  const inner = styles[sk];
+  if (!inner || typeof inner !== "object") throw new Error(`Unknown styleKey: ${sk}`);
+  styleCache.set(cacheKey, inner);
+  return inner;
 }
 
 export function clearStyleConfigCache() {
   styleCache.clear();
 }
+
+const STYLE_ROOT_RESERVED = new Set(["id", "name", "mapping", "furniturePreset", "materials"]);
 
 /**
  * @param {object | null} style
@@ -58,10 +73,22 @@ export function clearStyleConfigCache() {
 export function getMaterialDef(style, key) {
   if (!style || !key) return null;
   const k = String(key).trim();
-  const m = style.materials;
-  if (!m || typeof m !== "object") return null;
-  const def = m[k];
-  return def && typeof def === "object" ? def : null;
+  if (!k) return null;
+  if (STYLE_ROOT_RESERVED.has(k)) return null;
+  const def = style[k];
+  return def && typeof def === "object" && !Array.isArray(def) ? def : null;
+}
+
+/**
+ * @param {object | null} style
+ * @param {unknown} raw
+ * @returns {string | null}
+ */
+function materialKeyIfDefined(style, raw) {
+  if (raw != null && typeof raw === "object" && !Array.isArray(raw)) return null;
+  const k = String(raw ?? "").trim();
+  if (!k) return null;
+  return getMaterialDef(style, k) ? k : null;
 }
 
 /**
@@ -137,12 +164,7 @@ export function findRoomContainingPointCm(px, py, floor) {
  * @returns {string | null}
  */
 export function resolveWallMaterialKey(style, wall) {
-  const wm = style?.mapping?.walls;
-  if (!wm || typeof wm !== "object") return null;
-  const k = String(wall?.style ?? "").trim();
-  if (!k) return null;
-  const key = wm[k];
-  return key != null && String(key).trim() ? String(key).trim() : null;
+  return materialKeyIfDefined(style, wall?.style);
 }
 
 /**
@@ -151,9 +173,7 @@ export function resolveWallMaterialKey(style, wall) {
  * @returns {string | null}
  */
 export function resolveRoomFloorMaterialKey(style, room) {
-  const key = String(room?.style ?? "").trim();
-  const row = style?.mapping?.rooms?.[key];
-  return row?.floor ?? null;
+  return materialKeyIfDefined(style, room?.style);
 }
 
 /**
@@ -162,14 +182,7 @@ export function resolveRoomFloorMaterialKey(style, room) {
  * @returns {string | null}
  */
 export function resolveDoorMaterialKey(style, door) {
-  const dm = style?.mapping?.doors;
-  if (!dm || typeof dm !== "object") return null;
-  const raw = door?.style;
-  if (raw != null && typeof raw !== "object" && !Array.isArray(raw)) {
-    const k = String(raw).trim();
-    if (k && dm[k] != null && String(dm[k]).trim()) return String(dm[k]).trim();
-  }
-  return dm.default != null && String(dm.default).trim() ? String(dm.default).trim() : null;
+  return materialKeyIfDefined(style, door?.style);
 }
 
 /**
@@ -178,12 +191,5 @@ export function resolveDoorMaterialKey(style, door) {
  * @returns {string | null}
  */
 export function resolveWindowMaterialKey(style, win) {
-  const wm = style?.mapping?.windows;
-  if (!wm || typeof wm !== "object") return null;
-  const raw = win?.style;
-  if (raw != null && typeof raw !== "object" && !Array.isArray(raw)) {
-    const k = String(raw).trim();
-    if (k && wm[k] != null && String(wm[k]).trim()) return String(wm[k]).trim();
-  }
-  return wm.default != null && String(wm.default).trim() ? String(wm.default).trim() : null;
+  return materialKeyIfDefined(style, win?.style);
 }

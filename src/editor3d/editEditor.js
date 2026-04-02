@@ -2027,8 +2027,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const entry = currentFloorplanEntry;
     let style = null;
     try {
-      const sid = String(entry?.styleId ?? "").trim() || "modern_minimal_v1";
-      style = await loadStyleConfig(sid);
+      const fpId = String(entry?.id ?? "").trim();
+      const sk = String(entry?.styleKey ?? entry?.styleId ?? "").trim() || "modern_minimal_v1";
+      style = await loadStyleConfig(fpId, sk);
     } catch (e) {
       console.warn("[VisionHome] 风格包加载失败:", e);
     }
