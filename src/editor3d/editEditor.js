@@ -1615,6 +1615,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    */
   function buildFloorDimensions(fl, cx, cy, s) {
     const g = new THREE.Group();
+    g.userData.isDimAnnotation = true;
     const LY   = 0.07;  // 略高于楼板
     const EXT1 = 0.18;  // 分段标注线延伸量（内层）
     const EXT2 = 0.50;  // 总标注线延伸量（外层）
@@ -2032,6 +2033,64 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
   }
 
+  /** 楼层选中切换时：只改尺寸/名称标注子 Group 的 visible（各层均已生成，避免 rebuild 贴图） */
+  function syncFloorAnnotationVisibility() {
+    const entry = currentFloorplanEntry;
+    if (!entry) return;
+    const gWorld = floorplanRoot.children[0];
+    if (!gWorld?.userData?.floorplanGWorld) return;
+    const floors = getFloorsFromEntry(entry);
+    const floorGroups = [];
+    for (const c of gWorld.children) {
+      if (c.userData?.floorplanFloorGroup) floorGroups.push(c);
+    }
+    if (floorGroups.length !== floors.length) return;
+    const floorIndex = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
+    for (let i = 0; i < floorGroups.length; i++) {
+      const isActive = floorIndex >= 0 && i === floorIndex;
+      const showAnnot = !floorSelectionEnabled || isActive;
+      const fg = floorGroups[i];
+      for (const ch of fg.children) {
+        if (ch.userData?.isDimAnnotation || ch.userData?.isNameAnnotation) {
+          ch.visible = showAnnot;
+        }
+      }
+    }
+  }
+
+  /**
+   * 点击楼层 Tab：更新 activeFloor、透明度、仅当前层与标注显隐；仅在 cheap 路径失败时全量 rebuild。
+   */
+  function applyFloorLevelSelectionChange() {
+    const entry = currentFloorplanEntry;
+    if (!entry) return;
+    const floorIdx = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
+    const floor = floorIdx >= 0 ? getCurrentFloorFromEntry(entry, floorIdx) : null;
+    activeFloorId = floor?.id != null && String(floor.id).trim() ? String(floor.id).trim() : null;
+    rebuildWallSnapData(entry);
+    updateBottomUI();
+    window.dispatchEvent(
+      new CustomEvent("visionhome:floorplan-applied-to-svg", {
+        detail: {
+          id: entry?.id != null ? String(entry.id) : "",
+          floorIndex: floorIdx,
+          floorId: String(floor?.id ?? ""),
+        },
+      }),
+    );
+
+    if (!applyFloorplanLayerOpacityToScene()) {
+      void rebuildFloorplan3D();
+      updateFurnitureFloorVisibility();
+      selectFurniture(null);
+      return;
+    }
+    syncHideOtherFloorsFloorplanVisibility();
+    syncFloorAnnotationVisibility();
+    updateFurnitureFloorVisibility();
+    selectFurniture(null);
+  }
+
   async function rebuildFloorplan3D() {
     const gen = ++floorplanRebuildGen;
     clearInteractiveList();
@@ -2142,15 +2201,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const winG = buildWindowGlassGroup(win, w, cx, cy, s, defaultH, opacity, winMat);
         if (winG) floorG.add(winG);
       }
-            // 尺寸标注：选中某楼层时只画当前层；无楼层选中时画所有楼层
-      if (showDimensions && (isActive || !floorSelectionEnabled)) {
+            // 尺寸/名称：每层都生成，用 visible 控制「仅选中楼层时只显示当前层」（切换楼层时不 rebuild）
+      if (showDimensions) {
         const dimG = buildFloorDimensions(fl, cx, cy, s);
-        if (dimG) floorG.add(dimG);
+        if (dimG) {
+          dimG.visible = !floorSelectionEnabled || isActive;
+          floorG.add(dimG);
+        }
       }
-      // 名称标注：同尺寸标注显示规则
-      if (showNames && (isActive || !floorSelectionEnabled)) {
+      if (showNames) {
         const nameG = buildFloorNameAnnotations(fl, cx, cy, s);
-        if (nameG) floorG.add(nameG);
+        if (nameG) {
+          nameG.visible = !floorSelectionEnabled || isActive;
+          floorG.add(nameG);
+        }
       }
       // 每层楼的垂直高度（避免所有层重叠在 y=0）
       const fidRaw = String(fl?.id ?? "").trim() || `floor${i + 1}`;
@@ -2210,9 +2274,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           }
           syncOtherOpacityUi();
           setFloorLevelsVisible();
-          rebuildFloorplan3D();
-          updateFurnitureFloorVisibility();
-          selectFurniture(null);
+          applyFloorLevelSelectionChange();
         }
       });
       floorLevelRow.appendChild(btn);
