@@ -1,5 +1,7 @@
 /**
- * 户型风格 JSON（assets/style/<styleId>.json）加载与 mapping → 材质 key 解析
+ * 户型风格 JSON（assets/style/<styleId>.json）加载与 mapping → 材质 key 解析。
+ * floors[].rooms[].style / walls[].style / doors[].style / windows[].style 与 mapping 中对应键一致；
+ * rooms[].type、walls[].type 等为语义类型，不参与材质查表。
  */
 import { DATA_PATHS } from "../core/schema.js";
 
@@ -130,67 +132,17 @@ export function findRoomContainingPointCm(px, py, floor) {
 }
 
 /**
- * 墙中线两侧各偏移，取相邻房间 type（用于 mapping）
- * @param {object} wall
- * @param {object} floor
- * @param {number} sampleOffsetCm
- * @returns {{ left: string | null, right: string | null }}
- */
-export function wallAdjacentRoomTypes(wall, floor, sampleOffsetCm = 14) {
-  const x1 = snapCm(wall.start[0]);
-  const y1 = snapCm(wall.start[1]);
-  const x2 = snapCm(wall.end[0]);
-  const y2 = snapCm(wall.end[1]);
-  const mx = (x1 + x2) / 2;
-  const my = (y1 + y2) / 2;
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const len = Math.hypot(dx, dy);
-  if (len < 1e-6) return { left: null, right: null };
-  const nx = -dy / len;
-  const ny = dx / len;
-  const ox = nx * sampleOffsetCm;
-  const oy = ny * sampleOffsetCm;
-  const rL = findRoomContainingPointCm(mx + ox, my + oy, floor);
-  const rR = findRoomContainingPointCm(mx - ox, my - oy, floor);
-  return {
-    left: rL?.type != null ? String(rL.type).trim() : null,
-    right: rR?.type != null ? String(rR.type).trim() : null,
-  };
-}
-
-const ROOM_PRI = { bathroom: 3, kitchen: 2, living: 1, bedroom: 1 };
-
-function roomPri(t) {
-  return ROOM_PRI[t] ?? 1;
-}
-
-/**
  * @param {object | null} style
  * @param {object} wall
- * @param {object} floor
  * @returns {string | null}
  */
-export function resolveWallMaterialKey(style, wall, floor) {
-  const m = style?.mapping?.rooms;
-  if (!m || typeof m !== "object") return null;
-  const { left, right } = wallAdjacentRoomTypes(wall, floor);
-  const types = [left, right].filter(Boolean);
-  if (!types.length) {
-    return m.living?.wall ?? Object.values(m)[0]?.wall ?? null;
-  }
-  if (
-    (left === "kitchen" && right === "living") ||
-    (left === "living" && right === "kitchen")
-  ) {
-    return m.living?.featureWall ?? m.living?.wall ?? null;
-  }
-  let best = types[0];
-  for (const t of types) {
-    if (roomPri(t) > roomPri(best)) best = t;
-  }
-  const row = m[best];
-  return row?.wall ?? m.living?.wall ?? null;
+export function resolveWallMaterialKey(style, wall) {
+  const wm = style?.mapping?.walls;
+  if (!wm || typeof wm !== "object") return null;
+  const k = String(wall?.style ?? "").trim();
+  if (!k) return null;
+  const key = wm[k];
+  return key != null && String(key).trim() ? String(key).trim() : null;
 }
 
 /**
@@ -199,8 +151,8 @@ export function resolveWallMaterialKey(style, wall, floor) {
  * @returns {string | null}
  */
 export function resolveRoomFloorMaterialKey(style, room) {
-  const rt = String(room?.type ?? "").trim();
-  const row = style?.mapping?.rooms?.[rt];
+  const key = String(room?.style ?? "").trim();
+  const row = style?.mapping?.rooms?.[key];
   return row?.floor ?? null;
 }
 
@@ -212,25 +164,26 @@ export function resolveRoomFloorMaterialKey(style, room) {
 export function resolveDoorMaterialKey(style, door) {
   const dm = style?.mapping?.doors;
   if (!dm || typeof dm !== "object") return null;
-  const t = String(door?.type ?? "").trim().toLowerCase();
-  if (t === "entrance") return dm.entrance ?? dm.default ?? null;
-  return dm.default ?? null;
+  const raw = door?.style;
+  if (raw != null && typeof raw !== "object" && !Array.isArray(raw)) {
+    const k = String(raw).trim();
+    if (k && dm[k] != null && String(dm[k]).trim()) return String(dm[k]).trim();
+  }
+  return dm.default != null && String(dm.default).trim() ? String(dm.default).trim() : null;
 }
 
 /**
  * @param {object | null} style
  * @param {object} win
- * @param {object} floor
  * @returns {string | null}
  */
-export function resolveWindowMaterialKey(style, win, floor) {
+export function resolveWindowMaterialKey(style, win) {
   const wm = style?.mapping?.windows;
   if (!wm || typeof wm !== "object") return null;
-  const mid = openingMidpointCm(win, floor.walls || []);
-  if (!mid) return wm.default ?? null;
-  const room = findRoomContainingPointCm(mid.x, mid.y, floor);
-  const rt = room?.type != null ? String(room.type).trim() : "";
-  if (rt === "kitchen" && wm.kitchen) return wm.kitchen;
-  if (rt === "bathroom" && wm.bathroom) return wm.bathroom;
-  return wm.default ?? null;
+  const raw = win?.style;
+  if (raw != null && typeof raw !== "object" && !Array.isArray(raw)) {
+    const k = String(raw).trim();
+    if (k && wm[k] != null && String(wm[k]).trim()) return String(wm[k]).trim();
+  }
+  return wm.default != null && String(wm.default).trim() ? String(wm.default).trim() : null;
 }

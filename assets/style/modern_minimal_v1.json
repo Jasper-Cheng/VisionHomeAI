@@ -135,32 +135,29 @@
 
   "mapping": {
     "rooms": {
-      "living": {
-        "floor": "floor_wood_oak",
-        "wall": "wall_main",
-        "featureWall": "wall_feature_microcement"
-      },
-      "bedroom": {
-        "floor": "floor_wood_oak",
-        "wall": "wall_main"
-      },
-      "kitchen": {
-        "floor": "floor_tile_gray",
-        "wall": "wall_tile_light"
-      },
-      "bathroom": {
-        "floor": "floor_tile_dark",
-        "wall": "wall_tile_light"
-      }
+      "living": { "floor": "floor_wood_oak" },
+      "bedroom": { "floor": "floor_wood_oak" },
+      "kitchen": { "floor": "floor_tile_gray" },
+      "bathroom": { "floor": "floor_tile_dark" }
+    },
+
+    "walls": {
+      "shell": "wall_main",
+      "kitchen_living": "wall_feature_microcement",
+      "partition": "wall_main",
+      "wet": "wall_tile_light"
     },
 
     "doors": {
       "entrance": "door_entrance",
+      "interior": "door_interior_white",
       "default": "door_interior_white"
     },
 
     "windows": {
       "default": "glass_clear",
+      "living": "glass_clear",
+      "bedroom": "glass_clear",
       "kitchen": "glass_tinted",
       "bathroom": "glass_frosted"
     }

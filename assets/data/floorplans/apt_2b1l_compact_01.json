@@ -15,25 +15,25 @@
       "elevation": 0,
       "height": 280,
       "rooms": [
-        { "id": "r_living", "name": "客厅", "type": "living", "polygon": [[0,400],[0,900],[700,900],[700,650],[560,650],[560,400],[560,220],[420,220],[420,400]] },
-        { "id": "r_bed1", "name": "主卧", "type": "bedroom", "polygon": [[0,0],[560,0],[560,220],[420,220],[420,400],[0,400]] },
-        { "id": "r_bed2", "name": "次卧", "type": "bedroom", "polygon": [[560,0],[900,0],[900,400],[560,400]] },
-        { "id": "r_kitchen", "name": "厨房", "type": "kitchen", "polygon": [[560,400],[900,400],[900,650],[560,650]] },
-        { "id": "r_bath", "name": "卫生间", "type": "bathroom", "polygon": [[700,650],[900,650],[900,900],[700,900]] }
+        { "id": "r_living", "name": "客厅", "type": "living", "style": "living", "polygon": [[0,400],[0,900],[700,900],[700,650],[560,650],[560,400],[560,220],[420,220],[420,400]] },
+        { "id": "r_bed1", "name": "主卧", "type": "bedroom", "style": "bedroom", "polygon": [[0,0],[560,0],[560,220],[420,220],[420,400],[0,400]] },
+        { "id": "r_bed2", "name": "次卧", "type": "bedroom", "style": "bedroom", "polygon": [[560,0],[900,0],[900,400],[560,400]] },
+        { "id": "r_kitchen", "name": "厨房", "type": "kitchen", "style": "kitchen", "polygon": [[560,400],[900,400],[900,650],[560,650]] },
+        { "id": "r_bath", "name": "卫生间", "type": "bathroom", "style": "bathroom", "polygon": [[700,650],[900,650],[900,900],[700,900]] }
       ],
       "walls": [
-        { "id": "w_ext_top", "start": [12,0], "end": [888,0], "thickness": 24, "height": 280, "type": "external" },
-        { "id": "w_ext_right", "start": [900,-12], "end": [900,912], "thickness": 24, "height": 280, "type": "external" },
-        { "id": "w_ext_bottom", "start": [12,900], "end": [888,900], "thickness": 24, "height": 280, "type": "external" },
-        { "id": "w_ext_left", "start": [0,-12], "end": [0,912], "thickness": 24, "height": 280, "type": "external" },
+        { "id": "w_ext_top", "start": [12,0], "end": [888,0], "thickness": 24, "height": 280, "type": "external", "style": "shell" },
+        { "id": "w_ext_right", "start": [900,-12], "end": [900,912], "thickness": 24, "height": 280, "type": "external", "style": "shell" },
+        { "id": "w_ext_bottom", "start": [12,900], "end": [888,900], "thickness": 24, "height": 280, "type": "external", "style": "shell" },
+        { "id": "w_ext_left", "start": [0,-12], "end": [0,912], "thickness": 24, "height": 280, "type": "external", "style": "shell" },
 
-        { "id": "w_mid_h_w", "start": [12,400], "end": [414,400], "thickness": 12, "height": 280, "type": "internal" },
-        { "id": "w_mid_h_e", "start": [566,400], "end": [888,400], "thickness": 12, "height": 280, "type": "internal" },
-        { "id": "w_mid_v1", "start": [560,12], "end": [560,644], "thickness": 12, "height": 280, "type": "internal" },
-        { "id": "w_mid_v2", "start": [700,656], "end": [700,888], "thickness": 12, "height": 280, "type": "internal" },
-        { "id": "w_mid_h2", "start": [554,650], "end": [888,650], "thickness": 12, "height": 280, "type": "internal" },
-        { "id": "w_ntl_h", "start": [426,220], "end": [554,220], "thickness": 12, "height": 280, "type": "internal" },
-        { "id": "w_ntl_v", "start": [420,214], "end": [420,406], "thickness": 12, "height": 280, "type": "internal" }
+        { "id": "w_mid_h_w", "start": [12,400], "end": [414,400], "thickness": 12, "height": 280, "type": "internal", "style": "partition" },
+        { "id": "w_mid_h_e", "start": [566,400], "end": [888,400], "thickness": 12, "height": 280, "type": "internal", "style": "kitchen_living" },
+        { "id": "w_mid_v1", "start": [560,12], "end": [560,644], "thickness": 12, "height": 280, "type": "internal", "style": "kitchen_living" },
+        { "id": "w_mid_v2", "start": [700,656], "end": [700,888], "thickness": 12, "height": 280, "type": "internal", "style": "wet" },
+        { "id": "w_mid_h2", "start": [554,650], "end": [888,650], "thickness": 12, "height": 280, "type": "internal", "style": "wet" },
+        { "id": "w_ntl_h", "start": [426,220], "end": [554,220], "thickness": 12, "height": 280, "type": "internal", "style": "partition" },
+        { "id": "w_ntl_v", "start": [420,214], "end": [420,406], "thickness": 12, "height": 280, "type": "internal", "style": "partition" }
       ],
       "doors": [
         {
@@ -43,7 +43,8 @@
           "width": 120,
           "height": 220,
           "name": "入户门",
-          "type": "entrance"
+          "type": "entrance",
+          "style": "entrance"
         },
         {
           "id": "d_bath",
@@ -51,7 +52,9 @@
           "pos": 174,
           "width": 80,
           "height": 210,
-          "name": "卫生间门"
+          "name": "卫生间门",
+          "type": "interior",
+          "style": "interior"
         },
         {
           "id": "d_kitchen",
@@ -59,7 +62,9 @@
           "pos": 48,
           "width": 80,
           "height": 210,
-          "name": "厨房门"
+          "name": "厨房门",
+          "type": "interior",
+          "style": "interior"
         },
         {
           "id": "d_bed1",
@@ -67,7 +72,9 @@
           "pos": 66,
           "width": 85,
           "height": 210,
-          "name": "主卧门"
+          "name": "主卧门",
+          "type": "interior",
+          "style": "interior"
         },
         {
           "id": "d_bed2",
@@ -75,7 +82,9 @@
           "pos": 298,
           "width": 85,
           "height": 210,
-          "name": "次卧门"
+          "name": "次卧门",
+          "type": "interior",
+          "style": "interior"
         }
       ],
       "windows": [
@@ -86,7 +95,9 @@
           "width": 300,
           "height": 210,
           "altitude": 15,
-          "name": "西墙落地窗"
+          "name": "西墙落地窗",
+          "type": "casement",
+          "style": "living"
         },
         {
           "id": "win_left_small",
@@ -95,7 +106,9 @@
           "width": 200,
           "height": 140,
           "altitude": 90,
-          "name": "西墙小窗"
+          "name": "西墙小窗",
+          "type": "casement",
+          "style": "living"
         },
         {
           "id": "win_right_small",
@@ -104,7 +117,9 @@
           "width": 200,
           "height": 140,
           "altitude": 90,
-          "name": "东墙小窗"
+          "name": "东墙小窗",
+          "type": "casement",
+          "style": "bedroom"
         },
         {
           "id": "win_kitchen_e",
@@ -113,7 +128,9 @@
           "width": 130,
           "height": 130,
           "altitude": 100,
-          "name": "厨房窗"
+          "name": "厨房窗",
+          "type": "casement",
+          "style": "kitchen"
         },
         {
           "id": "win_bath_e",
@@ -122,7 +139,9 @@
           "width": 100,
           "height": 100,
           "altitude": 130,
-          "name": "卫生间窗"
+          "name": "卫生间窗",
+          "type": "casement",
+          "style": "bathroom"
         }
       ]
     }

@@ -4,8 +4,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
 import { getFloorBBoxCm } from "../floorplan/floorplanSvg.js";
-import { normalizeDoorStyle } from "../floorplan/doorStyle.js";
-import { normalizeWindowStyle } from "../floorplan/windowStyle.js";
+import { normalizeDoorStyle, defaultDoorStyleWhite } from "../floorplan/doorStyle.js";
+import { normalizeWindowStyle, defaultWindowStyleWhite } from "../floorplan/windowStyle.js";
 import {
   loadStyleConfig,
   getMaterialDef,
@@ -1306,7 +1306,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   function buildDoorFillGroup(door, wall, cx, cy, s, defaultHeightCm, floorOpacity, styleDoorMat) {
     if (!door || !wall) return null;
-    const ns = normalizeDoorStyle(door.style);
+    const ns =
+      door.style != null && typeof door.style === "object" && !Array.isArray(door.style)
+        ? normalizeDoorStyle(door.style)
+        : defaultDoorStyleWhite();
     const pos = Number(door.pos);
     const wcm = Number(door.width);
     const hcm = Number(door.height);
@@ -1467,7 +1470,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    */
   function buildWindowGlassGroup(win, wall, cx, cy, s, defaultHeightCm, floorOpacity, styleWinMat) {
     if (!win || !wall) return null;
-    const ns = normalizeWindowStyle(win.style);
+    const ns =
+      win.style != null && typeof win.style === "object" && !Array.isArray(win.style)
+        ? normalizeWindowStyle(win.style)
+        : defaultWindowStyleWhite();
     const pos = Number(win.pos);
     const wcm = Number(win.width);
     const hcm = Number(win.height);
@@ -1587,7 +1593,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const LY = 0.12;
     for (const room of fl.rooms ?? []) {
       const poly = room?.polygon;
-      const name = String(room?.name ?? room?.type ?? "").trim();
+      const name = String(room?.name ?? room?.type ?? room?.style ?? "").trim();
       if (!Array.isArray(poly) || poly.length < 3 || !name) continue;
       const pts2d = poly
         .filter((p) => Array.isArray(p) && p.length >= 2)
@@ -2091,7 +2097,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const fh = Number(fl.height);
       const defaultH = Number.isFinite(fh) && fh > 0 ? fh : 280;
       for (const w of fl.walls || []) {
-        const wk = resolveWallMaterialKey(style, w, fl);
+        const wk = resolveWallMaterialKey(style, w);
         const wallMat = wk ? getMaterialForKey(wk) : null;
         const m = buildWallMesh(w, fl, cx, cy, s, defaultH, opacity, wallMat);
         if (m) floorG.add(m);
@@ -2109,7 +2115,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const wid = String(win.wallId ?? "").trim();
         const w = wid ? (fl.walls || []).find((x) => String(x?.id ?? "") === wid) : null;
         if (!w) continue;
-        const wink = resolveWindowMaterialKey(style, win, fl);
+        const wink = resolveWindowMaterialKey(style, win);
         const winMat = wink ? getMaterialForKey(wink, { forGlass: true }) : null;
         const winG = buildWindowGlassGroup(win, w, cx, cy, s, defaultH, opacity, winMat);
         if (winG) floorG.add(winG);

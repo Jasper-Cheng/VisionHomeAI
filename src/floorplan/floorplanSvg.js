@@ -3,8 +3,8 @@
  * 遍历该层内 rooms / walls / doors / windows / furnitures；3D 属性（height、elevation 等）不参与 2D 绘制。
  */
 
-import { normalizeDoorStyle } from "./doorStyle.js";
-import { normalizeWindowStyle } from "./windowStyle.js";
+import { normalizeDoorStyle, defaultDoorStyleWhite } from "./doorStyle.js";
+import { normalizeWindowStyle, defaultWindowStyleWhite } from "./windowStyle.js";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -560,7 +560,10 @@ function appendWindowFillPolygon(innerG, win, walls, snapCoord = identitySnapCoo
     [seg.x1 - nx, seg.y1 - ny],
     [seg.x0 - nx, seg.y0 - ny],
   ];
-  const ns = normalizeWindowStyle(win.style);
+  const ns =
+    win.style != null && typeof win.style === "object" && !Array.isArray(win.style)
+      ? normalizeWindowStyle(win.style)
+      : defaultWindowStyleWhite();
   const rgb = hexColorToRgbComponents(ns.color);
   const op = Math.min(0.94, Math.max(ns.opacity, ns.opacity * 1.28 + 0.06));
   const fillStr = rgb ? `rgba(${rgb.r},${rgb.g},${rgb.b},${op})` : ns.color;
@@ -604,7 +607,10 @@ function appendDoorFillPolygon(innerG, door, walls, snapCoord = identitySnapCoor
     [seg.x1 - nx, seg.y1 - ny],
     [seg.x0 - nx, seg.y0 - ny],
   ];
-  const ns = normalizeDoorStyle(door.style);
+  const ns =
+    door.style != null && typeof door.style === "object" && !Array.isArray(door.style)
+      ? normalizeDoorStyle(door.style)
+      : defaultDoorStyleWhite();
   const styleAttr =
     door.style != null && typeof door.style === "object"
       ? JSON.stringify(door.style)
@@ -721,7 +727,7 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
   for (const room of floor.rooms || []) {
     const poly = room?.polygon;
     if (!Array.isArray(poly) || poly.length < 3) continue;
-    const t = safeTypeClass(room?.type);
+    const t = safeTypeClass(room?.type ?? room?.style);
     const el = document.createElementNS(NS, "polygon");
     const pts = poly
       .filter((p) => Array.isArray(p) && p.length >= 2)
