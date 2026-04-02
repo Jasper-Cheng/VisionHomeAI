@@ -715,7 +715,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const v = Number(otherLayersOpacityRange.value);
     if (!Number.isFinite(v)) return;
     activeLayerOpacity = Math.max(0, Math.min(1, v / 100));
-    rebuildFloorplan3D();
+    if (!applyFloorplanLayerOpacityToScene()) {
+      rebuildFloorplan3D();
+    }
     updateFurnitureFloorVisibility();
   });
 
@@ -806,6 +808,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
+   * 记录楼层透明度系数与当前 effective opacity 的比例（opacity / 层透明度），
+   * 供滑块只改材质时使用：newOpacity = perUnit * newLayerOpacity。
+   * 避免层透明度或 effective opacity 曾为 0 时，用 ratio=mat.opacity*new/old 无法恢复。
+   */
+  function tagFloorplanLayerOpacity(mat, layerOpacity) {
+    if (!mat) return;
+    const layer = Number.isFinite(Number(layerOpacity)) ? Number(layerOpacity) : 1;
+    mat.userData.__floorplanLayerOpacity = layer;
+    if (layer > 1e-9) {
+      mat.userData.__floorplanOpacityPerUnitLayer = mat.opacity / layer;
+    } else {
+      mat.userData.__floorplanOpacityPerUnitLayer = 1;
+    }
+  }
+
+  /**
    * 从风格包 materials 条目创建 Three 材质（可先显示颜色，贴图异步叠加）
    * @param {object} def
    * @param {number} floorOpacity
@@ -847,6 +865,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       });
       applyFloorplanSurfaceAlpha(mat, Math.min(1, opMult * floorOp));
       mat.side = options.side ?? THREE.DoubleSide;
+      tagFloorplanLayerOpacity(mat, floorOp);
       return mat;
     }
 
@@ -859,6 +878,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     });
     applyFloorplanSurfaceAlpha(mat, floorOp);
     mat.side = options.side ?? THREE.FrontSide;
+    tagFloorplanLayerOpacity(mat, floorOp);
     return mat;
   }
 
@@ -964,6 +984,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const mat = floorStyleMat || floorplanStdMat();
     const op = floorOpacity ?? 1;
     applyFloorplanSurfaceAlpha(mat, op);
+    if (!floorStyleMat) tagFloorplanLayerOpacity(mat, op);
     // ShapeGeometry 与挤出顶盖法线朝向可能不同；双面避免从上方只看到被剔除的一面
     mat.side = THREE.DoubleSide;
     const mesh = new THREE.Mesh(geo, mat);
@@ -1064,6 +1085,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const mat = floorplanStdMat();
       applyFloorplanSurfaceAlpha(mat, op);
       mat.side = THREE.FrontSide;
+      tagFloorplanLayerOpacity(mat, op);
       return mat;
     }
 
@@ -1136,6 +1158,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     } else {
       applyFloorplanSurfaceAlpha(mat, op);
     }
+    tagFloorplanLayerOpacity(mat, op);
     mat.side = THREE.FrontSide;
     return mat;
   }
@@ -1147,7 +1170,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return op;
   }
 
-  function doorHandleMetalMaterial(panelOpacity) {
+  function doorHandleMetalMaterial(panelOpacity, layerOpacityTag) {
     const op = Math.max(0, Math.min(1, panelOpacity));
     const mat = new THREE.MeshStandardMaterial({
       color: 0xa8a8ad,
@@ -1157,6 +1180,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       emissive: new THREE.Color(0x000000),
     });
     applyFloorplanSurfaceAlpha(mat, op);
+    if (layerOpacityTag != null && Number.isFinite(layerOpacityTag)) {
+      tagFloorplanLayerOpacity(mat, layerOpacityTag);
+    }
     return mat;
   }
 
@@ -1169,8 +1195,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {number} doorDepth 门扇厚度（m）
    * @param {number} panelOpacity 与门扇 mesh 相同的有效透明度（含楼层与玻璃系数）
    */
-  function addDoorHandleMeshes(group, centerX, wM, hDoor, doorDepth, panelOpacity) {
-    const hMat = doorHandleMetalMaterial(panelOpacity);
+  function addDoorHandleMeshes(group, centerX, wM, hDoor, doorDepth, panelOpacity, layerOpacityTag) {
+    const hMat = doorHandleMetalMaterial(panelOpacity, layerOpacityTag);
     const handleY = Math.min(Math.max(hDoor * 0.45, 0.35), Math.min(1.0, hDoor - 0.05));
     const handleX = centerX + wM * 0.5 - 0.08;
     const faceOut = doorDepth * 0.5 + 0.008;
@@ -1316,6 +1342,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       hDoor,
       doorDepth,
       styleDoorMat ? (floorOpacity ?? 1) : effectiveDoorPanelOpacity(ns, floorOpacity),
+      floorOpacity ?? 1,
     );
     return group;
   }
@@ -1351,6 +1378,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       emissive: new THREE.Color(0x000000),
     });
     applyFloorplanSurfaceAlpha(mat, op);
+    tagFloorplanLayerOpacity(mat, floorOp);
     mat.side = THREE.DoubleSide;
     return mat;
   }
@@ -1905,6 +1933,60 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   // ============================================================
 
+  /**
+   * 仅更新各楼层「层透明度」系数对应的材质 opacity，避免拖动滑块时全量 rebuild 卡顿。
+   * 使用 `__floorplanOpacityPerUnitLayer`（= opacity/层透明度）计算 newOpacity = perUnit * newLayer，
+   * 避免层透明度或 opacity 曾为 0 时 ratio 失效；无有效 perUnit 且无法推断时退回 rebuild。
+   */
+  function applyFloorplanLayerOpacityToScene() {
+    const entry = currentFloorplanEntry;
+    if (!entry) return false;
+    const gWorld = floorplanRoot.children[0];
+    if (!gWorld?.userData?.floorplanGWorld) return false;
+    const floors = getFloorsFromEntry(entry);
+    const floorGroups = [];
+    for (const c of gWorld.children) {
+      if (c.userData?.floorplanFloorGroup) floorGroups.push(c);
+    }
+    if (floorGroups.length !== floors.length) return false;
+
+    const floorIdxActive = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
+    let needFullRebuild = false;
+
+    for (let fi = 0; fi < floorGroups.length; fi++) {
+      const newLayerOp =
+        floorIdxActive < 0 ? 0.2 : fi === floorIdxActive ? activeLayerOpacity : otherLayersOpacity;
+
+      floorGroups[fi].traverse((obj) => {
+        const mats = [];
+        if (obj.material) {
+          if (Array.isArray(obj.material)) mats.push(...obj.material);
+          else mats.push(obj.material);
+        }
+        for (const mat of mats) {
+          if (!mat) continue;
+          let perUnit = mat.userData.__floorplanOpacityPerUnitLayer;
+          if (!Number.isFinite(perUnit)) {
+            const oldLayerOp = mat.userData.__floorplanLayerOpacity;
+            if (oldLayerOp == null || !Number.isFinite(oldLayerOp)) continue;
+            if (oldLayerOp > 1e-9 && mat.opacity > 1e-9) {
+              perUnit = mat.opacity / oldLayerOp;
+              mat.userData.__floorplanOpacityPerUnitLayer = perUnit;
+            } else {
+              needFullRebuild = true;
+              continue;
+            }
+          }
+          const newOp = Math.max(0, Math.min(1, perUnit * newLayerOp));
+          mat.userData.__floorplanLayerOpacity = newLayerOp;
+          applyFloorplanSurfaceAlpha(mat, newOp);
+          mat.needsUpdate = true;
+        }
+      });
+    }
+    return !needFullRebuild;
+  }
+
   async function rebuildFloorplan3D() {
     const gen = ++floorplanRebuildGen;
     clearInteractiveList();
@@ -1937,6 +2019,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const bbox = getEntryBBoxCm(entry);
     if (!bbox) return;
     const gWorld = new THREE.Group();
+    gWorld.userData.floorplanGWorld = true;
     const pos = canvasCmToSceneXZ(worldX, worldY);
     gWorld.position.set(pos.x, 0, pos.z);
     floorplanRoot.add(gWorld);
@@ -1956,6 +2039,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     });
     floors.forEach((fl, i) => {
       const floorG = new THREE.Group();
+      floorG.userData.floorplanFloorGroup = true;
       const isActive = floorIndex >= 0 && i === floorIndex;
       // 选中层更深、更清晰：提高不透明度
       // 未选中层更淡：降低透明度
