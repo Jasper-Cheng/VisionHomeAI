@@ -332,6 +332,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   scene.add(dir.target);
   scene.add(dir);
 
+  /** 户型半透明分层渲染：深度预写入（与 applyFloorplanSurfaceAlpha 的 polygonOffset 对齐） */
+  const floorplanDepthPrepassMat = new THREE.MeshDepthMaterial({
+    depthPacking: renderer.capabilities.logarithmicDepthBuffer ? THREE.RGBADepthPacking : THREE.BasicDepthPacking,
+  });
+  floorplanDepthPrepassMat.colorWrite = false;
+  floorplanDepthPrepassMat.polygonOffset = true;
+  floorplanDepthPrepassMat.polygonOffsetFactor = 1;
+  floorplanDepthPrepassMat.polygonOffsetUnits = 1;
+
   /** 方向光阴影开关（与工具栏「光影」同步） */
   let shadowsEnabled = true;
 
@@ -842,22 +851,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const roughness = Number(def.roughness);
     const metalness = Number(def.metalness);
     const tr = Number(def.transmission);
-    const baseOp = Number(def.opacity);
-    const opMult = Number.isFinite(baseOp) ? baseOp : 1;
-    const effectiveOp = Math.min(1, opMult * floorOp);
-    /**
-     * transmission 依赖 renderTransmissionPass：先把「不透明」场景画进离屏纹理再折射。
-     * 层透明度 < 1 时墙/地变为半透明（不再进 opaque 队列），多遍渲染里家具又被隐藏，
-     * 离屏缓冲多为空 → 采样发黑。故仅在「有效不透明度≈1」时用 transmission，否则走下方 Standard 半透明。
-     */
     const usePhysical =
-      options.forGlass === true &&
+      options.forGlass !== true &&
       String(def.type ?? "") === "glass" &&
       Number.isFinite(tr) &&
-      tr > 0.02 &&
-      effectiveOp >= 1 - 1e-4;
+      tr > 0.02;
 
     if (usePhysical) {
+      const baseOp = Number(def.opacity);
+      const opMult = Number.isFinite(baseOp) ? baseOp : 1;
       const mat = new THREE.MeshPhysicalMaterial({
         color,
         roughness: Number.isFinite(roughness) ? roughness : 0.05,
@@ -866,12 +868,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         thickness: 0.03,
         ior: Number.isFinite(Number(def.ior)) ? Number(def.ior) : 1.45,
         transparent: true,
-        opacity: effectiveOp,
+        opacity: Math.min(1, opMult * floorOp),
         envMapIntensity: 0.9,
         emissive: new THREE.Color(0x000000),
       });
-      mat.userData.__glassTransmissionOriginal = Math.min(1, tr);
-      applyFloorplanSurfaceAlpha(mat, effectiveOp);
+      applyFloorplanSurfaceAlpha(mat, Math.min(1, opMult * floorOp));
       mat.side = options.side ?? THREE.DoubleSide;
       tagFloorplanLayerOpacity(mat, floorOp);
       return mat;
@@ -884,9 +885,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       envMapIntensity,
       emissive: new THREE.Color(0x000000),
     });
-    const surfaceAlpha =
-      options.forGlass && String(def.type ?? "") === "glass" ? effectiveOp : floorOp;
-    applyFloorplanSurfaceAlpha(mat, surfaceAlpha);
+    const baseOp = Number(def.opacity);
+    const opMult = Number.isFinite(baseOp) ? baseOp : 1;
+    const isGlass = String(def.type ?? "") === "glass";
+    if (isGlass) {
+      mat.transparent = true;
+      applyFloorplanSurfaceAlpha(mat, Math.min(1, opMult * floorOp));
+    } else {
+      applyFloorplanSurfaceAlpha(mat, floorOp);
+    }
     mat.side = options.side ?? THREE.FrontSide;
     tagFloorplanLayerOpacity(mat, floorOp);
     return mat;
@@ -1389,7 +1396,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     });
     applyFloorplanSurfaceAlpha(mat, op);
     tagFloorplanLayerOpacity(mat, floorOp);
-    mat.side = THREE.DoubleSide;
+    mat.side = THREE.FrontSide;
     return mat;
   }
 
@@ -1501,6 +1508,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return null;
     }
     const mesh = new THREE.Mesh(geo, mat);
+    mesh.renderOrder = 12;
     mesh.position.set(centerX, y0 + hWinClamped / 2, 0);
     mesh.castShadow = false;
     mesh.receiveShadow = true;
@@ -1990,10 +1998,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           const newOp = Math.max(0, Math.min(1, perUnit * newLayerOp));
           mat.userData.__floorplanLayerOpacity = newLayerOp;
           applyFloorplanSurfaceAlpha(mat, newOp);
-          if (mat.isMeshPhysicalMaterial && mat.userData.__glassTransmissionOriginal != null) {
-            const orig = mat.userData.__glassTransmissionOriginal;
-            if (orig > 0.02) mat.transmission = newOp >= 1 - 1e-4 ? orig : 0;
-          }
           mat.needsUpdate = true;
         }
       });
@@ -2067,7 +2071,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (styleMatCache.has(ck)) return styleMatCache.get(ck);
         const def = getMaterialDef(style, key);
         if (!def) return null;
-        const side = opts.floorUv || opts.forGlass ? THREE.DoubleSide : THREE.FrontSide;
+        const side = opts.floorUv ? THREE.DoubleSide : THREE.FrontSide;
         const mat = createFloorplanMaterialFromStyleDef(def, opacity, {
           forGlass: opts.forGlass,
           envMapIntensity: opts.forGlass ? 0.9 : 0.35,
@@ -3513,6 +3517,78 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     void applyExternalLayout([]);
   });
 
+  /**
+   * 是否存在「户型需按半透明处理」的楼层（非 1 不透明）：此时用分层渲染（深度预写入 + 颜色）稳定遮挡。
+   */
+  function floorplanNeedsTranslucentPass() {
+    if (!floorplanRoot.children.length) return false;
+    if (!floorSelectionEnabled) return true;
+    if (activeLayerOpacity < 1 - 1e-4) return true;
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    const n = floors?.length ?? 0;
+    if (n > 1 && !hideOtherFloors && otherLayersOpacity < 1 - 1e-4) return true;
+    return false;
+  }
+
+  /**
+   * 窗玻璃、玻璃门扇等「应透视后方」的 mesh 不参与深度预写入：否则 MeshDepthMaterial 在玻璃表面写入深度，
+   * 第三遍里室内墙等更远半透明片深度测试失败，透过窗洞看不见室内。
+   */
+  function skipFloorplanDepthPrepassMesh(obj) {
+    if (obj.userData.floorplanWindowFill) return true;
+    if (obj.userData.floorplanDoorFill && obj.userData.floorplanDoorStyle?.isGlass) return true;
+    const m = obj.material;
+    const mats = Array.isArray(m) ? m : m ? [m] : [];
+    for (let i = 0; i < mats.length; i++) {
+      const sub = mats[i];
+      if (sub?.isMeshPhysicalMaterial && Number(sub.transmission) > 0.02) return true;
+    }
+    return false;
+  }
+
+  /**
+   * 分层渲染：先画家具+网格（不含户型），再仅对户型做深度预写入（不写颜色），最后画户型半透明颜色。
+   * 用 visible 排除户型/家具；多遍 render 时须暂时去掉 scene.background（Color）：
+   * Three.js WebGLBackground 在 background 为 Color 时会 forceClear，无视 autoClear=false，会整屏清空抹掉第一遍。
+   */
+  function renderEditorScene() {
+    const prevAutoClear = renderer.autoClear;
+    const prevBackground = scene.background;
+    try {
+      if (!floorplanNeedsTranslucentPass()) {
+        renderer.autoClear = true;
+        renderer.render(scene, camera);
+        return;
+      }
+      const saved = [];
+      renderer.autoClear = true;
+      floorplanRoot.visible = false;
+      renderer.render(scene, camera);
+      floorplanRoot.visible = true;
+      furnitureRoot.visible = false;
+      grid.visible = false;
+      renderer.autoClear = false;
+      scene.background = null;
+      floorplanRoot.traverse((obj) => {
+        if (!obj.isMesh || obj.isSkinnedMesh) return;
+        if (skipFloorplanDepthPrepassMesh(obj)) return;
+        saved.push({ obj, material: obj.material });
+        obj.material = floorplanDepthPrepassMat;
+      });
+      renderer.render(scene, camera);
+      for (let i = 0; i < saved.length; i++) {
+        saved[i].obj.material = saved[i].material;
+      }
+      renderer.render(scene, camera);
+    } finally {
+      renderer.autoClear = prevAutoClear;
+      scene.background = prevBackground;
+      furnitureRoot.visible = true;
+      grid.visible = gridVisible;
+      floorplanRoot.visible = true;
+    }
+  }
+
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
@@ -3536,7 +3612,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     dir.updateMatrixWorld(true);
     fitDirectionalShadowFrustum();
-    renderer.render(scene, camera);
+    renderEditorScene();
   }
 
   window.addEventListener("resize", resizeRenderer);
