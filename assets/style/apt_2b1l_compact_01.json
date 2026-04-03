@@ -135,12 +135,30 @@
       },
       "mapping": {
         "rooms": {
-          "r_bed1": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_bed2": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_living": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_living_co": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_kitchen": { "floor": "floor_tile_gray", "wall": "wall_feature_microcement" },
-          "r_bath": { "floor": "floor_tile_dark", "wall": "wall_tile_light" }
+          "r_bed1": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_bed2": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_living": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_living_co": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_kitchen": {
+            "floor": "floor_tile_gray",
+            "wall": "wall_feature_microcement"
+          },
+          "r_bath": {
+            "floor": "floor_tile_dark",
+            "wall": "wall_tile_light"
+          }
         },
         "walls": {
           "w_ext_left_n": "wall_main",
@@ -176,24 +194,6 @@
           "win_right_small": "glass_clear",
           "win_kitchen_e": "glass_tinted",
           "win_bath_e": "glass_frosted"
-        }
-      },
-      "furniturePreset": {
-        "style": "modern_minimal",
-        "recommended": {
-          "sofa": [
-            "sofa_modern_light_01",
-            "sofa_modern_gray_02"
-          ],
-          "bed": [
-            "bed_minimal_wood_01"
-          ],
-          "table": [
-            "table_minimal_01"
-          ],
-          "chair": [
-            "chair_light_01"
-          ]
         }
       }
     },
@@ -331,12 +331,30 @@
       },
       "mapping": {
         "rooms": {
-          "r_bed1": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_bed2": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_living": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_living_co": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_kitchen": { "floor": "floor_tile_gray", "wall": "wall_feature_microcement" },
-          "r_bath": { "floor": "floor_tile_dark", "wall": "wall_tile_light" }
+          "r_bed1": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_bed2": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_living": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_living_co": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_kitchen": {
+            "floor": "floor_tile_gray",
+            "wall": "wall_feature_microcement"
+          },
+          "r_bath": {
+            "floor": "floor_tile_dark",
+            "wall": "wall_tile_light"
+          }
         },
         "walls": {
           "w_ext_left_n": "wall_main",
@@ -372,24 +390,6 @@
           "win_right_small": "glass_clear",
           "win_kitchen_e": "glass_tinted",
           "win_bath_e": "glass_frosted"
-        }
-      },
-      "furniturePreset": {
-        "style": "nordic",
-        "recommended": {
-          "sofa": [
-            "sofa_modern_light_01",
-            "sofa_modern_gray_02"
-          ],
-          "bed": [
-            "bed_minimal_wood_01"
-          ],
-          "table": [
-            "table_minimal_01"
-          ],
-          "chair": [
-            "chair_light_01"
-          ]
         }
       }
     },
@@ -440,7 +440,10 @@
             "normal": "textures/floor/wood_light_japandi_normal.jpg",
             "roughness": "textures/floor/wood_light_japandi_rough.jpg"
           },
-          "uvScale": [4, 4]
+          "uvScale": [
+            4,
+            4
+          ]
         },
         "floor_tile_gray": {
           "type": "tile_floor",
@@ -452,7 +455,10 @@
             "normal": "textures/tile/tile_gray_normal.jpg",
             "roughness": "textures/tile/tile_gray_rough.jpg"
           },
-          "uvScale": [3, 3]
+          "uvScale": [
+            3,
+            3
+          ]
         },
         "floor_tile_dark": {
           "type": "tile_floor",
@@ -464,7 +470,10 @@
             "normal": "textures/tile/tile_gray_normal.jpg",
             "roughness": "textures/tile/tile_gray_rough.jpg"
           },
-          "uvScale": [3, 3]
+          "uvScale": [
+            3,
+            3
+          ]
         },
         "door_entrance": {
           "type": "paint_wood",
@@ -518,12 +527,30 @@
       },
       "mapping": {
         "rooms": {
-          "r_bed1": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_bed2": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_living": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_living_co": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_kitchen": { "floor": "floor_tile_gray", "wall": "wall_feature_microcement" },
-          "r_bath": { "floor": "floor_tile_dark", "wall": "wall_tile_light" }
+          "r_bed1": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_bed2": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_living": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_living_co": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_kitchen": {
+            "floor": "floor_tile_gray",
+            "wall": "wall_feature_microcement"
+          },
+          "r_bath": {
+            "floor": "floor_tile_dark",
+            "wall": "wall_tile_light"
+          }
         },
         "walls": {
           "w_ext_left_n": "wall_main",
@@ -559,15 +586,6 @@
           "win_right_small": "glass_clear",
           "win_kitchen_e": "glass_tinted",
           "win_bath_e": "glass_frosted"
-        }
-      },
-      "furniturePreset": {
-        "style": "japandi",
-        "recommended": {
-          "sofa": ["sofa_modern_light_01", "sofa_modern_gray_02"],
-          "bed": ["bed_minimal_wood_01"],
-          "table": ["table_minimal_01"],
-          "chair": ["chair_light_01"]
         }
       }
     },
@@ -618,7 +636,10 @@
             "normal": "textures/floor/wood_dark_normal.jpg",
             "roughness": "textures/floor/wood_dark_rough.jpg"
           },
-          "uvScale": [4, 4]
+          "uvScale": [
+            4,
+            4
+          ]
         },
         "floor_tile_gray": {
           "type": "tile_floor",
@@ -630,7 +651,10 @@
             "normal": "textures/tile/tile_gray_normal.jpg",
             "roughness": "textures/tile/tile_gray_rough.jpg"
           },
-          "uvScale": [3, 3]
+          "uvScale": [
+            3,
+            3
+          ]
         },
         "floor_tile_dark": {
           "type": "tile_floor",
@@ -642,7 +666,10 @@
             "normal": "textures/marble/wood_dark_normal.jpg",
             "roughness": "textures/marble/wood_dark_rough.jpg"
           },
-          "uvScale": [3, 3]
+          "uvScale": [
+            3,
+            3
+          ]
         },
         "door_entrance": {
           "type": "metal_door",
@@ -696,12 +723,30 @@
       },
       "mapping": {
         "rooms": {
-          "r_bed1": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_bed2": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_living": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_living_co": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "r_kitchen": { "floor": "floor_tile_gray", "wall": "wall_feature_microcement" },
-          "r_bath": { "floor": "floor_tile_dark", "wall": "wall_tile_light" }
+          "r_bed1": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_bed2": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_living": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_living_co": {
+            "floor": "floor_wood_oak",
+            "wall": "wall_main"
+          },
+          "r_kitchen": {
+            "floor": "floor_tile_gray",
+            "wall": "wall_feature_microcement"
+          },
+          "r_bath": {
+            "floor": "floor_tile_dark",
+            "wall": "wall_tile_light"
+          }
         },
         "walls": {
           "w_ext_left_n": "wall_main",
@@ -737,15 +782,6 @@
           "win_right_small": "glass_clear",
           "win_kitchen_e": "glass_tinted",
           "win_bath_e": "glass_frosted"
-        }
-      },
-      "furniturePreset": {
-        "style": "modern_luxury",
-        "recommended": {
-          "sofa": ["sofa_modern_light_01", "sofa_modern_gray_02"],
-          "bed": ["bed_minimal_wood_01"],
-          "table": ["table_minimal_01"],
-          "chair": ["chair_light_01"]
         }
       }
     }
