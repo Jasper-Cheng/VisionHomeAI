@@ -1,8 +1,8 @@
 /**
  * 户型装饰 JSON（assets/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；材质可在根级或包在 materials 内。
  * loadStyleConfig(floorplanId, styleKey) 返回其中一套，供 getMaterialDef。
- * floors[].walls|doors|windows[].style：风格包 mapping.walls|doors|windows 中短键，或直连材质 id。
- * floors[].rooms[].style：mapping.rooms 中键 → 地面 + 内墙立面材质；内墙在挤出时叠在 walls 条目的基底材质之上（两侧按房间多边形判定）。
+ * floors[].walls|doors|windows：优先用风格包 mapping.walls|doors|windows 中以元素 id 为键的条目；若无则回退到 style 短键或直连材质 id。
+ * floors[].rooms：优先 mapping.rooms[room.id]（{ floor, wall }）；否则 rooms[].style → mapping.rooms 短键。
  */
 import { DATA_PATHS } from "../core/schema.js";
 
@@ -232,7 +232,7 @@ export function findWallSideRooms(floor, wall, epsCm = 4) {
 }
 
 /**
- * 风格包 `mapping.walls|doors|windows`：户型对应元素的 `style` 短键 → 根级材质 id。
+ * 风格包 `mapping.walls|doors|windows`：户型元素的 `style` 短键 → 根级材质 id（无 id 映射时）。
  * @param {object | null | undefined} style loadStyleConfig 返回的单套风格对象
  * @param {"walls"|"doors"|"windows"} category
  * @param {unknown} raw 元素上的 style 字段
@@ -254,11 +254,41 @@ export function resolveStyleSurfaceStyleId(style, category, raw) {
 }
 
 /**
+ * 优先 mapping.{category}[element.id]（材质 id 字符串），否则 {@link resolveStyleSurfaceStyleId}。
+ * @param {object | null | undefined} style
+ * @param {"walls"|"doors"|"windows"} category
+ * @param {object | null | undefined} element
+ * @param {unknown} legacyRaw 元素 style 字段（旧短键）
+ * @returns {string | null}
+ */
+function resolveMappingSurfaceMaterialKey(style, category, element, legacyRaw) {
+  const mapRoot = style?.mapping;
+  const table = mapRoot && typeof mapRoot === "object" && !Array.isArray(mapRoot) ? mapRoot[category] : null;
+  if (table && typeof table === "object" && !Array.isArray(table)) {
+    const eid = element && String(element.id ?? "").trim();
+    if (eid && Object.prototype.hasOwnProperty.call(table, eid)) {
+      const v = table[eid];
+      if (v == null) return null;
+      const id = String(v).trim();
+      return id || null;
+    }
+  }
+  return resolveStyleSurfaceStyleId(style, category, legacyRaw);
+}
+
+/**
  * @param {object | null} style
  * @param {object} room
  * @returns {{ floor?: unknown, wall?: unknown } | null}
  */
 function resolveRoomStyleSurface(style, room) {
+  if (!room) return null;
+  const map = style?.mapping?.rooms;
+  const rid = String(room.id ?? "").trim();
+  if (rid && map && typeof map === "object" && !Array.isArray(map) && Object.prototype.hasOwnProperty.call(map, rid)) {
+    const entry = map[rid];
+    if (entry && typeof entry === "object" && !Array.isArray(entry)) return entry;
+  }
   const raw = room?.style;
   if (raw == null) return null;
   if (typeof raw === "object" && !Array.isArray(raw)) {
@@ -267,7 +297,6 @@ function resolveRoomStyleSurface(style, room) {
   if (typeof raw === "string") {
     const k = raw.trim();
     if (!k) return null;
-    const map = style?.mapping?.rooms;
     const entry = map && typeof map === "object" && !Array.isArray(map) ? map[k] : null;
     if (entry && typeof entry === "object" && !Array.isArray(entry)) {
       return entry;
@@ -282,7 +311,7 @@ function resolveRoomStyleSurface(style, room) {
  * @returns {string | null}
  */
 export function resolveWallMaterialKey(style, wall) {
-  const id = resolveStyleSurfaceStyleId(style, "walls", wall?.style);
+  const id = resolveMappingSurfaceMaterialKey(style, "walls", wall, wall?.style);
   return materialKeyIfDefined(style, id);
 }
 
@@ -315,7 +344,7 @@ export function resolveRoomWallMaterialKey(style, room) {
  * @returns {string | null}
  */
 export function resolveDoorMaterialKey(style, door) {
-  const id = resolveStyleSurfaceStyleId(style, "doors", door?.style);
+  const id = resolveMappingSurfaceMaterialKey(style, "doors", door, door?.style);
   return materialKeyIfDefined(style, id);
 }
 
@@ -325,6 +354,6 @@ export function resolveDoorMaterialKey(style, door) {
  * @returns {string | null}
  */
 export function resolveWindowMaterialKey(style, win) {
-  const id = resolveStyleSurfaceStyleId(style, "windows", win?.style);
+  const id = resolveMappingSurfaceMaterialKey(style, "windows", win, win?.style);
   return materialKeyIfDefined(style, id);
 }

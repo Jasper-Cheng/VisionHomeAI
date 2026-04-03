@@ -135,32 +135,47 @@
       },
       "mapping": {
         "rooms": {
-          "residential": {
-            "floor": "floor_wood_oak",
-            "wall": "wall_main"
-          },
-          "kitchen": {
-            "floor": "floor_tile_gray",
-            "wall": "wall_feature_microcement"
-          },
-          "bathroom": {
-            "floor": "floor_tile_dark",
-            "wall": "wall_tile_light"
-          }
+          "r_bed1": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_bed2": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_living": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_living_co": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_kitchen": { "floor": "floor_tile_gray", "wall": "wall_feature_microcement" },
+          "r_bath": { "floor": "floor_tile_dark", "wall": "wall_tile_light" }
         },
         "walls": {
-          "main": "wall_main",
-          "feature_cement": "wall_feature_microcement",
-          "tile_light": "wall_tile_light"
+          "w_ext_left_n": "wall_main",
+          "w_ext_left_s": "wall_main",
+          "w_ext_top_w": "wall_main",
+          "w_ext_top_e": "wall_main",
+          "w_ext_right_n": "wall_main",
+          "w_ext_right_m": "wall_main",
+          "w_ext_right_s": "wall_main",
+          "w_ext_bot_w": "wall_main",
+          "w_ext_bot_e": "wall_main",
+          "w_int_v_mid_n_top": "wall_main",
+          "w_int_v_mid_n_bot": "wall_main",
+          "w_int_v_mid_s": "wall_main",
+          "w_int_h_mid_w": "wall_main",
+          "w_int_h_bed2_kitchen": "wall_main",
+          "w_int_h_low_w": "wall_main",
+          "w_int_h_low_e": "wall_main",
+          "w_int_v_bath": "wall_main",
+          "w_int_v_niche": "wall_main",
+          "w_int_h_niche": "wall_main"
         },
         "doors": {
-          "entrance": "door_entrance",
-          "interior": "door_interior_white"
+          "d_main": "door_entrance",
+          "d_bath": "door_interior_white",
+          "d_kitchen": "door_interior_white",
+          "d_bed1": "door_interior_white",
+          "d_bed2": "door_interior_white"
         },
         "windows": {
-          "clear": "glass_clear",
-          "tinted": "glass_tinted",
-          "frosted": "glass_frosted"
+          "win_left_floor": "glass_clear",
+          "win_left_small": "glass_clear",
+          "win_right_small": "glass_clear",
+          "win_kitchen_e": "glass_tinted",
+          "win_bath_e": "glass_frosted"
         }
       },
       "furniturePreset": {
@@ -316,32 +331,47 @@
       },
       "mapping": {
         "rooms": {
-          "residential": {
-            "floor": "floor_wood_oak",
-            "wall": "wall_main"
-          },
-          "kitchen": {
-            "floor": "floor_tile_gray",
-            "wall": "wall_feature_microcement"
-          },
-          "bathroom": {
-            "floor": "floor_tile_dark",
-            "wall": "wall_tile_light"
-          }
+          "r_bed1": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_bed2": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_living": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_living_co": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_kitchen": { "floor": "floor_tile_gray", "wall": "wall_feature_microcement" },
+          "r_bath": { "floor": "floor_tile_dark", "wall": "wall_tile_light" }
         },
         "walls": {
-          "main": "wall_main",
-          "feature_cement": "wall_feature_microcement",
-          "tile_light": "wall_tile_light"
+          "w_ext_left_n": "wall_main",
+          "w_ext_left_s": "wall_main",
+          "w_ext_top_w": "wall_main",
+          "w_ext_top_e": "wall_main",
+          "w_ext_right_n": "wall_main",
+          "w_ext_right_m": "wall_main",
+          "w_ext_right_s": "wall_main",
+          "w_ext_bot_w": "wall_main",
+          "w_ext_bot_e": "wall_main",
+          "w_int_v_mid_n_top": "wall_main",
+          "w_int_v_mid_n_bot": "wall_main",
+          "w_int_v_mid_s": "wall_main",
+          "w_int_h_mid_w": "wall_main",
+          "w_int_h_bed2_kitchen": "wall_main",
+          "w_int_h_low_w": "wall_main",
+          "w_int_h_low_e": "wall_main",
+          "w_int_v_bath": "wall_main",
+          "w_int_v_niche": "wall_main",
+          "w_int_h_niche": "wall_main"
         },
         "doors": {
-          "entrance": "door_entrance",
-          "interior": "door_interior_white"
+          "d_main": "door_entrance",
+          "d_bath": "door_interior_white",
+          "d_kitchen": "door_interior_white",
+          "d_bed1": "door_interior_white",
+          "d_bed2": "door_interior_white"
         },
         "windows": {
-          "clear": "glass_clear",
-          "tinted": "glass_tinted",
-          "frosted": "glass_frosted"
+          "win_left_floor": "glass_clear",
+          "win_left_small": "glass_clear",
+          "win_right_small": "glass_clear",
+          "win_kitchen_e": "glass_tinted",
+          "win_bath_e": "glass_frosted"
         }
       },
       "furniturePreset": {
