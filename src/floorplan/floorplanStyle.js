@@ -1,7 +1,7 @@
 /**
  * 户型装饰 JSON（assets/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；单套为根级材质定义。
  * loadStyleConfig(floorplanId, styleKey) 返回其中一套，供 getMaterialDef。
- * floors[].walls|doors|windows[].style：风格包 mapping.surface 中短键，或直连材质 id。
+ * floors[].walls|doors|windows[].style：风格包 mapping.walls|doors|windows 中短键，或直连材质 id。
  * floors[].rooms[].style：材质 id（地面）、或 { floor, wall } 内联、或风格包 mapping.rooms 中的键。
  */
 import { DATA_PATHS } from "../core/schema.js";
@@ -160,7 +160,7 @@ export function findRoomContainingPointCm(px, py, floor) {
 }
 
 /**
- * 风格包 `mapping.surface`：户型 walls / doors / windows 的 `style` 短键 → 根级材质 id。
+ * 风格包 `mapping.walls|doors|windows`：户型对应元素的 `style` 短键 → 根级材质 id。
  * @param {object | null | undefined} style loadStyleConfig 返回的单套风格对象
  * @param {"walls"|"doors"|"windows"} category
  * @param {unknown} raw 元素上的 style 字段
@@ -170,8 +170,8 @@ export function resolveStyleSurfaceStyleId(style, category, raw) {
   if (raw == null) return null;
   const k = String(raw).trim();
   if (!k) return null;
-  const surfaceRoot = style?.mapping?.surface;
-  const table = surfaceRoot && typeof surfaceRoot === "object" && !Array.isArray(surfaceRoot) ? surfaceRoot[category] : null;
+  const mapRoot = style?.mapping;
+  const table = mapRoot && typeof mapRoot === "object" && !Array.isArray(mapRoot) ? mapRoot[category] : null;
   if (table && typeof table === "object" && !Array.isArray(table) && Object.prototype.hasOwnProperty.call(table, k)) {
     const v = table[k];
     if (v == null) return null;

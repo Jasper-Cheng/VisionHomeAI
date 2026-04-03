@@ -140,21 +140,19 @@
           "kitchen": { "floor": "floor_tile_gray", "wall": "wall_tile_light" },
           "bathroom": { "floor": "floor_tile_dark", "wall": "wall_tile_light" }
         },
-        "surface": {
-          "walls": {
-            "main": "wall_main",
-            "feature_cement": "wall_feature_microcement",
-            "tile_light": "wall_tile_light"
-          },
-          "doors": {
-            "entrance": "door_entrance",
-            "interior": "door_interior_white"
-          },
-          "windows": {
-            "clear": "glass_clear",
-            "tinted": "glass_tinted",
-            "frosted": "glass_frosted"
-          }
+        "walls": {
+          "main": "wall_main",
+          "feature_cement": "wall_feature_microcement",
+          "tile_light": "wall_tile_light"
+        },
+        "doors": {
+          "entrance": "door_entrance",
+          "interior": "door_interior_white"
+        },
+        "windows": {
+          "clear": "glass_clear",
+          "tinted": "glass_tinted",
+          "frosted": "glass_frosted"
         }
       },
 
