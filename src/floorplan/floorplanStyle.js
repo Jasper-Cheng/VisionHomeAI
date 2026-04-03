@@ -1,5 +1,5 @@
 /**
- * 户型装饰 JSON（assets/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；单套为根级材质定义。
+ * 户型装饰 JSON（assets/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；材质可在根级或包在 materials 内。
  * loadStyleConfig(floorplanId, styleKey) 返回其中一套，供 getMaterialDef。
  * floors[].walls|doors|windows[].style：风格包 mapping.walls|doors|windows 中短键，或直连材质 id。
  * floors[].rooms[].style：mapping.rooms 中键 → 地面 + 内墙立面材质；内墙在挤出时叠在 walls 条目的基底材质之上（两侧按房间多边形判定）。
@@ -76,7 +76,10 @@ export function getMaterialDef(style, key) {
   const k = String(key).trim();
   if (!k) return null;
   if (STYLE_ROOT_RESERVED.has(k)) return null;
-  const def = style[k];
+  const bag = style.materials;
+  const fromBag =
+    bag && typeof bag === "object" && !Array.isArray(bag) ? bag[k] : undefined;
+  const def = fromBag !== undefined ? fromBag : style[k];
   return def && typeof def === "object" && !Array.isArray(def) ? def : null;
 }
 

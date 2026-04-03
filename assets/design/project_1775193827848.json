@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1775193827848",
+  "name": "阿斯顿",
+  "description": "",
+  "createdAt": "2026-04-03T05:23:47.848Z",
+  "updatedAt": "2026-04-03T05:23:47.848Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -400,
+        -14
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "sofa_02",
+      "floorId": "floor1",
+      "positionCm": [
+        -263,
+        124
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_3",
+      "furnitureId": "table_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -424,
+        487
+      ],
+      "rotationDeg": 180
+    },
+    {
+      "instanceId": "fi_4",
+      "furnitureId": "table_03",
+      "floorId": "floor1",
+      "positionCm": [
+        -228,
+        209
+      ],
+      "rotationDeg": 90
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "furniture": [
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": -400,
+        "y": -14,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_02",
+        "floorId": "floor1",
+        "x": -263,
+        "y": 124,
+        "rotation": 0
+      },
+      {
+        "model": "table_01",
+        "floorId": "floor1",
+        "x": -424,
+        "y": 487,
+        "rotation": 180
+      },
+      {
+        "model": "table_03",
+        "floorId": "floor1",
+        "x": -228,
+        "y": 209,
+        "rotation": 90
+      }
+    ]
+  }
+}
