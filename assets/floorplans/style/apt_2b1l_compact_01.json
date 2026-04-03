@@ -595,6 +595,132 @@
           "ior": 1.45
         }
       }
+    },
+    "industrial_v1": {
+      "id": "industrial_v1",
+      "name": "工业风",
+      "materials": {
+        "wall_main": {
+          "type": "paint",
+          "color": "#b0b0b0",
+          "roughness": 0.9,
+          "metalness": 0.05,
+          "texture": {
+            "albedo": "textures/wall/microcement_diff.jpg",
+            "normal": "textures/wall/microcement_normal.jpg",
+            "roughness": "textures/wall/microcement_rough.jpg"
+          }
+        },
+        "wall_feature_microcement": {
+          "type": "microcement",
+          "color": "#c8c8c8",
+          "roughness": 0.85,
+          "metalness": 0.06,
+          "texture": {
+            "albedo": "textures/wall/concrete_light_diff.jpg",
+            "normal": "textures/wall/concrete_light_normal.jpg",
+            "roughness": "textures/wall/concrete_light_rough.jpg"
+          }
+        },
+        "wall_tile_light": {
+          "type": "tile",
+          "color": "#ffffff",
+          "roughness": 0.8,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/wall/brick_diff.jpg",
+            "normal": "textures/wall/brick_normal.jpg",
+            "roughness": "textures/wall/brick_rough.jpg"
+          }
+        },
+        "floor_wood_oak": {
+          "type": "wood_floor",
+          "color": "#6a5a4a",
+          "roughness": 0.55,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/floor/concrete_floor_diff.jpg",
+            "normal": "textures/floor/concrete_floor_normal.jpg",
+            "roughness": "textures/floor/concrete_floor_rough.jpg"
+          },
+          "uvScale": [4, 4]
+        },
+        "floor_tile_gray": {
+          "type": "tile_floor",
+          "color": "#ffffff",
+          "roughness": 0.75,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/floor/concrete_floor_diff.jpg",
+            "normal": "textures/floor/concrete_floor_normal.jpg",
+            "roughness": "textures/floor/concrete_floor_rough.jpg"
+          },
+          "uvScale": [3, 3]
+        },
+        "floor_tile_dark": {
+          "type": "tile_floor",
+          "color": "#9a9a9a",
+          "roughness": 0.75,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/floor/concrete_floor_diff.jpg",
+            "normal": "textures/floor/concrete_floor_normal.jpg",
+            "roughness": "textures/floor/concrete_floor_rough.jpg"
+          },
+          "uvScale": [3, 3]
+        },
+        "door_entrance": {
+          "type": "metal_door",
+          "color": "#a8a8a8",
+          "roughness": 0.3,
+          "metalness": 1.0,
+          "texture": {
+            "albedo": "textures/metal/metal_diff.jpg",
+            "normal": "textures/metal/metal_normal.jpg",
+            "roughness": "textures/metal/metal_rough.jpg",
+            "metalnessMap": "textures/metal/metal_metal.jpg"
+          }
+        },
+        "door_interior_white": {
+          "type": "metal_door",
+          "color": "#909090",
+          "roughness": 0.4,
+          "metalness": 0.85,
+          "texture": {
+            "albedo": "textures/metal/metal_diff.jpg",
+            "normal": "textures/metal/metal_normal.jpg",
+            "roughness": "textures/metal/metal_rough.jpg",
+            "metalnessMap": "textures/metal/metal_metal.jpg"
+          }
+        },
+        "glass_clear": {
+          "type": "glass",
+          "color": "#cfe8ff",
+          "opacity": 0.25,
+          "roughness": 0.05,
+          "metalness": 0.0,
+          "transmission": 0.95,
+          "ior": 1.45
+        },
+        "glass_frosted": {
+          "type": "glass",
+          "color": "#e8eef2",
+          "opacity": 0.6,
+          "roughness": 0.85,
+          "metalness": 0.0,
+          "transmission": 0.4,
+          "ior": 1.45
+        },
+        "glass_tinted": {
+          "type": "glass",
+          "color": "#d8cbb5",
+          "opacity": 0.4,
+          "roughness": 0.2,
+          "metalness": 0.0,
+          "transmission": 0.7,
+          "ior": 1.45
+        }
+      }
     }
   }
 }

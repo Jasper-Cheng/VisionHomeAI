@@ -930,7 +930,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const albedo = String(t.albedo ?? "").trim();
     const rough = String(t.roughness ?? "").trim();
     const normal = String(t.normal ?? "").trim();
-    if (!albedo && !rough && !normal) return;
+    const metalnessMapPath = String(t.metalnessMap ?? "").trim();
+    if (!albedo && !rough && !normal && !metalnessMapPath) return;
 
     const loader = new THREE.TextureLoader();
     const applyUv = Boolean(opts.applyUvScale && Array.isArray(def.uvScale) && def.uvScale.length >= 2);
@@ -941,6 +942,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       let diffTex = null;
       let roughTex = null;
       let normalTex = null;
+      let metalnessTex = null;
 
       if (albedo) {
         try {
@@ -972,8 +974,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           console.warn("[VisionHome] style normal 贴图加载失败:", e);
         }
       }
+      if (metalnessMapPath) {
+        try {
+          const mu = resolveStyleTextureUrl(metalnessMapPath);
+          metalnessTex = await loader.loadAsync(mu);
+          metalnessTex.colorSpace = THREE.LinearSRGBColorSpace;
+          metalnessTex.flipY = false;
+        } catch (e) {
+          console.warn("[VisionHome] style metalnessMap 贴图加载失败:", e);
+        }
+      }
 
-      if (!diffTex && !roughTex && !normalTex) return;
+      if (!diffTex && !roughTex && !normalTex && !metalnessTex) return;
 
       if (diffTex) {
         if (applyUv) {
@@ -997,6 +1009,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         }
         mat.normalMap = normalTex;
         mat.normalScale = new THREE.Vector2(1, 1);
+      }
+      if (metalnessTex) {
+        if (applyUv) {
+          metalnessTex.wrapS = metalnessTex.wrapT = THREE.RepeatWrapping;
+          metalnessTex.repeat.set(def.uvScale[0], def.uvScale[1]);
+        }
+        mat.metalnessMap = metalnessTex;
       }
       mat.needsUpdate = true;
     })();
