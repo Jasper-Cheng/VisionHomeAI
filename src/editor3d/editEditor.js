@@ -1701,11 +1701,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     canvas.width = tw + pad * 2;
     canvas.height = fontSize + pad * 2;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "rgba(8,14,40,0.80)";
+    ctx.fillStyle = opts.bgColor ?? "rgba(8,14,40,0.80)";
     _dimRoundRect(ctx, 0, 0, canvas.width, canvas.height, 6);
     ctx.fill();
     ctx.font = font;
-    ctx.fillStyle = "#cce0ff";
+    ctx.fillStyle = opts.textColor ?? "#cce0ff";
     ctx.fillText(text, pad, fontSize + pad * 0.45);
     const tex = new THREE.CanvasTexture(canvas);
     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: dimDepthTest, depthWrite: false });
@@ -1753,6 +1753,25 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       sp.position.set(cx2, LY, cz2);
       g.add(sp);
     }
+
+    // 墙体名称标注：显示在墙体顶面中心
+    const fh = Number(fl.height);
+    const wallHeightCm = Number.isFinite(fh) && fh > 0 ? fh : 280;
+    const wallTopY = (wallHeightCm * s) / 100 + 0.06;
+    for (const wall of fl.walls ?? []) {
+      const name = String(wall?.name ?? wall?.id ?? "").trim();
+      if (!name) continue;
+      if (!Array.isArray(wall?.start) || !Array.isArray(wall?.end)) continue;
+      const x1 = snap(Number(wall.start[0])), y1 = snap(Number(wall.start[1]));
+      const x2 = snap(Number(wall.end[0])),   y2 = snap(Number(wall.end[1]));
+      const mx = ((x1 + x2) / 2 - cx) * (s / 100);
+      const mz = ((y1 + y2) / 2 - cy) * (s / 100);
+      const sp = makeDimSprite(name, { fontSize: 16, pxPerM: 200, bgColor: "rgba(40,20,0,0.75)", textColor: "#ffe8a0" });
+      sp.position.set(mx, wallTopY, mz);
+      sp.userData.isWallNameAnnotation = true;
+      g.add(sp);
+    }
+
     return g;
   }
 
