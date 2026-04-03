@@ -721,6 +721,128 @@
           "ior": 1.45
         }
       }
+    },
+    "cream_style_v1": {
+      "id": "cream_style_v1",
+      "name": "奶油风",
+      "materials": {
+        "wall_main": {
+          "type": "paint",
+          "color": "#f7f4ef",
+          "roughness": 0.9,
+          "metalness": 0.0,
+          "texture": {
+            "normal": "textures/wall/plaster_normal.jpg",
+            "roughness": "textures/wall/plaster_rough.jpg"
+          }
+        },
+        "wall_feature_microcement": {
+          "type": "paint",
+          "color": "#f2ece4",
+          "roughness": 0.88,
+          "metalness": 0.0,
+          "texture": {
+            "normal": "textures/wall/wall_color_normal.jpg",
+            "roughness": "textures/wall/wall_color_rough.jpg"
+          }
+        },
+        "wall_tile_light": {
+          "type": "tile",
+          "color": "#fdfbf7",
+          "roughness": 0.35,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/marble/marble_soft_diff.jpg",
+            "normal": "textures/marble/marble_soft_normal.jpg",
+            "roughness": "textures/marble/marble_soft_rough.jpg"
+          }
+        },
+        "floor_wood_oak": {
+          "type": "wood_floor",
+          "color": "#e8d8c3",
+          "roughness": 0.5,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/floor/wood_oak_nordic_diff.jpg",
+            "normal": "textures/floor/wood_oak_nordic_normal.jpg",
+            "roughness": "textures/floor/wood_oak_nordic_rough.jpg"
+          },
+          "uvScale": [4, 4]
+        },
+        "floor_tile_gray": {
+          "type": "tile_floor",
+          "color": "#f7f4ef",
+          "roughness": 0.45,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/tile/light_diff.jpg",
+            "normal": "textures/tile/light_normal.jpg",
+            "roughness": "textures/tile/light_rough.jpg"
+          },
+          "uvScale": [3, 3]
+        },
+        "floor_tile_dark": {
+          "type": "tile_floor",
+          "color": "#f1ece3",
+          "roughness": 0.45,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/tile/light_diff.jpg",
+            "normal": "textures/tile/light_normal.jpg",
+            "roughness": "textures/tile/light_rough.jpg"
+          },
+          "uvScale": [3, 3]
+        },
+        "door_entrance": {
+          "type": "metal_door",
+          "color": "#ffffff",
+          "roughness": 0.25,
+          "metalness": 1.0,
+          "texture": {
+            "albedo": "textures/metal/metal_gold_diff.jpg",
+            "normal": "textures/metal/metal_gold_normal.jpg",
+            "roughness": "textures/metal/metal_gold_rough.jpg",
+            "metalnessMap": "textures/metal/metal_gold_metal.jpg"
+          }
+        },
+        "door_interior_white": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.0,
+          "texture": {
+            "normal": "textures/door/door_wood_normal.jpg",
+            "roughness": "textures/door/door_wood_rough.jpg"
+          }
+        },
+        "glass_clear": {
+          "type": "glass",
+          "color": "#cfe8ff",
+          "opacity": 0.25,
+          "roughness": 0.05,
+          "metalness": 0.0,
+          "transmission": 0.95,
+          "ior": 1.45
+        },
+        "glass_frosted": {
+          "type": "glass",
+          "color": "#e8eef2",
+          "opacity": 0.6,
+          "roughness": 0.85,
+          "metalness": 0.0,
+          "transmission": 0.4,
+          "ior": 1.45
+        },
+        "glass_tinted": {
+          "type": "glass",
+          "color": "#d8cbb5",
+          "opacity": 0.4,
+          "roughness": 0.2,
+          "metalness": 0.0,
+          "transmission": 0.7,
+          "ior": 1.45
+        }
+      }
     }
   }
 }
