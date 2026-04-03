@@ -96,9 +96,9 @@
           "roughness": 0.35,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/tile_light_diff.jpg",
-            "normal": "textures/tile/tile_light_normal.jpg",
-            "roughness": "textures/tile/tile_light_rough.jpg"
+            "albedo": "textures/tile/light_diff.jpg",
+            "normal": "textures/tile/light_normal.jpg",
+            "roughness": "textures/tile/light_rough.jpg"
           }
         },
         "floor_wood_oak": {
@@ -122,9 +122,9 @@
           "roughness": 0.4,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/tile_gray_diff.jpg",
-            "normal": "textures/tile/tile_gray_normal.jpg",
-            "roughness": "textures/tile/tile_gray_rough.jpg"
+            "albedo": "textures/tile/gray_diff.jpg",
+            "normal": "textures/tile/gray_normal.jpg",
+            "roughness": "textures/tile/gray_rough.jpg"
           },
           "uvScale": [
             3,
@@ -137,9 +137,9 @@
           "roughness": 0.45,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/tile_dark_diff.jpg",
-            "normal": "textures/tile/tile_dark_normal.jpg",
-            "roughness": "textures/tile/tile_dark_rough.jpg"
+            "albedo": "textures/tile/dark_diff.jpg",
+            "normal": "textures/tile/dark_normal.jpg",
+            "roughness": "textures/tile/dark_rough.jpg"
           },
           "uvScale": [
             3,
@@ -152,9 +152,9 @@
           "roughness": 0.5,
           "metalness": 0.2,
           "texture": {
-            "albedo": "textures/door/metal_door_diff.jpg",
-            "normal": "textures/door/metal_door_normal.jpg",
-            "roughness": "textures/door/metal_door_rough.jpg"
+            "albedo": "textures/metal/metal_diff.jpg",
+            "normal": "textures/metal/metal_normal.jpg",
+            "roughness": "textures/metal/metal_rough.jpg"
           }
         },
         "door_interior_white": {
@@ -164,8 +164,8 @@
           "metalness": 0.02,
           "texture": {
             "albedo": "",
-            "normal": "textures/door/metal_door_normal.jpg",
-            "roughness": "textures/door/metal_door_rough.jpg"
+            "normal": "textures/metal/metal_normal.jpg",
+            "roughness": "textures/metal/metal_rough.jpg"
           }
         },
         "glass_clear": {
@@ -229,9 +229,9 @@
           "roughness": 0.4,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/tile_white_diff.jpg",
-            "normal": "textures/tile/tile_white_normal.jpg",
-            "roughness": "textures/tile/tile_white_rough.jpg"
+            "albedo": "textures/tile/white_diff.jpg",
+            "normal": "textures/tile/white_normal.jpg",
+            "roughness": "textures/tile/white_rough.jpg"
           }
         },
         "floor_wood_oak": {
@@ -255,9 +255,9 @@
           "roughness": 0.45,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/tile_gray_diff.jpg",
-            "normal": "textures/tile/tile_gray_normal.jpg",
-            "roughness": "textures/tile/tile_gray_rough.jpg"
+            "albedo": "textures/tile/gray_diff.jpg",
+            "normal": "textures/tile/gray_normal.jpg",
+            "roughness": "textures/tile/gray_rough.jpg"
           },
           "uvScale": [
             3,
@@ -270,9 +270,9 @@
           "roughness": 0.5,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/tile_dark_diff.jpg",
-            "normal": "textures/tile/tile_dark_normal.jpg",
-            "roughness": "textures/tile/tile_dark_rough.jpg"
+            "albedo": "textures/tile/dark_diff.jpg",
+            "normal": "textures/tile/dark_normal.jpg",
+            "roughness": "textures/tile/dark_rough.jpg"
           },
           "uvScale": [
             3,
@@ -362,9 +362,9 @@
           "roughness": 0.45,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/tile_gray_diff.jpg",
-            "normal": "textures/tile/tile_gray_normal.jpg",
-            "roughness": "textures/tile/tile_gray_rough.jpg"
+            "albedo": "textures/tile/gray_diff.jpg",
+            "normal": "textures/tile/gray_normal.jpg",
+            "roughness": "textures/tile/gray_rough.jpg"
           }
         },
         "floor_wood_oak": {
@@ -388,9 +388,9 @@
           "roughness": 0.45,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/tile_gray_diff.jpg",
-            "normal": "textures/tile/tile_gray_normal.jpg",
-            "roughness": "textures/tile/tile_gray_rough.jpg"
+            "albedo": "textures/tile/gray_diff.jpg",
+            "normal": "textures/tile/gray_normal.jpg",
+            "roughness": "textures/tile/gray_rough.jpg"
           },
           "uvScale": [
             3,
@@ -403,9 +403,9 @@
           "roughness": 0.45,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/tile_gray_diff.jpg",
-            "normal": "textures/tile/tile_gray_normal.jpg",
-            "roughness": "textures/tile/tile_gray_rough.jpg"
+            "albedo": "textures/tile/gray_diff.jpg",
+            "normal": "textures/tile/gray_normal.jpg",
+            "roughness": "textures/tile/gray_rough.jpg"
           },
           "uvScale": [
             3,
@@ -521,9 +521,9 @@
           "roughness": 0.3,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/tile_gray_diff.jpg",
-            "normal": "textures/tile/tile_gray_normal.jpg",
-            "roughness": "textures/tile/tile_gray_rough.jpg"
+            "albedo": "textures/tile/gray_diff.jpg",
+            "normal": "textures/tile/gray_normal.jpg",
+            "roughness": "textures/tile/gray_rough.jpg"
           },
           "uvScale": [
             3,
@@ -551,9 +551,9 @@
           "roughness": 0.2,
           "metalness": 1.0,
           "texture": {
-            "albedo": "textures/door/metal_door_diff.jpg",
-            "normal": "textures/door/metal_door_normal.jpg",
-            "roughness": "textures/door/metal_door_rough.jpg"
+            "albedo": "textures/metal/metal_diff.jpg",
+            "normal": "textures/metal/metal_normal.jpg",
+            "roughness": "textures/metal/metal_rough.jpg"
           }
         },
         "door_interior_white": {
