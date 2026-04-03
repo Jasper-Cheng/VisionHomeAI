@@ -1,7 +1,8 @@
 /**
  * 户型装饰 JSON（assets/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；单套为根级材质定义。
  * loadStyleConfig(floorplanId, styleKey) 返回其中一套，供 getMaterialDef。
- * floors[].rooms|walls|doors|windows[].style 为材质 id（与该套内根级条目同名）。
+ * floors[].walls|doors|windows[].style：风格包 mapping.surface 中短键，或直连材质 id。
+ * floors[].rooms[].style：材质 id（地面）、或 { floor, wall } 内联、或风格包 mapping.rooms 中的键。
  */
 import { DATA_PATHS } from "../core/schema.js";
 
@@ -159,12 +160,58 @@ export function findRoomContainingPointCm(px, py, floor) {
 }
 
 /**
+ * 风格包 `mapping.surface`：户型 walls / doors / windows 的 `style` 短键 → 根级材质 id。
+ * @param {object | null | undefined} style loadStyleConfig 返回的单套风格对象
+ * @param {"walls"|"doors"|"windows"} category
+ * @param {unknown} raw 元素上的 style 字段
+ * @returns {string | null}
+ */
+export function resolveStyleSurfaceStyleId(style, category, raw) {
+  if (raw == null) return null;
+  const k = String(raw).trim();
+  if (!k) return null;
+  const surfaceRoot = style?.mapping?.surface;
+  const table = surfaceRoot && typeof surfaceRoot === "object" && !Array.isArray(surfaceRoot) ? surfaceRoot[category] : null;
+  if (table && typeof table === "object" && !Array.isArray(table) && Object.prototype.hasOwnProperty.call(table, k)) {
+    const v = table[k];
+    if (v == null) return null;
+    const id = String(v).trim();
+    return id || null;
+  }
+  return k;
+}
+
+/**
+ * @param {object | null} style
+ * @param {object} room
+ * @returns {{ floor?: unknown, wall?: unknown } | null}
+ */
+function resolveRoomStyleSurface(style, room) {
+  const raw = room?.style;
+  if (raw == null) return null;
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    return raw;
+  }
+  if (typeof raw === "string") {
+    const k = raw.trim();
+    if (!k) return null;
+    const map = style?.mapping?.rooms;
+    const entry = map && typeof map === "object" && !Array.isArray(map) ? map[k] : null;
+    if (entry && typeof entry === "object" && !Array.isArray(entry)) {
+      return entry;
+    }
+  }
+  return null;
+}
+
+/**
  * @param {object | null} style
  * @param {object} wall
  * @returns {string | null}
  */
 export function resolveWallMaterialKey(style, wall) {
-  return materialKeyIfDefined(style, wall?.style);
+  const id = resolveStyleSurfaceStyleId(style, "walls", wall?.style);
+  return materialKeyIfDefined(style, id);
 }
 
 /**
@@ -173,7 +220,21 @@ export function resolveWallMaterialKey(style, wall) {
  * @returns {string | null}
  */
 export function resolveRoomFloorMaterialKey(style, room) {
+  const surf = resolveRoomStyleSurface(style, room);
+  if (surf) return materialKeyIfDefined(style, surf.floor);
   return materialKeyIfDefined(style, room?.style);
+}
+
+/**
+ * 房间关联的墙面材质 id（与户型墙条目的 style 独立，供数据/后续渲染使用）。
+ * @param {object | null} style
+ * @param {object} room
+ * @returns {string | null}
+ */
+export function resolveRoomWallMaterialKey(style, room) {
+  const surf = resolveRoomStyleSurface(style, room);
+  if (surf) return materialKeyIfDefined(style, surf.wall);
+  return null;
 }
 
 /**
@@ -182,7 +243,8 @@ export function resolveRoomFloorMaterialKey(style, room) {
  * @returns {string | null}
  */
 export function resolveDoorMaterialKey(style, door) {
-  return materialKeyIfDefined(style, door?.style);
+  const id = resolveStyleSurfaceStyleId(style, "doors", door?.style);
+  return materialKeyIfDefined(style, id);
 }
 
 /**
@@ -191,5 +253,6 @@ export function resolveDoorMaterialKey(style, door) {
  * @returns {string | null}
  */
 export function resolveWindowMaterialKey(style, win) {
-  return materialKeyIfDefined(style, win?.style);
+  const id = resolveStyleSurfaceStyleId(style, "windows", win?.style);
+  return materialKeyIfDefined(style, id);
 }

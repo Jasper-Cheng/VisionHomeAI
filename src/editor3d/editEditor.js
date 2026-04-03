@@ -1635,7 +1635,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const LY = 0.12;
     for (const room of fl.rooms ?? []) {
       const poly = room?.polygon;
-      const name = String(room?.name ?? room?.type ?? room?.style ?? "").trim();
+      const st = room?.style;
+      const styleFallback =
+        st != null && typeof st === "object" && !Array.isArray(st) ? st.floor ?? st.wall : st;
+      const name = String(room?.name ?? room?.type ?? styleFallback ?? "").trim();
       if (!Array.isArray(poly) || poly.length < 3 || !name) continue;
       const pts2d = poly
         .filter((p) => Array.isArray(p) && p.length >= 2)

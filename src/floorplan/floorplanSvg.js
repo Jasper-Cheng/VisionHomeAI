@@ -727,7 +727,9 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
   for (const room of floor.rooms || []) {
     const poly = room?.polygon;
     if (!Array.isArray(poly) || poly.length < 3) continue;
-    const t = safeTypeClass(room?.type ?? room?.style);
+    const rs = room?.style;
+    const styleForClass = rs != null && typeof rs === "object" && !Array.isArray(rs) ? rs.floor : rs;
+    const t = safeTypeClass(room?.type ?? styleForClass);
     const el = document.createElementNS(NS, "polygon");
     const pts = poly
       .filter((p) => Array.isArray(p) && p.length >= 2)
