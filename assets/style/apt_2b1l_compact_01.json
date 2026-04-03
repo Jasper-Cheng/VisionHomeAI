@@ -392,6 +392,184 @@
           ]
         }
       }
+    },
+    "japandi_v1": {
+      "id": "japandi_v1",
+      "name": "日式原木风",
+      "materials": {
+        "wall_main": {
+          "type": "paint",
+          "color": "#f6f5f2",
+          "roughness": 0.9,
+          "metalness": 0.02,
+          "texture": {
+            "albedo": "textures/wall/plaster_diff.jpg",
+            "normal": "textures/wall/plaster_normal.jpg",
+            "roughness": "textures/wall/plaster_rough.jpg"
+          }
+        },
+        "wall_feature_microcement": {
+          "type": "microcement",
+          "color": "#e8e6e1",
+          "roughness": 0.6,
+          "metalness": 0.04,
+          "texture": {
+            "albedo": "textures/wall/microcement_diff.jpg",
+            "normal": "textures/wall/microcement_normal.jpg",
+            "roughness": "textures/wall/microcement_rough.jpg"
+          }
+        },
+        "wall_tile_light": {
+          "type": "tile",
+          "color": "#ffffff",
+          "roughness": 0.45,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/tile/tile_gray_diff.jpg",
+            "normal": "textures/tile/tile_gray_normal.jpg",
+            "roughness": "textures/tile/tile_gray_rough.jpg"
+          }
+        },
+        "floor_wood_oak": {
+          "type": "wood_floor",
+          "color": "#d4c4b0",
+          "roughness": 0.5,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/floor/wood_light_japandi_diff.jpg",
+            "normal": "textures/floor/wood_light_japandi_normal.jpg",
+            "roughness": "textures/floor/wood_light_japandi_rough.jpg"
+          },
+          "uvScale": [4, 4]
+        },
+        "floor_tile_gray": {
+          "type": "tile_floor",
+          "color": "#dcdcdc",
+          "roughness": 0.45,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/tile/tile_gray_diff.jpg",
+            "normal": "textures/tile/tile_gray_normal.jpg",
+            "roughness": "textures/tile/tile_gray_rough.jpg"
+          },
+          "uvScale": [3, 3]
+        },
+        "floor_tile_dark": {
+          "type": "tile_floor",
+          "color": "#c8c8c8",
+          "roughness": 0.45,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/tile/tile_gray_diff.jpg",
+            "normal": "textures/tile/tile_gray_normal.jpg",
+            "roughness": "textures/tile/tile_gray_rough.jpg"
+          },
+          "uvScale": [3, 3]
+        },
+        "door_entrance": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.65,
+          "metalness": 0.0,
+          "texture": {
+            "albedo": "textures/door/door_wood_diff.jpg",
+            "normal": "textures/door/door_wood_normal.jpg",
+            "roughness": "textures/door/door_wood_rough.jpg"
+          }
+        },
+        "door_interior_white": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.65,
+          "metalness": 0.02,
+          "texture": {
+            "albedo": "textures/door/door_wood_diff.jpg",
+            "normal": "textures/door/door_wood_normal.jpg",
+            "roughness": "textures/door/door_wood_rough.jpg"
+          }
+        },
+        "glass_clear": {
+          "type": "glass",
+          "color": "#cfe8ff",
+          "opacity": 0.25,
+          "roughness": 0.05,
+          "metalness": 0.0,
+          "transmission": 0.95,
+          "ior": 1.45
+        },
+        "glass_frosted": {
+          "type": "glass",
+          "color": "#e8eef2",
+          "opacity": 0.6,
+          "roughness": 0.85,
+          "metalness": 0.0,
+          "transmission": 0.4,
+          "ior": 1.45
+        },
+        "glass_tinted": {
+          "type": "glass",
+          "color": "#d8cbb5",
+          "opacity": 0.4,
+          "roughness": 0.2,
+          "metalness": 0.0,
+          "transmission": 0.7,
+          "ior": 1.45
+        }
+      },
+      "mapping": {
+        "rooms": {
+          "r_bed1": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_bed2": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_living": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_living_co": { "floor": "floor_wood_oak", "wall": "wall_main" },
+          "r_kitchen": { "floor": "floor_tile_gray", "wall": "wall_feature_microcement" },
+          "r_bath": { "floor": "floor_tile_dark", "wall": "wall_tile_light" }
+        },
+        "walls": {
+          "w_ext_left_n": "wall_main",
+          "w_ext_left_s": "wall_main",
+          "w_ext_top_w": "wall_main",
+          "w_ext_top_e": "wall_main",
+          "w_ext_right_n": "wall_main",
+          "w_ext_right_m": "wall_main",
+          "w_ext_right_s": "wall_main",
+          "w_ext_bot_w": "wall_main",
+          "w_ext_bot_e": "wall_main",
+          "w_int_v_mid_n_top": "wall_main",
+          "w_int_v_mid_n_bot": "wall_main",
+          "w_int_v_mid_s": "wall_main",
+          "w_int_h_mid_w": "wall_main",
+          "w_int_h_bed2_kitchen": "wall_main",
+          "w_int_h_low_w": "wall_main",
+          "w_int_h_low_e": "wall_main",
+          "w_int_v_bath": "wall_main",
+          "w_int_v_niche": "wall_main",
+          "w_int_h_niche": "wall_main"
+        },
+        "doors": {
+          "d_main": "door_entrance",
+          "d_bath": "door_interior_white",
+          "d_kitchen": "door_interior_white",
+          "d_bed1": "door_interior_white",
+          "d_bed2": "door_interior_white"
+        },
+        "windows": {
+          "win_left_floor": "glass_clear",
+          "win_left_small": "glass_clear",
+          "win_right_small": "glass_clear",
+          "win_kitchen_e": "glass_tinted",
+          "win_bath_e": "glass_frosted"
+        }
+      },
+      "furniturePreset": {
+        "style": "japandi",
+        "recommended": {
+          "sofa": ["sofa_modern_light_01", "sofa_modern_gray_02"],
+          "bed": ["bed_minimal_wood_01"],
+          "table": ["table_minimal_01"],
+          "chair": ["chair_light_01"]
+        }
+      }
     }
   }
 }
