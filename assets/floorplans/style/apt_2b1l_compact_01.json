@@ -72,25 +72,25 @@
           "$ref": "wall_paint_plaster"
         },
         "wall_second": {
-          "$ref": "wall_paint_tile_light"
+          "$ref": "wall_paint_plaster"
         },
         "wall_third": {
-          "$ref": "wall_tile_marble_soft"
+          "$ref": "wall_tile_white"
         },
         "floor_main": {
-          "$ref": "floor_wood_floor_wood_light"
+          "$ref": "floor_tile_floor_tile_light"
         },
         "floor_second": {
           "$ref": "floor_tile_floor_tile_light"
         },
         "floor_third": {
-          "$ref": "floor_tile_floor_gray"
+          "$ref": "floor_tile_floor_tile_light"
         },
         "door_entrance": {
-          "$ref": "door_metal_door_metal_gold"
+          "$ref": "door_paint_wood_door_wood_v3"
         },
         "door_interior_white": {
-          "$ref": "door_paint_wood_cffffff"
+          "$ref": "door_paint_wood_door_wood_v3"
         },
         "glass_clear": {
           "$ref": "glass_glass_ccfe8ff"
