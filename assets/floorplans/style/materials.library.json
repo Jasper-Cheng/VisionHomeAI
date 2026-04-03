@@ -7,9 +7,9 @@
       "roughness": 0.5,
       "metalness": 0.2,
       "texture": {
-        "albedo": "textures/metal/metal_pattern_chevron_dark_b_diff.jpg",
-        "normal": "textures/metal/metal_pattern_chevron_dark_b_normal.jpg",
-        "roughness": "textures/metal/metal_pattern_chevron_dark_b_rough.jpg"
+        "albedo": "textures/pattern/metal_pattern_chevron_dark_b_diff.jpg",
+        "normal": "textures/pattern/metal_pattern_chevron_dark_b_normal.jpg",
+        "roughness": "textures/pattern/metal_pattern_chevron_dark_b_rough.jpg"
       }
     },
     "door_metal_dark_gray": {
@@ -18,9 +18,9 @@
       "roughness": 0.4,
       "metalness": 0.85,
       "texture": {
-        "albedo": "textures/metal/metal_pattern_chevron_dark_b_diff.jpg",
-        "normal": "textures/metal/metal_pattern_chevron_dark_b_normal.jpg",
-        "roughness": "textures/metal/metal_pattern_chevron_dark_b_rough.jpg"
+        "albedo": "textures/pattern/metal_pattern_chevron_dark_b_diff.jpg",
+        "normal": "textures/pattern/metal_pattern_chevron_dark_b_normal.jpg",
+        "roughness": "textures/pattern/metal_pattern_chevron_dark_b_rough.jpg"
       }
     },
     "door_metal_gold": {
@@ -29,10 +29,10 @@
       "roughness": 0.25,
       "metalness": 1.0,
       "texture": {
-        "albedo": "textures/metal/metal_pattern_chevron_dark_a_diff.jpg",
-        "normal": "textures/metal/metal_pattern_chevron_dark_a_normal.jpg",
-        "roughness": "textures/metal/metal_pattern_chevron_dark_a_rough.jpg",
-        "metalnessMap": "textures/metal/metal_pattern_chevron_dark_a_metalness.jpg"
+        "albedo": "textures/pattern/metal_pattern_chevron_dark_a_diff.jpg",
+        "normal": "textures/pattern/metal_pattern_chevron_dark_a_normal.jpg",
+        "roughness": "textures/pattern/metal_pattern_chevron_dark_a_rough.jpg",
+        "metalnessMap": "textures/pattern/metal_pattern_chevron_dark_a_metalness.jpg"
       }
     },
     "door_metal_silver": {
@@ -41,9 +41,9 @@
       "roughness": 0.2,
       "metalness": 1.0,
       "texture": {
-        "albedo": "textures/metal/metal_pattern_chevron_dark_b_diff.jpg",
-        "normal": "textures/metal/metal_pattern_chevron_dark_b_normal.jpg",
-        "roughness": "textures/metal/metal_pattern_chevron_dark_b_rough.jpg"
+        "albedo": "textures/pattern/metal_pattern_chevron_dark_b_diff.jpg",
+        "normal": "textures/pattern/metal_pattern_chevron_dark_b_normal.jpg",
+        "roughness": "textures/pattern/metal_pattern_chevron_dark_b_rough.jpg"
       }
     },
     "door_metal_standard": {
@@ -52,9 +52,9 @@
       "roughness": 0.3,
       "metalness": 1.0,
       "texture": {
-        "albedo": "textures/metal/metal_pattern_chevron_dark_b_diff.jpg",
-        "normal": "textures/metal/metal_pattern_chevron_dark_b_normal.jpg",
-        "roughness": "textures/metal/metal_pattern_chevron_dark_b_rough.jpg"
+        "albedo": "textures/pattern/metal_pattern_chevron_dark_b_diff.jpg",
+        "normal": "textures/pattern/metal_pattern_chevron_dark_b_normal.jpg",
+        "roughness": "textures/pattern/metal_pattern_chevron_dark_b_rough.jpg"
       }
     },
     "door_paint_white_dark_wood": {
@@ -63,9 +63,9 @@
       "roughness": 0.45,
       "metalness": 0.05,
       "texture": {
-        "albedo": "textures/floor/floor_wood_softwood_knotty_light_planks_diff.jpg",
-        "normal": "textures/floor/floor_wood_softwood_knotty_light_planks_normal.jpg",
-        "roughness": "textures/floor/floor_wood_softwood_knotty_light_planks_rough.jpg"
+        "albedo": "textures/wood/floor_wood_softwood_knotty_light_planks_diff.jpg",
+        "normal": "textures/wood/floor_wood_softwood_knotty_light_planks_normal.jpg",
+        "roughness": "textures/wood/floor_wood_softwood_knotty_light_planks_rough.jpg"
       }
     },
     "door_paint_white_metal_like": {
@@ -75,8 +75,8 @@
       "metalness": 0.02,
       "texture": {
         "albedo": "",
-        "normal": "textures/metal/metal_pattern_chevron_dark_b_normal.jpg",
-        "roughness": "textures/metal/metal_pattern_chevron_dark_b_rough.jpg"
+        "normal": "textures/pattern/metal_pattern_chevron_dark_b_normal.jpg",
+        "roughness": "textures/pattern/metal_pattern_chevron_dark_b_rough.jpg"
       }
     },
     "door_paint_white_no_albedo": {
@@ -85,8 +85,8 @@
       "roughness": 0.85,
       "metalness": 0.0,
       "texture": {
-        "normal": "textures/door/door_panel_wood_light_horizontal_normal.jpg",
-        "roughness": "textures/door/door_panel_wood_light_horizontal_rough.jpg"
+        "normal": "textures/wood/door_panel_wood_light_horizontal_normal.jpg",
+        "roughness": "textures/wood/door_panel_wood_light_horizontal_rough.jpg"
       }
     },
     "door_paint_white_wood": {
@@ -95,9 +95,9 @@
       "roughness": 0.65,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/door/door_panel_wood_light_horizontal_diff.jpg",
-        "normal": "textures/door/door_panel_wood_light_horizontal_normal.jpg",
-        "roughness": "textures/door/door_panel_wood_light_horizontal_rough.jpg"
+        "albedo": "textures/wood/door_panel_wood_light_horizontal_diff.jpg",
+        "normal": "textures/wood/door_panel_wood_light_horizontal_normal.jpg",
+        "roughness": "textures/wood/door_panel_wood_light_horizontal_rough.jpg"
       }
     },
     "door_paint_white_wood_matte": {
@@ -106,9 +106,9 @@
       "roughness": 0.7,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/door/door_panel_wood_light_horizontal_diff.jpg",
-        "normal": "textures/door/door_panel_wood_light_horizontal_normal.jpg",
-        "roughness": "textures/door/door_panel_wood_light_horizontal_rough.jpg"
+        "albedo": "textures/wood/door_panel_wood_light_horizontal_diff.jpg",
+        "normal": "textures/wood/door_panel_wood_light_horizontal_normal.jpg",
+        "roughness": "textures/wood/door_panel_wood_light_horizontal_rough.jpg"
       }
     },
     "door_paint_white_wood_satin": {
@@ -117,9 +117,9 @@
       "roughness": 0.7,
       "metalness": 0.02,
       "texture": {
-        "albedo": "textures/door/door_panel_wood_light_horizontal_diff.jpg",
-        "normal": "textures/door/door_panel_wood_light_horizontal_normal.jpg",
-        "roughness": "textures/door/door_panel_wood_light_horizontal_rough.jpg"
+        "albedo": "textures/wood/door_panel_wood_light_horizontal_diff.jpg",
+        "normal": "textures/wood/door_panel_wood_light_horizontal_normal.jpg",
+        "roughness": "textures/wood/door_panel_wood_light_horizontal_rough.jpg"
       }
     },
     "door_paint_white_wood_subtle_metal": {
@@ -128,9 +128,9 @@
       "roughness": 0.65,
       "metalness": 0.02,
       "texture": {
-        "albedo": "textures/door/door_panel_wood_light_horizontal_diff.jpg",
-        "normal": "textures/door/door_panel_wood_light_horizontal_normal.jpg",
-        "roughness": "textures/door/door_panel_wood_light_horizontal_rough.jpg"
+        "albedo": "textures/wood/door_panel_wood_light_horizontal_diff.jpg",
+        "normal": "textures/wood/door_panel_wood_light_horizontal_normal.jpg",
+        "roughness": "textures/wood/door_panel_wood_light_horizontal_rough.jpg"
       }
     },
     "floor_tile_concrete_dark": {
@@ -139,9 +139,9 @@
       "roughness": 0.75,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/floor/floor_concrete_poured_neutral_diff.jpg",
-        "normal": "textures/floor/floor_concrete_poured_neutral_normal.jpg",
-        "roughness": "textures/floor/floor_concrete_poured_neutral_rough.jpg"
+        "albedo": "textures/concrete/floor_concrete_poured_neutral_diff.jpg",
+        "normal": "textures/concrete/floor_concrete_poured_neutral_normal.jpg",
+        "roughness": "textures/concrete/floor_concrete_poured_neutral_rough.jpg"
       },
       "uvScale": [
         3,
@@ -154,9 +154,9 @@
       "roughness": 0.75,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/floor/floor_concrete_poured_neutral_diff.jpg",
-        "normal": "textures/floor/floor_concrete_poured_neutral_normal.jpg",
-        "roughness": "textures/floor/floor_concrete_poured_neutral_rough.jpg"
+        "albedo": "textures/concrete/floor_concrete_poured_neutral_diff.jpg",
+        "normal": "textures/concrete/floor_concrete_poured_neutral_normal.jpg",
+        "roughness": "textures/concrete/floor_concrete_poured_neutral_rough.jpg"
       },
       "uvScale": [
         3,
@@ -169,9 +169,9 @@
       "roughness": 0.45,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/tile/tile_checker_black_beige_diff.jpg",
-        "normal": "textures/tile/tile_checker_black_beige_normal.jpg",
-        "roughness": "textures/tile/tile_checker_black_beige_rough.jpg"
+        "albedo": "textures/pattern/tile_checker_black_beige_diff.jpg",
+        "normal": "textures/pattern/tile_checker_black_beige_normal.jpg",
+        "roughness": "textures/pattern/tile_checker_black_beige_rough.jpg"
       },
       "uvScale": [
         3,
@@ -184,9 +184,9 @@
       "roughness": 0.45,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/tile/tile_polka_blue_dark_diff.jpg",
-        "normal": "textures/tile/tile_polka_blue_dark_normal.jpg",
-        "roughness": "textures/tile/tile_polka_blue_dark_rough.jpg"
+        "albedo": "textures/pattern/tile_polka_blue_dark_diff.jpg",
+        "normal": "textures/pattern/tile_polka_blue_dark_normal.jpg",
+        "roughness": "textures/pattern/tile_polka_blue_dark_rough.jpg"
       },
       "uvScale": [
         3,
@@ -199,9 +199,9 @@
       "roughness": 0.5,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/tile/tile_polka_blue_dark_diff.jpg",
-        "normal": "textures/tile/tile_polka_blue_dark_normal.jpg",
-        "roughness": "textures/tile/tile_polka_blue_dark_rough.jpg"
+        "albedo": "textures/pattern/tile_polka_blue_dark_diff.jpg",
+        "normal": "textures/pattern/tile_polka_blue_dark_normal.jpg",
+        "roughness": "textures/pattern/tile_polka_blue_dark_rough.jpg"
       },
       "uvScale": [
         3,
@@ -214,9 +214,9 @@
       "roughness": 0.25,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/marble/stone_granite_blue_black_diff.jpg",
-        "normal": "textures/marble/stone_granite_blue_black_normal.jpg",
-        "roughness": "textures/marble/stone_granite_blue_black_rough.jpg"
+        "albedo": "textures/stone/stone_granite_blue_black_diff.jpg",
+        "normal": "textures/stone/stone_granite_blue_black_normal.jpg",
+        "roughness": "textures/stone/stone_granite_blue_black_rough.jpg"
       },
       "uvScale": [
         3,
@@ -229,9 +229,9 @@
       "roughness": 0.45,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/tile/stone_irregular_dark_diff.jpg",
-        "normal": "textures/tile/stone_irregular_dark_normal.jpg",
-        "roughness": "textures/tile/stone_irregular_dark_rough.jpg"
+        "albedo": "textures/stone/stone_irregular_dark_diff.jpg",
+        "normal": "textures/stone/stone_irregular_dark_normal.jpg",
+        "roughness": "textures/stone/stone_irregular_dark_rough.jpg"
       },
       "uvScale": [
         3,
@@ -244,9 +244,9 @@
       "roughness": 0.4,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/tile/stone_irregular_dark_diff.jpg",
-        "normal": "textures/tile/stone_irregular_dark_normal.jpg",
-        "roughness": "textures/tile/stone_irregular_dark_rough.jpg"
+        "albedo": "textures/stone/stone_irregular_dark_diff.jpg",
+        "normal": "textures/stone/stone_irregular_dark_normal.jpg",
+        "roughness": "textures/stone/stone_irregular_dark_rough.jpg"
       },
       "uvScale": [
         3,
@@ -259,9 +259,9 @@
       "roughness": 0.45,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/tile/stone_irregular_dark_diff.jpg",
-        "normal": "textures/tile/stone_irregular_dark_normal.jpg",
-        "roughness": "textures/tile/stone_irregular_dark_rough.jpg"
+        "albedo": "textures/stone/stone_irregular_dark_diff.jpg",
+        "normal": "textures/stone/stone_irregular_dark_normal.jpg",
+        "roughness": "textures/stone/stone_irregular_dark_rough.jpg"
       },
       "uvScale": [
         3,
@@ -274,9 +274,9 @@
       "roughness": 0.3,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/tile/stone_irregular_dark_diff.jpg",
-        "normal": "textures/tile/stone_irregular_dark_normal.jpg",
-        "roughness": "textures/tile/stone_irregular_dark_rough.jpg"
+        "albedo": "textures/stone/stone_irregular_dark_diff.jpg",
+        "normal": "textures/stone/stone_irregular_dark_normal.jpg",
+        "roughness": "textures/stone/stone_irregular_dark_rough.jpg"
       },
       "uvScale": [
         3,
@@ -289,9 +289,9 @@
       "roughness": 0.45,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/tile/stone_irregular_dark_diff.jpg",
-        "normal": "textures/tile/stone_irregular_dark_normal.jpg",
-        "roughness": "textures/tile/stone_irregular_dark_rough.jpg"
+        "albedo": "textures/stone/stone_irregular_dark_diff.jpg",
+        "normal": "textures/stone/stone_irregular_dark_normal.jpg",
+        "roughness": "textures/stone/stone_irregular_dark_rough.jpg"
       },
       "uvScale": [
         3,
@@ -304,9 +304,9 @@
       "roughness": 0.55,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/floor/floor_concrete_poured_neutral_diff.jpg",
-        "normal": "textures/floor/floor_concrete_poured_neutral_normal.jpg",
-        "roughness": "textures/floor/floor_concrete_poured_neutral_rough.jpg"
+        "albedo": "textures/concrete/floor_concrete_poured_neutral_diff.jpg",
+        "normal": "textures/concrete/floor_concrete_poured_neutral_normal.jpg",
+        "roughness": "textures/concrete/floor_concrete_poured_neutral_rough.jpg"
       },
       "uvScale": [
         4,
@@ -319,9 +319,9 @@
       "roughness": 0.5,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/floor/floor_wood_softwood_knotty_light_planks_diff.jpg",
-        "normal": "textures/floor/floor_wood_softwood_knotty_light_planks_normal.jpg",
-        "roughness": "textures/floor/floor_wood_softwood_knotty_light_planks_rough.jpg"
+        "albedo": "textures/wood/floor_wood_softwood_knotty_light_planks_diff.jpg",
+        "normal": "textures/wood/floor_wood_softwood_knotty_light_planks_normal.jpg",
+        "roughness": "textures/wood/floor_wood_softwood_knotty_light_planks_rough.jpg"
       },
       "uvScale": [
         4,
@@ -334,9 +334,9 @@
       "roughness": 0.5,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/floor/floor_wood_plank_rustic_dark_patchwork_diff.jpg",
-        "normal": "textures/floor/floor_wood_plank_rustic_dark_patchwork_normal.jpg",
-        "roughness": "textures/floor/floor_wood_plank_rustic_dark_patchwork_rough.jpg"
+        "albedo": "textures/wood/floor_wood_plank_rustic_dark_patchwork_diff.jpg",
+        "normal": "textures/wood/floor_wood_plank_rustic_dark_patchwork_normal.jpg",
+        "roughness": "textures/wood/floor_wood_plank_rustic_dark_patchwork_rough.jpg"
       },
       "uvScale": [
         4,
@@ -349,9 +349,9 @@
       "roughness": 0.5,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/floor/floor_wood_oak_light_japandi_diff.jpg",
-        "normal": "textures/floor/floor_wood_oak_light_japandi_normal.jpg",
-        "roughness": "textures/floor/floor_wood_oak_light_japandi_rough.jpg"
+        "albedo": "textures/wood/floor_wood_oak_light_japandi_diff.jpg",
+        "normal": "textures/wood/floor_wood_oak_light_japandi_normal.jpg",
+        "roughness": "textures/wood/floor_wood_oak_light_japandi_rough.jpg"
       },
       "uvScale": [
         4,
@@ -364,9 +364,9 @@
       "roughness": 0.55,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/floor/floor_wood_parquet_light_natural_diff.jpg",
-        "normal": "textures/floor/floor_wood_parquet_light_natural_normal.jpg",
-        "roughness": "textures/floor/floor_wood_parquet_light_natural_rough.jpg"
+        "albedo": "textures/wood/floor_wood_parquet_light_natural_diff.jpg",
+        "normal": "textures/wood/floor_wood_parquet_light_natural_normal.jpg",
+        "roughness": "textures/wood/floor_wood_parquet_light_natural_rough.jpg"
       },
       "uvScale": [
         4,
@@ -379,9 +379,9 @@
       "roughness": 0.55,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/floor/floor_wood_softwood_knotty_natural_planks_diff.jpg",
-        "normal": "textures/floor/floor_wood_softwood_knotty_natural_planks_normal.jpg",
-        "roughness": "textures/floor/floor_wood_softwood_knotty_natural_planks_rough.jpg"
+        "albedo": "textures/wood/floor_wood_softwood_knotty_natural_planks_diff.jpg",
+        "normal": "textures/wood/floor_wood_softwood_knotty_natural_planks_normal.jpg",
+        "roughness": "textures/wood/floor_wood_softwood_knotty_natural_planks_rough.jpg"
       },
       "uvScale": [
         4,
@@ -421,9 +421,9 @@
       "roughness": 0.85,
       "metalness": 0.06,
       "texture": {
-        "albedo": "textures/wall/wall_concrete_panel_dark_gray_diff.jpg",
-        "normal": "textures/wall/wall_concrete_panel_dark_gray_normal.jpg",
-        "roughness": "textures/wall/wall_concrete_panel_dark_gray_rough.jpg"
+        "albedo": "textures/concrete/wall_concrete_panel_dark_gray_diff.jpg",
+        "normal": "textures/concrete/wall_concrete_panel_dark_gray_normal.jpg",
+        "roughness": "textures/concrete/wall_concrete_panel_dark_gray_rough.jpg"
       }
     },
     "wall_microcement_neutral": {
@@ -432,9 +432,9 @@
       "roughness": 0.75,
       "metalness": 0.05,
       "texture": {
-        "albedo": "textures/wall/wall_microcement_neutral_diff.jpg",
-        "normal": "textures/wall/wall_microcement_neutral_normal.jpg",
-        "roughness": "textures/wall/wall_microcement_neutral_rough.jpg"
+        "albedo": "textures/concrete/wall_microcement_neutral_diff.jpg",
+        "normal": "textures/concrete/wall_microcement_neutral_normal.jpg",
+        "roughness": "textures/concrete/wall_microcement_neutral_rough.jpg"
       }
     },
     "wall_microcement_warm": {
@@ -443,9 +443,9 @@
       "roughness": 0.6,
       "metalness": 0.04,
       "texture": {
-        "albedo": "textures/wall/wall_microcement_neutral_diff.jpg",
-        "normal": "textures/wall/wall_microcement_neutral_normal.jpg",
-        "roughness": "textures/wall/wall_microcement_neutral_rough.jpg"
+        "albedo": "textures/concrete/wall_microcement_neutral_diff.jpg",
+        "normal": "textures/concrete/wall_microcement_neutral_normal.jpg",
+        "roughness": "textures/concrete/wall_microcement_neutral_rough.jpg"
       }
     },
     "wall_paint_concrete_gray": {
@@ -454,9 +454,9 @@
       "roughness": 0.9,
       "metalness": 0.05,
       "texture": {
-        "albedo": "textures/wall/wall_microcement_neutral_diff.jpg",
-        "normal": "textures/wall/wall_microcement_neutral_normal.jpg",
-        "roughness": "textures/wall/wall_microcement_neutral_rough.jpg"
+        "albedo": "textures/concrete/wall_microcement_neutral_diff.jpg",
+        "normal": "textures/concrete/wall_microcement_neutral_normal.jpg",
+        "roughness": "textures/concrete/wall_microcement_neutral_rough.jpg"
       }
     },
     "wall_paint_plaster_cream": {
@@ -465,9 +465,9 @@
       "roughness": 0.9,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/wall/wall_plaster_soft_diff.jpg",
-        "normal": "textures/wall/wall_plaster_soft_normal.jpg",
-        "roughness": "textures/wall/wall_plaster_soft_rough.jpg"
+        "albedo": "textures/plaster/wall_plaster_soft_diff.jpg",
+        "normal": "textures/plaster/wall_plaster_soft_normal.jpg",
+        "roughness": "textures/plaster/wall_plaster_soft_rough.jpg"
       }
     },
     "wall_paint_plaster_light": {
@@ -476,9 +476,9 @@
       "roughness": 0.82,
       "metalness": 0.02,
       "texture": {
-        "albedo": "textures/wall/wall_plaster_soft_diff.jpg",
-        "normal": "textures/wall/wall_plaster_soft_normal.jpg",
-        "roughness": "textures/wall/wall_plaster_soft_rough.jpg"
+        "albedo": "textures/plaster/wall_plaster_soft_diff.jpg",
+        "normal": "textures/plaster/wall_plaster_soft_normal.jpg",
+        "roughness": "textures/plaster/wall_plaster_soft_rough.jpg"
       }
     },
     "wall_paint_plaster_lux": {
@@ -487,9 +487,9 @@
       "roughness": 0.75,
       "metalness": 0.02,
       "texture": {
-        "albedo": "textures/wall/wall_plaster_lux_diff.jpg",
-        "normal": "textures/wall/wall_plaster_lux_normal.jpg",
-        "roughness": "textures/wall/wall_plaster_lux_rough.jpg"
+        "albedo": "textures/plaster/wall_plaster_lux_diff.jpg",
+        "normal": "textures/plaster/wall_plaster_lux_normal.jpg",
+        "roughness": "textures/plaster/wall_plaster_lux_rough.jpg"
       }
     },
     "wall_paint_plaster_neutral": {
@@ -498,9 +498,9 @@
       "roughness": 0.85,
       "metalness": 0.02,
       "texture": {
-        "albedo": "textures/wall/wall_plaster_soft_diff.jpg",
-        "normal": "textures/wall/wall_plaster_soft_normal.jpg",
-        "roughness": "textures/wall/wall_plaster_soft_rough.jpg"
+        "albedo": "textures/plaster/wall_plaster_soft_diff.jpg",
+        "normal": "textures/plaster/wall_plaster_soft_normal.jpg",
+        "roughness": "textures/plaster/wall_plaster_soft_rough.jpg"
       }
     },
     "wall_paint_plaster_warm": {
@@ -509,9 +509,9 @@
       "roughness": 0.9,
       "metalness": 0.02,
       "texture": {
-        "albedo": "textures/wall/wall_plaster_soft_diff.jpg",
-        "normal": "textures/wall/wall_plaster_soft_normal.jpg",
-        "roughness": "textures/wall/wall_plaster_soft_rough.jpg"
+        "albedo": "textures/plaster/wall_plaster_soft_diff.jpg",
+        "normal": "textures/plaster/wall_plaster_soft_normal.jpg",
+        "roughness": "textures/plaster/wall_plaster_soft_rough.jpg"
       }
     },
     "wall_paint_tile_pattern_light": {
@@ -520,9 +520,9 @@
       "roughness": 0.88,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/tile/tile_checker_black_beige_diff.jpg",
-        "normal": "textures/tile/tile_checker_black_beige_normal.jpg",
-        "roughness": "textures/tile/tile_checker_black_beige_rough.jpg"
+        "albedo": "textures/pattern/tile_checker_black_beige_diff.jpg",
+        "normal": "textures/pattern/tile_checker_black_beige_normal.jpg",
+        "roughness": "textures/pattern/tile_checker_black_beige_rough.jpg"
       }
     },
     "wall_paint_wall_color_pattern": {
@@ -531,9 +531,9 @@
       "roughness": 0.8,
       "metalness": 0.02,
       "texture": {
-        "albedo": "textures/wall/wall_pattern_polka_blue_diff.jpg",
-        "normal": "textures/wall/wall_pattern_polka_blue_normal.jpg",
-        "roughness": "textures/wall/wall_pattern_polka_blue_rough.jpg"
+        "albedo": "textures/pattern/wall_pattern_polka_blue_diff.jpg",
+        "normal": "textures/pattern/wall_pattern_polka_blue_normal.jpg",
+        "roughness": "textures/pattern/wall_pattern_polka_blue_rough.jpg"
       }
     },
     "wall_tile_brick_white": {
@@ -542,9 +542,9 @@
       "roughness": 0.8,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/wall/wall_brick_rustic_red_brown_diff.jpg",
-        "normal": "textures/wall/wall_brick_rustic_red_brown_normal.jpg",
-        "roughness": "textures/wall/wall_brick_rustic_red_brown_rough.jpg"
+        "albedo": "textures/brick/wall_brick_rustic_red_brown_diff.jpg",
+        "normal": "textures/brick/wall_brick_rustic_red_brown_normal.jpg",
+        "roughness": "textures/brick/wall_brick_rustic_red_brown_rough.jpg"
       }
     },
     "wall_tile_dark_wood_pattern": {
@@ -553,9 +553,9 @@
       "roughness": 0.25,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/marble/stone_granite_blue_black_diff.jpg",
-        "normal": "textures/marble/stone_granite_blue_black_normal.jpg",
-        "roughness": "textures/marble/stone_granite_blue_black_rough.jpg"
+        "albedo": "textures/stone/stone_granite_blue_black_diff.jpg",
+        "normal": "textures/stone/stone_granite_blue_black_normal.jpg",
+        "roughness": "textures/stone/stone_granite_blue_black_rough.jpg"
       }
     },
     "wall_tile_gray": {
@@ -564,9 +564,9 @@
       "roughness": 0.45,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/tile/stone_irregular_dark_diff.jpg",
-        "normal": "textures/tile/stone_irregular_dark_normal.jpg",
-        "roughness": "textures/tile/stone_irregular_dark_rough.jpg"
+        "albedo": "textures/stone/stone_irregular_dark_diff.jpg",
+        "normal": "textures/stone/stone_irregular_dark_normal.jpg",
+        "roughness": "textures/stone/stone_irregular_dark_rough.jpg"
       }
     },
     "wall_tile_light": {
@@ -575,9 +575,9 @@
       "roughness": 0.35,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/tile/tile_polka_blue_light_diff.jpg",
-        "normal": "textures/tile/tile_polka_blue_light_normal.jpg",
-        "roughness": "textures/tile/tile_polka_blue_light_rough.jpg"
+        "albedo": "textures/pattern/tile_polka_blue_light_diff.jpg",
+        "normal": "textures/pattern/tile_polka_blue_light_normal.jpg",
+        "roughness": "textures/pattern/tile_polka_blue_light_rough.jpg"
       }
     },
     "wall_tile_marble_soft": {
@@ -586,9 +586,9 @@
       "roughness": 0.35,
       "metalness": 0.0,
       "texture": {
-        "albedo": "textures/marble/marble_black_veined_diff.jpg",
-        "normal": "textures/marble/marble_black_veined_normal.jpg",
-        "roughness": "textures/marble/marble_black_veined_rough.jpg"
+        "albedo": "textures/stone/marble_black_veined_diff.jpg",
+        "normal": "textures/stone/marble_black_veined_normal.jpg",
+        "roughness": "textures/stone/marble_black_veined_rough.jpg"
       }
     },
     "wall_tile_white": {
