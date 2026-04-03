@@ -184,7 +184,7 @@
     },
     "nordic_v2": {
       "id": "nordic_v2",
-      "name": "北欧风（ambientCG）",
+      "name": "北欧风",
       "materials": {
         "wall_main": {
           "type": "paint",
