@@ -1,0 +1,606 @@
+{
+  "version": "1.0",
+  "materials": {
+    "door_metal_door_metal": {
+      "type": "metal_door",
+      "color": "#a8a8a8",
+      "roughness": 0.3,
+      "metalness": 1.0,
+      "texture": {
+        "albedo": "textures/metal/metal_diff.jpg",
+        "normal": "textures/metal/metal_normal.jpg",
+        "roughness": "textures/metal/metal_rough.jpg"
+      }
+    },
+    "door_metal_door_metal_gold": {
+      "type": "metal_door",
+      "color": "#ffffff",
+      "roughness": 0.25,
+      "metalness": 1.0,
+      "texture": {
+        "albedo": "textures/metal/metal_gold_diff.jpg",
+        "normal": "textures/metal/metal_gold_normal.jpg",
+        "roughness": "textures/metal/metal_gold_rough.jpg",
+        "metalnessMap": "textures/metal/metal_gold_metal.jpg"
+      }
+    },
+    "door_metal_door_metal_v2": {
+      "type": "metal_door",
+      "color": "#909090",
+      "roughness": 0.4,
+      "metalness": 0.85,
+      "texture": {
+        "albedo": "textures/metal/metal_diff.jpg",
+        "normal": "textures/metal/metal_normal.jpg",
+        "roughness": "textures/metal/metal_rough.jpg"
+      }
+    },
+    "door_metal_door_metal_v3": {
+      "type": "metal_door",
+      "color": "#c0c0c0",
+      "roughness": 0.2,
+      "metalness": 1.0,
+      "texture": {
+        "albedo": "textures/metal/metal_diff.jpg",
+        "normal": "textures/metal/metal_normal.jpg",
+        "roughness": "textures/metal/metal_rough.jpg"
+      }
+    },
+    "door_metal_door_metal_v4": {
+      "type": "metal_door",
+      "color": "#3a3a3a",
+      "roughness": 0.5,
+      "metalness": 0.2,
+      "texture": {
+        "albedo": "textures/metal/metal_diff.jpg",
+        "normal": "textures/metal/metal_normal.jpg",
+        "roughness": "textures/metal/metal_rough.jpg"
+      }
+    },
+    "door_paint_wood_cffffff": {
+      "type": "paint_wood",
+      "color": "#ffffff",
+      "roughness": 0.85,
+      "metalness": 0.0,
+      "texture": {
+        "normal": "textures/door/door_wood_normal.jpg",
+        "roughness": "textures/door/door_wood_rough.jpg"
+      }
+    },
+    "door_paint_wood_cffffff_v2": {
+      "type": "paint_wood",
+      "color": "#ffffff",
+      "roughness": 0.85,
+      "metalness": 0.02,
+      "texture": {
+        "albedo": "",
+        "normal": "textures/metal/metal_normal.jpg",
+        "roughness": "textures/metal/metal_rough.jpg"
+      }
+    },
+    "door_paint_wood_door_wood": {
+      "type": "paint_wood",
+      "color": "#ffffff",
+      "roughness": 0.65,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/door/door_wood_diff.jpg",
+        "normal": "textures/door/door_wood_normal.jpg",
+        "roughness": "textures/door/door_wood_rough.jpg"
+      }
+    },
+    "door_paint_wood_door_wood_v2": {
+      "type": "paint_wood",
+      "color": "#ffffff",
+      "roughness": 0.65,
+      "metalness": 0.02,
+      "texture": {
+        "albedo": "textures/door/door_wood_diff.jpg",
+        "normal": "textures/door/door_wood_normal.jpg",
+        "roughness": "textures/door/door_wood_rough.jpg"
+      }
+    },
+    "door_paint_wood_door_wood_v3": {
+      "type": "paint_wood",
+      "color": "#ffffff",
+      "roughness": 0.7,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/door/door_wood_diff.jpg",
+        "normal": "textures/door/door_wood_normal.jpg",
+        "roughness": "textures/door/door_wood_rough.jpg"
+      }
+    },
+    "door_paint_wood_door_wood_v4": {
+      "type": "paint_wood",
+      "color": "#ffffff",
+      "roughness": 0.7,
+      "metalness": 0.02,
+      "texture": {
+        "albedo": "textures/door/door_wood_diff.jpg",
+        "normal": "textures/door/door_wood_normal.jpg",
+        "roughness": "textures/door/door_wood_rough.jpg"
+      }
+    },
+    "door_paint_wood_wood_dark": {
+      "type": "paint_wood",
+      "color": "#ffffff",
+      "roughness": 0.45,
+      "metalness": 0.05,
+      "texture": {
+        "albedo": "textures/floor/wood_dark_diff.jpg",
+        "normal": "textures/floor/wood_dark_normal.jpg",
+        "roughness": "textures/floor/wood_dark_rough.jpg"
+      }
+    },
+    "floor_tile_floor_concrete_floor": {
+      "type": "tile_floor",
+      "color": "#ffffff",
+      "roughness": 0.75,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/floor/concrete_floor_diff.jpg",
+        "normal": "textures/floor/concrete_floor_normal.jpg",
+        "roughness": "textures/floor/concrete_floor_rough.jpg"
+      },
+      "uvScale": [
+        3,
+        3
+      ]
+    },
+    "floor_tile_floor_concrete_floor_v2": {
+      "type": "tile_floor",
+      "color": "#9a9a9a",
+      "roughness": 0.75,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/floor/concrete_floor_diff.jpg",
+        "normal": "textures/floor/concrete_floor_normal.jpg",
+        "roughness": "textures/floor/concrete_floor_rough.jpg"
+      },
+      "uvScale": [
+        3,
+        3
+      ]
+    },
+    "floor_tile_floor_dark": {
+      "type": "tile_floor",
+      "color": "#bfbfbf",
+      "roughness": 0.45,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/dark_diff.jpg",
+        "normal": "textures/tile/dark_normal.jpg",
+        "roughness": "textures/tile/dark_rough.jpg"
+      },
+      "uvScale": [
+        3,
+        3
+      ]
+    },
+    "floor_tile_floor_dark_v2": {
+      "type": "tile_floor",
+      "color": "#bfbfbf",
+      "roughness": 0.5,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/dark_diff.jpg",
+        "normal": "textures/tile/dark_normal.jpg",
+        "roughness": "textures/tile/dark_rough.jpg"
+      },
+      "uvScale": [
+        3,
+        3
+      ]
+    },
+    "floor_tile_floor_gray": {
+      "type": "tile_floor",
+      "color": "#f1ece3",
+      "roughness": 0.45,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/gray_diff.jpg",
+        "normal": "textures/tile/gray_normal.jpg",
+        "roughness": "textures/tile/gray_rough.jpg"
+      },
+      "uvScale": [
+        3,
+        3
+      ]
+    },
+    "floor_tile_floor_gray_v2": {
+      "type": "tile_floor",
+      "color": "#dcdcdc",
+      "roughness": 0.45,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/gray_diff.jpg",
+        "normal": "textures/tile/gray_normal.jpg",
+        "roughness": "textures/tile/gray_rough.jpg"
+      },
+      "uvScale": [
+        3,
+        3
+      ]
+    },
+    "floor_tile_floor_gray_v3": {
+      "type": "tile_floor",
+      "color": "#c8c8c8",
+      "roughness": 0.45,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/gray_diff.jpg",
+        "normal": "textures/tile/gray_normal.jpg",
+        "roughness": "textures/tile/gray_rough.jpg"
+      },
+      "uvScale": [
+        3,
+        3
+      ]
+    },
+    "floor_tile_floor_gray_v4": {
+      "type": "tile_floor",
+      "color": "#d0d0d0",
+      "roughness": 0.3,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/gray_diff.jpg",
+        "normal": "textures/tile/gray_normal.jpg",
+        "roughness": "textures/tile/gray_rough.jpg"
+      },
+      "uvScale": [
+        3,
+        3
+      ]
+    },
+    "floor_tile_floor_gray_v5": {
+      "type": "tile_floor",
+      "color": "#dcdcdc",
+      "roughness": 0.4,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/gray_diff.jpg",
+        "normal": "textures/tile/gray_normal.jpg",
+        "roughness": "textures/tile/gray_rough.jpg"
+      },
+      "uvScale": [
+        3,
+        3
+      ]
+    },
+    "floor_tile_floor_tile_light": {
+      "type": "tile_floor",
+      "color": "#f7f4ef",
+      "roughness": 0.45,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/tile_light_diff.jpg",
+        "normal": "textures/tile/tile_light_normal.jpg",
+        "roughness": "textures/tile/tile_light_rough.jpg"
+      },
+      "uvScale": [
+        3,
+        3
+      ]
+    },
+    "floor_tile_floor_wood_dark": {
+      "type": "tile_floor",
+      "color": "#ffffff",
+      "roughness": 0.25,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/marble/wood_dark_diff.jpg",
+        "normal": "textures/marble/wood_dark_normal.jpg",
+        "roughness": "textures/marble/wood_dark_rough.jpg"
+      },
+      "uvScale": [
+        3,
+        3
+      ]
+    },
+    "floor_wood_floor_concrete_floor": {
+      "type": "wood_floor",
+      "color": "#6a5a4a",
+      "roughness": 0.55,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/floor/concrete_floor_diff.jpg",
+        "normal": "textures/floor/concrete_floor_normal.jpg",
+        "roughness": "textures/floor/concrete_floor_rough.jpg"
+      },
+      "uvScale": [
+        4,
+        4
+      ]
+    },
+    "floor_wood_floor_wood_dark": {
+      "type": "wood_floor",
+      "color": "#8a7a6a",
+      "roughness": 0.5,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/floor/wood_dark_diff.jpg",
+        "normal": "textures/floor/wood_dark_normal.jpg",
+        "roughness": "textures/floor/wood_dark_rough.jpg"
+      },
+      "uvScale": [
+        4,
+        4
+      ]
+    },
+    "floor_wood_floor_wood_light": {
+      "type": "wood_floor",
+      "color": "#e8d8c3",
+      "roughness": 0.5,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/floor/wood_light_diff.jpg",
+        "normal": "textures/floor/wood_light_normal.jpg",
+        "roughness": "textures/floor/wood_light_rough.jpg"
+      },
+      "uvScale": [
+        4,
+        4
+      ]
+    },
+    "floor_wood_floor_wood_light_japandi": {
+      "type": "wood_floor",
+      "color": "#d4c4b0",
+      "roughness": 0.5,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/floor/wood_light_japandi_diff.jpg",
+        "normal": "textures/floor/wood_light_japandi_normal.jpg",
+        "roughness": "textures/floor/wood_light_japandi_rough.jpg"
+      },
+      "uvScale": [
+        4,
+        4
+      ]
+    },
+    "floor_wood_floor_wood_oak": {
+      "type": "wood_floor",
+      "color": "#c9b8a6",
+      "roughness": 0.55,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/floor/wood_oak_diff.jpg",
+        "normal": "textures/floor/wood_oak_normal.jpg",
+        "roughness": "textures/floor/wood_oak_rough.jpg"
+      },
+      "uvScale": [
+        4,
+        4
+      ]
+    },
+    "floor_wood_floor_wood_oak_nordic": {
+      "type": "wood_floor",
+      "color": "#c9b8a6",
+      "roughness": 0.55,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/floor/wood_oak_nordic_diff.jpg",
+        "normal": "textures/floor/wood_oak_nordic_normal.jpg",
+        "roughness": "textures/floor/wood_oak_nordic_rough.jpg"
+      },
+      "uvScale": [
+        4,
+        4
+      ]
+    },
+    "glass_glass_ccfe8ff": {
+      "type": "glass",
+      "color": "#cfe8ff",
+      "opacity": 0.25,
+      "roughness": 0.05,
+      "metalness": 0.0,
+      "transmission": 0.95,
+      "ior": 1.45
+    },
+    "glass_glass_cd8cbb5": {
+      "type": "glass",
+      "color": "#d8cbb5",
+      "opacity": 0.4,
+      "roughness": 0.2,
+      "metalness": 0.0,
+      "transmission": 0.7,
+      "ior": 1.45
+    },
+    "glass_glass_ce8eef2": {
+      "type": "glass",
+      "color": "#e8eef2",
+      "opacity": 0.6,
+      "roughness": 0.85,
+      "metalness": 0.0,
+      "transmission": 0.4,
+      "ior": 1.45
+    },
+    "wall_microcement_concrete_light": {
+      "type": "microcement",
+      "color": "#c8c8c8",
+      "roughness": 0.85,
+      "metalness": 0.06,
+      "texture": {
+        "albedo": "textures/wall/concrete_light_diff.jpg",
+        "normal": "textures/wall/concrete_light_normal.jpg",
+        "roughness": "textures/wall/concrete_light_rough.jpg"
+      }
+    },
+    "wall_microcement_microcement": {
+      "type": "microcement",
+      "color": "#e8e6e1",
+      "roughness": 0.6,
+      "metalness": 0.04,
+      "texture": {
+        "albedo": "textures/wall/microcement_diff.jpg",
+        "normal": "textures/wall/microcement_normal.jpg",
+        "roughness": "textures/wall/microcement_rough.jpg"
+      }
+    },
+    "wall_microcement_microcement_v2": {
+      "type": "microcement",
+      "color": "#d9d6d2",
+      "roughness": 0.75,
+      "metalness": 0.05,
+      "texture": {
+        "albedo": "textures/wall/microcement_diff.jpg",
+        "normal": "textures/wall/microcement_normal.jpg",
+        "roughness": "textures/wall/microcement_rough.jpg"
+      }
+    },
+    "wall_paint_microcement": {
+      "type": "paint",
+      "color": "#b0b0b0",
+      "roughness": 0.9,
+      "metalness": 0.05,
+      "texture": {
+        "albedo": "textures/wall/microcement_diff.jpg",
+        "normal": "textures/wall/microcement_normal.jpg",
+        "roughness": "textures/wall/microcement_rough.jpg"
+      }
+    },
+    "wall_paint_plaster": {
+      "type": "paint",
+      "color": "#f7f4ef",
+      "roughness": 0.9,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/wall/plaster_diff.jpg",
+        "normal": "textures/wall/plaster_normal.jpg",
+        "roughness": "textures/wall/plaster_rough.jpg"
+      }
+    },
+    "wall_paint_plaster02": {
+      "type": "paint",
+      "color": "#e6e3df",
+      "roughness": 0.75,
+      "metalness": 0.02,
+      "texture": {
+        "albedo": "textures/wall/plaster02_diff.jpg",
+        "normal": "textures/wall/plaster02_normal.jpg",
+        "roughness": "textures/wall/plaster02_rough.jpg"
+      }
+    },
+    "wall_paint_plaster_v2": {
+      "type": "paint",
+      "color": "#f6f5f2",
+      "roughness": 0.9,
+      "metalness": 0.02,
+      "texture": {
+        "albedo": "textures/wall/plaster_diff.jpg",
+        "normal": "textures/wall/plaster_normal.jpg",
+        "roughness": "textures/wall/plaster_rough.jpg"
+      }
+    },
+    "wall_paint_plaster_v3": {
+      "type": "paint",
+      "color": "#f5f5f5",
+      "roughness": 0.82,
+      "metalness": 0.02,
+      "texture": {
+        "albedo": "textures/wall/plaster_diff.jpg",
+        "normal": "textures/wall/plaster_normal.jpg",
+        "roughness": "textures/wall/plaster_rough.jpg"
+      }
+    },
+    "wall_paint_plaster_v4": {
+      "type": "paint",
+      "color": "#f7f7f5",
+      "roughness": 0.85,
+      "metalness": 0.02,
+      "texture": {
+        "albedo": "textures/wall/plaster_diff.jpg",
+        "normal": "textures/wall/plaster_normal.jpg",
+        "roughness": "textures/wall/plaster_rough.jpg"
+      }
+    },
+    "wall_paint_tile_light": {
+      "type": "paint",
+      "color": "#f2ece4",
+      "roughness": 0.88,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/tile_light_diff.jpg",
+        "normal": "textures/tile/tile_light_normal.jpg",
+        "roughness": "textures/tile/tile_light_rough.jpg"
+      }
+    },
+    "wall_paint_wall_color": {
+      "type": "paint",
+      "color": "#ffffff",
+      "roughness": 0.8,
+      "metalness": 0.02,
+      "texture": {
+        "albedo": "textures/wall/wall_color_diff.jpg",
+        "normal": "textures/wall/wall_color_normal.jpg",
+        "roughness": "textures/wall/wall_color_rough.jpg"
+      }
+    },
+    "wall_tile_brick": {
+      "type": "tile",
+      "color": "#ffffff",
+      "roughness": 0.8,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/wall/brick_diff.jpg",
+        "normal": "textures/wall/brick_normal.jpg",
+        "roughness": "textures/wall/brick_rough.jpg"
+      }
+    },
+    "wall_tile_gray": {
+      "type": "tile",
+      "color": "#ffffff",
+      "roughness": 0.45,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/gray_diff.jpg",
+        "normal": "textures/tile/gray_normal.jpg",
+        "roughness": "textures/tile/gray_rough.jpg"
+      }
+    },
+    "wall_tile_light": {
+      "type": "tile",
+      "color": "#eaeaea",
+      "roughness": 0.35,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/light_diff.jpg",
+        "normal": "textures/tile/light_normal.jpg",
+        "roughness": "textures/tile/light_rough.jpg"
+      }
+    },
+    "wall_tile_marble_soft": {
+      "type": "tile",
+      "color": "#fdfbf7",
+      "roughness": 0.35,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/marble/marble_soft_diff.jpg",
+        "normal": "textures/marble/marble_soft_normal.jpg",
+        "roughness": "textures/marble/marble_soft_rough.jpg"
+      }
+    },
+    "wall_tile_white": {
+      "type": "tile",
+      "color": "#ffffff",
+      "roughness": 0.4,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/tile/white_diff.jpg",
+        "normal": "textures/tile/white_normal.jpg",
+        "roughness": "textures/tile/white_rough.jpg"
+      }
+    },
+    "wall_tile_wood_dark": {
+      "type": "tile",
+      "color": "#ffffff",
+      "roughness": 0.25,
+      "metalness": 0.0,
+      "texture": {
+        "albedo": "textures/marble/wood_dark_diff.jpg",
+        "normal": "textures/marble/wood_dark_normal.jpg",
+        "roughness": "textures/marble/wood_dark_rough.jpg"
+      }
+    }
+  }
+}

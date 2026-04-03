@@ -8,6 +8,8 @@
 import { DATA_PATHS } from "../core/schema.js";
 
 const styleCache = new Map();
+let materialsLibraryCache = null;
+let materialsLibraryPromise = null;
 
 function snapCm(v) {
   return Math.round(Number(v) * 1000) / 1000;
@@ -37,6 +39,92 @@ export function resolveStyleTextureUrl(relPath) {
   return `./${DATA_PATHS.stylesDir}/${clean}`;
 }
 
+async function loadMaterialsLibrary() {
+  if (materialsLibraryCache) return materialsLibraryCache;
+  if (materialsLibraryPromise) return materialsLibraryPromise;
+  const url = `./${DATA_PATHS.stylesDir}/materials.library.json`;
+  materialsLibraryPromise = (async () => {
+    const res = await fetch(url);
+    if (!res.ok) {
+      if (res.status === 404) return {};
+      throw new Error(`Materials library fetch failed: ${res.status} ${url}`);
+    }
+    const data = await res.json();
+    const bag = data?.materials;
+    if (!bag || typeof bag !== "object" || Array.isArray(bag)) return {};
+    return bag;
+  })();
+  try {
+    materialsLibraryCache = await materialsLibraryPromise;
+    return materialsLibraryCache;
+  } finally {
+    materialsLibraryPromise = null;
+  }
+}
+
+function clonePlain(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function parseMaterialRefId(raw) {
+  if (typeof raw === "string") {
+    const s = raw.trim();
+    return s || "";
+  }
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const s = String(raw.$ref ?? "").trim();
+    return s || "";
+  }
+  return "";
+}
+
+function isPlainObject(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+function resolveStyleMaterialRefs(style, library, floorplanId, styleKey) {
+  if (!style || typeof style !== "object") return style;
+  const materials = style.materials;
+  if (!isPlainObject(materials)) return style;
+  const resolved = {};
+  const inProgress = new Set();
+  const refs = [];
+
+  const resolveById = (id) => {
+    const entry = library[id];
+    if (!isPlainObject(entry)) return null;
+    const nestedRefId = parseMaterialRefId(entry);
+    if (nestedRefId) {
+      if (inProgress.has(id)) {
+        throw new Error(`Circular material ref: ${id}`);
+      }
+      inProgress.add(id);
+      const nested = resolveById(nestedRefId);
+      inProgress.delete(id);
+      return nested ? clonePlain(nested) : null;
+    }
+    return clonePlain(entry);
+  };
+
+  for (const [materialKey, materialDef] of Object.entries(materials)) {
+    const refId = parseMaterialRefId(materialDef);
+    if (!refId) {
+      resolved[materialKey] = materialDef;
+      continue;
+    }
+    const ref = resolveById(refId);
+    if (!ref) refs.push(refId);
+    resolved[materialKey] = ref;
+  }
+
+  if (refs.length) {
+    throw new Error(
+      `Missing material refs in ${floorplanId}/${styleKey}: ${Array.from(new Set(refs)).join(", ")}`
+    );
+  }
+  return { ...style, materials: resolved };
+}
+
 /**
  * @param {string} floorplanId 与户型 id 一致，对应 assets/floorplans/style/<floorplanId>.json
  * @param {string} [styleKey] 装饰文件内 styles 的键，缺省为 modern_minimal_v1
@@ -57,7 +145,8 @@ export async function loadStyleConfig(floorplanId, styleKey) {
   if (!styles || typeof styles !== "object") throw new Error("Decor JSON missing styles");
   const inner = styles[sk];
   if (!inner || typeof inner !== "object") throw new Error(`Unknown styleKey: ${sk}`);
-  const merged = { ...inner };
+  const materialsLibrary = await loadMaterialsLibrary();
+  const merged = resolveStyleMaterialRefs({ ...inner }, materialsLibrary, fp, sk);
   if (merged.mapping === undefined && data.mapping != null && typeof data.mapping === "object") {
     merged.mapping = data.mapping;
   }
@@ -67,6 +156,8 @@ export async function loadStyleConfig(floorplanId, styleKey) {
 
 export function clearStyleConfigCache() {
   styleCache.clear();
+  materialsLibraryCache = null;
+  materialsLibraryPromise = null;
 }
 
 /**
