@@ -137,7 +137,7 @@
       "mapping": {
         "rooms": {
           "residential": { "floor": "floor_wood_oak", "wall": "wall_main" },
-          "kitchen": { "floor": "floor_tile_gray", "wall": "wall_tile_light" },
+          "kitchen": { "floor": "floor_tile_gray", "wall": "wall_feature_microcement" },
           "bathroom": { "floor": "floor_tile_dark", "wall": "wall_tile_light" }
         },
         "walls": {

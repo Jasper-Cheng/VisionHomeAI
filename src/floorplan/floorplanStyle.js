@@ -2,7 +2,7 @@
  * 户型装饰 JSON（assets/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；单套为根级材质定义。
  * loadStyleConfig(floorplanId, styleKey) 返回其中一套，供 getMaterialDef。
  * floors[].walls|doors|windows[].style：风格包 mapping.walls|doors|windows 中短键，或直连材质 id。
- * floors[].rooms[].style：材质 id（地面）、或 { floor, wall } 内联、或风格包 mapping.rooms 中的键。
+ * floors[].rooms[].style：mapping.rooms 中键 → 地面 + 内墙立面材质；内墙在挤出时叠在 walls 条目的基底材质之上（两侧按房间多边形判定）。
  */
 import { DATA_PATHS } from "../core/schema.js";
 
@@ -157,6 +157,48 @@ export function findRoomContainingPointCm(px, py, floor) {
     if (pointInPolygon2d(px, py, pts)) return room;
   }
   return null;
+}
+
+/**
+ * 沿墙参数 t∈[0,1]（从 start→end）在法线 ± 偏移处取点，判定 +Z/−Z 两侧房间。
+ * @param {object} floor 单层
+ * @param {object} wall 墙条目
+ * @param {number} t 0～1
+ * @param {number} [epsCm]
+ * @returns {{ roomPosZ: object | null, roomNegZ: object | null }}
+ */
+export function findWallSideRoomsAt(floor, wall, t, epsCm = 4) {
+  if (!wall || !floor) return { roomPosZ: null, roomNegZ: null };
+  if (!Array.isArray(wall.start) || wall.start.length < 2 || !Array.isArray(wall.end) || wall.end.length < 2) {
+    return { roomPosZ: null, roomNegZ: null };
+  }
+  const x1 = Number(wall.start[0]);
+  const y1 = Number(wall.start[1]);
+  const x2 = Number(wall.end[0]);
+  const y2 = Number(wall.end[1]);
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  if (len < 1e-6) return { roomPosZ: null, roomNegZ: null };
+  const u = Math.max(0, Math.min(1, Number(t)));
+  const mx = x1 + u * (x2 - x1);
+  const my = y1 + u * (y2 - y1);
+  const ux = (y2 - y1) / len;
+  const uy = (x2 - x1) / len;
+  const eps = Number(epsCm);
+  const e = Number.isFinite(eps) && eps > 0 ? eps : 4;
+  const roomPosZ = findRoomContainingPointCm(mx + ux * e, my + uy * e, floor);
+  const roomNegZ = findRoomContainingPointCm(mx - ux * e, my - uy * e, floor);
+  return { roomPosZ, roomNegZ };
+}
+
+/**
+ * 墙中点（t=0.5）两侧房间，等价于 {@link findWallSideRoomsAt}(floor, wall, 0.5, epsCm)。
+ * @param {object} floor 单层
+ * @param {object} wall 墙条目
+ * @param {number} [epsCm]
+ * @returns {{ roomPosZ: object | null, roomNegZ: object | null }}
+ */
+export function findWallSideRooms(floor, wall, epsCm = 4) {
+  return findWallSideRoomsAt(floor, wall, 0.5, epsCm);
 }
 
 /**

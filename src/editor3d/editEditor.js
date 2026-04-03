@@ -13,8 +13,10 @@ import {
   resolveStyleTextureUrl,
   resolveWallMaterialKey,
   resolveRoomFloorMaterialKey,
+  resolveRoomWallMaterialKey,
   resolveDoorMaterialKey,
   resolveWindowMaterialKey,
+  findWallSideRoomsAt,
 } from "../floorplan/floorplanStyle.js";
 import { getFurnitureDisplayName, getFurnitureTags } from "../furniture/furnitureManager.js";
 import {
@@ -1117,7 +1119,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return false;
   }
 
-  function buildWallMesh(wall, floor, cx, cy, s, defaultHeightCm, floorOpacity, wallStyleMat) {
+  /**
+   * 墙盒：基底为 walls[].style；+Z/−Z 大面按「沿墙位置」取两侧房间，叠加 mapping.rooms 的墙面材质（分段采样，避免整墙只用中点导致卫生间瓷砖铺满相邻房间）。
+   */
+  function buildWallMesh(wall, floor, cx, cy, s, defaultHeightCm, floorOpacity, wallStyleMat, style, getMaterialForKey) {
     if (!Array.isArray(wall?.start) || wall.start.length < 2 || !Array.isArray(wall?.end) || wall.end.length < 2) return null;
     const x1 = snap(Number(wall.start[0])), y1 = snap(Number(wall.start[1]));
     const x2 = snap(Number(wall.end[0])), y2 = snap(Number(wall.end[1]));
@@ -1131,8 +1136,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const hM = defaultHeightCm / 100;
     const holes = collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, hM, s);
 
-    const mx = ((x1 + x2) / 2 - cx) * (s / 100);
-    const mz = ((y1 + y2) / 2 - cy) * (s / 100);
     const rotY = Math.atan2(dz, dx);
     const op = floorOpacity ?? 1;
 
@@ -1148,23 +1151,120 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return mat;
     }
 
-    if (!holes.length) {
-      const geo = new THREE.BoxGeometry(lenWorld, hM, thickM);
-      const mat = makeWallMaterial();
-      const mesh = new THREE.Mesh(geo, mat);
+    function wallFaceMaterialsAtT(t) {
+      const baseMat = makeWallMaterial();
+      const useRoomWalls = style && typeof getMaterialForKey === "function";
+      if (!useRoomWalls) {
+        return { mats: null, baseMat };
+      }
+      const { roomPosZ, roomNegZ } = findWallSideRoomsAt(floor, wall, t, 4);
+      function faceMatForRoom(room) {
+        if (!room) return baseMat;
+        const rk = resolveRoomWallMaterialKey(style, room);
+        if (!rk) return baseMat;
+        const m = getMaterialForKey(rk);
+        return m || baseMat;
+      }
+      const matPosZ = faceMatForRoom(roomPosZ);
+      const matNegZ = faceMatForRoom(roomNegZ);
+      const mats = [baseMat, baseMat, baseMat, baseMat, matPosZ, matNegZ];
+      return { mats, baseMat };
+    }
+
+    function pushWallSegmentMesh(parent, segLenWorld, tMid, matsOrSingle) {
+      const mxSeg = (x1 + tMid * (x2 - x1) - cx) * (s / 100);
+      const mzSeg = (y1 + tMid * (y2 - y1) - cy) * (s / 100);
+      const geo = new THREE.BoxGeometry(segLenWorld, hM, thickM);
+      const mesh = new THREE.Mesh(geo, matsOrSingle);
       mesh.castShadow = true;
       mesh.receiveShadow = false;
-      mesh.position.set(mx, hM / 2, mz);
+      mesh.position.set(mxSeg, hM / 2, mzSeg);
       mesh.rotation.y = rotY;
       mesh.userData.floorplanPick = true;
-      return mesh;
+      parent.add(mesh);
+    }
+
+    if (!holes.length) {
+      const useRoomWalls = style && typeof getMaterialForKey === "function";
+      if (!useRoomWalls) {
+        const geo = new THREE.BoxGeometry(lenWorld, hM, thickM);
+        const mat = makeWallMaterial();
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = false;
+        mesh.position.set(((x1 + x2) / 2 - cx) * (s / 100), hM / 2, ((y1 + y2) / 2 - cy) * (s / 100));
+        mesh.rotation.y = rotY;
+        mesh.userData.floorplanPick = true;
+        return mesh;
+      }
+      const N = Math.min(256, Math.max(24, Math.ceil(lenCm / 4)));
+      const samples = [];
+      for (let i = 0; i <= N; i++) {
+        const t = i / N;
+        const { roomPosZ, roomNegZ } = findWallSideRoomsAt(floor, wall, t, 4);
+        const rk = `${String(roomPosZ?.id ?? "")}|${String(roomNegZ?.id ?? "")}`;
+        samples.push({ t, roomPosZ, roomNegZ, rk });
+      }
+      /** 采样 i 与 i+1 之间 rk 变化时的分界 t = (i/N + (i+1)/N) / 2；区间 [tLeft(a), tRight(b)] 完全覆盖 [0,1] 无隙。 */
+      const tLeft = (idx) => (idx === 0 ? 0 : (2 * idx - 1) / (2 * N));
+      const tRight = (idx) => (idx === N ? 1 : (2 * idx + 1) / (2 * N));
+      const intervals = [];
+      let start = 0;
+      for (let i = 1; i <= N + 1; i++) {
+        if (i === N + 1 || (i <= N && samples[i].rk !== samples[start].rk)) {
+          const b = i - 1;
+          intervals.push({
+            t0: tLeft(start),
+            t1: tRight(b),
+            roomPosZ: samples[start].roomPosZ,
+            roomNegZ: samples[start].roomNegZ,
+          });
+          start = i;
+        }
+      }
+      if (intervals.length === 1) {
+        const it = intervals[0];
+        const tMid = (it.t0 + it.t1) / 2;
+        const { mats } = wallFaceMaterialsAtT(tMid);
+        const geo = new THREE.BoxGeometry(lenWorld * (it.t1 - it.t0), hM, thickM);
+        const mesh = new THREE.Mesh(geo, mats || makeWallMaterial());
+        mesh.castShadow = true;
+        mesh.receiveShadow = false;
+        const tm = (it.t0 + it.t1) / 2;
+        mesh.position.set((x1 + tm * (x2 - x1) - cx) * (s / 100), hM / 2, (y1 + tm * (y2 - y1) - cy) * (s / 100));
+        mesh.rotation.y = rotY;
+        mesh.userData.floorplanPick = true;
+        return mesh;
+      }
+      const group = new THREE.Group();
+      group.userData.floorplanPick = true;
+      const baseMat = makeWallMaterial();
+      function matsForInterval(roomPosZ, roomNegZ) {
+        function faceMatForRoom(room) {
+          if (!room) return baseMat;
+          const rk = resolveRoomWallMaterialKey(style, room);
+          if (!rk) return baseMat;
+          const m = getMaterialForKey(rk);
+          return m || baseMat;
+        }
+        return [baseMat, baseMat, baseMat, baseMat, faceMatForRoom(roomPosZ), faceMatForRoom(roomNegZ)];
+      }
+      for (const it of intervals) {
+        const dt = it.t1 - it.t0;
+        if (dt < 1e-8) continue;
+        const segLen = lenWorld * dt;
+        if (segLen < 0.015) continue;
+        const tMid = (it.t0 + it.t1) / 2;
+        pushWallSegmentMesh(group, segLen, tMid, matsForInterval(it.roomPosZ, it.roomNegZ));
+      }
+      return group.children.length ? group : null;
     }
 
     const halfSpan = lenWorld / 2;
     const xs = mergeSplitEdges(-halfSpan, halfSpan, holes.flatMap((h) => [h.x0, h.x1]));
     const ys = mergeSplitEdges(0, hM, holes.flatMap((h) => [h.y0, h.y1]));
     const group = new THREE.Group();
-    group.position.set(mx, 0, mz);
+    group.position.set(((x1 + x2) / 2 - cx) * (s / 100), 0, ((y1 + y2) / 2 - cy) * (s / 100));
     group.rotation.y = rotY;
     group.userData.floorplanPick = true;
 
@@ -1182,7 +1282,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const gw = xb - xa;
         const gh = yb - ya;
         const geo = new THREE.BoxGeometry(gw, gh, thickM);
-        const mat = makeWallMaterial();
+        const tAlong = (cxLocal + halfSpan) / lenWorld;
+        const { mats } = wallFaceMaterialsAtT(tAlong);
+        const mat = mats || makeWallMaterial();
         const mesh = new THREE.Mesh(geo, mat);
         mesh.castShadow = true;
         mesh.receiveShadow = false;
@@ -2272,7 +2374,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       for (const w of fl.walls || []) {
         const wk = resolveWallMaterialKey(style, w);
         const wallMat = wk ? getMaterialForKey(wk) : null;
-        const m = buildWallMesh(w, fl, cx, cy, s, defaultH, opacity, wallMat);
+        const m = buildWallMesh(w, fl, cx, cy, s, defaultH, opacity, wallMat, style, getMaterialForKey);
         if (m) floorG.add(m);
       }
       for (const d of fl.doors || []) {
