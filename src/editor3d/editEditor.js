@@ -919,7 +919,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 风格包 PBR 贴图异步加载（路径相对 assets/style/）
+   * 风格包 PBR 贴图异步加载（路径相对 assets/floorplans/style/）
    * @param {import("three").MeshStandardMaterial | import("three").MeshPhysicalMaterial} mat
    * @param {object} def
    * @param {{ applyUvScale?: boolean }} [opts]

@@ -20,8 +20,8 @@ export const DATA_PATHS = {
   assetsTextures: "assets/textures",
   /** 家具库卡片预览：`assets/thumbnails/{id}.webp|png|jpg` */
   assetsThumbnails: "assets/thumbnails",
-  /** 户型装饰包：`assets/style/<floorplanId>.json`（含多套 styles），贴图见 `assets/style/textures/` */
-  stylesDir: "assets/style",
+  /** 户型装饰包：`assets/floorplans/style/<floorplanId>.json`（含多套 styles），贴图见同目录 `textures/` */
+  stylesDir: "assets/floorplans/style",
 };
 
 export const SCHEMA_VERSION = "1.0";

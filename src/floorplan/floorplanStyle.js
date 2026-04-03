@@ -1,5 +1,5 @@
 /**
- * 户型装饰 JSON（assets/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；材质可在根级或包在 materials 内。
+ * 户型装饰 JSON（assets/floorplans/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；材质可在根级或包在 materials 内。
  * 可选根级 mapping：与户型元素 id 对应；各风格未写 mapping 时沿用根级，避免重复。
  * loadStyleConfig(floorplanId, styleKey) 返回合并后的单套风格，供 getMaterialDef。
  * floors[].walls|doors|windows：优先用风格包 mapping.walls|doors|windows 中以元素 id 为键的条目；若无则回退到 style 短键或直连材质 id。
@@ -38,7 +38,7 @@ export function resolveStyleTextureUrl(relPath) {
 }
 
 /**
- * @param {string} floorplanId 与户型 id 一致，对应 assets/style/<floorplanId>.json
+ * @param {string} floorplanId 与户型 id 一致，对应 assets/floorplans/style/<floorplanId>.json
  * @param {string} [styleKey] 装饰文件内 styles 的键，缺省为 modern_minimal_v1
  * @returns {Promise<object>}
  */
