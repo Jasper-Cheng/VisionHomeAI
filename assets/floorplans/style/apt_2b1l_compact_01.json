@@ -3,28 +3,28 @@
   "mapping": {
     "rooms": {
       "r_bed1": {
-        "floor": "floor_wood_oak",
+        "floor": "floor_main",
         "wall": "wall_main"
       },
       "r_bed2": {
-        "floor": "floor_wood_oak",
+        "floor": "floor_main",
         "wall": "wall_main"
       },
       "r_living": {
-        "floor": "floor_wood_oak",
+        "floor": "floor_main",
         "wall": "wall_main"
       },
       "r_living_co": {
-        "floor": "floor_wood_oak",
+        "floor": "floor_main",
         "wall": "wall_main"
       },
       "r_kitchen": {
-        "floor": "floor_tile_gray",
-        "wall": "wall_feature_microcement"
+        "floor": "floor_second",
+        "wall": "wall_second"
       },
       "r_bath": {
-        "floor": "floor_tile_dark",
-        "wall": "wall_tile_light"
+        "floor": "floor_third",
+        "wall": "wall_third"
       }
     },
     "walls": {
@@ -79,7 +79,7 @@
             "roughness": "textures/wall/plaster_rough.jpg"
           }
         },
-        "wall_feature_microcement": {
+        "wall_second": {
           "type": "microcement",
           "color": "#d9d6d2",
           "roughness": 0.75,
@@ -90,7 +90,7 @@
             "roughness": "textures/wall/microcement_rough.jpg"
           }
         },
-        "wall_tile_light": {
+        "wall_third": {
           "type": "tile",
           "color": "#eaeaea",
           "roughness": 0.35,
@@ -101,7 +101,7 @@
             "roughness": "textures/tile/light_rough.jpg"
           }
         },
-        "floor_wood_oak": {
+        "floor_main": {
           "type": "wood_floor",
           "color": "#c9b8a6",
           "roughness": 0.55,
@@ -116,7 +116,7 @@
             4
           ]
         },
-        "floor_tile_gray": {
+        "floor_second": {
           "type": "tile_floor",
           "color": "#dcdcdc",
           "roughness": 0.4,
@@ -131,7 +131,7 @@
             3
           ]
         },
-        "floor_tile_dark": {
+        "floor_third": {
           "type": "tile_floor",
           "color": "#bfbfbf",
           "roughness": 0.45,
@@ -212,7 +212,7 @@
             "roughness": "textures/wall/plaster_rough.jpg"
           }
         },
-        "wall_feature_microcement": {
+        "wall_second": {
           "type": "paint",
           "color": "#ffffff",
           "roughness": 0.8,
@@ -223,7 +223,7 @@
             "roughness": "textures/wall/wall_color_rough.jpg"
           }
         },
-        "wall_tile_light": {
+        "wall_third": {
           "type": "tile",
           "color": "#ffffff",
           "roughness": 0.4,
@@ -234,7 +234,7 @@
             "roughness": "textures/tile/white_rough.jpg"
           }
         },
-        "floor_wood_oak": {
+        "floor_main": {
           "type": "wood_floor",
           "color": "#c9b8a6",
           "roughness": 0.55,
@@ -249,7 +249,7 @@
             4
           ]
         },
-        "floor_tile_gray": {
+        "floor_second": {
           "type": "tile_floor",
           "color": "#dcdcdc",
           "roughness": 0.45,
@@ -264,7 +264,7 @@
             3
           ]
         },
-        "floor_tile_dark": {
+        "floor_third": {
           "type": "tile_floor",
           "color": "#bfbfbf",
           "roughness": 0.5,
@@ -345,7 +345,7 @@
             "roughness": "textures/wall/plaster_rough.jpg"
           }
         },
-        "wall_feature_microcement": {
+        "wall_second": {
           "type": "microcement",
           "color": "#e8e6e1",
           "roughness": 0.6,
@@ -356,7 +356,7 @@
             "roughness": "textures/wall/microcement_rough.jpg"
           }
         },
-        "wall_tile_light": {
+        "wall_third": {
           "type": "tile",
           "color": "#ffffff",
           "roughness": 0.45,
@@ -367,7 +367,7 @@
             "roughness": "textures/tile/gray_rough.jpg"
           }
         },
-        "floor_wood_oak": {
+        "floor_main": {
           "type": "wood_floor",
           "color": "#d4c4b0",
           "roughness": 0.5,
@@ -382,7 +382,7 @@
             4
           ]
         },
-        "floor_tile_gray": {
+        "floor_second": {
           "type": "tile_floor",
           "color": "#dcdcdc",
           "roughness": 0.45,
@@ -397,7 +397,7 @@
             3
           ]
         },
-        "floor_tile_dark": {
+        "floor_third": {
           "type": "tile_floor",
           "color": "#c8c8c8",
           "roughness": 0.45,
@@ -478,7 +478,7 @@
             "roughness": "textures/wall/plaster02_rough.jpg"
           }
         },
-        "wall_feature_microcement": {
+        "wall_second": {
           "type": "tile",
           "color": "#ffffff",
           "roughness": 0.25,
@@ -489,7 +489,7 @@
             "roughness": "textures/marble/wood_dark_rough.jpg"
           }
         },
-        "wall_tile_light": {
+        "wall_third": {
           "type": "tile",
           "color": "#ffffff",
           "roughness": 0.25,
@@ -500,7 +500,7 @@
             "roughness": "textures/marble/wood_dark_rough.jpg"
           }
         },
-        "floor_wood_oak": {
+        "floor_main": {
           "type": "wood_floor",
           "color": "#8a7a6a",
           "roughness": 0.5,
@@ -515,7 +515,7 @@
             4
           ]
         },
-        "floor_tile_gray": {
+        "floor_second": {
           "type": "tile_floor",
           "color": "#d0d0d0",
           "roughness": 0.3,
@@ -530,7 +530,7 @@
             3
           ]
         },
-        "floor_tile_dark": {
+        "floor_third": {
           "type": "tile_floor",
           "color": "#ffffff",
           "roughness": 0.25,
@@ -611,7 +611,7 @@
             "roughness": "textures/wall/microcement_rough.jpg"
           }
         },
-        "wall_feature_microcement": {
+        "wall_second": {
           "type": "microcement",
           "color": "#c8c8c8",
           "roughness": 0.85,
@@ -622,7 +622,7 @@
             "roughness": "textures/wall/concrete_light_rough.jpg"
           }
         },
-        "wall_tile_light": {
+        "wall_third": {
           "type": "tile",
           "color": "#ffffff",
           "roughness": 0.8,
@@ -633,7 +633,7 @@
             "roughness": "textures/wall/brick_rough.jpg"
           }
         },
-        "floor_wood_oak": {
+        "floor_main": {
           "type": "wood_floor",
           "color": "#6a5a4a",
           "roughness": 0.55,
@@ -645,7 +645,7 @@
           },
           "uvScale": [4, 4]
         },
-        "floor_tile_gray": {
+        "floor_second": {
           "type": "tile_floor",
           "color": "#ffffff",
           "roughness": 0.75,
@@ -657,7 +657,7 @@
           },
           "uvScale": [3, 3]
         },
-        "floor_tile_dark": {
+        "floor_third": {
           "type": "tile_floor",
           "color": "#9a9a9a",
           "roughness": 0.75,
@@ -737,7 +737,7 @@
             "roughness": "textures/wall/plaster_rough.jpg"
           }
         },
-        "wall_feature_microcement": {
+        "wall_second": {
           "type": "paint",
           "color": "#f2ece4",
           "roughness": 0.88,
@@ -748,7 +748,7 @@
             "roughness": "textures/till/tile_light_rough.jpg"
           }
         },
-        "wall_tile_light": {
+        "wall_third": {
           "type": "tile",
           "color": "#fdfbf7",
           "roughness": 0.35,
@@ -759,7 +759,7 @@
             "roughness": "textures/marble/marble_soft_rough.jpg"
           }
         },
-        "floor_wood_oak": {
+        "floor_main": {
           "type": "wood_floor",
           "color": "#e8d8c3",
           "roughness": 0.5,
@@ -771,7 +771,7 @@
           },
           "uvScale": [4, 4]
         },
-        "floor_tile_gray": {
+        "floor_second": {
           "type": "tile_floor",
           "color": "#f7f4ef",
           "roughness": 0.45,
@@ -783,7 +783,7 @@
           },
           "uvScale": [3, 3]
         },
-        "floor_tile_dark": {
+        "floor_third": {
           "type": "tile_floor",
           "color": "#f1ece3",
           "roughness": 0.45,
