@@ -677,8 +677,7 @@
           "texture": {
             "albedo": "textures/metal/metal_diff.jpg",
             "normal": "textures/metal/metal_normal.jpg",
-            "roughness": "textures/metal/metal_rough.jpg",
-            "metalnessMap": "textures/metal/metal_metal.jpg"
+            "roughness": "textures/metal/metal_rough.jpg"
           }
         },
         "door_interior_white": {
@@ -689,8 +688,7 @@
           "texture": {
             "albedo": "textures/metal/metal_diff.jpg",
             "normal": "textures/metal/metal_normal.jpg",
-            "roughness": "textures/metal/metal_rough.jpg",
-            "metalnessMap": "textures/metal/metal_metal.jpg"
+            "roughness": "textures/metal/metal_rough.jpg"
           }
         },
         "glass_clear": {
@@ -743,9 +741,9 @@
           "roughness": 0.88,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/till/tile_light_diff.jpg",
-            "normal": "textures/till/tile_light_normal.jpg",
-            "roughness": "textures/till/tile_light_rough.jpg"
+            "albedo": "textures/tile/tile_light_diff.jpg",
+            "normal": "textures/tile/tile_light_normal.jpg",
+            "roughness": "textures/tile/tile_light_rough.jpg"
           }
         },
         "wall_third": {
@@ -765,9 +763,9 @@
           "roughness": 0.5,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/floor/tile_light_diff.jpg",
-            "normal": "textures/floor/tile_light_normal.jpg",
-            "roughness": "textures/floor/tile_light_rough.jpg"
+            "albedo": "textures/floor/wood_light_diff.jpg",
+            "normal": "textures/floor/wood_light_normal.jpg",
+            "roughness": "textures/floor/wood_light_rough.jpg"
           },
           "uvScale": [4, 4]
         },
