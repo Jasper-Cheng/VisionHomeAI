@@ -1,6 +1,7 @@
 /**
  * 户型装饰 JSON（assets/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；材质可在根级或包在 materials 内。
- * loadStyleConfig(floorplanId, styleKey) 返回其中一套，供 getMaterialDef。
+ * 可选根级 mapping：与户型元素 id 对应；各风格未写 mapping 时沿用根级，避免重复。
+ * loadStyleConfig(floorplanId, styleKey) 返回合并后的单套风格，供 getMaterialDef。
  * floors[].walls|doors|windows：优先用风格包 mapping.walls|doors|windows 中以元素 id 为键的条目；若无则回退到 style 短键或直连材质 id。
  * floors[].rooms：优先 mapping.rooms[room.id]（{ floor, wall }）；否则 rooms[].style → mapping.rooms 短键。
  */
@@ -56,8 +57,12 @@ export async function loadStyleConfig(floorplanId, styleKey) {
   if (!styles || typeof styles !== "object") throw new Error("Decor JSON missing styles");
   const inner = styles[sk];
   if (!inner || typeof inner !== "object") throw new Error(`Unknown styleKey: ${sk}`);
-  styleCache.set(cacheKey, inner);
-  return inner;
+  const merged = { ...inner };
+  if (merged.mapping === undefined && data.mapping != null && typeof data.mapping === "object") {
+    merged.mapping = data.mapping;
+  }
+  styleCache.set(cacheKey, merged);
+  return merged;
 }
 
 export function clearStyleConfigCache() {
