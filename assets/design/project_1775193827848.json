@@ -4,7 +4,7 @@
   "name": "阿斯顿",
   "description": "",
   "createdAt": "2026-04-03T05:23:47.848Z",
-  "updatedAt": "2026-04-03T05:23:47.848Z",
+  "updatedAt": "2026-04-03T06:16:28.744Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -24,8 +24,8 @@
       "furnitureId": "sofa_02",
       "floorId": "floor1",
       "positionCm": [
-        -263,
-        124
+        -152,
+        -13
       ],
       "rotationDeg": 0
     },
@@ -44,8 +44,8 @@
       "furnitureId": "table_03",
       "floorId": "floor1",
       "positionCm": [
-        -228,
-        209
+        -205,
+        237
       ],
       "rotationDeg": 90
     }
@@ -65,8 +65,8 @@
       {
         "model": "sofa_02",
         "floorId": "floor1",
-        "x": -263,
-        "y": 124,
+        "x": -152,
+        "y": -13,
         "rotation": 0
       },
       {
@@ -79,8 +79,8 @@
       {
         "model": "table_03",
         "floorId": "floor1",
-        "x": -228,
-        "y": 209,
+        "x": -205,
+        "y": 237,
         "rotation": 90
       }
     ]

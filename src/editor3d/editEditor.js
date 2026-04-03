@@ -3979,10 +3979,29 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) closeDropdown();
     });
 
+    const STYLE_BTN_DEFAULT = "风格";
+
+    function setStyleToolbarButtonLabel(list) {
+      const cur = getEffectiveFloorplanStyleKey();
+      if (!list || !list.length) {
+        btn.textContent = STYLE_BTN_DEFAULT;
+        btn.title = "装饰风格";
+        btn.setAttribute("aria-label", "装饰风格");
+        return;
+      }
+      const hit = list.find((s) => s.key === cur);
+      const label = hit?.name ? String(hit.name).trim() : cur || STYLE_BTN_DEFAULT;
+      btn.textContent = label || STYLE_BTN_DEFAULT;
+      const tip = `装饰风格：${btn.textContent}`;
+      btn.title = tip;
+      btn.setAttribute("aria-label", tip);
+    }
+
     async function refreshStyleDropdown() {
       dropdown.replaceChildren();
       const fpId = getCurrentFloorplanId();
       if (!fpId) {
+        setStyleToolbarButtonLabel(null);
         const hint = document.createElement("div");
         hint.className = "svg-style-dropdown-hint";
         hint.textContent = "请先加载户型";
@@ -3995,6 +4014,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         list = idx.styles;
       } catch (err) {
         console.warn("[VisionHome] 风格列表加载失败:", err);
+        setStyleToolbarButtonLabel(null);
         const hint = document.createElement("div");
         hint.className = "svg-style-dropdown-hint";
         hint.textContent = "风格列表加载失败";
@@ -4002,6 +4022,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         return;
       }
       if (!list.length) {
+        setStyleToolbarButtonLabel(null);
         const hint = document.createElement("div");
         hint.className = "svg-style-dropdown-hint";
         hint.textContent = "暂无装饰风格";
@@ -4019,6 +4040,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (s.key === cur) tag.classList.add("is-active");
         dropdown.appendChild(tag);
       }
+      setStyleToolbarButtonLabel(list);
     }
 
     dropdown.addEventListener("click", (e) => {
@@ -4027,6 +4049,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const key = String(tag.dataset.styleKey ?? "").trim();
       if (!key || !currentFloorplanEntry) return;
       floorplanStyleKeyOverride = key;
+      const picked = String(tag.textContent ?? "").trim();
+      if (picked) {
+        btn.textContent = picked;
+        const tip = `装饰风格：${picked}`;
+        btn.title = tip;
+        btn.setAttribute("aria-label", tip);
+      }
       void rebuildFloorplan3D().then(() => pushHistorySnapshot());
       closeDropdown();
     });
