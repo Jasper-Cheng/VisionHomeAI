@@ -732,6 +732,7 @@
           "roughness": 0.9,
           "metalness": 0.0,
           "texture": {
+            "albedo": "textures/wall/plaster_diff.jpg",
             "normal": "textures/wall/plaster_normal.jpg",
             "roughness": "textures/wall/plaster_rough.jpg"
           }
@@ -742,8 +743,9 @@
           "roughness": 0.88,
           "metalness": 0.0,
           "texture": {
-            "normal": "textures/wall/wall_color_normal.jpg",
-            "roughness": "textures/wall/wall_color_rough.jpg"
+            "albedo": "textures/till/tile_light_diff.jpg",
+            "normal": "textures/till/tile_light_normal.jpg",
+            "roughness": "textures/till/tile_light_rough.jpg"
           }
         },
         "wall_tile_light": {
@@ -763,9 +765,9 @@
           "roughness": 0.5,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/floor/wood_oak_nordic_diff.jpg",
-            "normal": "textures/floor/wood_oak_nordic_normal.jpg",
-            "roughness": "textures/floor/wood_oak_nordic_rough.jpg"
+            "albedo": "textures/floor/tile_light_diff.jpg",
+            "normal": "textures/floor/tile_light_normal.jpg",
+            "roughness": "textures/floor/tile_light_rough.jpg"
           },
           "uvScale": [4, 4]
         },
@@ -775,9 +777,9 @@
           "roughness": 0.45,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/light_diff.jpg",
-            "normal": "textures/tile/light_normal.jpg",
-            "roughness": "textures/tile/light_rough.jpg"
+            "albedo": "textures/tile/tile_light_diff.jpg",
+            "normal": "textures/tile/tile_light_normal.jpg",
+            "roughness": "textures/tile/tile_light_rough.jpg"
           },
           "uvScale": [3, 3]
         },
@@ -787,9 +789,9 @@
           "roughness": 0.45,
           "metalness": 0.0,
           "texture": {
-            "albedo": "textures/tile/light_diff.jpg",
-            "normal": "textures/tile/light_normal.jpg",
-            "roughness": "textures/tile/light_rough.jpg"
+            "albedo": "textures/tile/gray_diff.jpg",
+            "normal": "textures/tile/gray_normal.jpg",
+            "roughness": "textures/tile/gray_rough.jpg"
           },
           "uvScale": [3, 3]
         },
