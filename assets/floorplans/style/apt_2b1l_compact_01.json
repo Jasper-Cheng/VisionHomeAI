@@ -267,7 +267,7 @@
           "$ref": "wall_paint_plaster_v4"
         },
         "wall_second": {
-          "$ref": "wall_paint_wall_color"
+          "$ref": "wall_paint_plaster_v4"
         },
         "wall_third": {
           "$ref": "wall_tile_white"
@@ -279,7 +279,7 @@
           "$ref": "floor_tile_floor_gray_v2"
         },
         "floor_third": {
-          "$ref": "floor_tile_floor_dark_v2"
+          "$ref": "floor_tile_floor_gray_v4"
         },
         "door_entrance": {
           "$ref": "door_paint_wood_door_wood_v3"
