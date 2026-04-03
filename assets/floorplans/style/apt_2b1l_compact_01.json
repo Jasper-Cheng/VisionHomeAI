@@ -69,37 +69,37 @@
       "name": "奶油风",
       "materials": {
         "wall_main": {
-          "$ref": "wall_paint_plaster"
+          "$ref": "wall_paint_plaster_cream"
         },
         "wall_second": {
-          "$ref": "wall_paint_plaster"
+          "$ref": "wall_paint_plaster_cream"
         },
         "wall_third": {
           "$ref": "wall_tile_white"
         },
         "floor_main": {
-          "$ref": "floor_tile_floor_tile_light"
+          "$ref": "floor_tile_cream_light"
         },
         "floor_second": {
-          "$ref": "floor_tile_floor_tile_light"
+          "$ref": "floor_tile_cream_light"
         },
         "floor_third": {
-          "$ref": "floor_tile_floor_tile_light"
+          "$ref": "floor_tile_cream_light"
         },
         "door_entrance": {
-          "$ref": "door_paint_wood_door_wood_v3"
+          "$ref": "door_paint_white_wood_matte"
         },
         "door_interior_white": {
-          "$ref": "door_paint_wood_door_wood_v3"
+          "$ref": "door_paint_white_wood_matte"
         },
         "glass_clear": {
-          "$ref": "glass_glass_ccfe8ff"
+          "$ref": "glass_clear_blue"
         },
         "glass_frosted": {
-          "$ref": "glass_glass_ce8eef2"
+          "$ref": "glass_frosted_soft"
         },
         "glass_tinted": {
-          "$ref": "glass_glass_cd8cbb5"
+          "$ref": "glass_tinted_warm"
         }
       }
     },
@@ -108,37 +108,37 @@
       "name": "工业风",
       "materials": {
         "wall_main": {
-          "$ref": "wall_paint_microcement"
+          "$ref": "wall_paint_concrete_gray"
         },
         "wall_second": {
           "$ref": "wall_microcement_concrete_light"
         },
         "wall_third": {
-          "$ref": "wall_tile_brick"
+          "$ref": "wall_tile_brick_white"
         },
         "floor_main": {
-          "$ref": "floor_wood_floor_concrete_floor"
+          "$ref": "floor_wood_concrete_pattern"
         },
         "floor_second": {
-          "$ref": "floor_tile_floor_concrete_floor"
+          "$ref": "floor_tile_concrete_light"
         },
         "floor_third": {
-          "$ref": "floor_tile_floor_concrete_floor_v2"
+          "$ref": "floor_tile_concrete_dark"
         },
         "door_entrance": {
-          "$ref": "door_metal_door_metal"
+          "$ref": "door_metal_standard"
         },
         "door_interior_white": {
-          "$ref": "door_metal_door_metal_v2"
+          "$ref": "door_metal_dark_gray"
         },
         "glass_clear": {
-          "$ref": "glass_glass_ccfe8ff"
+          "$ref": "glass_clear_blue"
         },
         "glass_frosted": {
-          "$ref": "glass_glass_ce8eef2"
+          "$ref": "glass_frosted_soft"
         },
         "glass_tinted": {
-          "$ref": "glass_glass_cd8cbb5"
+          "$ref": "glass_tinted_warm"
         }
       }
     },
@@ -147,37 +147,37 @@
       "name": "日式原木风",
       "materials": {
         "wall_main": {
-          "$ref": "wall_paint_plaster_v2"
+          "$ref": "wall_paint_plaster_warm"
         },
         "wall_second": {
-          "$ref": "wall_microcement_microcement"
+          "$ref": "wall_microcement_warm"
         },
         "wall_third": {
           "$ref": "wall_tile_gray"
         },
         "floor_main": {
-          "$ref": "floor_wood_floor_wood_light_japandi"
+          "$ref": "floor_wood_light_japandi"
         },
         "floor_second": {
-          "$ref": "floor_tile_floor_gray_v2"
+          "$ref": "floor_tile_gray_light"
         },
         "floor_third": {
-          "$ref": "floor_tile_floor_gray_v3"
+          "$ref": "floor_tile_gray_mid"
         },
         "door_entrance": {
-          "$ref": "door_paint_wood_door_wood"
+          "$ref": "door_paint_white_wood"
         },
         "door_interior_white": {
-          "$ref": "door_paint_wood_door_wood_v2"
+          "$ref": "door_paint_white_wood_subtle_metal"
         },
         "glass_clear": {
-          "$ref": "glass_glass_ccfe8ff"
+          "$ref": "glass_clear_blue"
         },
         "glass_frosted": {
-          "$ref": "glass_glass_ce8eef2"
+          "$ref": "glass_frosted_soft"
         },
         "glass_tinted": {
-          "$ref": "glass_glass_cd8cbb5"
+          "$ref": "glass_tinted_warm"
         }
       }
     },
@@ -186,37 +186,37 @@
       "name": "现代轻奢风",
       "materials": {
         "wall_main": {
-          "$ref": "wall_paint_plaster02"
+          "$ref": "wall_paint_plaster_lux"
         },
         "wall_second": {
-          "$ref": "wall_tile_wood_dark"
+          "$ref": "wall_tile_dark_wood_pattern"
         },
         "wall_third": {
-          "$ref": "wall_tile_wood_dark"
+          "$ref": "wall_tile_dark_wood_pattern"
         },
         "floor_main": {
-          "$ref": "floor_wood_floor_wood_dark"
+          "$ref": "floor_wood_dark"
         },
         "floor_second": {
-          "$ref": "floor_tile_floor_gray_v4"
+          "$ref": "floor_tile_gray_smooth"
         },
         "floor_third": {
-          "$ref": "floor_tile_floor_wood_dark"
+          "$ref": "floor_tile_dark_wood_pattern"
         },
         "door_entrance": {
-          "$ref": "door_metal_door_metal_v3"
+          "$ref": "door_metal_silver"
         },
         "door_interior_white": {
-          "$ref": "door_paint_wood_wood_dark"
+          "$ref": "door_paint_white_dark_wood"
         },
         "glass_clear": {
-          "$ref": "glass_glass_ccfe8ff"
+          "$ref": "glass_clear_blue"
         },
         "glass_frosted": {
-          "$ref": "glass_glass_ce8eef2"
+          "$ref": "glass_frosted_soft"
         },
         "glass_tinted": {
-          "$ref": "glass_glass_cd8cbb5"
+          "$ref": "glass_tinted_warm"
         }
       }
     },
@@ -225,37 +225,37 @@
       "name": "现代简约风",
       "materials": {
         "wall_main": {
-          "$ref": "wall_paint_plaster_v3"
+          "$ref": "wall_paint_plaster_light"
         },
         "wall_second": {
-          "$ref": "wall_microcement_microcement_v2"
+          "$ref": "wall_microcement_neutral"
         },
         "wall_third": {
           "$ref": "wall_tile_light"
         },
         "floor_main": {
-          "$ref": "floor_wood_floor_wood_oak"
+          "$ref": "floor_wood_oak"
         },
         "floor_second": {
-          "$ref": "floor_tile_floor_gray_v5"
+          "$ref": "floor_tile_gray_light_matte"
         },
         "floor_third": {
-          "$ref": "floor_tile_floor_dark"
+          "$ref": "floor_tile_dark_matte"
         },
         "door_entrance": {
-          "$ref": "door_metal_door_metal_v4"
+          "$ref": "door_metal_charcoal"
         },
         "door_interior_white": {
-          "$ref": "door_paint_wood_cffffff_v2"
+          "$ref": "door_paint_white_metal_like"
         },
         "glass_clear": {
-          "$ref": "glass_glass_ccfe8ff"
+          "$ref": "glass_clear_blue"
         },
         "glass_frosted": {
-          "$ref": "glass_glass_ce8eef2"
+          "$ref": "glass_frosted_soft"
         },
         "glass_tinted": {
-          "$ref": "glass_glass_cd8cbb5"
+          "$ref": "glass_tinted_warm"
         }
       }
     },
@@ -264,37 +264,37 @@
       "name": "北欧风",
       "materials": {
         "wall_main": {
-          "$ref": "wall_paint_plaster_v4"
+          "$ref": "wall_paint_plaster_neutral"
         },
         "wall_second": {
-          "$ref": "wall_paint_plaster_v4"
+          "$ref": "wall_paint_plaster_neutral"
         },
         "wall_third": {
           "$ref": "wall_tile_white"
         },
         "floor_main": {
-          "$ref": "floor_wood_floor_wood_oak_nordic"
+          "$ref": "floor_wood_oak_nordic"
         },
         "floor_second": {
-          "$ref": "floor_tile_floor_gray_v2"
+          "$ref": "floor_tile_gray_light"
         },
         "floor_third": {
-          "$ref": "floor_tile_floor_gray_v4"
+          "$ref": "floor_tile_gray_smooth"
         },
         "door_entrance": {
-          "$ref": "door_paint_wood_door_wood_v3"
+          "$ref": "door_paint_white_wood_matte"
         },
         "door_interior_white": {
-          "$ref": "door_paint_wood_door_wood_v4"
+          "$ref": "door_paint_white_wood_satin"
         },
         "glass_clear": {
-          "$ref": "glass_glass_ccfe8ff"
+          "$ref": "glass_clear_blue"
         },
         "glass_frosted": {
-          "$ref": "glass_glass_ce8eef2"
+          "$ref": "glass_frosted_soft"
         },
         "glass_tinted": {
-          "$ref": "glass_glass_cd8cbb5"
+          "$ref": "glass_tinted_warm"
         }
       }
     }
