@@ -9,6 +9,7 @@ import { normalizeDoorStyle, defaultDoorStyleWhite } from "../floorplan/doorStyl
 import { normalizeWindowStyle, defaultWindowStyleWhite } from "../floorplan/windowStyle.js";
 import {
   loadStyleConfig,
+  loadStylePackIndex,
   getMaterialDef,
   resolveStyleTextureUrl,
   resolveWallMaterialKey,
@@ -430,6 +431,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const activeFloorPickMeshes = [];
 
   let currentFloorplanEntry = null;
+  /** 覆盖户型 JSON 的 styleKey；null 表示使用 entry.styleKey */
+  let floorplanStyleKeyOverride = null;
   let currentFloorIndex = 0;
   let floorSelectionEnabled = true;
   let activeFloorId = null;
@@ -2296,6 +2299,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     selectFurniture(null);
   }
 
+  function getEffectiveFloorplanStyleKey() {
+    const entry = currentFloorplanEntry;
+    if (!entry) return "modern_minimal_v1";
+    const o = floorplanStyleKeyOverride != null ? String(floorplanStyleKeyOverride).trim() : "";
+    if (o) return o;
+    return String(entry?.styleKey ?? entry?.styleId ?? "").trim() || "modern_minimal_v1";
+  }
+
   async function rebuildFloorplan3D() {
     const gen = ++floorplanRebuildGen;
     clearInteractiveList();
@@ -2313,7 +2324,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     let style = null;
     try {
       const fpId = String(entry?.id ?? "").trim();
-      const sk = String(entry?.styleKey ?? entry?.styleId ?? "").trim() || "modern_minimal_v1";
+      const sk = getEffectiveFloorplanStyleKey();
       style = await loadStyleConfig(fpId, sk);
     } catch (e) {
       console.warn("[VisionHome] 风格包加载失败:", e);
@@ -2511,6 +2522,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   function clearFloorplan() {
     currentFloorplanEntry = null;
+    floorplanStyleKeyOverride = null;
     currentFloorIndex = 0;
     floorSelectionEnabled = true;
     syncOtherOpacityUi();
@@ -2524,6 +2536,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!entry) return;
     currentFloorplanEntry = entry;
     currentFloorIndex = normalizeFloorIndex(entry, options.floorIndex);
+    if (!options.preserveStyleKeyOverride) floorplanStyleKeyOverride = null;
     floorSelectionEnabled = true;
     syncOtherOpacityUi();
     rebuildFloorplan3D();
@@ -2902,6 +2915,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       furniture: getLayout(),
       floorPlanId: getCurrentFloorplanId(),
       floorLevelIndex: getCurrentFloorLevelIndex(),
+      floorplanStyleKey: getEffectiveFloorplanStyleKey(),
     });
   }
 
@@ -2915,9 +2929,23 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const n = Math.trunc(Number(parsed.floorLevelIndex));
         floorLevelIndex = Number.isFinite(n) && n >= 0 ? n : 0;
       }
-      if (id === undefined) return { furniture: parsed.furniture, floorPlanId: undefined, floorLevelIndex };
-      if (id === null || String(id).trim() === "") return { furniture: parsed.furniture, floorPlanId: null, floorLevelIndex };
-      return { furniture: parsed.furniture, floorPlanId: String(id).trim(), floorLevelIndex };
+      let floorplanStyleKey = undefined;
+      if (Object.prototype.hasOwnProperty.call(parsed, "floorplanStyleKey")) {
+        const sk = parsed.floorplanStyleKey;
+        floorplanStyleKey = sk != null && String(sk).trim() ? String(sk).trim() : null;
+      }
+      if (id === undefined) {
+        return { furniture: parsed.furniture, floorPlanId: undefined, floorLevelIndex, floorplanStyleKey };
+      }
+      if (id === null || String(id).trim() === "") {
+        return { furniture: parsed.furniture, floorPlanId: null, floorLevelIndex, floorplanStyleKey };
+      }
+      return {
+        furniture: parsed.furniture,
+        floorPlanId: String(id).trim(),
+        floorLevelIndex,
+        floorplanStyleKey,
+      };
     }
     return null;
   }
@@ -2928,8 +2956,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (state.floorPlanId) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(state.floorPlanId) : null;
-        if (entry) applyFloorplanEntryAtWorld(entry, undefined, undefined, { floorIndex: state.floorLevelIndex });
-        else clearFloorplan();
+        if (entry) {
+          if (Object.prototype.hasOwnProperty.call(state, "floorplanStyleKey")) {
+            const sk = state.floorplanStyleKey;
+            floorplanStyleKeyOverride = sk != null && String(sk).trim() ? String(sk).trim() : null;
+          } else {
+            floorplanStyleKeyOverride = null;
+          }
+          applyFloorplanEntryAtWorld(entry, undefined, undefined, {
+            floorIndex: state.floorLevelIndex,
+            preserveStyleKeyOverride: true,
+          });
+        } else clearFloorplan();
       } else clearFloorplan();
     }
     const furn = Array.isArray(state.furniture) ? state.furniture : [];
@@ -3917,6 +3955,90 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.addEventListener("resize", resizeRenderer);
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(resizeRenderer).observe(container);
 
+  function initFloorplanStyleToolbar() {
+    const btn = document.getElementById("svgStyleRecommendBtn");
+    const dropdown = document.getElementById("svgStyleDropdown");
+    if (!btn || !dropdown) return;
+
+    function openDropdown() {
+      dropdown.hidden = false;
+      btn.setAttribute("aria-expanded", "true");
+      btn.classList.add("is-active");
+    }
+    function closeDropdown() {
+      dropdown.hidden = true;
+      btn.setAttribute("aria-expanded", "false");
+      btn.classList.remove("is-active");
+    }
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      dropdown.hidden ? openDropdown() : closeDropdown();
+    });
+    document.addEventListener("click", (e) => {
+      if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) closeDropdown();
+    });
+
+    async function refreshStyleDropdown() {
+      dropdown.replaceChildren();
+      const fpId = getCurrentFloorplanId();
+      if (!fpId) {
+        const hint = document.createElement("div");
+        hint.className = "svg-style-dropdown-hint";
+        hint.textContent = "请先加载户型";
+        dropdown.appendChild(hint);
+        return;
+      }
+      let list;
+      try {
+        const idx = await loadStylePackIndex(fpId);
+        list = idx.styles;
+      } catch (err) {
+        console.warn("[VisionHome] 风格列表加载失败:", err);
+        const hint = document.createElement("div");
+        hint.className = "svg-style-dropdown-hint";
+        hint.textContent = "风格列表加载失败";
+        dropdown.appendChild(hint);
+        return;
+      }
+      if (!list.length) {
+        const hint = document.createElement("div");
+        hint.className = "svg-style-dropdown-hint";
+        hint.textContent = "暂无装饰风格";
+        dropdown.appendChild(hint);
+        return;
+      }
+      const cur = getEffectiveFloorplanStyleKey();
+      for (const s of list) {
+        const tag = document.createElement("button");
+        tag.type = "button";
+        tag.className = "svg-style-tag";
+        tag.setAttribute("role", "menuitem");
+        tag.dataset.styleKey = s.key;
+        tag.textContent = s.name;
+        if (s.key === cur) tag.classList.add("is-active");
+        dropdown.appendChild(tag);
+      }
+    }
+
+    dropdown.addEventListener("click", (e) => {
+      const tag = e.target.closest(".svg-style-tag");
+      if (!tag) return;
+      const key = String(tag.dataset.styleKey ?? "").trim();
+      if (!key || !currentFloorplanEntry) return;
+      floorplanStyleKeyOverride = key;
+      void rebuildFloorplan3D().then(() => pushHistorySnapshot());
+      closeDropdown();
+    });
+
+    window.addEventListener("visionhome:floorplan-applied-to-svg", () => {
+      void refreshStyleDropdown();
+    });
+    void refreshStyleDropdown();
+  }
+
+  initFloorplanStyleToolbar();
+
   window.svgEditorAddFurniture = addFurniture;
   window.svgEditorGetLayout = getLayout;
   window.svgEditorApplyFloorplanAtWorld = applyFloorplanEntryAtWorld;
@@ -3949,6 +4071,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorGetCurrentFloorplanId = getCurrentFloorplanId;
   window.svgEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
   window.svgEditorGetCurrentFloorId = getCurrentFloorId;
+  window.svgEditorGetFloorplanStyleKey = getEffectiveFloorplanStyleKey;
   window.svgEditorRestoreSession = restoreEditorSession;
   window.svgEditorGetUndoHistory = () => ({ entries: [...history], index: historyIndex });
   window.svgEditorFlushHistoryDebounce = flushHistoryDebounce;

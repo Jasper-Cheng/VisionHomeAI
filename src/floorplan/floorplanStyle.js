@@ -64,6 +64,33 @@ export function clearStyleConfigCache() {
   styleCache.clear();
 }
 
+/**
+ * 列出某户型装饰包中的全部风格（工具栏下拉）
+ * @param {string} floorplanId
+ * @returns {Promise<{ floorplanId: string, styles: { key: string, id: string, name: string }[] }>}
+ */
+export async function loadStylePackIndex(floorplanId) {
+  const fp = safeStyleId(floorplanId);
+  if (!fp) return { floorplanId: "", styles: [] };
+
+  const url = `./${DATA_PATHS.stylesDir}/${fp}.json`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Decor fetch failed: ${res.status} ${url}`);
+  const data = await res.json();
+  const stylesObj = data.styles;
+  if (!stylesObj || typeof stylesObj !== "object") return { floorplanId: fp, styles: [] };
+
+  const styles = [];
+  for (const key of Object.keys(stylesObj)) {
+    const s = stylesObj[key];
+    if (!s || typeof s !== "object" || Array.isArray(s)) continue;
+    const id = String(s.id ?? key).trim() || key;
+    const name = String(s.name ?? key).trim() || key;
+    styles.push({ key, id, name });
+  }
+  return { floorplanId: fp, styles };
+}
+
 const STYLE_ROOT_RESERVED = new Set(["id", "name", "mapping", "furniturePreset", "materials"]);
 
 /**

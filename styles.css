@@ -651,7 +651,7 @@ a.avatar:hover {
   accent-color: rgba(109, 92, 255, 0.85);
 }
 
-/* 推荐风格按钮 + 下拉菜单 */
+/* 装饰风格按钮 + 下拉菜单 */
 .svg-style-recommend-wrap {
   position: relative;
   display: inline-flex;
@@ -677,6 +677,15 @@ a.avatar:hover {
 
 .svg-style-dropdown[hidden] {
   display: none;
+}
+
+.svg-style-dropdown-hint {
+  padding: 6px 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(200, 200, 220, 0.75);
+  text-align: center;
+  width: 100%;
 }
 
 .svg-style-tag {

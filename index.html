@@ -209,21 +209,14 @@
                     type="button"
                     class="svg-view-btn svg-view-btn--wide"
                     id="svgStyleRecommendBtn"
-                    title="推荐家具风格"
-                    aria-label="推荐家具风格"
+                    title="装饰风格"
+                    aria-label="装饰风格"
                     aria-haspopup="true"
                     aria-expanded="false"
                   >
-                    推荐风格
+                    风格
                   </button>
-                  <div class="svg-style-dropdown" id="svgStyleDropdown" hidden role="menu" aria-label="风格标签">
-                    <button class="svg-style-tag" type="button" role="menuitem">现代简约</button>
-                    <button class="svg-style-tag" type="button" role="menuitem">北欧</button>
-                    <button class="svg-style-tag" type="button" role="menuitem">原木</button>
-                    <button class="svg-style-tag" type="button" role="menuitem">轻奢</button>
-                    <button class="svg-style-tag" type="button" role="menuitem">工业风</button>
-                    <button class="svg-style-tag" type="button" role="menuitem">奶油风</button>
-                  </div>
+                  <div class="svg-style-dropdown" id="svgStyleDropdown" hidden role="menu" aria-label="装饰风格列表"></div>
                 </div>
                 <div
                   id="otherLayersOpacityWrap"
@@ -563,43 +556,6 @@
       });
     </script>
     <script src="./src/core/appShell.js"></script>
-    <script>
-      (function () {
-        const btn = document.getElementById("svgStyleRecommendBtn");
-        const dropdown = document.getElementById("svgStyleDropdown");
-        if (!btn || !dropdown) return;
-
-        function openDropdown() {
-          dropdown.hidden = false;
-          btn.setAttribute("aria-expanded", "true");
-          btn.classList.add("is-active");
-        }
-        function closeDropdown() {
-          dropdown.hidden = true;
-          btn.setAttribute("aria-expanded", "false");
-          btn.classList.remove("is-active");
-        }
-
-        btn.addEventListener("click", function (e) {
-          e.stopPropagation();
-          dropdown.hidden ? openDropdown() : closeDropdown();
-        });
-
-        // 点击外部关闭
-        document.addEventListener("click", function (e) {
-          if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) {
-            closeDropdown();
-          }
-        });
-
-        // 点击标签：切换选中态，可多选
-        dropdown.addEventListener("click", function (e) {
-          const tag = e.target.closest(".svg-style-tag");
-          if (!tag) return;
-          tag.classList.toggle("is-active");
-        });
-      })();
-    </script>
   </body>
 </html>
 
