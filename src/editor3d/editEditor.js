@@ -2435,13 +2435,37 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
 
     const entry = currentFloorplanEntry;
+    const fpId = String(entry?.id ?? "").trim();
+    const skEffective = getEffectiveFloorplanStyleKey();
     let style = null;
     try {
-      const fpId = String(entry?.id ?? "").trim();
-      const sk = getEffectiveFloorplanStyleKey();
-      style = await loadStyleConfig(fpId, sk);
+      style = await loadStyleConfig(fpId, skEffective);
     } catch (e) {
-      console.warn("[VisionHome] 风格包加载失败:", e);
+      console.warn("[VisionHome] 风格包加载失败:", skEffective, e);
+    }
+    if (!style && entry) {
+      const skFallback = String(entry?.styleKey ?? entry?.styleId ?? "").trim();
+      if (skFallback && skFallback !== skEffective) {
+        try {
+          style = await loadStyleConfig(fpId, skFallback);
+          if (style) {
+            floorplanStyleKeyOverride = null;
+            window.dispatchEvent(
+              new CustomEvent("visionhome:floorplan-applied-to-svg", {
+                detail: {
+                  id: fpId,
+                  floorIndex: floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1,
+                  floorId: String(activeFloorId ?? ""),
+                  styleFallbackFrom: skEffective,
+                  styleFallbackTo: skFallback,
+                },
+              }),
+            );
+          }
+        } catch (e2) {
+          console.warn("[VisionHome] 风格包回退加载失败:", skFallback, e2);
+        }
+      }
     }
     if (gen !== floorplanRebuildGen) return;
 

@@ -3,7 +3,7 @@
   "materials": {
     "wall_Ivory001A": {
       "type": "paint",
-      "color": "#F2EBE3",
+      "color": "#E6DACB",
       "roughness": 0.9,
       "metalness": 0,
       "texture": {
@@ -13,7 +13,7 @@
     },
     "door_PaintedWood002": {
       "type": "paint_wood",
-      "color": "#D8D0C0",
+      "color": "#CEC2B4",
       "roughness": 0.8,
       "metalness": 0.02,
       "texture": {
@@ -23,7 +23,7 @@
     },
     "floor_PaintedWood002": {
       "type": "wood_floor",
-      "color": "#E8E1D6",
+      "color": "#D2C4B4",
       "roughness": 0.72,
       "metalness": 0,
       "texture": {
@@ -34,7 +34,7 @@
     },
     "window_Clear": {
       "type": "glass",
-      "color": "#E6E8E2",
+      "color": "#E4E2DA",
       "opacity": 0.22,
       "roughness": 0.04,
       "metalness": 0,
