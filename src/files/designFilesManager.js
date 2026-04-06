@@ -417,14 +417,30 @@ function collectSvgEditorState(layoutPayload) {
   }));
   const decor = L.decor
     .filter((item) => String(item?.decorId ?? "").trim())
-    .map((item) => ({
-      instanceId: String(item.instanceId ?? "").trim() || null,
-      decorId: String(item.decorId ?? "").trim(),
-      floorId: item?.floorId != null && String(item.floorId).trim() ? String(item.floorId).trim() : null,
-      x: Math.round(Number(item.x) || 0),
-      y: Math.round(Number(item.y) || 0),
-      rotation: Math.round(Number(item.rotation ?? 0) || 0),
-    }));
+    .map((item) => {
+      const base = {
+        instanceId: String(item.instanceId ?? "").trim() || null,
+        decorId: String(item.decorId ?? "").trim(),
+        floorId: item?.floorId != null && String(item.floorId).trim() ? String(item.floorId).trim() : null,
+        x: Math.round(Number(item.x) || 0),
+        y: Math.round(Number(item.y) || 0),
+        rotation: Math.round(Number(item.rotation ?? 0) || 0),
+      };
+      if (item.placement === "wall") {
+        return {
+          ...base,
+          placement: "wall",
+          wallId: String(item.wallId ?? "").trim(),
+          faceRoomId: String(item.faceRoomId ?? "").trim(),
+          along01: Number(item.along01) ?? 0.45,
+          altitudeCm: Number(item.altitudeCm) || 115,
+          widthCm: Number(item.widthCm) || 110,
+          heightCm: Number(item.heightCm) || 75,
+        };
+      }
+      if (item.placement === "floor_decal") return { ...base, placement: "floor_decal" };
+      return base;
+    });
   return {
     version: 1,
     floorPlanId,

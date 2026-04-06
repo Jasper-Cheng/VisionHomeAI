@@ -937,7 +937,221 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return { furniture: [], decor: [] };
   }
 
+  /** 贴花：Basic 不受 IBL/曝光影响；勿走 applyFloorplanSurfaceAlpha 的 transparent=false，否则会吃掉贴图 alpha。 */
+  function makeDecalBasicMaterial(map) {
+    const mat = new THREE.MeshBasicMaterial({
+      map,
+      transparent: true,
+      alphaTest: 0.05,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      toneMapped: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -1.5,
+      polygonOffsetUnits: -1.5,
+    });
+    if (map) map.colorSpace = THREE.SRGBColorSpace;
+    mat.userData.__decorDecal = true;
+    return mat;
+  }
+
+  /**
+   * 程序化贴花贴图（CanvasTexture）
+   * @param {string} preset wall_art | clock | flower | star | cloud
+   */
+  function buildDecalCanvasTexture(preset) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      const t = new THREE.CanvasTexture(canvas);
+      t.colorSpace = THREE.SRGBColorSpace;
+      return t;
+    }
+    const p = String(preset || "").trim();
+    if (p === "wall_art") {
+      ctx.fillStyle = "#c4a574";
+      ctx.fillRect(28, 40, 200, 168);
+      ctx.strokeStyle = "#4a3a2a";
+      ctx.lineWidth = 10;
+      ctx.strokeRect(28, 40, 200, 168);
+      ctx.fillStyle = "#7a6548";
+      ctx.fillRect(44, 56, 168, 120);
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      ctx.fillRect(52, 64, 60, 48);
+    } else if (p === "clock") {
+      ctx.fillStyle = "#f2ebe3";
+      ctx.beginPath();
+      ctx.arc(128, 128, 98, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#333";
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(128, 128);
+      ctx.lineTo(128, 54);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(128, 128);
+      ctx.lineTo(176, 140);
+      ctx.stroke();
+      ctx.fillStyle = "#333";
+      ctx.beginPath();
+      ctx.arc(128, 128, 7, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (p === "flower") {
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+        ctx.fillStyle = i % 2 === 0 ? "#e89ec4" : "#f0b8d8";
+        ctx.beginPath();
+        ctx.ellipse(128 + Math.cos(a) * 38, 128 + Math.sin(a) * 38, 26, 34, a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#f5e6a8";
+      ctx.beginPath();
+      ctx.arc(128, 128, 22, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (p === "star") {
+      ctx.fillStyle = "#ffd54a";
+      ctx.strokeStyle = "#e6a800";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      const spikes = 5;
+      const ox = 128;
+      const oy = 128;
+      const or = 92;
+      const ir = 38;
+      for (let i = 0; i < spikes * 2; i++) {
+        const r = i % 2 === 0 ? or : ir;
+        const ang = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
+        const x = ox + Math.cos(ang) * r;
+        const y = oy + Math.sin(ang) * r;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else if (p === "cloud") {
+      ctx.fillStyle = "rgba(230, 242, 255, 0.96)";
+      ctx.beginPath();
+      ctx.arc(88, 132, 40, 0, Math.PI * 2);
+      ctx.arc(128, 118, 50, 0, Math.PI * 2);
+      ctx.arc(176, 130, 42, 0, Math.PI * 2);
+      ctx.arc(138, 148, 36, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = "#b0b0b0";
+      ctx.fillRect(48, 48, 160, 160);
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  /**
+   * 墙面贴花：户型坐标系下面法线指向房间一侧，与墙体挤出一致。
+   */
+  function getWallDecalPose(entry, wallId, faceRoomId, along01, altitudeCm, widthCm, heightCm) {
+    const placement = computeFloorplanCanvasPlacement(entry);
+    if (!placement) return null;
+    const { s, cx, cy } = placement;
+    const floors = getFloorsFromEntry(entry);
+    const floor = floors[0];
+    const wall = (floor?.walls || []).find((w) => String(w?.id ?? "").trim() === wallId);
+    if (!wall) return null;
+    const face = (wall.faces || []).find((f) => String(f?.roomId ?? "").trim() === faceRoomId);
+    if (!face || !Array.isArray(face.normal) || face.normal.length < 2) return null;
+    const nx = Number(face.normal[0]) || 0;
+    const ny = Number(face.normal[1]) || 0;
+    const nlen = Math.hypot(nx, ny) || 1;
+    const nnx = nx / nlen;
+    const nny = ny / nlen;
+    const x1 = snap(Number(wall.start[0]));
+    const y1 = snap(Number(wall.start[1]));
+    const x2 = snap(Number(wall.end[0]));
+    const y2 = snap(Number(wall.end[1]));
+    const t = Math.max(0, Math.min(1, Number(along01) || 0.5));
+    const wx = x1 + t * (x2 - x1);
+    const wy = y1 + t * (y2 - y1);
+    const mx = (wx - cx) * (s / 100);
+    const mz = (wy - cy) * (s / 100);
+    const th = Number(wall.thickness) || 12;
+    const thickM = Math.max(0.03, (th * s) / 100);
+    const off = thickM / 2 + 0.035;
+    const px = mx + nnx * off;
+    const pz = mz + nny * off;
+    const wM = Math.max(0.05, (Number(widthCm) || 100) / 100);
+    const hM = Math.max(0.05, (Number(heightCm) || 80) / 100);
+    const altM = Math.max(0, (Number(altitudeCm) || 100) / 100);
+    const py = altM + hM / 2;
+    const normal = new THREE.Vector3(nnx, 0, nny).normalize();
+    const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+    return {
+      position: new THREE.Vector3(px, py, pz),
+      quaternion: quat,
+      wM,
+      hM,
+    };
+  }
+
+  function createWallDecalGroupFromCatalog(cat, layoutOverrides = {}) {
+    const entry = currentFloorplanEntry;
+    const g = new THREE.Group();
+    if (!entry) return g;
+    const wallId = String(layoutOverrides.wallId ?? cat.wallId ?? "").trim();
+    const faceRoomId = String(layoutOverrides.faceRoomId ?? cat.faceRoomId ?? "").trim();
+    const along01 = Math.max(0, Math.min(1, Number(layoutOverrides.along01 ?? cat.along01) ?? 0.5));
+    const altitudeCm = Number(layoutOverrides.altitudeCm ?? cat.altitudeCm) || 110;
+    const widthCm = Number(layoutOverrides.widthCm ?? cat.widthCm) || 100;
+    const heightCm = Number(layoutOverrides.heightCm ?? cat.heightCm) || 80;
+    const preset = String(cat.decalPreset ?? "wall_art").trim();
+    const pose = getWallDecalPose(entry, wallId, faceRoomId, along01, altitudeCm, widthCm, heightCm);
+    if (!pose) return g;
+    const tex = buildDecalCanvasTexture(preset);
+    const mat = makeDecalBasicMaterial(tex);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(pose.wM, pose.hM), mat);
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    g.add(mesh);
+    g.position.copy(pose.position);
+    g.quaternion.copy(pose.quaternion);
+    g.userData.decorHeightAboveFloor = pose.position.y;
+    g.userData.decorPlacement = "wall";
+    g.userData.decorNoDrag = true;
+    g.userData.wallId = wallId;
+    g.userData.faceRoomId = faceRoomId;
+    g.userData.along01 = along01;
+    g.userData.altitudeCm = altitudeCm;
+    g.userData.widthCm = widthCm;
+    g.userData.heightCm = heightCm;
+    return g;
+  }
+
+  function createFloorDecalGroupFromCatalog(cat) {
+    const wM = Math.max(0.04, (Number(cat.sizeCm?.[0]) || 60) / 100);
+    const dM = Math.max(0.04, (Number(cat.sizeCm?.[1]) || 60) / 100);
+    const preset = String(cat.decalPreset ?? "flower").trim();
+    const tex = buildDecalCanvasTexture(preset);
+    const mat = makeDecalBasicMaterial(tex);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(wM, dM), mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.y = 0.018;
+    const g = new THREE.Group();
+    g.add(mesh);
+    g.userData.decorPlacement = "floor_decal";
+    g.userData.decorNoDrag = false;
+    return g;
+  }
+
   function createDecorGroup(catalogEntry) {
+    const placement = String(catalogEntry?.placement ?? "").trim();
+    if (placement === "wall") return createWallDecalGroupFromCatalog(catalogEntry);
+    if (placement === "floor_decal") return createFloorDecalGroupFromCatalog(catalogEntry);
     const w = Math.max(1, Number(catalogEntry?.sizeCm?.[0]) || 100) / 100;
     const d = Math.max(1, Number(catalogEntry?.sizeCm?.[1]) || 100) / 100;
     const h = Math.max(0.01, Number(catalogEntry?.heightCm) || 40) / 100;
@@ -945,11 +1159,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const color = parseDecorColor(catalogEntry?.color);
     const geo = new THREE.BoxGeometry(w, h, d);
     const mat = stdMat(color);
+    mat.userData.__decorSolid = true;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.position.y = h / 2;
     g.add(mesh);
+    g.userData.decorPlacement = "box";
     return g;
   }
 
@@ -972,16 +1188,36 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!d?.showOnLoad) continue;
       const id = String(d.id ?? "").trim();
       if (!id) continue;
+      const fid =
+        d.floorId != null && String(d.floorId).trim() ? String(d.floorId).trim() : getActiveFloorIdForFurniture();
+      const placement = String(d.placement ?? "").trim();
+      if (placement === "wall") {
+        rows.push({
+          instanceId: `di_${decorInstanceSeq++}`,
+          decorId: id,
+          floorId: fid,
+          placement: "wall",
+          wallId: String(d.wallId ?? "").trim(),
+          faceRoomId: String(d.faceRoomId ?? "").trim(),
+          along01: Number.isFinite(Number(d.along01)) ? Number(d.along01) : 0.45,
+          altitudeCm: Number(d.altitudeCm) || 115,
+          widthCm: Number(d.widthCm) || 110,
+          heightCm: Number(d.heightCm) || 75,
+          x: 0,
+          y: 0,
+          rotation: 0,
+        });
+        continue;
+      }
       const pos = Array.isArray(d.defaultPositionCm) && d.defaultPositionCm.length >= 2 ? d.defaultPositionCm : [0, 0];
       const rawX = Number(pos[0]) || 0;
       const rawY = Number(pos[1]) || 0;
       const cc = rawFloorplanCmToCenteredLayoutCm(entry, rawX, rawY);
-      const fid =
-        d.floorId != null && String(d.floorId).trim() ? String(d.floorId).trim() : getActiveFloorIdForFurniture();
       rows.push({
         instanceId: `di_${decorInstanceSeq++}`,
         decorId: id,
         floorId: fid,
+        placement: placement === "floor_decal" ? "floor_decal" : "box",
         x: Math.round(cc.x),
         y: Math.round(cc.y),
         rotation: Math.round(Number(d.defaultRotationDeg) || 0),
@@ -2866,15 +3102,38 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function appendDecorItem(decorId, xCm, yCm, rotationDeg = 0, floorId = null, opts = {}) {
     const cat = getDecorCatalogEntry(decorId);
     if (!cat) return null;
+    const row = opts.layoutRow || {};
+    const placement = String(row.placement || cat.placement || "box").trim();
+    const iid = String(opts.instanceId ?? "").trim();
+    const instanceId = iid || `di_${decorInstanceSeq++}`;
+    const fid = String(floorId ?? getActiveFloorIdForFurniture()).trim() || "floor1";
+
+    if (placement === "wall") {
+      const group = createWallDecalGroupFromCatalog(cat, row);
+      group.userData.isFloorDecor = true;
+      group.userData.instanceId = instanceId;
+      group.userData.decorId = String(cat.id).trim();
+      group.userData.floorId = fid;
+      group.userData.rotDeg = 0;
+      group.userData.footprint = { hw: 8, hh: 8 };
+      decorRoot.add(group);
+      registerFurnitureMeshes(group);
+      const m = /^di_(\d+)$/.exec(String(group.userData.instanceId || ""));
+      if (m) {
+        const n = Math.trunc(Number(m[1]));
+        if (Number.isFinite(n) && n >= decorInstanceSeq) decorInstanceSeq = n + 1;
+      }
+      return group;
+    }
+
     const wCm = Math.max(1, Number(cat.sizeCm?.[0]) || 100);
     const dCm = Math.max(1, Number(cat.sizeCm?.[1]) || 100);
     const group = createDecorGroup(cat);
-    const iid = String(opts.instanceId ?? "").trim();
     group.userData.isFloorDecor = true;
-    group.userData.instanceId = iid || `di_${decorInstanceSeq++}`;
+    group.userData.instanceId = instanceId;
     group.userData.decorId = String(cat.id).trim();
     group.userData.footprint = { hw: wCm / 2, hh: dCm / 2 };
-    group.userData.floorId = String(floorId ?? getActiveFloorIdForFurniture()).trim() || "floor1";
+    group.userData.floorId = fid;
     let rot = Math.round(Number(rotationDeg) || 0) % 360;
     if (rot < 0) rot += 360;
     group.userData.rotDeg = rot;
@@ -2902,8 +3161,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     for (const row of list) {
       const did = String(row?.decorId ?? "").trim();
       if (!did) continue;
-      appendDecorItem(did, row.x, row.y, row.rotation ?? 0, row.floorId ?? null, {
+      appendDecorItem(did, row.x ?? 0, row.y ?? 0, row.rotation ?? 0, row.floorId ?? null, {
         instanceId: row.instanceId,
+        layoutRow: row,
       });
     }
     updateFurnitureFloorVisibility();
@@ -3147,7 +3407,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const fid = String(g.userData.floorId || "").trim();
         const key = normalizeFloorKey(fid);
         const yOff = floorYOffsetById.get(key) ?? 0;
-        g.position.y = yOff;
+        if (!isFurnitureFlag && g.userData?.decorPlacement === "wall") {
+          const hAbove = Number(g.userData.decorHeightAboveFloor);
+          g.position.y = yOff + (Number.isFinite(hAbove) ? hAbove : g.position.y);
+        } else {
+          g.position.y = yOff;
+        }
         const isActiveFloor = !hasFloor || !fid || key === activeKey;
         g.userData.isFloorActive = isActiveFloor;
         g.visible = !hideOtherFloors || isActiveFloor;
@@ -3158,6 +3423,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           const mats = Array.isArray(o.material) ? o.material : [o.material];
           mats.forEach((m) => {
             if (!m) return;
+            if (m.userData?.__decorDecal) {
+              m.opacity = op;
+              m.transparent = true;
+              m.needsUpdate = true;
+              return;
+            }
+            if (m.userData?.__decorSolid) {
+              m.opacity = op;
+              m.transparent = op < 1 - 1e-6;
+              m.needsUpdate = true;
+              return;
+            }
             applyFloorplanSurfaceAlpha(m, op);
             m.needsUpdate = true;
           });
@@ -3191,11 +3468,31 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const out = [];
     decorRoot.children.forEach((g) => {
       if (!g.userData?.isFloorDecor) return;
+      const pl = String(g.userData.decorPlacement || "").trim();
+      if (pl === "wall") {
+        out.push({
+          instanceId: String(g.userData.instanceId || ""),
+          decorId: String(g.userData.decorId || ""),
+          floorId: String(g.userData.floorId || "").trim() || null,
+          placement: "wall",
+          wallId: String(g.userData.wallId || ""),
+          faceRoomId: String(g.userData.faceRoomId || ""),
+          along01: Number(g.userData.along01) ?? 0.5,
+          altitudeCm: Number(g.userData.altitudeCm) || 110,
+          widthCm: Number(g.userData.widthCm) || 100,
+          heightCm: Number(g.userData.heightCm) || 80,
+          x: 0,
+          y: 0,
+          rotation: 0,
+        });
+        return;
+      }
       const cm = sceneXZToCenteredCm(g.position.x, g.position.z);
       out.push({
         instanceId: String(g.userData.instanceId || ""),
         decorId: String(g.userData.decorId || ""),
         floorId: String(g.userData.floorId || "").trim() || null,
+        placement: pl === "floor_decal" ? "floor_decal" : "box",
         x: Math.round(cm.x),
         y: Math.round(cm.y),
         rotation: Math.round(g.userData.rotDeg ?? 0),
@@ -3578,6 +3875,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const fur = rayPickFurniture(e.clientX, e.clientY);
     if (fur) {
       selectFurniture(fur);
+      if (fur.userData?.decorNoDrag) {
+        e.preventDefault();
+        return;
+      }
       // 拖拽锚点：记录按下时鼠标射线与“家具所在楼层平面”的交点相对家具(x/z)的偏移
       // 避免切换楼层后，因为射线与不同高度平面求交导致的落点偏移
       const planeY = fur.position?.y ?? 0;
@@ -3638,6 +3939,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!isEditViewActive()) return;
     const fur = rayPickFurniture(e.clientX, e.clientY);
     if (!fur) return;
+    if (fur.userData?.decorNoDrag) return;
     e.preventDefault();
     let r = (fur.userData.rotDeg ?? 0) + 90;
     r %= 360;
@@ -4018,15 +4320,37 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function normalizeSavedDecorLayout(arr) {
     if (!Array.isArray(arr)) return [];
     return arr
-      .map((row) => ({
-        instanceId: String(row?.instanceId ?? "").trim() || undefined,
-        decorId: String(row?.decorId ?? "").trim(),
-        floorId: row?.floorId != null && String(row.floorId).trim() ? String(row.floorId).trim() : "floor1",
-        x: Math.round(Number(row?.x)),
-        y: Math.round(Number(row?.y)),
-        rotation: Math.round(Number(row?.rotation ?? row?.rotationDeg ?? 0) || 0),
-      }))
-      .filter((r) => r.decorId && Number.isFinite(r.x) && Number.isFinite(r.y));
+      .map((row) => {
+        const decorId = String(row?.decorId ?? "").trim();
+        if (!decorId) return null;
+        const placement = String(row?.placement ?? "").trim();
+        const base = {
+          instanceId: String(row?.instanceId ?? "").trim() || undefined,
+          decorId,
+          floorId: row?.floorId != null && String(row.floorId).trim() ? String(row.floorId).trim() : "floor1",
+          x: Math.round(Number(row?.x) || 0),
+          y: Math.round(Number(row?.y) || 0),
+          rotation: Math.round(Number(row?.rotation ?? row?.rotationDeg ?? 0) || 0),
+        };
+        if (placement === "wall") {
+          return {
+            ...base,
+            placement: "wall",
+            wallId: String(row?.wallId ?? "").trim(),
+            faceRoomId: String(row?.faceRoomId ?? "").trim(),
+            along01: Number.isFinite(Number(row?.along01)) ? Number(row.along01) : 0.45,
+            altitudeCm: Number(row?.altitudeCm) || 115,
+            widthCm: Number(row?.widthCm) || 110,
+            heightCm: Number(row?.heightCm) || 75,
+          };
+        }
+        return { ...base, placement: placement === "floor_decal" ? "floor_decal" : "box" };
+      })
+      .filter((r) => {
+        if (!r) return false;
+        if (r.placement === "wall") return r.wallId && r.faceRoomId;
+        return Number.isFinite(r.x) && Number.isFinite(r.y);
+      });
   }
 
   async function applyFromDesignProject(project) {
