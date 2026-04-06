@@ -220,6 +220,19 @@ function computeFloorplanCanvasPlacement(entry) {
   return { worldX, worldY, s, cx: bbox.cx, cy: bbox.cy };
 }
 
+/**
+ * 户型 JSON 平面坐标 cm（与房间 polygon、墙线一致）→ 家具/装饰布局用的「以画布中心为原点」cm。
+ * 须与 rebuildFloorplan3D 使用同一套缩放/平移（{@link computeFloorplanCanvasPlacement}）。
+ */
+function rawFloorplanCmToCenteredLayoutCm(entry, rawX, rawY) {
+  const placement = computeFloorplanCanvasPlacement(entry);
+  if (!placement) return { x: 0, y: 0 };
+  const { worldX, worldY, s, cx, cy } = placement;
+  const canvasX = worldX + s * (Number(rawX) - cx);
+  const canvasY = worldY + s * (Number(rawY) - cy);
+  return canvasCmToCentered(canvasX, canvasY);
+}
+
 function closestPointOnSegment2D(px, py, ax, ay, bx, by) {
   const abx = bx - ax;
   const aby = by - ay;
@@ -960,9 +973,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const id = String(d.id ?? "").trim();
       if (!id) continue;
       const pos = Array.isArray(d.defaultPositionCm) && d.defaultPositionCm.length >= 2 ? d.defaultPositionCm : [0, 0];
-      const canvasX = Math.round(Number(pos[0]) || 0);
-      const canvasY = Math.round(Number(pos[1]) || 0);
-      const cc = canvasCmToCentered(canvasX, canvasY);
+      const rawX = Number(pos[0]) || 0;
+      const rawY = Number(pos[1]) || 0;
+      const cc = rawFloorplanCmToCenteredLayoutCm(entry, rawX, rawY);
       const fid =
         d.floorId != null && String(d.floorId).trim() ? String(d.floorId).trim() : getActiveFloorIdForFurniture();
       rows.push({
