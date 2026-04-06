@@ -1,59 +1,63 @@
 {
-  "version": "2.1",
-  "description": "奶油风儿童房 PBR 材质配置 (2K) - 更温暖奶油白（增加米黄调）",
+  "version": "2.8",
   "materials": {
     "wall_Ivory001A": {
-      "type": "wall",
-      "color": "#F6F2EA",
-      "roughness": 0.93,
+      "type": "paint",
+      "color": "#D9D2C2",
+      "roughness": 0.9,
+      "metalness": 0,
       "texture": {
-        "normal": "textures/Ivory001A_2K-JPG_NormalGL.jpg",
-        "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg",
-        "displacement": "textures/Ivory001A_2K-JPG_Displacement.jpg"
-      },
-      "comment": "墙面：更温暖的象牙奶油白（带明显米黄调），接近参考图的柔和温馨感。"
-    },
-    "door_PaintedWood002": {
-      "type": "door",
-      "color": "#F6F2EA",
-      "roughness": 0.78,
-      "texture": {
-        "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-        "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg",
-        "displacement": "textures/PaintedWood002_2K-JPG_Displacement.jpg"
-      },
-      "comment": "门：与墙面同色，实现隐形门效果。"
-    },
-    "windowFrame_Ivory001A": {
-      "type": "window_frame",
-      "color": "#F6F2EA",
-      "roughness": 0.85,
-      "texture": {
-        "normal": "textures/Ivory001A_2K-JPG_NormalGL.jpg",
         "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
       },
-      "comment": "窗框与墙面统一。"
+      "uvScale": [2, 2]
     },
-    "floor_PaintedWood002": {
-      "type": "floor",
-      "color": "#F8F4ED",
-      "roughness": 0.72,
-      "uvScale": [4, 4],
+    "door_PaintedWood002": {
+      "type": "paint_wood",
+      "color": "#D8D0C0",
+      "roughness": 0.8,
+      "metalness": 0.02,
       "texture": {
         "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-        "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg",
-        "displacement": "textures/PaintedWood002_2K-JPG_Displacement.jpg"
+        "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+      }
+    },
+    "floor_PaintedWood002": {
+      "type": "wood_floor",
+      "color": "#D1C9BC",
+      "roughness": 0.72,
+      "metalness": 0,
+      "texture": {
+        "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
+        "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
       },
-      "comment": "地板：比墙面稍暖稍亮的奶油色，增加轻微层次。"
+      "uvScale": [4, 4]
     },
     "window_Clear": {
-      "type": "window_glass",
-      "color": "#FEFEFE",
-      "roughness": 0.05,
-      "metalness": 0.0,
+      "type": "glass",
+      "color": "#E6E8E2",
+      "opacity": 0.22,
+      "roughness": 0.04,
+      "metalness": 0,
       "transmission": 0.96,
-      "ior": 1.45,
-      "comment": "玻璃保持不变。"
+      "ior": 1.45
+    },
+    "window_Frosted": {
+      "type": "glass",
+      "color": "#DCD8D0",
+      "opacity": 0.55,
+      "roughness": 0.82,
+      "metalness": 0,
+      "transmission": 0.42,
+      "ior": 1.45
+    },
+    "window_Tinted": {
+      "type": "glass",
+      "color": "#C4C2B8",
+      "opacity": 0.38,
+      "roughness": 0.22,
+      "metalness": 0,
+      "transmission": 0.68,
+      "ior": 1.45
     }
   }
 }

@@ -282,8 +282,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   applyRendererPixelRatio();
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  /* IBL 加入后整体偏亮，略压曝光（与下方填充光一起折中） */
-  renderer.toneMappingExposure = 0.93;
+  /* 奶油风：曝光再压一点，让米色 albedo 不被抬成白墙 */
+  renderer.toneMappingExposure = 0.8;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
@@ -311,10 +311,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const grid = new THREE.GridHelper(80, 80, 0x3b3b3b, 0x222222);
   grid.position.y = 0.001;
   scene.add(grid);
-  // 略提高填充光，压低阴影对比，减轻地面/家具投影边缘的颗粒感
-  scene.add(new THREE.AmbientLight(0xffffff, 0.26));
-  scene.add(new THREE.HemisphereLight(0xdbeafe, 0x0b1220, 0.36));
-  const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+  // 填充光偏暖但不过强，否则漫反射被抬到发白；主光负责体积感
+  /* 偏黄白象牙感，避免 f5e8dc / f2e6d8 类桃粉天光把整场景染粉 */
+  scene.add(new THREE.AmbientLight(0xede6d8, 0.18));
+  scene.add(new THREE.HemisphereLight(0xe8e2d6, 0x1f1d18, 0.32));
+  const dir = new THREE.DirectionalLight(0xf5f2ea, 0.88);
   dir.position.set(14, 24, 16);
   dir.castShadow = true;
   // 扩大阴影相机覆盖范围，避免多楼层/大户型时阴影被裁切
@@ -797,7 +798,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       color: FLOORPLAN_SURFACE_COLOR,
       roughness: 0.92,
       metalness: 0.0,
-      envMapIntensity: 0.35,
+      envMapIntensity: 0.32,
       emissive: new THREE.Color(0x000000),
     });
   }
@@ -858,7 +859,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {{ forGlass?: boolean, envMapIntensity?: number, side?: import("three").Side }} [options]
    */
   function createFloorplanMaterialFromStyleDef(def, floorOpacity, options = {}) {
-    const envMapIntensity = options.envMapIntensity ?? 0.35;
+    const envMapIntensity = options.envMapIntensity ?? 0.32;
     const floorOp = floorOpacity ?? 1;
     const color = new THREE.Color();
     try {
@@ -2396,7 +2397,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const side = opts.floorUv ? THREE.DoubleSide : THREE.FrontSide;
         const mat = createFloorplanMaterialFromStyleDef(def, opacity, {
           forGlass: opts.forGlass,
-          envMapIntensity: opts.forGlass ? 0.9 : 0.35,
+          envMapIntensity: opts.forGlass ? 0.9 : 0.32,
           side,
         });
         if (opts.floorUv) {

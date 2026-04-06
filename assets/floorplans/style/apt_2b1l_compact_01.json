@@ -126,10 +126,10 @@
           "$ref": "window_Clear"
         },
         "window_Frosted": {
-          "$ref": "window_Clear"
+          "$ref": "window_Frosted"
         },
         "window_Tinted": {
-          "$ref": "window_Clear"
+          "$ref": "window_Tinted"
         }
       }
     }
