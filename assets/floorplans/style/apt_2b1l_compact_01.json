@@ -56,11 +56,11 @@
       "d_bed2": "door_bed2"
     },
     "windows": {
-      "win_left_floor": "window_clear",
-      "win_left_small": "window_clear",
-      "win_right_small": "window_clear",
-      "win_kitchen_e": "window_tinted",
-      "win_bath_e": "glass_frosted"
+      "win_left_floor": "window_Clear",
+      "win_left_small": "window_Clear",
+      "win_right_small": "window_Clear",
+      "win_kitchen_e": "window_Tinted",
+      "win_bath_e": "window_Frosted"
     }
   },
   "styles": {
@@ -69,67 +69,67 @@
       "name": "奶油风",
       "materials": {
         "wall_bed1": {
-          "$ref": "wall_paint_plaster_cream"
+          "$ref": "wall_Plaster001"
         },
         "wall_bed2": {
-          "$ref": "wall_paint_plaster_cream"
+          "$ref": "wall_Plaster001"
         },
         "wall_living": {
-          "$ref": "wall_paint_plaster_cream"
+          "$ref": "wall_Plaster001"
         },
         "wall_living_co": {
-          "$ref": "wall_paint_plaster_cream"
+          "$ref": "wall_Plaster001"
         },
         "wall_kitchen": {
-          "$ref": "wall_paint_plaster_cream"
+          "$ref": "wall_Plaster001"
         },
         "wall_bath": {
-          "$ref": "wall_paint_plaster_cream"
+          "$ref": "wall_Plaster001"
         },
         "wall_interior_general": {
-          "$ref": "wall_paint_plaster_cream"
+          "$ref": "wall_Plaster001"
         },
         "floor_bed1": {
-          "$ref": "floor_wood_cream_oak_v2"
+          "$ref": "floor_WoodFloor044"
         },
         "floor_bed2": {
-          "$ref": "floor_wood_cream_oak_v2"
+          "$ref": "floor_WoodFloor044"
         },
         "floor_living": {
-          "$ref": "floor_tile_cream_light"
+          "$ref": "floor_Tiles074_uv3"
         },
         "floor_living_co": {
-          "$ref": "floor_tile_cream_matte_v2"
+          "$ref": "floor_Tiles074"
         },
         "floor_kitchen": {
-          "$ref": "floor_tile_cream_matte_v2"
+          "$ref": "floor_Tiles074"
         },
         "floor_bath": {
-          "$ref": "floor_tile_cream_matte_v2"
+          "$ref": "floor_Tiles074"
         },
         "door_main": {
-          "$ref": "door_paint_white_wood_matte"
+          "$ref": "door_WoodFloor044"
         },
         "door_bath": {
-          "$ref": "door_paint_white_wood_matte"
+          "$ref": "door_WoodFloor044"
         },
         "door_kitchen": {
-          "$ref": "door_paint_white_wood_matte"
+          "$ref": "door_WoodFloor044"
         },
         "door_bed1": {
-          "$ref": "door_paint_white_wood_matte"
+          "$ref": "door_WoodFloor044"
         },
         "door_bed2": {
-          "$ref": "door_paint_white_wood_matte"
+          "$ref": "door_WoodFloor044"
         },
-        "window_clear": {
-          "$ref": "window_clear"
+        "window_Clear": {
+          "$ref": "window_Clear"
         },
-        "window_frosted": {
-          "$ref": "window_frosted"
+        "window_Frosted": {
+          "$ref": "window_Frosted"
         },
-        "window_tinted": {
-          "$ref": "window_tinted"
+        "window_Tinted": {
+          "$ref": "window_Tinted"
         }
       }
     }
