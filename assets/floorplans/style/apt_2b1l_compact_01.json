@@ -75,7 +75,7 @@
           "$ref": "wall_paint_plaster_cream"
         },
         "wall_third": {
-          "$ref": "wall_tile_white"
+          "$ref": "wall_tile_marble_soft"
         },
         "floor_main": {
           "$ref": "floor_tile_cream_light"
@@ -114,7 +114,7 @@
           "$ref": "wall_microcement_concrete_light"
         },
         "wall_third": {
-          "$ref": "wall_tile_brick_white"
+          "$ref": "wall_tile_marble_soft"
         },
         "floor_main": {
           "$ref": "floor_wood_concrete_pattern"
