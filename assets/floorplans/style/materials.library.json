@@ -3,7 +3,7 @@
   "materials": {
     "wall_Ivory001A": {
       "type": "paint",
-      "color": "#CEC0B0",
+      "color": "#F2EBE3",
       "roughness": 0.9,
       "metalness": 0,
       "texture": {
@@ -23,7 +23,7 @@
     },
     "floor_PaintedWood002": {
       "type": "wood_floor",
-      "color": "#C3B4A3",
+      "color": "#E8E1D6",
       "roughness": 0.72,
       "metalness": 0,
       "texture": {

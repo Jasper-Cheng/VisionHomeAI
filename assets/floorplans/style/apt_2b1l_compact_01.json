@@ -68,18 +68,18 @@
       "id": "cream_style_v1",
       "name": "奶油风",
       "sceneLighting": {
-        "toneMappingExposure": 0.8,
+        "toneMappingExposure": 0.82,
         "ambient": {
-          "color": "#e6dfd2",
-          "intensity": 0.18
+          "color": "#f0e9df",
+          "intensity": 0.2
         },
         "hemisphere": {
-          "sky": "#e2dbd0",
+          "sky": "#eee6dc",
           "ground": "#1f1d18",
           "intensity": 0.32
         },
         "directional": {
-          "color": "#efe8dc",
+          "color": "#fdf6ed",
           "intensity": 0.88
         },
         "envMapIntensity": 0.32
