@@ -447,6 +447,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const decorRoot = new THREE.Group();
   scene.add(decorRoot);
   let decorInstanceSeq = 1;
+  /** 用户开关：是否显示装饰层（默认显示） */
+  let decorLayerVisible = true;
 
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
@@ -958,14 +960,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const id = String(d.id ?? "").trim();
       if (!id) continue;
       const pos = Array.isArray(d.defaultPositionCm) && d.defaultPositionCm.length >= 2 ? d.defaultPositionCm : [0, 0];
+      const canvasX = Math.round(Number(pos[0]) || 0);
+      const canvasY = Math.round(Number(pos[1]) || 0);
+      const cc = canvasCmToCentered(canvasX, canvasY);
       const fid =
         d.floorId != null && String(d.floorId).trim() ? String(d.floorId).trim() : getActiveFloorIdForFurniture();
       rows.push({
         instanceId: `di_${decorInstanceSeq++}`,
         decorId: id,
         floorId: fid,
-        x: Math.round(Number(pos[0]) || 0),
-        y: Math.round(Number(pos[1]) || 0),
+        x: Math.round(cc.x),
+        y: Math.round(cc.y),
         rotation: Math.round(Number(d.defaultRotationDeg) || 0),
       });
     }
@@ -3351,40 +3356,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     });
   }
 
-  function syncPropPanelDimsFromDecor(cat) {
-    const dash = "—";
-    if (!propDimW && !propDimD && !propDimH) return;
-    if (!cat) {
-      if (propDimW) propDimW.textContent = dash;
-      if (propDimD) propDimD.textContent = dash;
-      if (propDimH) propDimH.textContent = dash;
-      if (propTagsSection) propTagsSection.hidden = true;
-      return;
-    }
-    const w = Number(cat.sizeCm?.[0]);
-    const d = Number(cat.sizeCm?.[1]);
-    const h = Number(cat.heightCm);
-    if (propDimW) propDimW.textContent = Number.isFinite(w) ? String(Math.round(w)) : dash;
-    if (propDimD) propDimD.textContent = Number.isFinite(d) ? String(Math.round(d)) : dash;
-    if (propDimH) propDimH.textContent = Number.isFinite(h) ? String(Math.round(h)) : dash;
-    if (propTagsSection && propFurnitureTags) {
-      propFurnitureTags.replaceChildren();
-      const k = String(cat.kind ?? "").trim();
-      if (k) {
-        propTagsSection.hidden = false;
-        const span = document.createElement("span");
-        span.className = "prop-tag";
-        span.textContent = k;
-        propFurnitureTags.appendChild(span);
-      } else {
-        propTagsSection.hidden = true;
-      }
-    }
-  }
-
   function syncPropertiesPanelForSelection(group) {
     if (!propertiesPanel) return;
-    if (!group || (!group.userData?.isFurniture && !group.userData?.isFloorDecor)) {
+    if (!group || !group.userData?.isFurniture) {
       propertiesPanel.classList.remove("is-visible");
       if (propertiesName) propertiesName.textContent = "未选择";
       syncPropPanelDimsFromItem(null);
@@ -3392,19 +3366,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return;
     }
     propertiesPanel.classList.add("is-visible");
-    if (group.userData?.isFloorDecor) {
-      const cat = getDecorCatalogEntry(group.userData.decorId);
-      if (propertiesName) propertiesName.textContent = cat?.name ? String(cat.name) : group.userData.decorId || "装饰";
-      syncPropPanelDimsFromDecor(cat);
-      if (propAppearanceBody) propAppearanceBody.replaceChildren();
-      if (propAppearanceHint) propAppearanceHint.hidden = false;
-      const o = sceneXZToCenteredCm(group.position.x, group.position.z);
-      const rot = group.userData.rotDeg ?? 0;
-      if (propInputX) propInputX.value = String(Math.round(o.x));
-      if (propInputZ) propInputZ.value = String(Math.round(o.y));
-      if (propInputRotY) propInputRotY.value = String(Math.round(rot));
-      return;
-    }
     const item = byId.get(group.userData.modelType);
     if (propertiesName) propertiesName.textContent = item ? getFurnitureDisplayName(item) : group.userData.modelType || "家具";
     syncPropPanelDimsFromItem(item);
@@ -3424,7 +3385,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     selectedGroup = group || null;
     floorplanSelected = false;
-    if (selectedGroup) {
+    if (selectedGroup && !selectedGroup.userData?.isFloorDecor) {
       selectedGroup.traverse((o) => {
         if (o.isMesh && o.material?.emissive) o.material.emissive.setHex(0x332200);
       });
@@ -3442,7 +3403,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function applyPropertiesFromPanel() {
-    if (!selectedGroup || (!selectedGroup.userData?.isFurniture && !selectedGroup.userData?.isFloorDecor)) return false;
+    if (!selectedGroup?.userData?.isFurniture) return false;
     const x = parseFloat(propInputX?.value ?? "");
     const zField = parseFloat(propInputZ?.value ?? "");
     const deg = parseFloat(propInputRotY?.value ?? "");
@@ -3643,7 +3604,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const adjX = cm.x - (dragState.offsetCm?.x ?? 0);
     const adjY = cm.y - (dragState.offsetCm?.y ?? 0);
     const c = clampFurnitureCentered(adjX, adjY, rot, fp.hw, fp.hh);
-    setFurnitureFromLayoutCm(g, c.x, c.y, rot, { wallSnap: wallSnapEnabled });
+    const ws = wallSnapEnabled && !g.userData?.isFloorDecor;
+    setFurnitureFromLayoutCm(g, c.x, c.y, rot, { wallSnap: ws });
     syncPropertiesPanelForSelection(g);
   }
 
@@ -3670,7 +3632,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const cm = sceneXZToCenteredCm(fur.position.x, fur.position.z);
     const fp = fur.userData.footprint;
     const c = clampFurnitureCentered(cm.x, cm.y, r, fp.hw, fp.hh);
-    setFurnitureFromLayoutCm(fur, c.x, c.y, r, { wallSnap: wallSnapEnabled });
+    const ws = fur.userData?.isFloorDecor ? false : wallSnapEnabled;
+    setFurnitureFromLayoutCm(fur, c.x, c.y, r, { wallSnap: ws });
     syncPropertiesPanelForSelection(fur);
     if (historyReady) pushHistorySnapshot();
   });
@@ -3685,7 +3648,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return;
     }
     if (
-      (selectedGroup?.userData?.isFurniture || selectedGroup?.userData?.isFloorDecor) &&
+      selectedGroup?.userData?.isFurniture &&
       !dragState &&
       !["INPUT", "TEXTAREA"].includes(e.target?.tagName || "") &&
       !e.target?.isContentEditable
@@ -3716,7 +3679,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       void tryClearCurrentFloorplanWithConfirm();
       return;
     }
-    if (selectedGroup) {
+    if (selectedGroup?.userData?.isFurniture) {
       e.preventDefault();
       removeSelectedFurniture();
     }
@@ -4290,7 +4253,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       renderer.autoClear = prevAutoClear;
       scene.background = prevBackground;
       furnitureRoot.visible = true;
-      decorRoot.visible = true;
+      decorRoot.visible = decorLayerVisible;
       grid.visible = gridVisible;
       floorplanRoot.visible = true;
     }
@@ -4325,76 +4288,28 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.addEventListener("resize", resizeRenderer);
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(resizeRenderer).observe(container);
 
+  function syncDecorLayerToggleUi() {
+    decorRoot.visible = decorLayerVisible;
+    const btn = document.getElementById("svgDecorBtn");
+    if (btn) {
+      btn.classList.toggle("is-active", decorLayerVisible);
+      btn.setAttribute("aria-pressed", decorLayerVisible ? "true" : "false");
+      btn.title = decorLayerVisible ? "隐藏全部装饰" : "显示全部装饰";
+      btn.setAttribute("aria-label", decorLayerVisible ? "隐藏全部装饰" : "显示全部装饰");
+    }
+  }
+
   function initDecorToolbar() {
     const btn = document.getElementById("svgDecorBtn");
-    const dropdown = document.getElementById("svgDecorDropdown");
-    if (!btn || !dropdown) return;
+    if (!btn) return;
 
-    function openDropdown() {
-      dropdown.hidden = false;
-      btn.setAttribute("aria-expanded", "true");
-      btn.classList.add("is-active");
-    }
-    function closeDropdown() {
-      dropdown.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-      btn.classList.remove("is-active");
-    }
+    syncDecorLayerToggleUi();
 
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      dropdown.hidden ? openDropdown() : closeDropdown();
+      decorLayerVisible = !decorLayerVisible;
+      syncDecorLayerToggleUi();
     });
-    document.addEventListener("click", (e) => {
-      if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) closeDropdown();
-    });
-
-    function refreshDecorDropdown() {
-      dropdown.replaceChildren();
-      if (!getCurrentFloorplanId()) {
-        const hint = document.createElement("div");
-        hint.className = "svg-style-dropdown-hint";
-        hint.textContent = "请先加载户型";
-        dropdown.appendChild(hint);
-        return;
-      }
-      const list = Array.isArray(currentFloorplanEntry?.decorCatalog) ? currentFloorplanEntry.decorCatalog : [];
-      if (!list.length) {
-        const hint = document.createElement("div");
-        hint.className = "svg-style-dropdown-hint";
-        hint.textContent = "当前户型未配置装饰";
-        dropdown.appendChild(hint);
-        return;
-      }
-      for (const d of list) {
-        const id = String(d?.id ?? "").trim();
-        if (!id) continue;
-        const tag = document.createElement("button");
-        tag.type = "button";
-        tag.className = "svg-style-tag";
-        tag.setAttribute("role", "menuitem");
-        tag.dataset.decorId = id;
-        tag.textContent = String(d.name ?? id);
-        dropdown.appendChild(tag);
-      }
-    }
-
-    dropdown.addEventListener("click", (e) => {
-      const tag = e.target.closest(".svg-style-tag");
-      if (!tag) return;
-      const id = String(tag.dataset.decorId ?? "").trim();
-      if (!id || !currentFloorplanEntry) return;
-      const bbox = getEntryBBoxCm(currentFloorplanEntry);
-      const cx = bbox ? (bbox.minX + bbox.maxX) / 2 - CENTER_HALF : 0;
-      const cy = bbox ? (bbox.minY + bbox.maxY) / 2 - CENTER_HALF : 0;
-      addDecor(id, cx, cy);
-      closeDropdown();
-    });
-
-    window.addEventListener("visionhome:floorplan-applied-to-svg", () => {
-      refreshDecorDropdown();
-    });
-    void refreshDecorDropdown();
   }
 
   function initFloorplanStyleToolbar() {
@@ -4513,6 +4428,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   window.svgEditorAddFurniture = addFurniture;
   window.svgEditorAddDecor = addDecor;
+  window.svgEditorGetDecorLayerVisible = () => decorLayerVisible;
+  window.svgEditorSetDecorLayerVisible = (v) => {
+    decorLayerVisible = Boolean(v);
+    syncDecorLayerToggleUi();
+  };
   window.svgEditorGetLayout = getLayout;
   window.svgEditorApplyFloorplanAtWorld = applyFloorplanEntryAtWorld;
   window.svgEditorClearFloorplan = clearFloorplan;
