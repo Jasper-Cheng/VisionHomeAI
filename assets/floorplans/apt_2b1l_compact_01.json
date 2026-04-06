@@ -1,6 +1,6 @@
 {
   "id": "apt_2b1l_compact_01",
-  "styleKey": "cream_style_v1",
+  "styleKey": "modern_minimal_v1",
   "project": {
     "id": "vision_home_template_002",
     "name": "两居紧凑型·动静分区",
@@ -571,91 +571,6 @@
           "type": "casement"
         }
       ]
-    }
-  ],
-  "decorCatalog": [
-    {
-      "id": "decor_rug_living",
-      "name": "客厅地毯",
-      "kind": "rug",
-      "placement": "box",
-      "sizeCm": [220, 160],
-      "heightCm": 2,
-      "color": "#6b5344",
-      "floorId": "floor1",
-      "defaultPositionCm": [280, 650],
-      "defaultRotationDeg": 0,
-      "showOnLoad": true
-    },
-    {
-      "id": "decor_wall_art",
-      "name": "壁画（贴花）",
-      "placement": "wall",
-      "wallId": "w_ext_top_w",
-      "faceRoomId": "r_bed1",
-      "along01": 0.52,
-      "altitudeCm": 118,
-      "widthCm": 112,
-      "heightCm": 72,
-      "decalPreset": "wall_art",
-      "floorId": "floor1",
-      "showOnLoad": true
-    },
-    {
-      "id": "decor_clock_bed1",
-      "name": "主卧时钟",
-      "placement": "wall",
-      "wallId": "w_ext_top_w",
-      "faceRoomId": "r_bed1",
-      "along01": 0.22,
-      "altitudeCm": 128,
-      "widthCm": 56,
-      "heightCm": 56,
-      "decalPreset": "clock",
-      "floorId": "floor1",
-      "showOnLoad": true
-    },
-    {
-      "id": "decor_flower_bed2",
-      "name": "次卧花朵",
-      "placement": "wall",
-      "wallId": "w_ext_top_e",
-      "faceRoomId": "r_bed2",
-      "along01": 0.22,
-      "altitudeCm": 115,
-      "widthCm": 52,
-      "heightCm": 52,
-      "decalPreset": "flower",
-      "floorId": "floor1",
-      "showOnLoad": true
-    },
-    {
-      "id": "decor_star_bed2",
-      "name": "次卧星星",
-      "placement": "wall",
-      "wallId": "w_ext_top_e",
-      "faceRoomId": "r_bed2",
-      "along01": 0.5,
-      "altitudeCm": 130,
-      "widthCm": 48,
-      "heightCm": 48,
-      "decalPreset": "star",
-      "floorId": "floor1",
-      "showOnLoad": true
-    },
-    {
-      "id": "decor_cloud_bed2",
-      "name": "次卧云朵",
-      "placement": "wall",
-      "wallId": "w_ext_top_e",
-      "faceRoomId": "r_bed2",
-      "along01": 0.78,
-      "altitudeCm": 108,
-      "widthCm": 58,
-      "heightCm": 48,
-      "decalPreset": "cloud",
-      "floorId": "floor1",
-      "showOnLoad": true
     }
   ]
 }

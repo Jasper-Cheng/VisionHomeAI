@@ -144,20 +144,10 @@ export async function loadStyleConfig(floorplanId, styleKey) {
   const data = await res.json();
   const styles = data.styles;
   if (!styles || typeof styles !== "object") throw new Error("Decor JSON missing styles");
-  let resolvedKey = sk;
-  let inner = styles[resolvedKey];
-  if (!inner || typeof inner !== "object") {
-    const keys = Object.keys(styles).filter((k) => {
-      const v = styles[k];
-      return v && typeof v === "object" && !Array.isArray(v);
-    });
-    if (!keys.length) throw new Error(`Decor JSON has no usable styles in ${fp}.json`);
-    resolvedKey = keys[0];
-    inner = styles[resolvedKey];
-    console.warn(`[VisionHome] styleKey "${sk}" not in ${fp}.json, using "${resolvedKey}"`);
-  }
+  const inner = styles[sk];
+  if (!inner || typeof inner !== "object") throw new Error(`Unknown styleKey: ${sk}`);
   const materialsLibrary = await loadMaterialsLibrary();
-  const merged = resolveStyleMaterialRefs({ ...inner }, materialsLibrary, fp, resolvedKey);
+  const merged = resolveStyleMaterialRefs({ ...inner }, materialsLibrary, fp, sk);
   if (merged.mapping === undefined && data.mapping != null && typeof data.mapping === "object") {
     merged.mapping = data.mapping;
   }

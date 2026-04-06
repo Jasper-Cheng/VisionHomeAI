@@ -4,18 +4,6 @@
  */
 import { DATA_PATHS } from "../core/schema.js";
 
-/** @returns {{ furniture: object[], decor: object[] }} */
-function normalizeEditorLayout(raw) {
-  if (Array.isArray(raw)) return { furniture: raw, decor: [] };
-  if (raw && typeof raw === "object") {
-    return {
-      furniture: Array.isArray(raw.furniture) ? raw.furniture : [],
-      decor: Array.isArray(raw.decor) ? raw.decor : [],
-    };
-  }
-  return { furniture: [], decor: [] };
-}
-
 let designFileSearchBound = false;
 
 function bindDesignFileSearch() {
@@ -281,10 +269,9 @@ function currentDesignBaselineFingerprint() {
   }
   const getLayout = window.svgEditorGetLayout;
   const getFloorLevel = window.svgEditorGetCurrentFloorLevelIndex;
-  const layout = normalizeEditorLayout(typeof getLayout === "function" ? getLayout() : null);
+  const layout = typeof getLayout === "function" ? getLayout() : [];
   return JSON.stringify({
-    furniture: layout.furniture,
-    decor: layout.decor,
+    furniture: layout,
     floorPlanId: null,
     floorLevelIndex: typeof getFloorLevel === "function" ? getFloorLevel() : null,
   });
@@ -292,8 +279,8 @@ function currentDesignBaselineFingerprint() {
 
 export function canSaveCurrentDesign() {
   const getLayout = window.svgEditorGetLayout;
-  const layout = normalizeEditorLayout(typeof getLayout === "function" ? getLayout() : null);
-  const hasItems = layout.furniture.length > 0 || layout.decor.length > 0;
+  const layout = typeof getLayout === "function" ? getLayout() : [];
+  const hasItems = Array.isArray(layout) && layout.length > 0;
   const cur = currentDesignBaselineFingerprint();
   const baseline = window.__designLayoutBaseline;
   const dirty = baseline === undefined || cur !== baseline;
@@ -381,19 +368,6 @@ function layoutToFurnitureInstances(layout, floorId) {
   }));
 }
 
-function layoutToDecorInstances(rows, floorId) {
-  const fid = floorId || "floor1";
-  return (Array.isArray(rows) ? rows : [])
-    .filter((item) => String(item?.decorId ?? "").trim())
-    .map((item, i) => ({
-      instanceId: String(item.instanceId ?? "").trim() || `di_${i + 1}`,
-      decorId: String(item.decorId ?? "").trim(),
-      floorId: item?.floorId != null && String(item.floorId).trim() ? String(item.floorId).trim() : fid,
-      positionCm: [Math.round(Number(item.x) || 0), Math.round(Number(item.y) || 0)],
-      rotationDeg: Math.round(Number(item.rotation ?? 0) || 0),
-    }));
-}
-
 function isoNow() {
   return new Date().toISOString();
 }
@@ -402,51 +376,23 @@ function isoNow() {
  * 写入设计文件的 SVG 编辑态：户型、楼层索引、家具列表。
  * 视图平移/缩放、网格、逻辑画布尺寸不持久化；打开方案时使用编辑器默认视图与网格。
  */
-function collectSvgEditorState(layoutPayload) {
+function collectSvgEditorState(layout) {
   const getFp = window.svgEditorGetCurrentFloorplanId;
   const getFloorLevel = window.svgEditorGetCurrentFloorLevelIndex;
   const floorPlanId = typeof getFp === "function" ? getFp() : null;
   const floorLevelIndex = typeof getFloorLevel === "function" ? getFloorLevel() : null;
-  const L = normalizeEditorLayout(layoutPayload);
-  const furniture = L.furniture.map((item) => ({
+  const furniture = (Array.isArray(layout) ? layout : []).map((item) => ({
     model: String(item.model ?? "").trim(),
     floorId: item?.floorId != null && String(item.floorId).trim() ? String(item.floorId).trim() : null,
     x: Math.round(Number(item.x) || 0),
     y: Math.round(Number(item.y) || 0),
     rotation: Math.round(Number(item.rotation ?? 0) || 0),
   }));
-  const decor = L.decor
-    .filter((item) => String(item?.decorId ?? "").trim())
-    .map((item) => {
-      const base = {
-        instanceId: String(item.instanceId ?? "").trim() || null,
-        decorId: String(item.decorId ?? "").trim(),
-        floorId: item?.floorId != null && String(item.floorId).trim() ? String(item.floorId).trim() : null,
-        x: Math.round(Number(item.x) || 0),
-        y: Math.round(Number(item.y) || 0),
-        rotation: Math.round(Number(item.rotation ?? 0) || 0),
-      };
-      if (item.placement === "wall") {
-        return {
-          ...base,
-          placement: "wall",
-          wallId: String(item.wallId ?? "").trim(),
-          faceRoomId: String(item.faceRoomId ?? "").trim(),
-          along01: Number(item.along01) ?? 0.45,
-          altitudeCm: Number(item.altitudeCm) || 115,
-          widthCm: Number(item.widthCm) || 110,
-          heightCm: Number(item.heightCm) || 75,
-        };
-      }
-      if (item.placement === "floor_decal") return { ...base, placement: "floor_decal" };
-      return base;
-    });
   return {
     version: 1,
     floorPlanId,
     floorLevelIndex,
     furniture,
-    decor,
   };
 }
 
@@ -464,9 +410,7 @@ function buildProjectPayload(name, layout) {
       : prev?.activeFloorId != null
         ? String(prev.activeFloorId)
         : "floor1";
-  const L = normalizeEditorLayout(layout);
-  const furnitureInstances = layoutToFurnitureInstances(L.furniture, floorId);
-  const decorInstances = layoutToDecorInstances(L.decor, floorId);
+  const furnitureInstances = layoutToFurnitureInstances(layout, floorId);
   const base = isExisting ? { ...prev } : {};
   const fpFromCanvas =
     typeof window.svgEditorGetCurrentFloorplanId === "function" ? window.svgEditorGetCurrentFloorplanId() : null;
@@ -487,7 +431,6 @@ function buildProjectPayload(name, layout) {
     activeFloorId: floorId,
     floorplanSnapshot: base.floorplanSnapshot ?? null,
     furnitureInstances,
-    decorInstances,
     svgEditor: collectSvgEditorState(layout),
   };
 }
@@ -557,10 +500,10 @@ export async function executeSaveWithName(name) {
   const trimmed = String(name ?? "").trim();
   if (!trimmed) return;
   const getLayout = window.svgEditorGetLayout;
-  const layout = normalizeEditorLayout(typeof getLayout === "function" ? getLayout() : null);
-  if (!layout.furniture.length && !layout.decor.length) {
+  const layout = typeof getLayout === "function" ? getLayout() : [];
+  if (!layout.length) {
     openSaveDialog();
-    showError("画布上没有家具或装饰，无法保存。");
+    showError("画布上没有家具，无法保存。");
     pendingDesignFileSwitch = null;
     return;
   }
@@ -659,12 +602,12 @@ function updateSaveButtonState() {
   const can = canSaveCurrentDesign();
   btn.disabled = !can;
   const getLayout = window.svgEditorGetLayout;
-  const layout = normalizeEditorLayout(typeof getLayout === "function" ? getLayout() : null);
-  const hasItems = layout.furniture.length > 0 || layout.decor.length > 0;
+  const layout = typeof getLayout === "function" ? getLayout() : [];
+  const hasItems = Array.isArray(layout) && layout.length > 0;
   const cur = currentDesignBaselineFingerprint();
   const baseline = window.__designLayoutBaseline;
   const dirty = baseline === undefined || cur !== baseline;
-  if (!hasItems) btn.title = "画布上没有家具或装饰，无法保存";
+  if (!hasItems) btn.title = "画布上没有家具，无法保存";
   else if (!dirty) btn.title = "当前已与上次保存一致";
   else btn.title = "保存当前方案";
 }
