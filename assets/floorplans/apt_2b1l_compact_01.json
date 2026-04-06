@@ -572,5 +572,55 @@
         }
       ]
     }
+  ],
+  "decorCatalog": [
+    {
+      "id": "decor_rug_living",
+      "name": "客厅地毯",
+      "kind": "rug",
+      "sizeCm": [220, 160],
+      "heightCm": 2,
+      "color": "#6b5344",
+      "floorId": "floor1",
+      "defaultPositionCm": [280, 650],
+      "defaultRotationDeg": 0,
+      "showOnLoad": true
+    },
+    {
+      "id": "decor_tv_unit",
+      "name": "电视柜+电视",
+      "kind": "tv",
+      "sizeCm": [180, 45],
+      "heightCm": 120,
+      "color": "#2a2a2a",
+      "floorId": "floor1",
+      "defaultPositionCm": [280, 520],
+      "defaultRotationDeg": 0,
+      "showOnLoad": true
+    },
+    {
+      "id": "decor_toilet",
+      "name": "马桶",
+      "kind": "sanitary",
+      "sizeCm": [42, 65],
+      "heightCm": 45,
+      "color": "#e8e4dc",
+      "floorId": "floor1",
+      "defaultPositionCm": [800, 780],
+      "defaultRotationDeg": 0,
+      "showOnLoad": true
+    },
+    {
+      "id": "decor_wall_art",
+      "name": "壁画",
+      "kind": "wall",
+      "sizeCm": [120, 4],
+      "heightCm": 80,
+      "color": "#c4a574",
+      "floorId": "floor1",
+      "defaultPositionCm": [120, 420],
+      "defaultRotationDeg": 0,
+      "showOnLoad": false
+    }
   ]
 }
