@@ -1,6 +1,7 @@
 /**
  * 户型装饰 JSON（assets/floorplans/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；材质可在根级或包在 materials 内。
  * 可选根级 mapping：与户型元素 id 对应；各风格未写 mapping 时沿用根级，避免重复。
+ * 各风格可选 sceneLighting：曝光、环境光/半球光/主光强度与色温、户型 PBR envMapIntensity（见 apt 风格 JSON）。
  * loadStyleConfig(floorplanId, styleKey) 返回合并后的单套风格，供 getMaterialDef。
  * floors[].walls|doors|windows：优先用风格包 mapping.walls|doors|windows 中以元素 id 为键的条目；若无则回退到 style 短键或直连材质 id。
  * floors[].rooms：优先 mapping.rooms[room.id]（{ floor, wall }）；否则 rooms[].style → mapping.rooms 短键。
@@ -187,7 +188,7 @@ export async function loadStylePackIndex(floorplanId) {
   return { floorplanId: fp, styles };
 }
 
-const STYLE_ROOT_RESERVED = new Set(["id", "name", "mapping", "furniturePreset", "materials"]);
+const STYLE_ROOT_RESERVED = new Set(["id", "name", "mapping", "furniturePreset", "materials", "sceneLighting"]);
 
 /**
  * @param {object | null} style

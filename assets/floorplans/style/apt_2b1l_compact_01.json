@@ -67,6 +67,23 @@
     "cream_style_v1": {
       "id": "cream_style_v1",
       "name": "奶油风",
+      "sceneLighting": {
+        "toneMappingExposure": 0.8,
+        "ambient": {
+          "color": "#ede6d8",
+          "intensity": 0.18
+        },
+        "hemisphere": {
+          "sky": "#e8e2d6",
+          "ground": "#1f1d18",
+          "intensity": 0.32
+        },
+        "directional": {
+          "color": "#f5f2ea",
+          "intensity": 0.88
+        },
+        "envMapIntensity": 0.32
+      },
       "materials": {
         "wall_bed1": {
           "$ref": "wall_Ivory001A"

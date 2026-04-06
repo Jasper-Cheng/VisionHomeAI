@@ -45,6 +45,97 @@ const MAX_HISTORY = 80;
 /** 户型墙/地/顶面：略偏灰，避免与 IBL 叠加后发白糊成一片 */
 const FLOORPLAN_SURFACE_COLOR = 0xc9c4be;
 
+/**
+ * 风格包未配置 sceneLighting 时的默认曝光与灯光（偏中性）。
+ * 奶油风等在 `assets/floorplans/style/<floorplanId>.json` 的 `styles.<key>.sceneLighting` 覆盖。
+ */
+const DEFAULT_SCENE_LIGHTING = {
+  toneMappingExposure: 0.88,
+  ambient: { color: "#ffffff", intensity: 0.26 },
+  hemisphere: { sky: "#dbeafe", ground: "#0b1220", intensity: 0.36 },
+  directional: { color: "#ffffff", intensity: 1.0 },
+  envMapIntensity: 0.35,
+};
+
+/**
+ * @param {object | null | undefined} over 风格 JSON 中的 sceneLighting
+ */
+function mergeSceneLighting(over) {
+  const base = DEFAULT_SCENE_LIGHTING;
+  if (!over || typeof over !== "object") {
+    return {
+      toneMappingExposure: base.toneMappingExposure,
+      ambient: { ...base.ambient },
+      hemisphere: { ...base.hemisphere },
+      directional: { ...base.directional },
+      envMapIntensity: base.envMapIntensity,
+    };
+  }
+  return {
+    toneMappingExposure: Number.isFinite(Number(over.toneMappingExposure))
+      ? Number(over.toneMappingExposure)
+      : base.toneMappingExposure,
+    ambient: { ...base.ambient, ...(typeof over.ambient === "object" && over.ambient ? over.ambient : {}) },
+    hemisphere: {
+      ...base.hemisphere,
+      ...(typeof over.hemisphere === "object" && over.hemisphere ? over.hemisphere : {}),
+    },
+    directional: {
+      ...base.directional,
+      ...(typeof over.directional === "object" && over.directional ? over.directional : {}),
+    },
+    envMapIntensity: Number.isFinite(Number(over.envMapIntensity))
+      ? Number(over.envMapIntensity)
+      : base.envMapIntensity,
+  };
+}
+
+function applyHexToThreeColor(threeColor, hex, fallbackHexNum) {
+  const s = String(hex ?? "").trim();
+  try {
+    threeColor.setStyle(s.startsWith("#") ? s : `#${s}`);
+  } catch {
+    threeColor.setHex(fallbackHexNum);
+  }
+}
+
+/**
+ * @param {import("three").WebGLRenderer} renderer
+ * @param {import("three").AmbientLight} ambientLight
+ * @param {import("three").HemisphereLight} hemiLight
+ * @param {import("three").DirectionalLight} dirLight
+ * @param {ReturnType<typeof mergeSceneLighting>} cfg
+ */
+function applySceneLightingConfig(renderer, ambientLight, hemiLight, dirLight, cfg) {
+  if (!cfg) return;
+  const exp = cfg.toneMappingExposure;
+  if (Number.isFinite(exp)) renderer.toneMappingExposure = exp;
+
+  const amb = cfg.ambient;
+  if (amb) {
+    applyHexToThreeColor(ambientLight.color, amb.color, 0xffffff);
+    const ai = Number(amb.intensity);
+    if (Number.isFinite(ai)) ambientLight.intensity = ai;
+  }
+
+  const hemi = cfg.hemisphere;
+  if (hemi) {
+    const sky = hemi.sky ?? hemi.skyColor;
+    const ground = hemi.ground ?? hemi.groundColor;
+    applyHexToThreeColor(hemiLight.color, sky, 0xffffff);
+    applyHexToThreeColor(hemiLight.groundColor, ground, 0x0b1220);
+    const hi = Number(hemi.intensity);
+    if (Number.isFinite(hi)) hemiLight.intensity = hi;
+  }
+
+  const dir = cfg.directional;
+  if (dir) {
+    applyHexToThreeColor(dirLight.color, dir.color, 0xffffff);
+    const di = Number(dir.intensity);
+    if (Number.isFinite(di)) dirLight.intensity = di;
+  }
+}
+
 /** 户型世界摆放等：画布 cm（左上角为 0）↔ 场景米 */
 function canvasCmToSceneXZ(xCm, yCm) {
   return { x: (xCm - VIEW_W / 2) / 100, z: (yCm - VIEW_H / 2) / 100 };
@@ -282,8 +373,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   applyRendererPixelRatio();
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  /* 奶油风：曝光再压一点，让米色 albedo 不被抬成白墙 */
-  renderer.toneMappingExposure = 0.8;
+  renderer.toneMappingExposure = DEFAULT_SCENE_LIGHTING.toneMappingExposure;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
@@ -311,31 +401,32 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const grid = new THREE.GridHelper(80, 80, 0x3b3b3b, 0x222222);
   grid.position.y = 0.001;
   scene.add(grid);
-  // 填充光偏暖但不过强，否则漫反射被抬到发白；主光负责体积感
-  /* 偏黄白象牙感，避免 f5e8dc / f2e6d8 类桃粉天光把整场景染粉 */
-  scene.add(new THREE.AmbientLight(0xede6d8, 0.18));
-  scene.add(new THREE.HemisphereLight(0xe8e2d6, 0x1f1d18, 0.32));
-  const dir = new THREE.DirectionalLight(0xf5f2ea, 0.88);
-  dir.position.set(14, 24, 16);
-  dir.castShadow = true;
-  // 扩大阴影相机覆盖范围，避免多楼层/大户型时阴影被裁切
-  dir.shadow.mapSize.set(4096, 4096);
-  // 家具只投射、户型地面接收；bias 过高会导致“影离地”、过低易 acne，取折中
-  dir.shadow.bias = 0.00015;
-  dir.shadow.normalBias = 0.045;
-  // PCF 软阴影半径略大，减轻阴影边缘“台阶感”
-  dir.shadow.radius = 6;
-  dir.shadow.camera.near = 0.1;
-  dir.shadow.camera.far = 500;
-  // left/right/top/bottom 每帧按场景包围盒在光照空间收紧，提高阴影贴图有效分辨率（减轻锯齿）
-  dir.shadow.camera.left = -40;
-  dir.shadow.camera.right = 40;
-  dir.shadow.camera.top = 40;
-  dir.shadow.camera.bottom = -40;
-  dir.shadow.camera.updateProjectionMatrix();
-  dir.target.position.set(0, 0, 0);
-  scene.add(dir.target);
-  scene.add(dir);
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  dirLight.position.set(14, 24, 16);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.set(4096, 4096);
+  dirLight.shadow.bias = 0.00015;
+  dirLight.shadow.normalBias = 0.045;
+  dirLight.shadow.radius = 6;
+  dirLight.shadow.camera.near = 0.1;
+  dirLight.shadow.camera.far = 500;
+  dirLight.shadow.camera.left = -40;
+  dirLight.shadow.camera.right = 40;
+  dirLight.shadow.camera.top = 40;
+  dirLight.shadow.camera.bottom = -40;
+  dirLight.shadow.camera.updateProjectionMatrix();
+  dirLight.target.position.set(0, 0, 0);
+  scene.add(ambientLight);
+  scene.add(hemiLight);
+  scene.add(dirLight.target);
+  scene.add(dirLight);
+
+  const initialSceneLighting = mergeSceneLighting(null);
+  applySceneLightingConfig(renderer, ambientLight, hemiLight, dirLight, initialSceneLighting);
+  let sceneLightingEnvMapIntensity = initialSceneLighting.envMapIntensity;
 
   /** 户型半透明分层渲染：深度预写入（与 applyFloorplanSurfaceAlpha 的 polygonOffset 对齐） */
   const floorplanDepthPrepassMat = new THREE.MeshDepthMaterial({
@@ -376,9 +467,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     if (shadowSceneBbox.isEmpty()) return;
 
-    const cam = dir.shadow.camera;
-    shadowFitCam.position.copy(dir.position);
-    shadowFitCam.lookAt(dir.target.position);
+    const cam = dirLight.shadow.camera;
+    shadowFitCam.position.copy(dirLight.position);
+    shadowFitCam.lookAt(dirLight.target.position);
     shadowFitCam.updateMatrixWorld(true);
     const viewMat = shadowFitCam.matrixWorldInverse;
 
@@ -798,7 +889,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       color: FLOORPLAN_SURFACE_COLOR,
       roughness: 0.92,
       metalness: 0.0,
-      envMapIntensity: 0.32,
+      envMapIntensity: sceneLightingEnvMapIntensity,
       emissive: new THREE.Color(0x000000),
     });
   }
@@ -859,7 +950,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {{ forGlass?: boolean, envMapIntensity?: number, side?: import("three").Side }} [options]
    */
   function createFloorplanMaterialFromStyleDef(def, floorOpacity, options = {}) {
-    const envMapIntensity = options.envMapIntensity ?? 0.32;
+    const envMapIntensity = options.envMapIntensity ?? sceneLightingEnvMapIntensity;
     const floorOp = floorOpacity ?? 1;
     const color = new THREE.Color();
     try {
@@ -2145,7 +2236,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function setShadowsEnabled(v) {
     shadowsEnabled = Boolean(v);
     renderer.shadowMap.enabled = shadowsEnabled;
-    dir.castShadow = shadowsEnabled;
+    dirLight.castShadow = shadowsEnabled;
     const btn = document.getElementById("svgShadowToggleBtn");
     if (btn) {
       btn.classList.toggle("is-active", shadowsEnabled);
@@ -2337,6 +2428,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       floorYOffsetById.clear();
       floorElevationBaseCm = 0;
       rebuildWallSnapData(null);
+      const fallbackLight = mergeSceneLighting(null);
+      applySceneLightingConfig(renderer, ambientLight, hemiLight, dirLight, fallbackLight);
+      sceneLightingEnvMapIntensity = fallbackLight.envMapIntensity;
       return;
     }
 
@@ -2350,6 +2444,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       console.warn("[VisionHome] 风格包加载失败:", e);
     }
     if (gen !== floorplanRebuildGen) return;
+
+    const lightingMerged = mergeSceneLighting(style?.sceneLighting ?? null);
+    applySceneLightingConfig(renderer, ambientLight, hemiLight, dirLight, lightingMerged);
+    sceneLightingEnvMapIntensity = lightingMerged.envMapIntensity;
 
     const floorIndex = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
     const floor = floorIndex >= 0 ? getCurrentFloorFromEntry(entry, floorIndex) : null;
@@ -2397,7 +2495,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const side = opts.floorUv ? THREE.DoubleSide : THREE.FrontSide;
         const mat = createFloorplanMaterialFromStyleDef(def, opacity, {
           forGlass: opts.forGlass,
-          envMapIntensity: opts.forGlass ? 0.9 : 0.32,
+          envMapIntensity: opts.forGlass ? 0.9 : sceneLightingEnvMapIntensity,
           side,
         });
         if (opts.floorUv) {
@@ -3959,15 +4057,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const LIGHT_RADIUS = 26;
       const LIGHT_HEIGHT = 30;
       // 从相机前方斜射向目标，旋转视角时阴影方向跟随变化
-      dir.position.set(
+      dirLight.position.set(
         tmpVecA.x + tmpVecC.x * LIGHT_RADIUS,
         LIGHT_HEIGHT,
         tmpVecA.z + tmpVecC.z * LIGHT_RADIUS,
       );
-      dir.target.position.set(tmpVecA.x, 0, tmpVecA.z);
-      dir.target.updateMatrixWorld();
+      dirLight.target.position.set(tmpVecA.x, 0, tmpVecA.z);
+      dirLight.target.updateMatrixWorld();
     }
-    dir.updateMatrixWorld(true);
+    dirLight.updateMatrixWorld(true);
     fitDirectionalShadowFrustum();
     renderEditorScene();
   }
