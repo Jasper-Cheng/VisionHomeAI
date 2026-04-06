@@ -3,63 +3,63 @@
   "mapping": {
     "rooms": {
       "r_bed1": {
-        "floor": "floor_main",
-        "wall": "wall_main"
+        "floor": "floor_bed1",
+        "wall": "wall_bed1"
       },
       "r_bed2": {
-        "floor": "floor_main",
-        "wall": "wall_main"
+        "floor": "floor_bed2",
+        "wall": "wall_bed2"
       },
       "r_living": {
-        "floor": "floor_main",
-        "wall": "wall_main"
+        "floor": "floor_living",
+        "wall": "wall_living"
       },
       "r_living_co": {
-        "floor": "floor_main",
-        "wall": "wall_main"
+        "floor": "floor_living_co",
+        "wall": "wall_living_co"
       },
       "r_kitchen": {
-        "floor": "floor_second",
-        "wall": "wall_second"
+        "floor": "floor_kitchen",
+        "wall": "wall_kitchen"
       },
       "r_bath": {
-        "floor": "floor_third",
-        "wall": "wall_third"
+        "floor": "floor_bath",
+        "wall": "wall_bath"
       }
     },
     "walls": {
-      "w_ext_left_n": "wall_main",
-      "w_ext_left_s": "wall_main",
-      "w_ext_top_w": "wall_main",
-      "w_ext_top_e": "wall_main",
-      "w_ext_right_n": "wall_main",
-      "w_ext_right_m": "wall_main",
-      "w_ext_right_s": "wall_main",
-      "w_ext_bot_w": "wall_main",
-      "w_ext_bot_e": "wall_main",
-      "w_int_v_mid_n_top": "wall_main",
-      "w_int_v_mid_n_bot": "wall_main",
-      "w_int_v_mid_s": "wall_main",
-      "w_int_h_mid_w": "wall_main",
-      "w_int_h_bed2_kitchen": "wall_main",
-      "w_int_h_low_w": "wall_main",
-      "w_int_h_low_e": "wall_main",
-      "w_int_v_bath": "wall_main",
-      "w_int_v_niche": "wall_main",
-      "w_int_h_niche": "wall_main"
+      "w_ext_left_n": "wall_interior_general",
+      "w_ext_left_s": "wall_interior_general",
+      "w_ext_top_w": "wall_interior_general",
+      "w_ext_top_e": "wall_interior_general",
+      "w_ext_right_n": "wall_interior_general",
+      "w_ext_right_m": "wall_interior_general",
+      "w_ext_right_s": "wall_interior_general",
+      "w_ext_bot_w": "wall_interior_general",
+      "w_ext_bot_e": "wall_interior_general",
+      "w_int_v_mid_n_top": "wall_interior_general",
+      "w_int_v_mid_n_bot": "wall_interior_general",
+      "w_int_v_mid_s": "wall_interior_general",
+      "w_int_h_mid_w": "wall_interior_general",
+      "w_int_h_bed2_kitchen": "wall_interior_general",
+      "w_int_h_low_w": "wall_interior_general",
+      "w_int_h_low_e": "wall_interior_general",
+      "w_int_v_bath": "wall_interior_general",
+      "w_int_v_niche": "wall_interior_general",
+      "w_int_h_niche": "wall_interior_general"
     },
     "doors": {
-      "d_main": "door_entrance",
-      "d_bath": "door_interior_white",
-      "d_kitchen": "door_interior_white",
-      "d_bed1": "door_interior_white",
-      "d_bed2": "door_interior_white"
+      "d_main": "door_main",
+      "d_bath": "door_bath",
+      "d_kitchen": "door_kitchen",
+      "d_bed1": "door_bed1",
+      "d_bed2": "door_bed2"
     },
     "windows": {
-      "win_left_floor": "glass_clear",
-      "win_left_small": "glass_clear",
-      "win_right_small": "glass_clear",
-      "win_kitchen_e": "glass_tinted",
+      "win_left_floor": "window_clear",
+      "win_left_small": "window_clear",
+      "win_right_small": "window_clear",
+      "win_kitchen_e": "window_tinted",
       "win_bath_e": "glass_frosted"
     }
   },
@@ -68,233 +68,68 @@
       "id": "cream_style_v1",
       "name": "奶油风",
       "materials": {
-        "wall_main": {
+        "wall_bed1": {
           "$ref": "wall_paint_plaster_cream"
         },
-        "wall_second": {
+        "wall_bed2": {
           "$ref": "wall_paint_plaster_cream"
         },
-        "wall_third": {
-          "$ref": "wall_tile_marble_soft"
+        "wall_living": {
+          "$ref": "wall_paint_plaster_cream"
         },
-        "floor_main": {
+        "wall_living_co": {
+          "$ref": "wall_paint_plaster_cream"
+        },
+        "wall_kitchen": {
+          "$ref": "wall_paint_plaster_cream"
+        },
+        "wall_bath": {
+          "$ref": "wall_paint_plaster_cream"
+        },
+        "wall_interior_general": {
+          "$ref": "wall_paint_plaster_cream"
+        },
+        "floor_bed1": {
+          "$ref": "floor_wood_cream_oak_v2"
+        },
+        "floor_bed2": {
+          "$ref": "floor_wood_cream_oak_v2"
+        },
+        "floor_living": {
           "$ref": "floor_tile_cream_light"
         },
-        "floor_second": {
-          "$ref": "floor_tile_cream_light"
+        "floor_living_co": {
+          "$ref": "floor_tile_cream_matte_v2"
         },
-        "floor_third": {
-          "$ref": "floor_tile_cream_light"
+        "floor_kitchen": {
+          "$ref": "floor_tile_cream_matte_v2"
         },
-        "door_entrance": {
+        "floor_bath": {
+          "$ref": "floor_tile_cream_matte_v2"
+        },
+        "door_main": {
           "$ref": "door_paint_white_wood_matte"
         },
-        "door_interior_white": {
+        "door_bath": {
           "$ref": "door_paint_white_wood_matte"
         },
-        "glass_clear": {
-          "$ref": "glass_clear_blue"
-        },
-        "glass_frosted": {
-          "$ref": "glass_frosted_soft"
-        },
-        "glass_tinted": {
-          "$ref": "glass_tinted_warm"
-        }
-      }
-    },
-    "industrial_v1": {
-      "id": "industrial_v1",
-      "name": "工业风",
-      "materials": {
-        "wall_main": {
-          "$ref": "wall_paint_concrete_gray"
-        },
-        "wall_second": {
-          "$ref": "wall_microcement_concrete_light"
-        },
-        "wall_third": {
-          "$ref": "wall_tile_marble_soft"
-        },
-        "floor_main": {
-          "$ref": "floor_wood_concrete_pattern"
-        },
-        "floor_second": {
-          "$ref": "floor_tile_concrete_light"
-        },
-        "floor_third": {
-          "$ref": "floor_tile_concrete_dark"
-        },
-        "door_entrance": {
-          "$ref": "door_metal_standard"
-        },
-        "door_interior_white": {
-          "$ref": "door_metal_dark_gray"
-        },
-        "glass_clear": {
-          "$ref": "glass_clear_blue"
-        },
-        "glass_frosted": {
-          "$ref": "glass_frosted_soft"
-        },
-        "glass_tinted": {
-          "$ref": "glass_tinted_warm"
-        }
-      }
-    },
-    "japandi_v1": {
-      "id": "japandi_v1",
-      "name": "日式原木风",
-      "materials": {
-        "wall_main": {
-          "$ref": "wall_paint_plaster_warm"
-        },
-        "wall_second": {
-          "$ref": "wall_microcement_warm"
-        },
-        "wall_third": {
-          "$ref": "wall_tile_gray"
-        },
-        "floor_main": {
-          "$ref": "floor_wood_light_japandi"
-        },
-        "floor_second": {
-          "$ref": "floor_tile_gray_light"
-        },
-        "floor_third": {
-          "$ref": "floor_tile_gray_mid"
-        },
-        "door_entrance": {
-          "$ref": "door_paint_white_wood"
-        },
-        "door_interior_white": {
-          "$ref": "door_paint_white_wood_subtle_metal"
-        },
-        "glass_clear": {
-          "$ref": "glass_clear_blue"
-        },
-        "glass_frosted": {
-          "$ref": "glass_frosted_soft"
-        },
-        "glass_tinted": {
-          "$ref": "glass_tinted_warm"
-        }
-      }
-    },
-    "modern_luxury_v1": {
-      "id": "modern_luxury_v1",
-      "name": "现代轻奢风",
-      "materials": {
-        "wall_main": {
-          "$ref": "wall_paint_plaster_lux"
-        },
-        "wall_second": {
-          "$ref": "wall_tile_dark_wood_pattern"
-        },
-        "wall_third": {
-          "$ref": "wall_tile_dark_wood_pattern"
-        },
-        "floor_main": {
-          "$ref": "floor_wood_dark"
-        },
-        "floor_second": {
-          "$ref": "floor_tile_gray_smooth"
-        },
-        "floor_third": {
-          "$ref": "floor_tile_dark_wood_pattern"
-        },
-        "door_entrance": {
-          "$ref": "door_metal_silver"
-        },
-        "door_interior_white": {
-          "$ref": "door_paint_white_dark_wood"
-        },
-        "glass_clear": {
-          "$ref": "glass_clear_blue"
-        },
-        "glass_frosted": {
-          "$ref": "glass_frosted_soft"
-        },
-        "glass_tinted": {
-          "$ref": "glass_tinted_warm"
-        }
-      }
-    },
-    "modern_minimal_v1": {
-      "id": "modern_minimal_v1",
-      "name": "现代简约风",
-      "materials": {
-        "wall_main": {
-          "$ref": "wall_paint_plaster_light"
-        },
-        "wall_second": {
-          "$ref": "wall_microcement_neutral"
-        },
-        "wall_third": {
-          "$ref": "wall_tile_light"
-        },
-        "floor_main": {
-          "$ref": "floor_wood_oak"
-        },
-        "floor_second": {
-          "$ref": "floor_tile_gray_light_matte"
-        },
-        "floor_third": {
-          "$ref": "floor_tile_dark_matte"
-        },
-        "door_entrance": {
-          "$ref": "door_metal_charcoal"
-        },
-        "door_interior_white": {
-          "$ref": "door_paint_white_metal_like"
-        },
-        "glass_clear": {
-          "$ref": "glass_clear_blue"
-        },
-        "glass_frosted": {
-          "$ref": "glass_frosted_soft"
-        },
-        "glass_tinted": {
-          "$ref": "glass_tinted_warm"
-        }
-      }
-    },
-    "nordic_v2": {
-      "id": "nordic_v2",
-      "name": "北欧风",
-      "materials": {
-        "wall_main": {
-          "$ref": "wall_paint_plaster_neutral"
-        },
-        "wall_second": {
-          "$ref": "wall_paint_plaster_neutral"
-        },
-        "wall_third": {
-          "$ref": "wall_tile_white"
-        },
-        "floor_main": {
-          "$ref": "floor_wood_oak_nordic"
-        },
-        "floor_second": {
-          "$ref": "floor_tile_gray_light"
-        },
-        "floor_third": {
-          "$ref": "floor_tile_gray_smooth"
-        },
-        "door_entrance": {
+        "door_kitchen": {
           "$ref": "door_paint_white_wood_matte"
         },
-        "door_interior_white": {
-          "$ref": "door_paint_white_wood_satin"
+        "door_bed1": {
+          "$ref": "door_paint_white_wood_matte"
         },
-        "glass_clear": {
-          "$ref": "glass_clear_blue"
+        "door_bed2": {
+          "$ref": "door_paint_white_wood_matte"
         },
-        "glass_frosted": {
-          "$ref": "glass_frosted_soft"
+        "window_clear": {
+          "$ref": "window_clear"
         },
-        "glass_tinted": {
-          "$ref": "glass_tinted_warm"
+        "window_frosted": {
+          "$ref": "window_frosted"
+        },
+        "window_tinted": {
+          "$ref": "window_tinted"
         }
       }
     }

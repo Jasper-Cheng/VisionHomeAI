@@ -387,7 +387,7 @@
         4
       ]
     },
-    "glass_clear_blue": {
+    "window_clear": {
       "type": "glass",
       "color": "#cfe8ff",
       "opacity": 0.25,
@@ -396,7 +396,7 @@
       "transmission": 0.95,
       "ior": 1.45
     },
-    "glass_frosted_soft": {
+    "window_frosted": {
       "type": "glass",
       "color": "#e8eef2",
       "opacity": 0.6,
@@ -405,7 +405,7 @@
       "transmission": 0.4,
       "ior": 1.45
     },
-    "glass_tinted_warm": {
+    "window_tinted": {
       "type": "glass",
       "color": "#d8cbb5",
       "opacity": 0.4,
@@ -599,6 +599,28 @@
         "albedo": "textures/Tiles074_2K-JPG_Color.jpg",
         "normal": "textures/Tiles074_2K-JPG_NormalGL.jpg",
         "roughness": "textures/Tiles074_2K-JPG_Roughness.jpg"
+      }
+    },
+    "floor_tile_cream_matte_v2": {
+      "type": "tile_floor",
+      "color": "#f7f4ef",
+      "roughness": 0.45,
+      "metalness": 0,
+      "texture": {
+        "albedo": "textures/Tiles074_2K-JPG_Color.jpg",
+        "normal": "textures/Tiles074_2K-JPG_NormalGL.jpg",
+        "roughness": "textures/Tiles074_2K-JPG_Roughness.jpg"
+      }
+    },
+    "floor_wood_cream_oak_v2": {
+      "type": "wood_floor",
+      "color": "#f7f4ef",
+      "roughness": 0.45,
+      "metalness": 0,
+      "texture": {
+        "albedo": "textures/WoodFloor044_2K-JPG_Color.jpg",
+        "normal": "textures/WoodFloor044_2K-JPG_NormalGL.jpg",
+        "roughness": "textures/WoodFloor044_2K-JPG_Roughness.jpg"
       }
     }
   }
