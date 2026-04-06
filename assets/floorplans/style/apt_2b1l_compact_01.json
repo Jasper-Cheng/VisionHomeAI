@@ -70,16 +70,16 @@
       "sceneLighting": {
         "toneMappingExposure": 0.8,
         "ambient": {
-          "color": "#ede6d8",
+          "color": "#e6dfd2",
           "intensity": 0.18
         },
         "hemisphere": {
-          "sky": "#e8e2d6",
+          "sky": "#e2dbd0",
           "ground": "#1f1d18",
           "intensity": 0.32
         },
         "directional": {
-          "color": "#f5f2ea",
+          "color": "#efe8dc",
           "intensity": 0.88
         },
         "envMapIntensity": 0.32
