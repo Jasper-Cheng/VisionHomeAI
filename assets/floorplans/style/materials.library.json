@@ -1,88 +1,59 @@
 {
-  "version": "1.0",
+  "version": "2.1",
+  "description": "奶油风儿童房 PBR 材质配置 (2K) - 更温暖奶油白（增加米黄调）",
   "materials": {
-    "door_WoodFloor044": {
-      "type": "paint_wood",
-      "color": "#ffffff",
-      "roughness": 0.7,
-      "metalness": 0,
+    "wall_Ivory001A": {
+      "type": "wall",
+      "color": "#F6F2EA",
+      "roughness": 0.93,
       "texture": {
-        "albedo": "textures/WoodFloor044_2K-JPG_Color.jpg",
-        "normal": "textures/WoodFloor044_2K-JPG_NormalGL.jpg",
-        "roughness": "textures/WoodFloor044_2K-JPG_Roughness.jpg"
-      }
-    },
-    "floor_Tiles074": {
-      "type": "tile_floor",
-      "color": "#f7f4ef",
-      "roughness": 0.45,
-      "metalness": 0,
-      "texture": {
-        "albedo": "textures/Tiles074_2K-JPG_Color.jpg",
-        "normal": "textures/Tiles074_2K-JPG_NormalGL.jpg",
-        "roughness": "textures/Tiles074_2K-JPG_Roughness.jpg"
-      }
-    },
-    "floor_Tiles074_uv3": {
-      "type": "tile_floor",
-      "color": "#f7f4ef",
-      "roughness": 0.45,
-      "metalness": 0,
-      "texture": {
-        "albedo": "textures/Tiles074_2K-JPG_Color.jpg",
-        "normal": "textures/Tiles074_2K-JPG_NormalGL.jpg",
-        "roughness": "textures/Tiles074_2K-JPG_Roughness.jpg"
+        "normal": "textures/Ivory001A_2K-JPG_NormalGL.jpg",
+        "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg",
+        "displacement": "textures/Ivory001A_2K-JPG_Displacement.jpg"
       },
-      "uvScale": [3, 3]
+      "comment": "墙面：更温暖的象牙奶油白（带明显米黄调），接近参考图的柔和温馨感。"
     },
-    "floor_WoodFloor044": {
-      "type": "wood_floor",
-      "color": "#f7f4ef",
-      "roughness": 0.45,
-      "metalness": 0,
+    "door_PaintedWood002": {
+      "type": "door",
+      "color": "#F6F2EA",
+      "roughness": 0.78,
       "texture": {
-        "albedo": "textures/WoodFloor044_2K-JPG_Color.jpg",
-        "normal": "textures/WoodFloor044_2K-JPG_NormalGL.jpg",
-        "roughness": "textures/WoodFloor044_2K-JPG_Roughness.jpg"
-      }
+        "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
+        "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg",
+        "displacement": "textures/PaintedWood002_2K-JPG_Displacement.jpg"
+      },
+      "comment": "门：与墙面同色，实现隐形门效果。"
     },
-    "wall_Plaster001": {
-      "type": "paint",
-      "color": "#f7f4ef",
-      "roughness": 0.9,
-      "metalness": 0,
+    "windowFrame_Ivory001A": {
+      "type": "window_frame",
+      "color": "#F6F2EA",
+      "roughness": 0.85,
       "texture": {
-        "albedo": "textures/Plaster001_2K-JPG_Color.jpg",
-        "normal": "textures/Plaster001_2K-JPG_NormalGL.jpg",
-        "roughness": "textures/Plaster001_2K-JPG_Roughness.jpg"
-      }
+        "normal": "textures/Ivory001A_2K-JPG_NormalGL.jpg",
+        "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+      },
+      "comment": "窗框与墙面统一。"
+    },
+    "floor_PaintedWood002": {
+      "type": "floor",
+      "color": "#F8F4ED",
+      "roughness": 0.72,
+      "uvScale": [4, 4],
+      "texture": {
+        "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
+        "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg",
+        "displacement": "textures/PaintedWood002_2K-JPG_Displacement.jpg"
+      },
+      "comment": "地板：比墙面稍暖稍亮的奶油色，增加轻微层次。"
     },
     "window_Clear": {
-      "type": "glass",
-      "color": "#cfe8ff",
-      "opacity": 0.25,
+      "type": "window_glass",
+      "color": "#FEFEFE",
       "roughness": 0.05,
-      "metalness": 0,
-      "transmission": 0.95,
-      "ior": 1.45
-    },
-    "window_Frosted": {
-      "type": "glass",
-      "color": "#e8eef2",
-      "opacity": 0.6,
-      "roughness": 0.85,
-      "metalness": 0,
-      "transmission": 0.4,
-      "ior": 1.45
-    },
-    "window_Tinted": {
-      "type": "glass",
-      "color": "#d8cbb5",
-      "opacity": 0.4,
-      "roughness": 0.2,
-      "metalness": 0,
-      "transmission": 0.7,
-      "ior": 1.45
+      "metalness": 0.0,
+      "transmission": 0.96,
+      "ior": 1.45,
+      "comment": "玻璃保持不变。"
     }
   }
 }

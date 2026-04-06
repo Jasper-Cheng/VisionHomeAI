@@ -69,67 +69,67 @@
       "name": "奶油风",
       "materials": {
         "wall_bed1": {
-          "$ref": "wall_Plaster001"
+          "$ref": "wall_Ivory001A"
         },
         "wall_bed2": {
-          "$ref": "wall_Plaster001"
+          "$ref": "wall_Ivory001A"
         },
         "wall_living": {
-          "$ref": "wall_Plaster001"
+          "$ref": "wall_Ivory001A"
         },
         "wall_living_co": {
-          "$ref": "wall_Plaster001"
+          "$ref": "wall_Ivory001A"
         },
         "wall_kitchen": {
-          "$ref": "wall_Plaster001"
+          "$ref": "wall_Ivory001A"
         },
         "wall_bath": {
-          "$ref": "wall_Plaster001"
+          "$ref": "wall_Ivory001A"
         },
         "wall_interior_general": {
-          "$ref": "wall_Plaster001"
+          "$ref": "wall_Ivory001A"
         },
         "floor_bed1": {
-          "$ref": "floor_WoodFloor044"
+          "$ref": "floor_PaintedWood002"
         },
         "floor_bed2": {
-          "$ref": "floor_WoodFloor044"
+          "$ref": "floor_PaintedWood002"
         },
         "floor_living": {
-          "$ref": "floor_Tiles074_uv3"
+          "$ref": "floor_PaintedWood002"
         },
         "floor_living_co": {
-          "$ref": "floor_Tiles074"
+          "$ref": "floor_PaintedWood002"
         },
         "floor_kitchen": {
-          "$ref": "floor_Tiles074"
+          "$ref": "floor_PaintedWood002"
         },
         "floor_bath": {
-          "$ref": "floor_Tiles074"
+          "$ref": "floor_PaintedWood002"
         },
         "door_main": {
-          "$ref": "door_WoodFloor044"
+          "$ref": "door_PaintedWood002"
         },
         "door_bath": {
-          "$ref": "door_WoodFloor044"
+          "$ref": "door_PaintedWood002"
         },
         "door_kitchen": {
-          "$ref": "door_WoodFloor044"
+          "$ref": "door_PaintedWood002"
         },
         "door_bed1": {
-          "$ref": "door_WoodFloor044"
+          "$ref": "door_PaintedWood002"
         },
         "door_bed2": {
-          "$ref": "door_WoodFloor044"
+          "$ref": "door_PaintedWood002"
         },
         "window_Clear": {
           "$ref": "window_Clear"
         },
         "window_Frosted": {
-          "$ref": "window_Frosted"
+          "$ref": "window_Clear"
         },
         "window_Tinted": {
-          "$ref": "window_Tinted"
+          "$ref": "window_Clear"
         }
       }
     }

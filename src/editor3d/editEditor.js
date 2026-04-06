@@ -283,7 +283,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   /* IBL 加入后整体偏亮，略压曝光（与下方填充光一起折中） */
-  renderer.toneMappingExposure = 0.88;
+  renderer.toneMappingExposure = 0.93;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
@@ -312,9 +312,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   grid.position.y = 0.001;
   scene.add(grid);
   // 略提高填充光，压低阴影对比，减轻地面/家具投影边缘的颗粒感
-  scene.add(new THREE.AmbientLight(0xffffff, 0.18));
-  scene.add(new THREE.HemisphereLight(0xdbeafe, 0x0b1220, 0.28));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.95);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.26));
+  scene.add(new THREE.HemisphereLight(0xdbeafe, 0x0b1220, 0.36));
+  const dir = new THREE.DirectionalLight(0xffffff, 1.0);
   dir.position.set(14, 24, 16);
   dir.castShadow = true;
   // 扩大阴影相机覆盖范围，避免多楼层/大户型时阴影被裁切
