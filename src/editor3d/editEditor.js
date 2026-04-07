@@ -1163,9 +1163,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {boolean} on
    */
   function setFloorplanGlobalSurfaceHighlight(floorLevelId, scope, on) {
+    if (on) return;
     const fid = String(floorLevelId ?? "").trim();
     if (!fid) return;
-    const emissiveHex = on ? 0x334466 : 0x000000;
+    const emissiveHex = 0x000000;
     floorplanRoot.traverse((o) => {
       if (!o.isMesh || !o.material) return;
       if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
