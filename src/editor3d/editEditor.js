@@ -541,6 +541,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    */
   let floorplanSurfaceOverrides = {};
   let dragState = null;
+  /** 墙/地：短按才打开属性面板；长按或滑动取消（与 pointerup 配对） */
+  let pendingSurfacePick = null;
   const history = [];
   let historyIndex = -1;
   let historyReady = false;
@@ -3510,6 +3512,57 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return "#e8dcc8";
   }
 
+  /** 与 rebuild 一致：用于属性面板解析风格包中的默认材质 id（库表键） */
+  async function getCurrentFloorplanStyleForPanel() {
+    const entry = currentFloorplanEntry;
+    const fpId = getCurrentFloorplanId();
+    if (!entry || !fpId) return null;
+    const skEffective = getEffectiveFloorplanStyleKey();
+    let style = null;
+    try {
+      style = await loadStyleConfig(fpId, skEffective);
+    } catch {
+      /* ignore */
+    }
+    if (!style) {
+      const skFallback = String(entry?.styleKey ?? entry?.styleId ?? "").trim();
+      if (skFallback && skFallback !== skEffective) {
+        try {
+          style = await loadStyleConfig(fpId, skFallback);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    return style;
+  }
+
+  /**
+   * 本层第一个房间地面 / 第一条墙在风格包中对应的材质键（与渲染时 resolve*MaterialKey 一致）。
+   * @param {{ floorLevelId: string }} sel
+   * @param {"allWalls" | "allFloors"} scope
+   * @param {object | null} style
+   */
+  function resolveStyleMaterialKeyForSurfaceScope(sel, scope, style) {
+    if (!style || !currentFloorplanEntry) return "";
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    const wantFid = normalizeFloorKey(sel.floorLevelId);
+    const fl = floors.find((f) => normalizeFloorKey(f?.id ?? "") === wantFid) ?? null;
+    if (!fl) return "";
+    if (scope === "allFloors") {
+      for (const room of fl.rooms || []) {
+        const k = resolveRoomFloorMaterialKey(style, room);
+        if (k) return k;
+      }
+      return "";
+    }
+    for (const w of fl.walls || []) {
+      const k = resolveWallMaterialKey(style, w);
+      if (k) return k;
+    }
+    return "";
+  }
+
   async function syncPropertiesPanelForFloorplanSurface(sel) {
     if (!sel || !propertiesPanel) return;
     const isFloor = sel.kind === "allFloors";
@@ -3530,24 +3583,37 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       propSurfaceMaterial.replaceChildren();
       const optDef = document.createElement("option");
       optDef.value = "";
-      optDef.textContent = "默认（跟随风格包）";
+      optDef.textContent = "无";
       propSurfaceMaterial.appendChild(optDef);
+      let lib = {};
       try {
-        const lib = await loadMaterialsLibrary();
-        const want = isFloor ? "wood_floor" : "paint";
-        const want2 = isFloor ? [] : ["paint_wood"];
-        for (const [mid, def] of Object.entries(lib)) {
-          const t = String(def?.type ?? "");
-          if (t !== want && !want2.includes(t)) continue;
-          const o = document.createElement("option");
-          o.value = mid;
-          o.textContent = mid;
-          propSurfaceMaterial.appendChild(o);
-        }
+        lib = await loadMaterialsLibrary();
       } catch {
         /* ignore */
       }
-      propSurfaceMaterial.value = ov?.materialId ?? "";
+      const want = isFloor ? "wood_floor" : "paint";
+      const want2 = isFloor ? [] : ["paint_wood"];
+      for (const [mid, def] of Object.entries(lib)) {
+        const t = String(def?.type ?? "");
+        if (t !== want && !want2.includes(t)) continue;
+        const o = document.createElement("option");
+        o.value = mid;
+        o.textContent = mid;
+        propSurfaceMaterial.appendChild(o);
+      }
+      let selectVal = String(ov?.materialId ?? "").trim();
+      if (!selectVal) {
+        const style = await getCurrentFloorplanStyleForPanel();
+        const sk = resolveStyleMaterialKeyForSurfaceScope(sel, scope, style);
+        if (sk) {
+          const entryDef = lib[sk];
+          const t = String(entryDef?.type ?? "");
+          const matches =
+            isFloor ? t === "wood_floor" : t === "paint" || t === "paint_wood";
+          if (matches) selectVal = sk;
+        }
+      }
+      propSurfaceMaterial.value = selectVal;
     }
   }
 
@@ -3789,6 +3855,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return document.getElementById("appViewEdit")?.classList.contains("is-active");
   }
 
+  const FLOORPLAN_SURFACE_LONG_PRESS_MS = 450;
+  const FLOORPLAN_SURFACE_MOVE_CANCEL_PX2 = 12 * 12;
+
   function onPointerDown(e) {
     if (!isEditViewActive() || e.button !== 0) return;
     if (!floorSelectionEnabled) {
@@ -3818,7 +3887,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     const surf = rayPickFloorplanSurface(e.clientX, e.clientY);
     if (surf) {
-      void selectFloorplanSurface(surf);
+      pendingSurfacePick = {
+        surf,
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        timerId: setTimeout(() => {
+          pendingSurfacePick = null;
+        }, FLOORPLAN_SURFACE_LONG_PRESS_MS),
+      };
       floorplanSelected = false;
       e.preventDefault();
       return;
@@ -3837,6 +3914,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function onPointerMove(e) {
+    if (pendingSurfacePick && e.pointerId === pendingSurfacePick.pointerId) {
+      const dx = e.clientX - pendingSurfacePick.startX;
+      const dy = e.clientY - pendingSurfacePick.startY;
+      if (dx * dx + dy * dy > FLOORPLAN_SURFACE_MOVE_CANCEL_PX2) {
+        clearTimeout(pendingSurfacePick.timerId);
+        pendingSurfacePick = null;
+      }
+    }
     if (!dragState || e.pointerId !== dragState.pointerId) return;
     // 拖拽时让交点平面跟随当前家具楼层高度，避免切层后“第一下跳动”
     const planeY = dragState.group?.position?.y ?? 0;
@@ -3854,6 +3939,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function onPointerUp(e) {
+    if (pendingSurfacePick && e.pointerId === pendingSurfacePick.pointerId) {
+      clearTimeout(pendingSurfacePick.timerId);
+      const surf = pendingSurfacePick.surf;
+      pendingSurfacePick = null;
+      if (e.type !== "pointercancel") {
+        void selectFloorplanSurface(surf);
+      }
+    }
     if (!dragState || e.pointerId !== dragState.pointerId) return;
     dragState = null;
     controls.enabled = true;
