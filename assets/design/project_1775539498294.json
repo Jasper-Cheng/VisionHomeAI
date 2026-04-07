@@ -4,7 +4,7 @@
   "name": "123",
   "description": "",
   "createdAt": "2026-04-07T05:24:58.294Z",
-  "updatedAt": "2026-04-07T05:24:58.294Z",
+  "updatedAt": "2026-04-07T05:31:09.122Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -14,8 +14,8 @@
       "furnitureId": "sofa_01",
       "floorId": "floor1",
       "positionCm": [
-        -35,
-        -163
+        -368,
+        124
       ],
       "rotationDeg": 0
     }
@@ -28,24 +28,35 @@
       {
         "model": "sofa_01",
         "floorId": "floor1",
-        "x": -35,
-        "y": -163,
+        "x": -368,
+        "y": 124,
         "rotation": 0
       }
     ],
     "surfaceOverrides": {
       "floor1": {
         "allFloors": {
-          "color": "#861414",
+          "color": "#ffffff",
           "materialId": "floor_WoodFloor040",
           "roughness": 0.35,
           "metalness": 0,
           "uvScale": [
-            0.2,
-            0.2
+            0.15,
+            0.15
           ],
           "textureRotation": 90,
-          "textureAlbedo": "PavingStones092_2K-JPG_Color.jpg"
+          "textureAlbedo": "Concrete034_2K-JPG_Color.jpg"
+        },
+        "allWalls": {
+          "color": "#976e3b",
+          "materialId": "wall_Ivory001A",
+          "roughness": 0.9,
+          "metalness": 0,
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
         }
       }
     }

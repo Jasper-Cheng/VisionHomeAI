@@ -4,7 +4,7 @@
   "name": "123",
   "description": "",
   "createdAt": "2026-04-06T07:56:01.245Z",
-  "updatedAt": "2026-04-06T07:56:01.246Z",
+  "updatedAt": "2026-04-07T05:29:05.899Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -14,8 +14,8 @@
       "furnitureId": "sofa_01",
       "floorId": "floor1",
       "positionCm": [
-        -70,
-        163
+        -225,
+        86
       ],
       "rotationDeg": 0
     },
@@ -30,38 +30,6 @@
       "rotationDeg": 0
     }
   ],
-  "decorInstances": [
-    {
-      "instanceId": "di_9",
-      "decorId": "decor_rug_living",
-      "floorId": "floor1",
-      "positionCm": [
-        75,
-        249
-      ],
-      "rotationDeg": 0
-    },
-    {
-      "instanceId": "di_10",
-      "decorId": "decor_tv_unit",
-      "floorId": "floor1",
-      "positionCm": [
-        -97,
-        78
-      ],
-      "rotationDeg": 0
-    },
-    {
-      "instanceId": "di_11",
-      "decorId": "decor_toilet",
-      "floorId": "floor1",
-      "positionCm": [
-        347,
-        183
-      ],
-      "rotationDeg": 0
-    }
-  ],
   "svgEditor": {
     "version": 1,
     "floorPlanId": "apt_2b1l_compact_01",
@@ -70,8 +38,8 @@
       {
         "model": "sofa_01",
         "floorId": "floor1",
-        "x": -70,
-        "y": 163,
+        "x": -225,
+        "y": 86,
         "rotation": 0
       },
       {
@@ -82,31 +50,20 @@
         "rotation": 0
       }
     ],
-    "decor": [
-      {
-        "instanceId": "di_9",
-        "decorId": "decor_rug_living",
-        "floorId": "floor1",
-        "x": 75,
-        "y": 249,
-        "rotation": 0
-      },
-      {
-        "instanceId": "di_10",
-        "decorId": "decor_tv_unit",
-        "floorId": "floor1",
-        "x": -97,
-        "y": 78,
-        "rotation": 0
-      },
-      {
-        "instanceId": "di_11",
-        "decorId": "decor_toilet",
-        "floorId": "floor1",
-        "x": 347,
-        "y": 183,
-        "rotation": 0
+    "surfaceOverrides": {
+      "floor1": {
+        "allFloors": {
+          "color": "#732323",
+          "materialId": "floor_WoodFloor040",
+          "roughness": 0.35,
+          "metalness": 0,
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        }
       }
-    ]
+    }
   }
 }

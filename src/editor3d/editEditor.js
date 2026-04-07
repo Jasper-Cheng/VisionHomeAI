@@ -3128,6 +3128,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function clearFloorplan() {
     currentFloorplanEntry = null;
     floorplanStyleKeyOverride = null;
+    floorplanSurfaceOverrides = {};
     currentFloorIndex = 0;
     floorSelectionEnabled = true;
     syncOtherOpacityUi();
@@ -3139,6 +3140,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   function applyFloorplanEntryAtWorld(entry, _wx, _wy, options = {}) {
     if (!entry) return;
+    /** 从户型库拖入/替换户型时清空；从设计文件或 undo 恢复时已先写入 overrides 时需传 preserveSurfaceOverrides: true */
+    if (!options.preserveSurfaceOverrides) {
+      floorplanSurfaceOverrides = {};
+    }
     currentFloorplanEntry = entry;
     currentFloorIndex = normalizeFloorIndex(entry, options.floorIndex);
     if (!options.preserveStyleKeyOverride) floorplanStyleKeyOverride = null;
@@ -3596,6 +3601,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           applyFloorplanEntryAtWorld(entry, undefined, undefined, {
             floorIndex: state.floorLevelIndex,
             preserveStyleKeyOverride: true,
+            preserveSurfaceOverrides: true,
           });
         } else clearFloorplan();
       } else clearFloorplan();
@@ -4880,8 +4886,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (fpId) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
-        if (entry) applyFloorplanEntryAtWorld(entry, undefined, undefined, { floorIndex: floorLevelIndex });
-        else clearFloorplan();
+        if (entry) {
+          applyFloorplanEntryAtWorld(entry, undefined, undefined, {
+            floorIndex: floorLevelIndex,
+            preserveSurfaceOverrides: true,
+          });
+        } else clearFloorplan();
       } else clearFloorplan();
       await rebuildFromLayout(layout);
       resetCameraView();
