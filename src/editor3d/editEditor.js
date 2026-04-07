@@ -3954,14 +3954,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!propSurfaceMaterialName) return;
     if (!matId) {
       propSurfaceMaterialName.textContent = "无";
+      propSurfaceMaterialName.removeAttribute("title");
       return;
     }
+    let shown = matId;
     if (lib && typeof lib === "object") {
       const disp = materialPresetDisplayName(matId, lib, textureAlbedoOverride);
-      propSurfaceMaterialName.textContent = disp === null ? "无" : disp;
-      return;
+      shown = disp === null ? "无" : disp;
     }
-    propSurfaceMaterialName.textContent = matId;
+    propSurfaceMaterialName.textContent = shown;
+    propSurfaceMaterialName.title = shown.length > 0 && shown !== "无" ? shown : "";
   }
 
   /**

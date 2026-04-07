@@ -1853,22 +1853,25 @@ a.avatar:hover {
 /* 户型墙/地：材质预设（Color 贴图网格 + 当前材质名） */
 .prop-input-group--surface-material {
   position: relative;
+  min-width: 0;
 }
 
 .prop-surface-material-heading {
   display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
+  align-items: center;
+  flex-wrap: nowrap;
   gap: 8px 10px;
   margin-bottom: 8px;
+  min-width: 0;
 }
 
 .prop-surface-material-heading .prop-input-label {
+  flex: 0 0 auto;
   margin-bottom: 0;
 }
 
 .prop-surface-material-name {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   font-size: 12px;
   font-weight: 800;
