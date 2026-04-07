@@ -1325,8 +1325,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       : 1;
     const isRoomFloor = mesh.userData.floorplanRoomFloor === true;
     const side = isRoomFloor ? THREE.DoubleSide : THREE.FrontSide;
-    disposeFloorplanOverrideMaterial(mesh);
     if (ov.materialId) {
+      disposeFloorplanOverrideMaterial(mesh);
       const def = resolveMaterialDefFromLibrary(libraryBag, ov.materialId);
       if (!def) return;
       const mergedDef = mergeMaterialOverrideIntoDef(def, ov);
@@ -1359,31 +1359,43 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       mat.needsUpdate = true;
       return;
     }
-    if (ov.color || ov.roughness != null || ov.metalness != null) {
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      const next = mats.map((m) => {
-        if (!m?.isMeshStandardMaterial && !m?.isMeshPhysicalMaterial) return m;
-        const c = m.clone();
-        c.userData.__floorplanOverrideOwned = true;
-        if (ov.color) {
-          try {
-            const h = String(ov.color).trim();
-            c.color.setStyle(h.startsWith("#") ? h : `#${h}`);
-          } catch {
-            /* ignore */
-          }
+    const useColorPath =
+      ov.color ||
+      ov.roughness != null ||
+      ov.metalness != null ||
+      ov.materialPresetCleared;
+    if (!useColorPath) return;
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const next = mats.map((m) => {
+      if (!m?.isMeshStandardMaterial && !m?.isMeshPhysicalMaterial) return m;
+      const c = m.clone();
+      c.userData.__floorplanOverrideOwned = true;
+      if (ov.materialPresetCleared) {
+        c.map = null;
+        c.normalMap = null;
+        c.roughnessMap = null;
+        c.metalnessMap = null;
+        c.aoMap = null;
+      }
+      if (ov.color) {
+        try {
+          const h = String(ov.color).trim();
+          c.color.setStyle(h.startsWith("#") ? h : `#${h}`);
+        } catch {
+          /* ignore */
         }
-        if (ov.roughness != null && Number.isFinite(Number(ov.roughness))) {
-          c.roughness = Math.min(1, Math.max(0, Number(ov.roughness)));
-        }
-        if (ov.metalness != null && Number.isFinite(Number(ov.metalness))) {
-          c.metalness = Math.min(1, Math.max(0, Number(ov.metalness)));
-        }
-        c.needsUpdate = true;
-        return c;
-      });
-      mesh.material = next.length === 1 ? next[0] : next;
-    }
+      }
+      if (ov.roughness != null && Number.isFinite(Number(ov.roughness))) {
+        c.roughness = Math.min(1, Math.max(0, Number(ov.roughness)));
+      }
+      if (ov.metalness != null && Number.isFinite(Number(ov.metalness))) {
+        c.metalness = Math.min(1, Math.max(0, Number(ov.metalness)));
+      }
+      c.needsUpdate = true;
+      return c;
+    });
+    disposeFloorplanOverrideMaterial(mesh);
+    mesh.material = next.length === 1 ? next[0] : next;
   }
 
   async function applySurfaceOverridesToFloorplan() {
@@ -1406,6 +1418,44 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (o.userData.floorplanRoomFloor && bag.allFloors) ov = bag.allFloors;
       else if (o.userData.floorplanWallId && bag.allWalls) ov = bag.allWalls;
       if (ov && surfaceOverrideIsActive(ov)) applySurfaceOverrideToMesh(o, ov, libraryBag);
+    });
+  }
+
+  /**
+   * 仅重应用某一楼层、墙面或地面范围的材质覆盖（不重建几何体）。用于属性面板改色/材质/PBR 时避免全量 rebuild。
+   * @param {string} floorLevelId
+   * @param {"allWalls" | "allFloors"} scope
+   */
+  async function applySurfaceOverridesForFloorScope(floorLevelId, scope) {
+    if (!floorplanRoot.children.length) return;
+    const gWorld = floorplanRoot.children[0];
+    if (!gWorld?.userData?.floorplanGWorld) return;
+    const fid = String(floorLevelId ?? "").trim();
+    if (!fid) return;
+    let libraryBag;
+    try {
+      libraryBag = await loadMaterialsLibrary();
+    } catch {
+      libraryBag = {};
+    }
+    const bag = floorplanSurfaceOverrides[fid];
+    const ov =
+      scope === "allWalls"
+        ? bag?.allWalls && surfaceOverrideIsActive(bag.allWalls)
+          ? bag.allWalls
+          : null
+        : bag?.allFloors && surfaceOverrideIsActive(bag.allFloors)
+          ? bag.allFloors
+          : null;
+    if (!ov) return;
+    gWorld.traverse((o) => {
+      if (!o.isMesh) return;
+      if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
+      if (scope === "allWalls" && o.userData.floorplanWallId) {
+        applySurfaceOverrideToMesh(o, ov, libraryBag);
+      } else if (scope === "allFloors" && o.userData.floorplanRoomFloor) {
+        applySurfaceOverrideToMesh(o, ov, libraryBag);
+      }
     });
   }
 
@@ -3936,8 +3986,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         ? Number(propSurfaceTextureRotation.value)
         : NaN;
     if (Number.isFinite(tr)) next.textureRotation = tr;
-    setFloorplanSurfaceGlobalOverride(fid, scope, Object.keys(next).length ? next : null);
-    await rebuildFloorplan3D();
+    const hasScopeData = Object.keys(next).length > 0;
+    setFloorplanSurfaceGlobalOverride(fid, scope, hasScopeData ? next : null);
+    if (!hasScopeData) {
+      await rebuildFloorplan3D();
+    } else {
+      await applySurfaceOverridesForFloorScope(fid, scope);
+    }
     await selectFloorplanSurface(sel);
     if (historyReady) schedulePushHistory();
   }
