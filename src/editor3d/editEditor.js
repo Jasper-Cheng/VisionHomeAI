@@ -345,9 +345,10 @@ function clampFurnitureToCanvas(cx, cy, rotDeg, hw, hh) {
 
 /**
  * @typedef {object} SurfaceScopeOverride
- * @property {string} [color]
+ * @property {string} [color] 覆盖库材质 `color`（与 roughness 等一并并入 mergeMaterialOverrideIntoDef）
  * @property {string} [materialId]
  * @property {boolean} [materialPresetCleared] 用户点击「清除」后不再使用库材质预设（与未设置 materialId 区分，避免同步时回退到风格包默认）
+ * @property {string} [textureAlbedo] 仅覆盖库材质 `texture.albedo` 的文件名（如 `Concrete003_2K-JPG_Color.jpg`）或 `textures/...` 路径
  * @property {number} [roughness]
  * @property {number} [metalness]
  * @property {[number, number]} [uvScale]
@@ -650,6 +651,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       ? mountFloorplanColorPicker(propSurfaceColorPickerMount, propSurfaceColor)
       : null;
   const propSurfaceMaterial = document.getElementById("propSurfaceMaterial");
+  const propSurfaceTextureAlbedo = document.getElementById("propSurfaceTextureAlbedo");
   const propSurfaceMaterialName = document.getElementById("propSurfaceMaterialName");
   const propSurfaceMaterialGrid = document.getElementById("propSurfaceMaterialGrid");
   const propSurfaceMaterialClear = document.getElementById("propSurfaceMaterialClear");
@@ -1182,6 +1184,57 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
+   * 多段墙体共用同一 override 材质时，每张 mesh dispose 一次会误删共享贴图；先按材质引用去重再 dispose。
+   * @param {import("three").Mesh[]} meshes
+   */
+  function disposeUniqueOverrideMaterialsOnMeshes(meshes) {
+    const seen = new Set();
+    for (const mesh of meshes) {
+      if (!mesh?.material) continue;
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const m of mats) {
+        if (!m || seen.has(m)) continue;
+        seen.add(m);
+        if (!m.userData?.__floorplanOverrideOwned) continue;
+        if (m.map) m.map.dispose();
+        if (m.normalMap) m.normalMap.dispose();
+        if (m.roughnessMap) m.roughnessMap.dispose();
+        if (m.metalnessMap) m.metalnessMap.dispose();
+        m.dispose();
+      }
+    }
+  }
+
+  /**
+   * 由库材质 + 面板覆盖生成 **一份** Three 材质（同一楼层同 scope 下所有墙/地 mesh 可共用，避免每段墙重复 queueStylePackTextures）。
+   * @returns {{ mat: import("three").Material, mergedDef: object } | null}
+   */
+  function createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity, isRoomFloor) {
+    if (!ov?.materialId) return null;
+    const def = resolveMaterialDefFromLibrary(libraryBag, ov.materialId);
+    if (!def) return null;
+    const mergedDef = mergeMaterialOverrideIntoDef(def, ov);
+    const side = isRoomFloor ? THREE.DoubleSide : THREE.FrontSide;
+    const mat = createFloorplanMaterialFromStyleDef(mergedDef, opacity, {
+      forGlass: false,
+      envMapIntensity: sceneLightingEnvMapIntensity,
+      side,
+    });
+    mat.userData.__floorplanOverrideOwned = true;
+    if (isRoomFloor) {
+      mat.userData.__floorplanRoomFloorDepthWrite = true;
+    }
+    applyFloorplanSurfaceAlpha(mat, opacity);
+    const applyUvOpts =
+      isRoomFloor ||
+      (Array.isArray(ov.uvScale) && ov.uvScale.length >= 2) ||
+      (ov.textureRotation != null && Number.isFinite(Number(ov.textureRotation)));
+    queueStylePackTextures(mat, mergedDef, { applyUvScale: applyUvOpts });
+    mat.needsUpdate = true;
+    return { mat, mergedDef };
+  }
+
+  /**
    * @param {string} floorLevelId
    * @param {"allWalls" | "allFloors"} scope
    * @param {boolean} on
@@ -1277,7 +1330,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 将面板中的数值覆盖合并到库材质定义（用于贴图 UV/旋转与 PBR）
+   * 将面板中的数值覆盖合并到库材质定义（颜色、PBR、贴图 UV/旋转、albedo 等均在「该 materialId 对应材质」上生效）
    * @param {object} def
    * @param {SurfaceScopeOverride} ov
    */
@@ -1286,6 +1339,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const out = { ...def };
     if (def.texture && typeof def.texture === "object") {
       out.texture = { ...def.texture };
+    }
+    if (ov.color != null && String(ov.color).trim()) {
+      const h = String(ov.color).trim();
+      out.color = h.startsWith("#") ? h : `#${h.replace(/^#/, "")}`;
     }
     if (ov.roughness != null && Number.isFinite(Number(ov.roughness))) {
       out.roughness = Math.min(1, Math.max(0, Number(ov.roughness)));
@@ -1303,6 +1360,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (ov.textureRotation != null && Number.isFinite(Number(ov.textureRotation))) {
       out.textureRotation = Number(ov.textureRotation);
     }
+    if (ov.textureAlbedo != null && String(ov.textureAlbedo).trim()) {
+      const raw = String(ov.textureAlbedo).trim();
+      const path = raw.includes("/") ? raw : `textures/${raw}`;
+      if (!out.texture) out.texture = {};
+      else out.texture = { ...out.texture };
+      out.texture.albedo = path;
+    }
     return out;
   }
 
@@ -1310,6 +1374,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function surfaceOverrideIsActive(ov) {
     if (!ov || typeof ov !== "object") return false;
     if (ov.color || ov.materialId) return true;
+    if (ov.textureAlbedo != null && String(ov.textureAlbedo).trim()) return true;
     if (ov.materialPresetCleared) return true;
     if (ov.roughness != null && Number.isFinite(Number(ov.roughness))) return true;
     if (ov.metalness != null && Number.isFinite(Number(ov.metalness))) return true;
@@ -1324,39 +1389,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       ? mesh.userData.floorplanSurfaceOpacity
       : 1;
     const isRoomFloor = mesh.userData.floorplanRoomFloor === true;
-    const side = isRoomFloor ? THREE.DoubleSide : THREE.FrontSide;
     if (ov.materialId) {
       disposeFloorplanOverrideMaterial(mesh);
-      const def = resolveMaterialDefFromLibrary(libraryBag, ov.materialId);
-      if (!def) return;
-      const mergedDef = mergeMaterialOverrideIntoDef(def, ov);
-      const mat = createFloorplanMaterialFromStyleDef(mergedDef, opacity, {
-        forGlass: false,
-        envMapIntensity: sceneLightingEnvMapIntensity,
-        side,
-      });
-      mat.userData.__floorplanOverrideOwned = true;
-      if (isRoomFloor) {
-        mat.userData.__floorplanRoomFloorDepthWrite = true;
-        applyFloorplanSurfaceAlpha(mat, opacity);
-      } else {
-        applyFloorplanSurfaceAlpha(mat, opacity);
-      }
-      const applyUvOpts =
-        isRoomFloor ||
-        (Array.isArray(ov.uvScale) && ov.uvScale.length >= 2) ||
-        (ov.textureRotation != null && Number.isFinite(Number(ov.textureRotation)));
-      queueStylePackTextures(mat, mergedDef, { applyUvScale: applyUvOpts });
-      mesh.material = mat;
-      if (ov.color) {
-        try {
-          const h = String(ov.color).trim();
-          mat.color.setStyle(h.startsWith("#") ? h : `#${h}`);
-        } catch {
-          /* ignore */
-        }
-      }
-      mat.needsUpdate = true;
+      const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity, isRoomFloor);
+      if (!built) return;
+      mesh.material = built.mat;
       return;
     }
     const useColorPath =
@@ -1408,17 +1445,51 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     } catch {
       libraryBag = {};
     }
+    /** @type {Map<string, { ov: SurfaceScopeOverride, meshes: import("three").Mesh[], isRoomFloor: boolean }>} */
+    const batches = new Map();
     gWorld.traverse((o) => {
       if (!o.isMesh) return;
-      const fid = o.userData.floorplanFloorLevelId;
+      const fid = String(o.userData.floorplanFloorLevelId ?? "").trim();
       if (!fid) return;
-      const bag = floorplanSurfaceOverrides[String(fid).trim()];
+      const bag = floorplanSurfaceOverrides[fid];
       if (!bag) return;
-      let ov = null;
-      if (o.userData.floorplanRoomFloor && bag.allFloors) ov = bag.allFloors;
-      else if (o.userData.floorplanWallId && bag.allWalls) ov = bag.allWalls;
-      if (ov && surfaceOverrideIsActive(ov)) applySurfaceOverrideToMesh(o, ov, libraryBag);
+      if (o.userData.floorplanRoomFloor && bag.allFloors && surfaceOverrideIsActive(bag.allFloors)) {
+        const k = `${fid}\0allFloors`;
+        if (!batches.has(k)) {
+          batches.set(k, { ov: bag.allFloors, meshes: [], isRoomFloor: true });
+        }
+        batches.get(k).meshes.push(o);
+      } else if (o.userData.floorplanWallId && bag.allWalls && surfaceOverrideIsActive(bag.allWalls)) {
+        const k = `${fid}\0allWalls`;
+        if (!batches.has(k)) {
+          batches.set(k, { ov: bag.allWalls, meshes: [], isRoomFloor: false });
+        }
+        batches.get(k).meshes.push(o);
+      }
     });
+    for (const { ov, meshes, isRoomFloor } of batches.values()) {
+      if (!meshes.length) continue;
+      const opacity0 = Number.isFinite(meshes[0].userData.floorplanSurfaceOpacity)
+        ? meshes[0].userData.floorplanSurfaceOpacity
+        : 1;
+      const opMismatch = meshes.some(
+        (m) =>
+          (Number.isFinite(m.userData.floorplanSurfaceOpacity) ? m.userData.floorplanSurfaceOpacity : 1) !==
+          opacity0,
+      );
+      if (ov.materialId && !opMismatch) {
+        const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity0, isRoomFloor);
+        if (!built) continue;
+        disposeUniqueOverrideMaterialsOnMeshes(meshes);
+        for (const mesh of meshes) {
+          mesh.material = built.mat;
+        }
+        continue;
+      }
+      for (const mesh of meshes) {
+        applySurfaceOverrideToMesh(mesh, ov, libraryBag);
+      }
+    }
   }
 
   /**
@@ -1448,15 +1519,38 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           ? bag.allFloors
           : null;
     if (!ov) return;
+    /** @type {import("three").Mesh[]} */
+    const meshes = [];
     gWorld.traverse((o) => {
       if (!o.isMesh) return;
       if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
       if (scope === "allWalls" && o.userData.floorplanWallId) {
-        applySurfaceOverrideToMesh(o, ov, libraryBag);
+        meshes.push(o);
       } else if (scope === "allFloors" && o.userData.floorplanRoomFloor) {
-        applySurfaceOverrideToMesh(o, ov, libraryBag);
+        meshes.push(o);
       }
     });
+    if (!meshes.length) return;
+    const isRoomFloor = scope === "allFloors";
+    const opacity0 = Number.isFinite(meshes[0].userData.floorplanSurfaceOpacity)
+      ? meshes[0].userData.floorplanSurfaceOpacity
+      : 1;
+    const opMismatch = meshes.some(
+      (m) =>
+        (Number.isFinite(m.userData.floorplanSurfaceOpacity) ? m.userData.floorplanSurfaceOpacity : 1) !== opacity0,
+    );
+    if (ov.materialId && !opMismatch) {
+      const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity0, isRoomFloor);
+      if (!built) return;
+      disposeUniqueOverrideMaterialsOnMeshes(meshes);
+      for (const mesh of meshes) {
+        mesh.material = built.mat;
+      }
+      return;
+    }
+    for (const mesh of meshes) {
+      applySurfaceOverrideToMesh(mesh, ov, libraryBag);
+    }
   }
 
   function buildRoomMesh(room, cx, cy, s, floorOpacity, floorStyleMat, floorLevelId) {
@@ -3693,6 +3787,38 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return "";
   }
 
+  /**
+   * 解析当前墙面/地面在库中的基准材质 id（与 sync 面板、渲染一致）。
+   * @param {{ floorLevelId: string }} sel
+   * @param {"allWalls" | "allFloors"} scope
+   * @param {SurfaceScopeOverride | null | undefined} ov
+   * @param {Record<string, object>} lib
+   */
+  async function resolveBaseMaterialIdForSurfacePanel(sel, scope, ov, lib) {
+    const isFloor = scope === "allFloors";
+    let selectVal = String(ov?.materialId ?? "").trim();
+    if (ov?.materialPresetCleared) {
+      selectVal = "";
+    } else if (!selectVal) {
+      const style = await getCurrentFloorplanStyleForPanel();
+      const sk = resolveStyleMaterialKeyForSurfaceScope(sel, scope, style);
+      if (sk) {
+        const styleMat = getMaterialDef(style, sk);
+        const libMatId =
+          styleMat && typeof styleMat === "object"
+            ? String(styleMat.__libraryMaterialId ?? "").trim()
+            : "";
+        const key = libMatId || sk;
+        const entryDef = lib[key];
+        const t = String(entryDef?.type ?? "");
+        const matches =
+          isFloor ? t === "wood_floor" : t === "paint" || t === "paint_wood";
+        if (matches) selectVal = key;
+      }
+    }
+    return selectVal;
+  }
+
   function texturePathBasename(path) {
     const s = String(path ?? "").replace(/\\/g, "/").trim();
     const i = s.lastIndexOf("/");
@@ -3705,13 +3831,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 面板「材质预设」旁展示用：albedo 文件名去掉扩展名（如 Concrete003_2K-JPG_Color）；无 albedo 时返回 null（显示「无」）
+   * 面板「材质预设」旁展示用：优先显示 textureAlbedo 覆盖；否则库 albedo 文件名去掉扩展名；无 albedo 时返回 null（显示「无」）
    * @param {string} matId
    * @param {Record<string, object>} lib
+   * @param {string} [textureAlbedoOverride]
    * @returns {string | null}
    */
-  function materialPresetDisplayName(matId, lib) {
+  function materialPresetDisplayName(matId, lib, textureAlbedoOverride) {
     if (!matId) return "";
+    const ta = String(textureAlbedoOverride ?? "").trim();
+    if (ta) {
+      const base = texturePathBasename(ta);
+      const noExt = base.replace(/\.(jpe?g|png|webp)$/i, "");
+      return noExt || null;
+    }
     if (!lib || typeof lib !== "object") return matId;
     const def = lib[matId];
     if (!def) return matId;
@@ -3719,22 +3852,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!base) return null;
     const noExt = base.replace(/\.(jpe?g|png|webp)$/i, "");
     return noExt || null;
-  }
-
-  /** @param {Record<string, object>} lib */
-  function buildAlbedoBasenameToMaterialId(lib, isFloor) {
-    const want = isFloor ? "wood_floor" : "paint";
-    const want2 = isFloor ? [] : ["paint_wood"];
-    /** @type {Map<string, string>} */
-    const map = new Map();
-    for (const [mid, def] of Object.entries(lib)) {
-      const t = String(def?.type ?? "");
-      if (t !== want && !want2.includes(t)) continue;
-      const base = getDefAlbedoBasename(def);
-      if (!base) continue;
-      if (!map.has(base)) map.set(base, mid);
-    }
-    return map;
   }
 
   async function loadColorTextureIndex() {
@@ -3751,15 +3868,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /**
    * @param {string} matId
    * @param {Record<string, object>} [lib]
+   * @param {string} [textureAlbedoOverride]
    */
-  function updateSurfaceMaterialNameLabel(matId, lib) {
+  function updateSurfaceMaterialNameLabel(matId, lib, textureAlbedoOverride) {
     if (!propSurfaceMaterialName) return;
     if (!matId) {
       propSurfaceMaterialName.textContent = "无";
       return;
     }
     if (lib && typeof lib === "object") {
-      const disp = materialPresetDisplayName(matId, lib);
+      const disp = materialPresetDisplayName(matId, lib, textureAlbedoOverride);
       propSurfaceMaterialName.textContent = disp === null ? "无" : disp;
       return;
     }
@@ -3804,38 +3922,44 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function ensureSurfaceMaterialGridClick() {
-    if (surfaceMaterialGridClickBound || !propSurfaceMaterialGrid || !propSurfaceMaterial) return;
+    if (
+      surfaceMaterialGridClickBound ||
+      !propSurfaceMaterialGrid ||
+      !propSurfaceMaterial ||
+      !propSurfaceTextureAlbedo
+    ) {
+      return;
+    }
     surfaceMaterialGridClickBound = true;
     propSurfaceMaterialGrid.addEventListener("click", async (e) => {
       const btn = e.target.closest(".prop-surface-material__cell");
-      if (!btn || !propSurfaceMaterialGrid.contains(btn) || btn.disabled) return;
-      const mid = String(btn.dataset.materialId ?? "").trim();
-      propSurfaceMaterial.value = mid;
+      if (!btn || !propSurfaceMaterialGrid.contains(btn)) return;
+      const albedoFn = String(btn.dataset.albedoFile ?? "").trim();
+      if (!albedoFn) return;
+      const sel = selectedFloorplanSurface;
+      if (!sel || !propSurfaceMaterial || !propSurfaceTextureAlbedo) return;
       let lib = {};
       try {
         lib = await loadMaterialsLibrary();
       } catch {
         /* ignore */
       }
-      updateSurfaceMaterialNameLabel(mid, lib);
+      const scope = sel.kind === "allFloors" ? "allFloors" : "allWalls";
+      const baseOv = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
+      let mid =
+        String(propSurfaceMaterial.value ?? "").trim() ||
+        (await resolveBaseMaterialIdForSurfacePanel(sel, scope, baseOv, lib));
+      if (!mid) return;
+      propSurfaceMaterial.value = mid;
+      propSurfaceTextureAlbedo.value = albedoFn;
+      updateSurfaceMaterialNameLabel(mid, lib, albedoFn);
       propSurfaceMaterialGrid.querySelectorAll(".prop-surface-material__cell").forEach((el) => {
-        const id = String(el.dataset.materialId ?? "").trim();
-        el.classList.toggle("is-selected", mid !== "" && id === mid);
+        const fn = String(el.dataset.albedoFile ?? "").trim();
+        el.classList.toggle("is-selected", fn !== "" && fn === albedoFn);
       });
-      const sel = selectedFloorplanSurface;
-      if (sel) {
-        const scope = sel.kind === "allFloors" ? "allFloors" : "allWalls";
-        const baseOv = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
-        const prevMid = String(baseOv?.materialId ?? "").trim();
-        const mergeOv =
-          mid === prevMid
-            ? baseOv
-            : {
-                ...(baseOv?.color ? { color: baseOv.color } : {}),
-                ...(mid ? { materialId: mid } : {}),
-              };
-        syncSurfacePbrInputs(mergeOv, mid, lib);
-      }
+      const mergeOv = { ...baseOv, materialId: mid, textureAlbedo: albedoFn };
+      delete mergeOv.materialPresetCleared;
+      syncSurfacePbrInputs(mergeOv, mid, lib);
       propSurfaceMaterial.dispatchEvent(new Event("change", { bubbles: true }));
     });
   }
@@ -3863,54 +3987,31 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       /* ignore */
     }
 
-    let selectVal = String(ov?.materialId ?? "").trim();
-    if (ov?.materialPresetCleared) {
-      selectVal = "";
-    } else if (!selectVal) {
-      const style = await getCurrentFloorplanStyleForPanel();
-      const sk = resolveStyleMaterialKeyForSurfaceScope(sel, scope, style);
-      if (sk) {
-        const styleMat = getMaterialDef(style, sk);
-        const libMatId =
-          styleMat && typeof styleMat === "object"
-            ? String(styleMat.__libraryMaterialId ?? "").trim()
-            : "";
-        const key = libMatId || sk;
-        const entryDef = lib[key];
-        const t = String(entryDef?.type ?? "");
-        const matches =
-          isFloor ? t === "wood_floor" : t === "paint" || t === "paint_wood";
-        if (matches) selectVal = key;
-      }
-    }
+    const selectVal = await resolveBaseMaterialIdForSurfacePanel(sel, scope, ov, lib);
+    const texAlbedoRaw = String(ov?.textureAlbedo ?? "").trim();
     if (propSurfaceMaterial) propSurfaceMaterial.value = selectVal;
-    updateSurfaceMaterialNameLabel(selectVal, lib);
+    if (propSurfaceTextureAlbedo) propSurfaceTextureAlbedo.value = texAlbedoRaw;
+    updateSurfaceMaterialNameLabel(selectVal, lib, texAlbedoRaw);
     syncSurfacePbrInputs(ov, selectVal, lib);
 
     if (propSurfaceMaterial && propSurfaceMaterialGrid) {
-      const albedoToMid = buildAlbedoBasenameToMaterialId(lib, isFloor);
       const files = await loadColorTextureIndex();
-
-      const selectedBasename =
-        selectVal && lib[selectVal] ? getDefAlbedoBasename(lib[selectVal]) : "";
+      const effectiveBasename = texAlbedoRaw
+        ? texturePathBasename(texAlbedoRaw)
+        : selectVal && lib[selectVal]
+          ? getDefAlbedoBasename(lib[selectVal])
+          : "";
 
       propSurfaceMaterialGrid.replaceChildren();
       for (const fn of files) {
-        const mid = albedoToMid.get(fn) ?? "";
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "prop-surface-material__cell";
-        if (mid) btn.dataset.materialId = mid;
-        if (selectedBasename && selectedBasename === fn && mid && selectVal === mid) {
+        btn.dataset.albedoFile = fn;
+        if (effectiveBasename && effectiveBasename === fn) {
           btn.classList.add("is-selected");
         }
-        if (!mid) {
-          btn.disabled = true;
-          btn.classList.add("prop-surface-material__cell--nomap");
-          btn.title = `${fn}（库中无对应材质）`;
-        } else {
-          btn.title = fn;
-        }
+        btn.title = fn;
         const img = document.createElement("img");
         img.src = resolveStyleTextureUrl(`textures/${fn}`);
         img.alt = "";
@@ -3949,10 +4050,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     const isFloor = sel.kind === "allFloors";
     const scope = isFloor ? "allFloors" : "allWalls";
-    const col = String(propSurfaceColor.value || "").trim();
-    const matId = String(propSurfaceMaterial.value || "").trim();
+    let lib = {};
+    try {
+      lib = await loadMaterialsLibrary();
+    } catch {
+      /* ignore */
+    }
     const fid = sel.floorLevelId;
     const prevOv = getFloorplanSurfaceGlobalOverride(fid, scope);
+    let matId = String(propSurfaceMaterial.value || "").trim();
+    if (!matId && !wasPendingMaterialPresetClear && !prevOv?.materialPresetCleared) {
+      matId = await resolveBaseMaterialIdForSurfacePanel(sel, scope, prevOv, lib);
+      if (matId && propSurfaceMaterial) propSurfaceMaterial.value = matId;
+    }
+    const col = String(propSurfaceColor.value || "").trim();
     const next = {};
     if (col) next.color = col.startsWith("#") ? col : `#${col}`;
     if (matId) {
@@ -3986,6 +4097,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         ? Number(propSurfaceTextureRotation.value)
         : NaN;
     if (Number.isFinite(tr)) next.textureRotation = tr;
+    const texAlbedo = String(propSurfaceTextureAlbedo?.value ?? "").trim();
+    if (texAlbedo) next.textureAlbedo = texAlbedo;
     const hasScopeData = Object.keys(next).length > 0;
     setFloorplanSurfaceGlobalOverride(fid, scope, hasScopeData ? next : null);
     if (!hasScopeData) {
@@ -4326,6 +4439,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!propSurfaceMaterial || !selectedFloorplanSurface) return;
       pendingSurfaceMaterialPresetClear = true;
       propSurfaceMaterial.value = "";
+      if (propSurfaceTextureAlbedo) propSurfaceTextureAlbedo.value = "";
       let lib = {};
       try {
         lib = await loadMaterialsLibrary();

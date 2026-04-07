@@ -4,7 +4,7 @@
   "name": "啊21",
   "description": "",
   "createdAt": "2026-04-07T03:17:05.669Z",
-  "updatedAt": "2026-04-07T04:45:58.219Z",
+  "updatedAt": "2026-04-07T05:17:10.522Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -14,8 +14,8 @@
       "furnitureId": "sofa_01",
       "floorId": "floor1",
       "positionCm": [
-        -180,
-        69
+        249,
+        278
       ],
       "rotationDeg": 0
     }
@@ -28,15 +28,27 @@
       {
         "model": "sofa_01",
         "floorId": "floor1",
-        "x": -180,
-        "y": 69,
+        "x": 249,
+        "y": 278,
         "rotation": 0
       }
     ],
     "surfaceOverrides": {
       "floor1": {
+        "allFloors": {
+          "color": "#ffffff",
+          "materialId": "floor_WoodFloor040",
+          "roughness": 0.35,
+          "metalness": 0,
+          "uvScale": [
+            0.2,
+            0.2
+          ],
+          "textureRotation": 90,
+          "textureAlbedo": "WoodFloor044_2K-JPG_Color.jpg"
+        },
         "allWalls": {
-          "color": "#a47437",
+          "color": "#e6dacb",
           "materialId": "wall_Ivory001A",
           "roughness": 0.9,
           "metalness": 0,
@@ -44,18 +56,8 @@
             2,
             2
           ],
-          "textureRotation": 0
-        },
-        "allFloors": {
-          "color": "#e5d9d9",
-          "materialPresetCleared": true,
-          "roughness": 0.35,
-          "metalness": 0,
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
+          "textureRotation": 0,
+          "textureAlbedo": "Plaster001_2K-JPG_Color.jpg"
         }
       }
     }
