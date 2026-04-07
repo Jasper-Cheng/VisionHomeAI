@@ -546,11 +546,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let activeFloorId = null;
   let selectedGroup = null;
   let floorplanSelected = false;
-  /** @type {{ kind: "allWalls" | "allFloors", floorLevelId: string } | null} */
+  /** @type {{ kind: "allWalls" | "allFloors" | "allDoors", floorLevelId: string } | null} */
   let selectedFloorplanSurface = null;
+
+  /** @param {"allWalls" | "allFloors" | "allDoors"} kind */
+  function floorplanSurfaceScopeFromKind(kind) {
+    if (kind === "allFloors") return "allFloors";
+    if (kind === "allDoors") return "allDoors";
+    return "allWalls";
+  }
   /**
    * 按楼层 id 记录**整层**墙/地颜色与材质库 id 覆盖（与户型 style 叠加）
-   * @type {Record<string, { allWalls?: SurfaceScopeOverride, allFloors?: SurfaceScopeOverride }>}
+   * @type {Record<string, { allWalls?: SurfaceScopeOverride, allFloors?: SurfaceScopeOverride, allDoors?: SurfaceScopeOverride }>}
    */
   let floorplanSurfaceOverrides = {};
   let dragState = null;
@@ -1249,6 +1256,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
       if (scope === "allWalls" && !o.userData.floorplanWallId) return;
       if (scope === "allFloors" && !o.userData.floorplanRoomFloor) return;
+      if (scope === "allDoors" && !o.userData.floorplanDoorFill) return;
       const mats = Array.isArray(o.material) ? o.material : [o.material];
       mats.forEach((m) => {
         if (m?.emissive) m.emissive.setHex(emissiveHex);
@@ -1258,13 +1266,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors"} scope
    */
   function getFloorplanSurfaceGlobalOverride(floorLevelId, scope) {
     const bag = floorplanSurfaceOverrides[String(floorLevelId ?? "").trim()];
     if (!bag) return null;
     if (scope === "allWalls") return bag.allWalls ?? null;
     if (scope === "allFloors") return bag.allFloors ?? null;
+    if (scope === "allDoors") return bag.allDoors ?? null;
     return null;
   }
 
@@ -1277,7 +1286,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const out = {};
     for (const [fid, bag] of Object.entries(raw)) {
       if (!bag || typeof bag !== "object") continue;
-      if (bag.allWalls || bag.allFloors) {
+      if (bag.allWalls || bag.allFloors || bag.allDoors) {
         out[fid] = { ...bag };
         continue;
       }
@@ -1297,14 +1306,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors"} scope
    * @param {SurfaceScopeOverride | null} data null 表示删除该条
    */
   function setFloorplanSurfaceGlobalOverride(floorLevelId, scope, data) {
     const fid = String(floorLevelId ?? "").trim();
     if (!fid) return;
     if (!floorplanSurfaceOverrides[fid]) floorplanSurfaceOverrides[fid] = {};
-    const key = scope === "allWalls" ? "allWalls" : "allFloors";
+    const key =
+      scope === "allWalls"
+        ? "allWalls"
+        : scope === "allFloors"
+          ? "allFloors"
+          : scope === "allDoors"
+            ? "allDoors"
+            : "";
+    if (!key) return;
     if (data && typeof data === "object" && Object.keys(data).length > 0) {
       floorplanSurfaceOverrides[fid][key] = data;
     } else {
@@ -1314,7 +1331,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors"} scope
    * @returns {import("three").Mesh | null}
    */
   function findFirstFloorplanSurfaceMesh(floorLevelId, scope) {
@@ -1325,6 +1342,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
       if (scope === "allWalls" && o.userData.floorplanWallId) found = o;
       if (scope === "allFloors" && o.userData.floorplanRoomFloor) found = o;
+      if (scope === "allDoors" && o.userData.floorplanDoorFill && !o.userData.floorplanDoorHandle) found = o;
     });
     return found;
   }
@@ -1465,6 +1483,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           batches.set(k, { ov: bag.allWalls, meshes: [], isRoomFloor: false });
         }
         batches.get(k).meshes.push(o);
+      } else if (
+        o.userData.floorplanDoorFill &&
+        !o.userData.floorplanDoorHandle &&
+        bag.allDoors &&
+        surfaceOverrideIsActive(bag.allDoors)
+      ) {
+        const k = `${fid}\0allDoors`;
+        if (!batches.has(k)) {
+          batches.set(k, { ov: bag.allDoors, meshes: [], isRoomFloor: false });
+        }
+        batches.get(k).meshes.push(o);
       }
     });
     for (const { ov, meshes, isRoomFloor } of batches.values()) {
@@ -1493,9 +1522,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 仅重应用某一楼层、墙面或地面范围的材质覆盖（不重建几何体）。用于属性面板改色/材质/PBR 时避免全量 rebuild。
+   * 仅重应用某一楼层、墙面/地面/门洞范围的材质覆盖（不重建几何体）。用于属性面板改色/材质/PBR 时避免全量 rebuild。
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors"} scope
    */
   async function applySurfaceOverridesForFloorScope(floorLevelId, scope) {
     if (!floorplanRoot.children.length) return;
@@ -1515,9 +1544,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         ? bag?.allWalls && surfaceOverrideIsActive(bag.allWalls)
           ? bag.allWalls
           : null
-        : bag?.allFloors && surfaceOverrideIsActive(bag.allFloors)
-          ? bag.allFloors
-          : null;
+        : scope === "allDoors"
+          ? bag?.allDoors && surfaceOverrideIsActive(bag.allDoors)
+            ? bag.allDoors
+            : null
+          : bag?.allFloors && surfaceOverrideIsActive(bag.allFloors)
+            ? bag.allFloors
+            : null;
     if (!ov) return;
     /** @type {import("three").Mesh[]} */
     const meshes = [];
@@ -1527,6 +1560,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (scope === "allWalls" && o.userData.floorplanWallId) {
         meshes.push(o);
       } else if (scope === "allFloors" && o.userData.floorplanRoomFloor) {
+        meshes.push(o);
+      } else if (scope === "allDoors" && o.userData.floorplanDoorFill && !o.userData.floorplanDoorHandle) {
         meshes.push(o);
       }
     });
@@ -1932,7 +1967,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {number} doorDepth 门扇厚度（m）
    * @param {number} panelOpacity 与门扇 mesh 相同的有效透明度（含楼层与玻璃系数）
    */
-  function addDoorHandleMeshes(group, centerX, wM, hDoor, doorDepth, panelOpacity, layerOpacityTag) {
+  function addDoorHandleMeshes(group, centerX, wM, hDoor, doorDepth, panelOpacity, layerOpacityTag, floorLevelIdStr) {
     const hMat = doorHandleMetalMaterial(panelOpacity, layerOpacityTag);
     const handleY = Math.min(Math.max(hDoor * 0.45, 0.35), Math.min(1.0, hDoor - 0.05));
     const handleX = centerX + wM * 0.5 - 0.08;
@@ -1951,13 +1986,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const rose = new THREE.Mesh(roseGeo, hMat);
       rose.position.set(handleX, handleY, roseZ);
       rose.castShadow = true;
+      rose.userData.floorplanDoorFill = true;
       rose.userData.floorplanDoorHandle = true;
+      rose.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
       group.add(rose);
 
       const lev = new THREE.Mesh(levGeo, hMat);
       lev.position.set(levCenterX, handleY, levZ);
       lev.castShadow = true;
+      lev.userData.floorplanDoorFill = true;
       lev.userData.floorplanDoorHandle = true;
+      lev.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
       group.add(lev);
     }
   }
@@ -2024,7 +2063,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     })();
   }
 
-  function buildDoorFillGroup(door, wall, cx, cy, s, defaultHeightCm, floorOpacity, styleDoorMat) {
+  function buildDoorFillGroup(door, wall, cx, cy, s, defaultHeightCm, floorOpacity, styleDoorMat, floorLevelIdStr) {
     if (!door || !wall) return null;
     const ns =
       door.style != null && typeof door.style === "object" && !Array.isArray(door.style)
@@ -2059,6 +2098,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     group.position.set(mx, 0, mz);
     group.rotation.y = rotY;
     group.userData.floorplanDoorFill = true;
+    group.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
     const geo = new THREE.BoxGeometry(wM, hDoor, thickM * 0.22);
     const mat = styleDoorMat || doorFillMaterialFromNs(ns, floorOpacity);
     if (!mat) {
@@ -2071,6 +2111,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     mesh.receiveShadow = true;
     mesh.userData.floorplanPick = true;
     mesh.userData.floorplanDoorFill = true;
+    mesh.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
+    mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
     mesh.userData.floorplanDoorStyle = ns;
     if (!styleDoorMat) queueDoorFillTextures(mesh, ns);
     group.add(mesh);
@@ -2083,6 +2125,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       doorDepth,
       styleDoorMat ? (floorOpacity ?? 1) : effectiveDoorPanelOpacity(ns, floorOpacity),
       floorOpacity ?? 1,
+      floorLevelIdStr,
     );
     return group;
   }
@@ -3018,7 +3061,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (!w) continue;
         const dk = resolveDoorMaterialKey(style, d);
         const doorMat = dk ? getMaterialForKey(dk) : null;
-        const fillG = buildDoorFillGroup(d, w, cx, cy, s, defaultH, opacity, doorMat);
+        const fillG = buildDoorFillGroup(d, w, cx, cy, s, defaultH, opacity, doorMat, fidRaw);
         if (fillG) floorG.add(fillG);
       }
       for (const win of fl.windows || []) {
@@ -3702,18 +3745,25 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     for (const h of hits) {
       const o = h.object;
       if (!o.visible) continue;
+      const fid = String(o.userData?.floorplanFloorLevelId ?? "").trim();
       const rid = o.userData?.floorplanRoomId;
-      if (rid) {
+      if (rid && fid) {
         return {
           kind: "allFloors",
-          floorLevelId: String(o.userData.floorplanFloorLevelId ?? "").trim(),
+          floorLevelId: fid,
+        };
+      }
+      if (o.userData?.floorplanDoorFill && fid) {
+        return {
+          kind: "allDoors",
+          floorLevelId: fid,
         };
       }
       const wid = o.userData?.floorplanWallId;
-      if (wid) {
+      if (wid && fid) {
         return {
           kind: "allWalls",
-          floorLevelId: String(o.userData.floorplanFloorLevelId ?? "").trim(),
+          floorLevelId: fid,
         };
       }
     }
@@ -3794,9 +3844,27 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
+   * 本层第一扇门在风格包中对应的材质键（与 buildDoorFillGroup 中 resolveDoorMaterialKey 一致）。
+   * @param {{ floorLevelId: string }} sel
+   * @param {object | null} style
+   */
+  function resolveStyleMaterialKeyForDoorScope(sel, style) {
+    if (!style || !currentFloorplanEntry) return "";
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    const wantFid = normalizeFloorKey(sel.floorLevelId);
+    const fl = floors.find((f) => normalizeFloorKey(f?.id ?? "") === wantFid) ?? null;
+    if (!fl) return "";
+    for (const d of fl.doors || []) {
+      const k = resolveDoorMaterialKey(style, d);
+      if (k) return k;
+    }
+    return "";
+  }
+
+  /**
    * 解析当前墙面/地面在库中的基准材质 id（与 sync 面板、渲染一致）。
    * @param {{ floorLevelId: string }} sel
-   * @param {"allWalls" | "allFloors"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors"} scope
    * @param {SurfaceScopeOverride | null | undefined} ov
    * @param {Record<string, object>} lib
    */
@@ -3807,7 +3875,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       selectVal = "";
     } else if (!selectVal) {
       const style = await getCurrentFloorplanStyleForPanel();
-      const sk = resolveStyleMaterialKeyForSurfaceScope(sel, scope, style);
+      const sk =
+        scope === "allDoors"
+          ? resolveStyleMaterialKeyForDoorScope(sel, style)
+          : resolveStyleMaterialKeyForSurfaceScope(sel, scope, style);
       if (sk) {
         const styleMat = getMaterialDef(style, sk);
         const libMatId =
@@ -3817,8 +3888,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const key = libMatId || sk;
         const entryDef = lib[key];
         const t = String(entryDef?.type ?? "");
-        const matches =
-          isFloor ? t === "wood_floor" : t === "paint" || t === "paint_wood";
+        const matches = isFloor
+          ? t === "wood_floor"
+          : t === "paint" || t === "paint_wood" || t === "glass";
         if (matches) selectVal = key;
       }
     }
@@ -3950,7 +4022,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } catch {
         /* ignore */
       }
-      const scope = sel.kind === "allFloors" ? "allFloors" : "allWalls";
+      const scope = floorplanSurfaceScopeFromKind(sel.kind);
       const baseOv = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
       let mid =
         String(propSurfaceMaterial.value ?? "").trim() ||
@@ -3973,11 +4045,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   async function syncPropertiesPanelForFloorplanSurface(sel) {
     if (!sel || !propertiesPanel) return;
     const isFloor = sel.kind === "allFloors";
-    const scope = isFloor ? "allFloors" : "allWalls";
-    if (propertiesName) propertiesName.textContent = isFloor ? "全部地面" : "全部墙体";
-    if (propSurfaceTitle) propSurfaceTitle.textContent = isFloor ? "地面属性（本层所有房间）" : "墙体属性（本层全部墙）";
+    const isDoor = sel.kind === "allDoors";
+    const scope = floorplanSurfaceScopeFromKind(sel.kind);
+    if (propertiesName) {
+      propertiesName.textContent = isFloor ? "全部地面" : isDoor ? "全部门" : "全部墙体";
+    }
+    if (propSurfaceTitle) {
+      propSurfaceTitle.textContent = isFloor
+        ? "地面属性（本层所有房间）"
+        : isDoor
+          ? "门属性（本层全部门洞）"
+          : "墙体属性（本层全部墙）";
+    }
     if (propSurfaceIdHint) {
-      propSurfaceIdHint.textContent = `本层楼层 id：${sel.floorLevelId || "—"} · 修改将应用于该层全部${isFloor ? "地面" : "墙体"}`;
+      propSurfaceIdHint.textContent = `本层楼层 id：${sel.floorLevelId || "—"} · 修改将应用于该层全部${isFloor ? "地面" : isDoor ? "门洞填充" : "墙体"}`;
     }
     const ov = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
     const sampleMesh = findFirstFloorplanSurfaceMesh(sel.floorLevelId, scope);
@@ -4054,8 +4135,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (wasPendingMaterialPresetClear) pendingSurfaceMaterialPresetClear = true;
       return;
     }
-    const isFloor = sel.kind === "allFloors";
-    const scope = isFloor ? "allFloors" : "allWalls";
+    const scope = floorplanSurfaceScopeFromKind(sel.kind);
     let lib = {};
     try {
       lib = await loadMaterialsLibrary();
@@ -4119,8 +4199,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   async function resetFloorplanSurfaceToDefault() {
     const sel = selectedFloorplanSurface;
     if (!sel || !propSurfaceColor || !propSurfaceMaterial) return;
-    const isFloor = sel.kind === "allFloors";
-    const scope = isFloor ? "allFloors" : "allWalls";
+    const scope = floorplanSurfaceScopeFromKind(sel.kind);
     setFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope, null);
     await rebuildFloorplan3D();
     await selectFloorplanSurface(sel);
@@ -4457,7 +4536,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         el.classList.remove("is-selected");
       });
       const sel = selectedFloorplanSurface;
-      const scope = sel.kind === "allFloors" ? "allFloors" : "allWalls";
+      const scope = floorplanSurfaceScopeFromKind(sel.kind);
       const ovRaw = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
       const ovNoMat =
         ovRaw && typeof ovRaw === "object" ? { ...ovRaw } : {};
