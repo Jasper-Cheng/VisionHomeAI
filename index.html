@@ -418,7 +418,10 @@
                   <div id="propSurfaceColorPickerMount" class="prop-surface-color-picker-mount" aria-hidden="false"></div>
                   <input type="hidden" id="propSurfaceColor" value="#e8dcc8" />
                 </div>
-                <div class="prop-input-group prop-input-group--surface-material">
+                <div
+                  class="prop-input-group prop-input-group--surface-material"
+                  id="propSurfaceMaterialSection"
+                >
                   <div class="prop-surface-material-heading">
                     <span class="prop-input-label">材质预设</span>
                     <span class="prop-surface-material-name" id="propSurfaceMaterialName"></span>
@@ -459,43 +462,80 @@
                       />
                     </label>
                   </div>
-                  <div class="prop-surface-pbr-row">
+                  <div class="prop-surface-pbr-row prop-surface-glass-fields" id="propSurfaceGlassFields" hidden>
                     <label class="prop-surface-pbr-item"
-                      >UV Scale X
+                      >Opacity
                       <input
                         type="number"
-                        id="propSurfaceUvScaleX"
-                        min="0.01"
-                        max="99"
+                        id="propSurfaceOpacity"
+                        min="0"
+                        max="1"
                         step="0.01"
                         class="prop-input prop-surface-pbr-input"
                       />
                     </label>
                     <label class="prop-surface-pbr-item"
-                      >UV Scale Y
+                      >Transmission
                       <input
                         type="number"
-                        id="propSurfaceUvScaleY"
-                        min="0.01"
-                        max="99"
+                        id="propSurfaceTransmission"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        class="prop-input prop-surface-pbr-input"
+                      />
+                    </label>
+                    <label class="prop-surface-pbr-item"
+                      >IOR
+                      <input
+                        type="number"
+                        id="propSurfaceIor"
+                        min="1"
+                        max="2.5"
                         step="0.01"
                         class="prop-input prop-surface-pbr-input"
                       />
                     </label>
                   </div>
-                  <div class="prop-surface-pbr-row">
-                    <label class="prop-surface-pbr-item prop-surface-pbr-item--full"
-                      >贴图旋转 (°)
-                      <input
-                        type="number"
-                        id="propSurfaceTextureRotation"
-                        step="1"
-                        class="prop-input prop-surface-pbr-input"
-                      />
-                    </label>
+                  <div class="prop-surface-uv-texture-section" id="propSurfaceUvTextureSection">
+                    <div class="prop-surface-pbr-row">
+                      <label class="prop-surface-pbr-item"
+                        >UV Scale X
+                        <input
+                          type="number"
+                          id="propSurfaceUvScaleX"
+                          min="0.01"
+                          max="99"
+                          step="0.01"
+                          class="prop-input prop-surface-pbr-input"
+                        />
+                      </label>
+                      <label class="prop-surface-pbr-item"
+                        >UV Scale Y
+                        <input
+                          type="number"
+                          id="propSurfaceUvScaleY"
+                          min="0.01"
+                          max="99"
+                          step="0.01"
+                          class="prop-input prop-surface-pbr-input"
+                        />
+                      </label>
+                    </div>
+                    <div class="prop-surface-pbr-row">
+                      <label class="prop-surface-pbr-item prop-surface-pbr-item--full"
+                        >贴图旋转 (°)
+                        <input
+                          type="number"
+                          id="propSurfaceTextureRotation"
+                          step="1"
+                          class="prop-input prop-surface-pbr-input"
+                        />
+                      </label>
+                    </div>
                   </div>
                 </div>
-                <p class="prop-surface-note">点击任意墙或地面即选中<strong>当前楼层</strong>全部墙体或全部房间地面；修改会应用到该层所有对应表面。材质预设会重新加载贴图。</p>
+                <p class="prop-surface-note">点击任意墙、地面、门洞或<strong>窗洞玻璃</strong>即选中<strong>当前楼层</strong>对应全部表面；修改会应用到该层。墙/地/门可使用材质预设；<strong>窗玻璃固定为户型风格中的玻璃材质</strong>，可调颜色、Roughness/Metalness 与 Opacity / Transmission / IOR（不含 UV 与贴图旋转）。</p>
               </div>
             </div>
           </div>

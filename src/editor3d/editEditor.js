@@ -351,6 +351,9 @@ function clampFurnitureToCanvas(cx, cy, rotDeg, hw, hh) {
  * @property {string} [textureAlbedo] 仅覆盖库材质 `texture.albedo` 的文件名（如 `Concrete003_2K-JPG_Color.jpg`）或 `textures/...` 路径
  * @property {number} [roughness]
  * @property {number} [metalness]
+ * @property {number} [opacity] 库材质「不透明度」乘子（0–1，与 materials.library 中 glass 的 opacity 一致）
+ * @property {number} [transmission]
+ * @property {number} [ior]
  * @property {[number, number]} [uvScale]
  * @property {number} [textureRotation]
  */
@@ -546,18 +549,19 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let activeFloorId = null;
   let selectedGroup = null;
   let floorplanSelected = false;
-  /** @type {{ kind: "allWalls" | "allFloors" | "allDoors", floorLevelId: string } | null} */
+  /** @type {{ kind: "allWalls" | "allFloors" | "allDoors" | "allWindows", floorLevelId: string } | null} */
   let selectedFloorplanSurface = null;
 
-  /** @param {"allWalls" | "allFloors" | "allDoors"} kind */
+  /** @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} kind */
   function floorplanSurfaceScopeFromKind(kind) {
     if (kind === "allFloors") return "allFloors";
     if (kind === "allDoors") return "allDoors";
+    if (kind === "allWindows") return "allWindows";
     return "allWalls";
   }
   /**
    * 按楼层 id 记录**整层**墙/地颜色与材质库 id 覆盖（与户型 style 叠加）
-   * @type {Record<string, { allWalls?: SurfaceScopeOverride, allFloors?: SurfaceScopeOverride, allDoors?: SurfaceScopeOverride }>}
+   * @type {Record<string, { allWalls?: SurfaceScopeOverride, allFloors?: SurfaceScopeOverride, allDoors?: SurfaceScopeOverride, allWindows?: SurfaceScopeOverride }>}
    */
   let floorplanSurfaceOverrides = {};
   let dragState = null;
@@ -661,12 +665,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const propSurfaceTextureAlbedo = document.getElementById("propSurfaceTextureAlbedo");
   const propSurfaceMaterialName = document.getElementById("propSurfaceMaterialName");
   const propSurfaceMaterialGrid = document.getElementById("propSurfaceMaterialGrid");
+  const propSurfaceMaterialSection = document.getElementById("propSurfaceMaterialSection");
+  const propSurfaceUvTextureSection = document.getElementById("propSurfaceUvTextureSection");
   const propSurfaceMaterialClear = document.getElementById("propSurfaceMaterialClear");
   const propSurfaceRoughness = document.getElementById("propSurfaceRoughness");
   const propSurfaceMetalness = document.getElementById("propSurfaceMetalness");
   const propSurfaceUvScaleX = document.getElementById("propSurfaceUvScaleX");
   const propSurfaceUvScaleY = document.getElementById("propSurfaceUvScaleY");
   const propSurfaceTextureRotation = document.getElementById("propSurfaceTextureRotation");
+  const propSurfaceGlassFields = document.getElementById("propSurfaceGlassFields");
+  const propSurfaceOpacity = document.getElementById("propSurfaceOpacity");
+  const propSurfaceTransmission = document.getElementById("propSurfaceTransmission");
+  const propSurfaceIor = document.getElementById("propSurfaceIor");
   const propSurfaceResetDefault = document.getElementById("propSurfaceResetDefault");
   let surfaceMaterialGridClickBound = false;
   /** 材质预设「清除」点击后下一次 commit 需写入 materialPresetCleared */
@@ -1243,7 +1253,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
    * @param {boolean} on
    */
   function setFloorplanGlobalSurfaceHighlight(floorLevelId, scope, on) {
@@ -1257,6 +1267,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (scope === "allWalls" && !o.userData.floorplanWallId) return;
       if (scope === "allFloors" && !o.userData.floorplanRoomFloor) return;
       if (scope === "allDoors" && !o.userData.floorplanDoorFill) return;
+      if (scope === "allWindows" && !o.userData.floorplanWindowFill) return;
       const mats = Array.isArray(o.material) ? o.material : [o.material];
       mats.forEach((m) => {
         if (m?.emissive) m.emissive.setHex(emissiveHex);
@@ -1266,7 +1277,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors" | "allDoors"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
    */
   function getFloorplanSurfaceGlobalOverride(floorLevelId, scope) {
     const bag = floorplanSurfaceOverrides[String(floorLevelId ?? "").trim()];
@@ -1274,6 +1285,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (scope === "allWalls") return bag.allWalls ?? null;
     if (scope === "allFloors") return bag.allFloors ?? null;
     if (scope === "allDoors") return bag.allDoors ?? null;
+    if (scope === "allWindows") return bag.allWindows ?? null;
     return null;
   }
 
@@ -1286,7 +1298,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const out = {};
     for (const [fid, bag] of Object.entries(raw)) {
       if (!bag || typeof bag !== "object") continue;
-      if (bag.allWalls || bag.allFloors || bag.allDoors) {
+      if (bag.allWalls || bag.allFloors || bag.allDoors || bag.allWindows) {
         out[fid] = { ...bag };
         continue;
       }
@@ -1306,7 +1318,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors" | "allDoors"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
    * @param {SurfaceScopeOverride | null} data null 表示删除该条
    */
   function setFloorplanSurfaceGlobalOverride(floorLevelId, scope, data) {
@@ -1320,7 +1332,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           ? "allFloors"
           : scope === "allDoors"
             ? "allDoors"
-            : "";
+            : scope === "allWindows"
+              ? "allWindows"
+              : "";
     if (!key) return;
     if (data && typeof data === "object" && Object.keys(data).length > 0) {
       floorplanSurfaceOverrides[fid][key] = data;
@@ -1331,7 +1345,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors" | "allDoors"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
    * @returns {import("three").Mesh | null}
    */
   function findFirstFloorplanSurfaceMesh(floorLevelId, scope) {
@@ -1343,6 +1357,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (scope === "allWalls" && o.userData.floorplanWallId) found = o;
       if (scope === "allFloors" && o.userData.floorplanRoomFloor) found = o;
       if (scope === "allDoors" && o.userData.floorplanDoorFill && !o.userData.floorplanDoorHandle) found = o;
+      if (scope === "allWindows" && o.userData.floorplanWindowFill) found = o;
     });
     return found;
   }
@@ -1368,6 +1383,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (ov.metalness != null && Number.isFinite(Number(ov.metalness))) {
       out.metalness = Math.min(1, Math.max(0, Number(ov.metalness)));
     }
+    if (ov.opacity != null && Number.isFinite(Number(ov.opacity))) {
+      out.opacity = Math.min(1, Math.max(0, Number(ov.opacity)));
+    }
+    if (ov.transmission != null && Number.isFinite(Number(ov.transmission))) {
+      out.transmission = Math.min(1, Math.max(0, Number(ov.transmission)));
+    }
+    if (ov.ior != null && Number.isFinite(Number(ov.ior))) {
+      out.ior = Math.min(2.5, Math.max(1, Number(ov.ior)));
+    }
     if (Array.isArray(ov.uvScale) && ov.uvScale.length >= 2) {
       const u = Number(ov.uvScale[0]);
       const v = Number(ov.uvScale[1]);
@@ -1388,6 +1412,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return out;
   }
 
+  /**
+   * 窗玻璃不切换材质库：应用覆盖时去掉 materialId / 贴图预设 / UV 与旋转，仅保留颜色与 PBR/玻璃参数。
+   * @param {SurfaceScopeOverride | null | undefined} ov
+   * @returns {SurfaceScopeOverride | null}
+   */
+  function windowSurfaceOverrideForApply(ov) {
+    if (!ov || typeof ov !== "object") return null;
+    const o = { ...ov };
+    delete o.materialId;
+    delete o.textureAlbedo;
+    delete o.materialPresetCleared;
+    delete o.uvScale;
+    delete o.textureRotation;
+    return o;
+  }
+
   /** @param {SurfaceScopeOverride | null | undefined} ov */
   function surfaceOverrideIsActive(ov) {
     if (!ov || typeof ov !== "object") return false;
@@ -1398,6 +1438,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (ov.metalness != null && Number.isFinite(Number(ov.metalness))) return true;
     if (Array.isArray(ov.uvScale) && ov.uvScale.length >= 2) return true;
     if (ov.textureRotation != null && Number.isFinite(Number(ov.textureRotation))) return true;
+    if (ov.opacity != null && Number.isFinite(Number(ov.opacity))) return true;
+    if (ov.transmission != null && Number.isFinite(Number(ov.transmission))) return true;
+    if (ov.ior != null && Number.isFinite(Number(ov.ior))) return true;
     return false;
   }
 
@@ -1418,8 +1461,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       ov.color ||
       ov.roughness != null ||
       ov.metalness != null ||
+      ov.opacity != null ||
+      ov.transmission != null ||
+      ov.ior != null ||
       ov.materialPresetCleared;
     if (!useColorPath) return;
+    const layerOp = Number.isFinite(mesh.userData.floorplanSurfaceOpacity) ? mesh.userData.floorplanSurfaceOpacity : 1;
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     const next = mats.map((m) => {
       if (!m?.isMeshStandardMaterial && !m?.isMeshPhysicalMaterial) return m;
@@ -1445,6 +1492,19 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       if (ov.metalness != null && Number.isFinite(Number(ov.metalness))) {
         c.metalness = Math.min(1, Math.max(0, Number(ov.metalness)));
+      }
+      if (c.isMeshPhysicalMaterial) {
+        if (ov.transmission != null && Number.isFinite(Number(ov.transmission))) {
+          c.transmission = Math.min(1, Math.max(0, Number(ov.transmission)));
+        }
+        if (ov.ior != null && Number.isFinite(Number(ov.ior))) {
+          c.ior = Math.min(2.5, Math.max(1, Number(ov.ior)));
+        }
+      }
+      if (ov.opacity != null && Number.isFinite(Number(ov.opacity))) {
+        const op = Math.min(1, Math.max(0, Number(ov.opacity))) * layerOp;
+        c.opacity = op;
+        c.transparent = op < 1 - 1e-6;
       }
       c.needsUpdate = true;
       return c;
@@ -1494,6 +1554,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           batches.set(k, { ov: bag.allDoors, meshes: [], isRoomFloor: false });
         }
         batches.get(k).meshes.push(o);
+      } else if (o.userData.floorplanWindowFill && bag.allWindows) {
+        const ovApply = windowSurfaceOverrideForApply(bag.allWindows);
+        if (!ovApply || !surfaceOverrideIsActive(ovApply)) return;
+        const k = `${fid}\0allWindows`;
+        if (!batches.has(k)) {
+          batches.set(k, { ov: ovApply, meshes: [], isRoomFloor: false });
+        }
+        batches.get(k).meshes.push(o);
       }
     });
     for (const { ov, meshes, isRoomFloor } of batches.values()) {
@@ -1524,7 +1592,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /**
    * 仅重应用某一楼层、墙面/地面/门洞范围的材质覆盖（不重建几何体）。用于属性面板改色/材质/PBR 时避免全量 rebuild。
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors" | "allDoors"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
    */
   async function applySurfaceOverridesForFloorScope(floorLevelId, scope) {
     if (!floorplanRoot.children.length) return;
@@ -1539,18 +1607,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       libraryBag = {};
     }
     const bag = floorplanSurfaceOverrides[fid];
-    const ov =
-      scope === "allWalls"
-        ? bag?.allWalls && surfaceOverrideIsActive(bag.allWalls)
-          ? bag.allWalls
-          : null
-        : scope === "allDoors"
-          ? bag?.allDoors && surfaceOverrideIsActive(bag.allDoors)
-            ? bag.allDoors
-            : null
-          : bag?.allFloors && surfaceOverrideIsActive(bag.allFloors)
-            ? bag.allFloors
-            : null;
+    /** @type {SurfaceScopeOverride | null} */
+    let ov = null;
+    if (scope === "allWalls" && bag?.allWalls && surfaceOverrideIsActive(bag.allWalls)) ov = bag.allWalls;
+    else if (scope === "allFloors" && bag?.allFloors && surfaceOverrideIsActive(bag.allFloors)) ov = bag.allFloors;
+    else if (scope === "allDoors" && bag?.allDoors && surfaceOverrideIsActive(bag.allDoors)) ov = bag.allDoors;
+    else if (scope === "allWindows" && bag?.allWindows) {
+      const w = windowSurfaceOverrideForApply(bag.allWindows);
+      if (w && surfaceOverrideIsActive(w)) ov = w;
+    }
     if (!ov) return;
     /** @type {import("three").Mesh[]} */
     const meshes = [];
@@ -1562,6 +1627,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } else if (scope === "allFloors" && o.userData.floorplanRoomFloor) {
         meshes.push(o);
       } else if (scope === "allDoors" && o.userData.floorplanDoorFill && !o.userData.floorplanDoorHandle) {
+        meshes.push(o);
+      } else if (scope === "allWindows" && o.userData.floorplanWindowFill) {
         meshes.push(o);
       }
     });
@@ -2231,7 +2298,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /**
    * 窗洞玻璃片（与墙体洞口一致）；无 style 时 normalizeWindowStyle 为白 clear
    */
-  function buildWindowGlassGroup(win, wall, cx, cy, s, defaultHeightCm, floorOpacity, styleWinMat) {
+  function buildWindowGlassGroup(win, wall, cx, cy, s, defaultHeightCm, floorOpacity, styleWinMat, floorLevelIdStr) {
     if (!win || !wall) return null;
     const ns =
       win.style != null && typeof win.style === "object" && !Array.isArray(win.style)
@@ -2270,6 +2337,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     group.position.set(mx, 0, mz);
     group.rotation.y = rotY;
     group.userData.floorplanWindowFill = true;
+    group.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
     const geo = new THREE.BoxGeometry(wM, hWinClamped, thickM * 0.22);
     const mat = styleWinMat || windowGlassMaterialFromNs(ns, floorOpacity);
     if (!mat) {
@@ -2283,6 +2351,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     mesh.receiveShadow = true;
     mesh.userData.floorplanPick = true;
     mesh.userData.floorplanWindowFill = true;
+    mesh.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
+    mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
     mesh.userData.floorplanWindowStyle = ns;
     if (!styleWinMat) queueWindowFillTextures(mesh, ns);
     group.add(mesh);
@@ -3070,7 +3140,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (!w) continue;
         const wink = resolveWindowMaterialKey(style, win);
         const winMat = wink ? getMaterialForKey(wink, { forGlass: true }) : null;
-        const winG = buildWindowGlassGroup(win, w, cx, cy, s, defaultH, opacity, winMat);
+        const winG = buildWindowGlassGroup(win, w, cx, cy, s, defaultH, opacity, winMat, fidRaw);
         if (winG) floorG.add(winG);
       }
             // 尺寸/名称：每层都生成，用 visible 控制开关与「仅选中楼层时只显示当前层」（点击开关不 rebuild）
@@ -3753,6 +3823,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           floorLevelId: fid,
         };
       }
+      if (o.userData?.floorplanWindowFill && fid) {
+        return {
+          kind: "allWindows",
+          floorLevelId: fid,
+        };
+      }
       if (o.userData?.floorplanDoorFill && fid) {
         return {
           kind: "allDoors",
@@ -3862,9 +3938,27 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
+   * 本层第一扇窗在风格包中对应的材质键（与 buildWindowGlassGroup 中 resolveWindowMaterialKey 一致）。
+   * @param {{ floorLevelId: string }} sel
+   * @param {object | null} style
+   */
+  function resolveStyleMaterialKeyForWindowScope(sel, style) {
+    if (!style || !currentFloorplanEntry) return "";
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    const wantFid = normalizeFloorKey(sel.floorLevelId);
+    const fl = floors.find((f) => normalizeFloorKey(f?.id ?? "") === wantFid) ?? null;
+    if (!fl) return "";
+    for (const win of fl.windows || []) {
+      const k = resolveWindowMaterialKey(style, win);
+      if (k) return k;
+    }
+    return "";
+  }
+
+  /**
    * 解析当前墙面/地面在库中的基准材质 id（与 sync 面板、渲染一致）。
    * @param {{ floorLevelId: string }} sel
-   * @param {"allWalls" | "allFloors" | "allDoors"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
    * @param {SurfaceScopeOverride | null | undefined} ov
    * @param {Record<string, object>} lib
    * @param {{ ignoreMaterialPresetCleared?: boolean }} [opts] 为 true 时仍按风格包解析默认库 id（用于清除预设后用户点选色板，需有基准材质承载贴图）
@@ -3880,7 +3974,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const sk =
         scope === "allDoors"
           ? resolveStyleMaterialKeyForDoorScope(sel, style)
-          : resolveStyleMaterialKeyForSurfaceScope(sel, scope, style);
+          : scope === "allWindows"
+            ? resolveStyleMaterialKeyForWindowScope(sel, style)
+            : resolveStyleMaterialKeyForSurfaceScope(sel, scope, style);
       if (sk) {
         const styleMat = getMaterialDef(style, sk);
         const libMatId =
@@ -3892,7 +3988,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const t = String(entryDef?.type ?? "");
         const matches = isFloor
           ? t === "wood_floor"
-          : t === "paint" || t === "paint_wood" || t === "glass";
+          : scope === "allWindows"
+            ? t === "glass"
+            : t === "paint" || t === "paint_wood" || t === "glass";
         if (matches) selectVal = key;
       }
     }
@@ -3970,8 +4068,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {SurfaceScopeOverride | null | undefined} ov
    * @param {string} selectVal
    * @param {Record<string, object>} lib
+   * @param {boolean} [isWindowSurface] 本层全部窗洞玻璃：显示 Opacity / Transmission / IOR
    */
-  function syncSurfacePbrInputs(ov, selectVal, lib) {
+  function syncSurfacePbrInputs(ov, selectVal, lib, isWindowSurface) {
     const base = selectVal && lib[selectVal] ? lib[selectVal] : null;
     const r =
       ov?.roughness != null && Number.isFinite(Number(ov.roughness))
@@ -3998,9 +4097,35 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           : 0;
     if (propSurfaceRoughness) propSurfaceRoughness.value = String(Math.round(r * 1000) / 1000);
     if (propSurfaceMetalness) propSurfaceMetalness.value = String(Math.round(m * 1000) / 1000);
-    if (propSurfaceUvScaleX) propSurfaceUvScaleX.value = String(Math.round(us[0] * 1000) / 1000);
-    if (propSurfaceUvScaleY) propSurfaceUvScaleY.value = String(Math.round(us[1] * 1000) / 1000);
-    if (propSurfaceTextureRotation) propSurfaceTextureRotation.value = String(Math.round(rot * 10) / 10);
+    if (!isWindowSurface) {
+      if (propSurfaceUvScaleX) propSurfaceUvScaleX.value = String(Math.round(us[0] * 1000) / 1000);
+      if (propSurfaceUvScaleY) propSurfaceUvScaleY.value = String(Math.round(us[1] * 1000) / 1000);
+      if (propSurfaceTextureRotation) propSurfaceTextureRotation.value = String(Math.round(rot * 10) / 10);
+    }
+    if (propSurfaceGlassFields) propSurfaceGlassFields.hidden = !isWindowSurface;
+    if (isWindowSurface && propSurfaceOpacity && propSurfaceTransmission && propSurfaceIor) {
+      const oOp =
+        ov?.opacity != null && Number.isFinite(Number(ov.opacity))
+          ? Number(ov.opacity)
+          : base && Number.isFinite(Number(base.opacity))
+            ? Number(base.opacity)
+            : 0.5;
+      const oTr =
+        ov?.transmission != null && Number.isFinite(Number(ov.transmission))
+          ? Number(ov.transmission)
+          : base && Number.isFinite(Number(base.transmission))
+            ? Number(base.transmission)
+            : 0.5;
+      const oIor =
+        ov?.ior != null && Number.isFinite(Number(ov.ior))
+          ? Number(ov.ior)
+          : base && Number.isFinite(Number(base.ior))
+            ? Number(base.ior)
+            : 1.45;
+      propSurfaceOpacity.value = String(Math.round(oOp * 1000) / 1000);
+      propSurfaceTransmission.value = String(Math.round(oTr * 1000) / 1000);
+      propSurfaceIor.value = String(Math.round(oIor * 1000) / 1000);
+    }
   }
 
   function ensureSurfaceMaterialGridClick() {
@@ -4043,7 +4168,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       });
       const mergeOv = { ...baseOv, materialId: mid, textureAlbedo: albedoFn };
       delete mergeOv.materialPresetCleared;
-      syncSurfacePbrInputs(mergeOv, mid, lib);
+      syncSurfacePbrInputs(mergeOv, mid, lib, sel.kind === "allWindows");
       propSurfaceMaterial.dispatchEvent(new Event("change", { bubbles: true }));
     });
   }
@@ -4052,19 +4177,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!sel || !propertiesPanel) return;
     const isFloor = sel.kind === "allFloors";
     const isDoor = sel.kind === "allDoors";
+    const isWin = sel.kind === "allWindows";
     const scope = floorplanSurfaceScopeFromKind(sel.kind);
     if (propertiesName) {
-      propertiesName.textContent = isFloor ? "全部地面" : isDoor ? "全部门" : "全部墙体";
+      propertiesName.textContent = isFloor ? "全部地面" : isDoor ? "全部门" : isWin ? "全部窗" : "全部墙体";
     }
     if (propSurfaceTitle) {
       propSurfaceTitle.textContent = isFloor
         ? "地面属性（本层所有房间）"
         : isDoor
           ? "门属性（本层全部门洞）"
-          : "墙体属性（本层全部墙）";
+          : isWin
+            ? "窗户属性（本层全部窗洞玻璃）"
+            : "墙体属性（本层全部墙）";
     }
     if (propSurfaceIdHint) {
-      propSurfaceIdHint.textContent = `本层楼层 id：${sel.floorLevelId || "—"} · 修改将应用于该层全部${isFloor ? "地面" : isDoor ? "门洞填充" : "墙体"}`;
+      propSurfaceIdHint.textContent = `本层楼层 id：${sel.floorLevelId || "—"} · 修改将应用于该层全部${isFloor ? "地面" : isDoor ? "门洞填充" : isWin ? "窗洞玻璃" : "墙体"}`;
     }
     const ov = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
     const sampleMesh = findFirstFloorplanSurfaceMesh(sel.floorLevelId, scope);
@@ -4082,12 +4210,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     const selectVal = await resolveBaseMaterialIdForSurfacePanel(sel, scope, ov, lib);
     const texAlbedoRaw = String(ov?.textureAlbedo ?? "").trim();
-    if (propSurfaceMaterial) propSurfaceMaterial.value = selectVal;
-    if (propSurfaceTextureAlbedo) propSurfaceTextureAlbedo.value = texAlbedoRaw;
-    updateSurfaceMaterialNameLabel(selectVal, lib, texAlbedoRaw);
-    syncSurfacePbrInputs(ov, selectVal, lib);
+    if (propSurfaceMaterialSection) propSurfaceMaterialSection.hidden = isWin;
+    if (propSurfaceUvTextureSection) propSurfaceUvTextureSection.hidden = isWin;
+    if (!isWin) {
+      if (propSurfaceMaterial) propSurfaceMaterial.value = selectVal;
+      if (propSurfaceTextureAlbedo) propSurfaceTextureAlbedo.value = texAlbedoRaw;
+      updateSurfaceMaterialNameLabel(selectVal, lib, texAlbedoRaw);
+    }
+    syncSurfacePbrInputs(ov, selectVal, lib, isWin);
 
-    if (propSurfaceMaterial && propSurfaceMaterialGrid) {
+    if (!isWin && propSurfaceMaterial && propSurfaceMaterialGrid) {
       const files = await loadColorTextureIndex();
       const effectiveBasename = texAlbedoRaw
         ? texturePathBasename(texAlbedoRaw)
@@ -4137,7 +4269,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const wasPendingMaterialPresetClear = pendingSurfaceMaterialPresetClear;
     pendingSurfaceMaterialPresetClear = false;
     const sel = selectedFloorplanSurface;
-    if (!sel || !propSurfaceColor || !propSurfaceMaterial) {
+    if (!sel || !propSurfaceColor) {
       if (wasPendingMaterialPresetClear) pendingSurfaceMaterialPresetClear = true;
       return;
     }
@@ -4150,6 +4282,53 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     const fid = sel.floorLevelId;
     const prevOv = getFloorplanSurfaceGlobalOverride(fid, scope);
+
+    /** 窗玻璃：不切换材质库预设，仅保存颜色与 PBR/玻璃参数（不写 materialId / textureAlbedo） */
+    if (sel.kind === "allWindows") {
+      const col = String(propSurfaceColor.value || "").trim();
+      const next = {};
+      if (col) next.color = col.startsWith("#") ? col : `#${col}`;
+      const pr =
+        propSurfaceRoughness?.value != null && String(propSurfaceRoughness.value).trim() !== ""
+          ? Number(propSurfaceRoughness.value)
+          : NaN;
+      if (Number.isFinite(pr)) next.roughness = Math.min(1, Math.max(0, pr));
+      const pm =
+        propSurfaceMetalness?.value != null && String(propSurfaceMetalness.value).trim() !== ""
+          ? Number(propSurfaceMetalness.value)
+          : NaN;
+      if (Number.isFinite(pm)) next.metalness = Math.min(1, Math.max(0, pm));
+      const po =
+        propSurfaceOpacity?.value != null && String(propSurfaceOpacity.value).trim() !== ""
+          ? Number(propSurfaceOpacity.value)
+          : NaN;
+      if (Number.isFinite(po)) next.opacity = Math.min(1, Math.max(0, po));
+      const ptm =
+        propSurfaceTransmission?.value != null && String(propSurfaceTransmission.value).trim() !== ""
+          ? Number(propSurfaceTransmission.value)
+          : NaN;
+      if (Number.isFinite(ptm)) next.transmission = Math.min(1, Math.max(0, ptm));
+      const pior =
+        propSurfaceIor?.value != null && String(propSurfaceIor.value).trim() !== ""
+          ? Number(propSurfaceIor.value)
+          : NaN;
+      if (Number.isFinite(pior)) next.ior = Math.min(2.5, Math.max(1, pior));
+      const hasScopeData = Object.keys(next).length > 0;
+      setFloorplanSurfaceGlobalOverride(fid, scope, hasScopeData ? next : null);
+      if (!hasScopeData) {
+        await rebuildFloorplan3D();
+      } else {
+        await applySurfaceOverridesForFloorScope(fid, scope);
+      }
+      await selectFloorplanSurface(sel);
+      if (historyReady) schedulePushHistory();
+      return;
+    }
+
+    if (!propSurfaceMaterial) {
+      if (wasPendingMaterialPresetClear) pendingSurfaceMaterialPresetClear = true;
+      return;
+    }
     let matId = String(propSurfaceMaterial.value || "").trim();
     if (!matId && !wasPendingMaterialPresetClear && !prevOv?.materialPresetCleared) {
       matId = await resolveBaseMaterialIdForSurfacePanel(sel, scope, prevOv, lib);
@@ -4520,6 +4699,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     propSurfaceUvScaleX,
     propSurfaceUvScaleY,
     propSurfaceTextureRotation,
+    propSurfaceOpacity,
+    propSurfaceTransmission,
+    propSurfaceIor,
   ]) {
     el?.addEventListener("change", () => {
       void commitFloorplanSurfaceEdit();
@@ -4547,7 +4729,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const ovNoMat =
         ovRaw && typeof ovRaw === "object" ? { ...ovRaw } : {};
       delete ovNoMat.materialId;
-      syncSurfacePbrInputs(ovNoMat, "", lib);
+      syncSurfacePbrInputs(ovNoMat, "", lib, sel.kind === "allWindows");
       propSurfaceMaterial.dispatchEvent(new Event("change", { bubbles: true }));
     })();
   });
