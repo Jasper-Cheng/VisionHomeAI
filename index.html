@@ -408,19 +408,91 @@
 
             <div id="propSurfaceFields" class="prop-surface-fields" hidden>
               <div class="prop-section">
-                <div class="prop-section-title" id="propSurfaceTitle">墙面 / 地面</div>
-                <p class="prop-surface-id" id="propSurfaceIdHint" aria-live="polite"></p>
-                <div class="prop-surface-actions">
+                <div class="prop-surface-title-row">
+                  <div class="prop-section-title prop-surface-title-text" id="propSurfaceTitle">墙面 / 地面</div>
                   <button type="button" class="prop-surface-reset-btn" id="propSurfaceResetDefault">恢复默认</button>
                 </div>
+                <p class="prop-surface-id" id="propSurfaceIdHint" aria-live="polite"></p>
                 <div class="prop-input-group prop-input-group--surface-color">
                   <label class="prop-input-label" for="propSurfaceColor">颜色</label>
                   <div id="propSurfaceColorPickerMount" class="prop-surface-color-picker-mount" aria-hidden="false"></div>
                   <input type="hidden" id="propSurfaceColor" value="#e8dcc8" />
                 </div>
-                <div class="prop-input-group">
-                  <label class="prop-input-label" for="propSurfaceMaterial">材质预设</label>
-                  <select class="prop-input" id="propSurfaceMaterial" aria-label="材质预设"></select>
+                <div class="prop-input-group prop-input-group--surface-material">
+                  <div class="prop-surface-material-heading">
+                    <span class="prop-input-label">材质预设</span>
+                    <span class="prop-surface-material-name" id="propSurfaceMaterialName"></span>
+                    <button type="button" class="prop-surface-material-clear" id="propSurfaceMaterialClear">清除</button>
+                  </div>
+                  <input type="hidden" id="propSurfaceMaterial" value="" />
+                  <div
+                    class="prop-surface-material-grid"
+                    id="propSurfaceMaterialGrid"
+                    role="group"
+                    aria-label="风格包 Color 贴图"
+                  ></div>
+                </div>
+                <div class="prop-surface-pbr" id="propSurfacePbrFields">
+                  <div class="prop-input-label">材质参数</div>
+                  <div class="prop-surface-pbr-row">
+                    <label class="prop-surface-pbr-item"
+                      >Roughness
+                      <input
+                        type="number"
+                        id="propSurfaceRoughness"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        class="prop-input prop-surface-pbr-input"
+                      />
+                    </label>
+                    <label class="prop-surface-pbr-item"
+                      >Metalness
+                      <input
+                        type="number"
+                        id="propSurfaceMetalness"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        class="prop-input prop-surface-pbr-input"
+                      />
+                    </label>
+                  </div>
+                  <div class="prop-surface-pbr-row">
+                    <label class="prop-surface-pbr-item"
+                      >UV Scale X
+                      <input
+                        type="number"
+                        id="propSurfaceUvScaleX"
+                        min="0.01"
+                        max="99"
+                        step="0.01"
+                        class="prop-input prop-surface-pbr-input"
+                      />
+                    </label>
+                    <label class="prop-surface-pbr-item"
+                      >UV Scale Y
+                      <input
+                        type="number"
+                        id="propSurfaceUvScaleY"
+                        min="0.01"
+                        max="99"
+                        step="0.01"
+                        class="prop-input prop-surface-pbr-input"
+                      />
+                    </label>
+                  </div>
+                  <div class="prop-surface-pbr-row">
+                    <label class="prop-surface-pbr-item prop-surface-pbr-item--full"
+                      >贴图旋转 (°)
+                      <input
+                        type="number"
+                        id="propSurfaceTextureRotation"
+                        step="1"
+                        class="prop-input prop-surface-pbr-input"
+                      />
+                    </label>
+                  </div>
                 </div>
                 <p class="prop-surface-note">点击任意墙或地面即选中<strong>当前楼层</strong>全部墙体或全部房间地面；修改会应用到该层所有对应表面。材质预设会重新加载贴图。</p>
               </div>

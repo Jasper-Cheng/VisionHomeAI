@@ -109,6 +109,28 @@ export function resolveMaterialDefFromLibrary(library, id) {
   return null;
 }
 
+/**
+ * 沿 materials.library 的 $ref 链解析到**顶层表中的叶子 id**（供属性面板与库键对齐）
+ * @param {Record<string, object>} library
+ * @param {string} startId
+ * @returns {string}
+ */
+function resolveLibraryMaterialLeafKey(library, startId) {
+  const bag = library && typeof library === "object" ? library : {};
+  const seen = new Set();
+  let cur = String(startId ?? "").trim();
+  while (cur) {
+    if (seen.has(cur)) return "";
+    seen.add(cur);
+    const entry = bag[cur];
+    if (!isPlainObject(entry)) return "";
+    const next = parseMaterialRefId(entry);
+    if (!next) return cur;
+    cur = next;
+  }
+  return "";
+}
+
 function resolveStyleMaterialRefs(style, library, floorplanId, styleKey) {
   if (!style || typeof style !== "object") return style;
   const materials = style.materials;
@@ -142,6 +164,10 @@ function resolveStyleMaterialRefs(style, library, floorplanId, styleKey) {
     const ref = resolveById(refId);
     if (!ref) refs.push(refId);
     resolved[materialKey] = ref;
+    if (ref && typeof ref === "object" && !Array.isArray(ref)) {
+      const leafKey = resolveLibraryMaterialLeafKey(library, refId);
+      if (leafKey) ref.__libraryMaterialId = leafKey;
+    }
   }
 
   if (refs.length) {
@@ -161,7 +187,7 @@ export async function loadStyleConfig(floorplanId, styleKey) {
   const fp = safeStyleId(floorplanId);
   if (!fp) throw new Error("Invalid floorplanId for decor");
   const sk = safeStyleKey(styleKey) || "modern_minimal_v1";
-  const cacheKey = `${fp}::${sk}`;
+  const cacheKey = `${fp}::${sk}::libMatId1`;
   if (styleCache.has(cacheKey)) return styleCache.get(cacheKey);
 
   const url = `./${DATA_PATHS.stylesDir}/${fp}.json`;
