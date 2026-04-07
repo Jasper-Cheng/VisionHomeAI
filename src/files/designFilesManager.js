@@ -379,6 +379,7 @@ function isoNow() {
 function collectSvgEditorState(layout) {
   const getFp = window.svgEditorGetCurrentFloorplanId;
   const getFloorLevel = window.svgEditorGetCurrentFloorLevelIndex;
+  const getSurf = window.svgEditorGetSurfaceOverrides;
   const floorPlanId = typeof getFp === "function" ? getFp() : null;
   const floorLevelIndex = typeof getFloorLevel === "function" ? getFloorLevel() : null;
   const furniture = (Array.isArray(layout) ? layout : []).map((item) => ({
@@ -388,12 +389,18 @@ function collectSvgEditorState(layout) {
     y: Math.round(Number(item.y) || 0),
     rotation: Math.round(Number(item.rotation ?? 0) || 0),
   }));
-  return {
+  const surfaceOverrides =
+    typeof getSurf === "function" ? getSurf() : null;
+  const out = {
     version: 1,
     floorPlanId,
     floorLevelIndex,
     furniture,
   };
+  if (surfaceOverrides && typeof surfaceOverrides === "object" && Object.keys(surfaceOverrides).length > 0) {
+    out.surfaceOverrides = surfaceOverrides;
+  }
+  return out;
 }
 
 function buildProjectPayload(name, layout) {

@@ -40,7 +40,8 @@ export function resolveStyleTextureUrl(relPath) {
   return `./${DATA_PATHS.stylesDir}/${clean}`;
 }
 
-async function loadMaterialsLibrary() {
+/** @returns {Promise<Record<string, object>>} */
+export async function loadMaterialsLibrary() {
   if (materialsLibraryCache) return materialsLibraryCache;
   if (materialsLibraryPromise) return materialsLibraryPromise;
   const url = `./${DATA_PATHS.stylesDir}/materials.library.json`;
@@ -81,6 +82,31 @@ function parseMaterialRefId(raw) {
 
 function isPlainObject(v) {
   return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+/**
+ * 从 materials.library.json 的 materials 表解析某 id（支持 $ref 链）
+ * @param {Record<string, object>} library
+ * @param {string} id
+ * @returns {object | null}
+ */
+export function resolveMaterialDefFromLibrary(library, id) {
+  const bag = library && typeof library === "object" ? library : {};
+  const seen = new Set();
+  let cur = String(id ?? "").trim();
+  while (cur) {
+    if (seen.has(cur)) return null;
+    seen.add(cur);
+    const entry = bag[cur];
+    if (!isPlainObject(entry)) return null;
+    const nestedRefId = parseMaterialRefId(entry);
+    if (nestedRefId) {
+      cur = nestedRefId;
+      continue;
+    }
+    return clonePlain(entry);
+  }
+  return null;
 }
 
 function resolveStyleMaterialRefs(style, library, floorplanId, styleKey) {

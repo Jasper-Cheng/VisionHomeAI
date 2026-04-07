@@ -362,6 +362,7 @@
           </div>
 
           <div class="properties-body">
+            <div id="propFurnitureFields" class="prop-furniture-fields">
             <div class="prop-transform">
               <div class="prop-input-group">
                 <label class="prop-input-label" title="相对场景原点，单位 cm（水平 X）">位置 X</label>
@@ -402,6 +403,27 @@
             <div class="prop-section prop-appearance-section" id="propAppearanceSection">
               <p class="prop-appearance-hint" id="propAppearanceHint" hidden>JSON 中未配置 <code>config.materials</code> 时，此区域不显示方案。</p>
               <div class="prop-appearance-body" id="propAppearanceBody" aria-live="polite"></div>
+            </div>
+            </div>
+
+            <div id="propSurfaceFields" class="prop-surface-fields" hidden>
+              <div class="prop-section">
+                <div class="prop-section-title" id="propSurfaceTitle">墙面 / 地面</div>
+                <p class="prop-surface-id" id="propSurfaceIdHint" aria-live="polite"></p>
+                <div class="prop-surface-actions">
+                  <button type="button" class="prop-surface-reset-btn" id="propSurfaceResetDefault">恢复默认</button>
+                </div>
+                <div class="prop-input-group prop-input-group--surface-color">
+                  <label class="prop-input-label" for="propSurfaceColor">颜色</label>
+                  <div id="propSurfaceColorPickerMount" class="prop-surface-color-picker-mount" aria-hidden="false"></div>
+                  <input type="hidden" id="propSurfaceColor" value="#e8dcc8" />
+                </div>
+                <div class="prop-input-group">
+                  <label class="prop-input-label" for="propSurfaceMaterial">材质预设</label>
+                  <select class="prop-input" id="propSurfaceMaterial" aria-label="材质预设"></select>
+                </div>
+                <p class="prop-surface-note">点击任意墙或地面即选中<strong>当前楼层</strong>全部墙体或全部房间地面；修改会应用到该层所有对应表面。材质预设会重新加载贴图。</p>
+              </div>
             </div>
           </div>
         </section>

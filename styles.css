@@ -1776,6 +1776,230 @@ a.avatar:hover {
 }
 
 /* Section titles */
+.prop-surface-fields .prop-surface-note {
+  font-size: 12px;
+  color: var(--vh-muted, #666);
+  margin-top: 8px;
+  line-height: 1.45;
+}
+.prop-surface-id {
+  font-size: 12px;
+  color: var(--vh-muted-2, #888);
+  margin: 0 0 8px;
+}
+
+.prop-surface-actions {
+  margin-bottom: 12px;
+}
+
+.prop-surface-reset-btn {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.prop-surface-reset-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.prop-surface-reset-btn:focus-visible {
+  outline: none;
+  border-color: rgba(109, 92, 255, 0.5);
+}
+
+/* 户型墙/地：内嵌调色盘 */
+.prop-surface-color-picker-mount {
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.prop-input-group--surface-color .prop-input-label {
+  margin-bottom: 8px;
+}
+
+.prop-color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.22);
+  box-sizing: border-box;
+}
+
+.prop-color-picker__sb-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.prop-color-picker__sb {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 220 / 160;
+  vertical-align: top;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.prop-color-picker__sb-cursor {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  margin-top: -7px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65), 0 1px 4px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  left: 0;
+  top: 0;
+}
+
+.prop-color-picker__tools-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prop-color-picker__tools-row .prop-color-picker__hue-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.prop-color-picker__hue-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.prop-color-picker__hue {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 220 / 14;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.prop-color-picker__hue-cursor {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  top: 50%;
+  margin-left: -6px;
+  margin-top: -6px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65);
+  pointer-events: none;
+  left: 0;
+}
+
+.prop-color-picker__eyedrop {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.prop-color-picker__eyedrop:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.prop-color-picker__preview {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.prop-color-picker__rgb {
+  display: flex;
+  gap: 8px;
+}
+
+.prop-color-picker__num {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prop-color-picker__num span {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.prop-color-picker__num input {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #2a2a2a;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+
+.prop-color-picker__hex-row {
+  width: 100%;
+}
+
+.prop-color-picker__hex-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prop-color-picker__hex-label span {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.prop-color-picker__hex {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #2a2a2a;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  box-sizing: border-box;
+}
+
 .prop-section {
   padding: 14px 0;
 }
