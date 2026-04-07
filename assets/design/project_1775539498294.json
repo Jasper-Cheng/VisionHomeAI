@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1775539498294",
+  "name": "123",
+  "description": "",
+  "createdAt": "2026-04-07T05:24:58.294Z",
+  "updatedAt": "2026-04-07T05:24:58.294Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -35,
+        -163
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "furniture": [
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": -35,
+        "y": -163,
+        "rotation": 0
+      }
+    ],
+    "surfaceOverrides": {
+      "floor1": {
+        "allFloors": {
+          "color": "#861414",
+          "materialId": "floor_WoodFloor040",
+          "roughness": 0.35,
+          "metalness": 0,
+          "uvScale": [
+            0.2,
+            0.2
+          ],
+          "textureRotation": 90,
+          "textureAlbedo": "PavingStones092_2K-JPG_Color.jpg"
+        }
+      }
+    }
+  }
+}
