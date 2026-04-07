@@ -3867,11 +3867,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {"allWalls" | "allFloors" | "allDoors"} scope
    * @param {SurfaceScopeOverride | null | undefined} ov
    * @param {Record<string, object>} lib
+   * @param {{ ignoreMaterialPresetCleared?: boolean }} [opts] 为 true 时仍按风格包解析默认库 id（用于清除预设后用户点选色板，需有基准材质承载贴图）
    */
-  async function resolveBaseMaterialIdForSurfacePanel(sel, scope, ov, lib) {
+  async function resolveBaseMaterialIdForSurfacePanel(sel, scope, ov, lib, opts) {
     const isFloor = scope === "allFloors";
+    const ignorePresetCleared = opts?.ignoreMaterialPresetCleared === true;
     let selectVal = String(ov?.materialId ?? "").trim();
-    if (ov?.materialPresetCleared) {
+    if (!ignorePresetCleared && ov?.materialPresetCleared) {
       selectVal = "";
     } else if (!selectVal) {
       const style = await getCurrentFloorplanStyleForPanel();
@@ -4026,7 +4028,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const baseOv = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
       let mid =
         String(propSurfaceMaterial.value ?? "").trim() ||
-        (await resolveBaseMaterialIdForSurfacePanel(sel, scope, baseOv, lib));
+        (await resolveBaseMaterialIdForSurfacePanel(sel, scope, baseOv, lib, {
+          ignoreMaterialPresetCleared: true,
+        }));
       if (!mid) return;
       propSurfaceMaterial.value = mid;
       propSurfaceTextureAlbedo.value = albedoFn;
