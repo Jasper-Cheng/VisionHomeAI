@@ -1,5 +1,5 @@
 {
-  "version": "2.8",
+  "version": "2.9",
   "materials": {
     "wall_Ivory001A": {
       "type": "paint",
@@ -31,6 +31,19 @@
         "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
       },
       "uvScale": [4, 4]
+    },
+    "floor_WoodFloor040": {
+      "type": "wood_floor",
+      "color": "#ffffff",
+      "roughness": 0.35,
+      "metalness": 0,
+      "texture": {
+        "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
+        "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
+        "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+      },
+      "uvScale": [0.15, 0.15],
+      "textureRotation": 90
     },
     "window_Clear": {
       "type": "glass",

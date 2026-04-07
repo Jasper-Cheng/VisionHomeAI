@@ -68,21 +68,21 @@
       "id": "cream_style_v1",
       "name": "奶油风",
       "sceneLighting": {
-        "toneMappingExposure": 0.76,
+        "toneMappingExposure": 0.72,
         "ambient": {
-          "color": "#e8dccf",
+          "color": "#f3e8dd",
           "intensity": 0.22
         },
         "hemisphere": {
-          "sky": "#e0d2c4",
-          "ground": "#1a1815",
+          "sky": "#ebe2d8",
+          "ground": "#b8a99a",
           "intensity": 0.34
         },
         "directional": {
-          "color": "#f2e6d6",
-          "intensity": 0.82
+          "color": "#faf4eb",
+          "intensity": 0.72
         },
-        "envMapIntensity": 0.22
+        "envMapIntensity": 0.28
       },
       "materials": {
         "wall_bed1": {
@@ -107,22 +107,22 @@
           "$ref": "wall_Ivory001A"
         },
         "floor_bed1": {
-          "$ref": "floor_PaintedWood002"
+          "$ref": "floor_WoodFloor040"
         },
         "floor_bed2": {
-          "$ref": "floor_PaintedWood002"
+          "$ref": "floor_WoodFloor040"
         },
         "floor_living": {
-          "$ref": "floor_PaintedWood002"
+          "$ref": "floor_WoodFloor040"
         },
         "floor_living_co": {
-          "$ref": "floor_PaintedWood002"
+          "$ref": "floor_WoodFloor040"
         },
         "floor_kitchen": {
-          "$ref": "floor_PaintedWood002"
+          "$ref": "floor_WoodFloor040"
         },
         "floor_bath": {
-          "$ref": "floor_PaintedWood002"
+          "$ref": "floor_WoodFloor040"
         },
         "door_main": {
           "$ref": "door_PaintedWood002"

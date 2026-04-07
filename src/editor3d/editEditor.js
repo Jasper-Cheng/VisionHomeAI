@@ -1027,6 +1027,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     const loader = new THREE.TextureLoader();
     const applyUv = Boolean(opts.applyUvScale && Array.isArray(def.uvScale) && def.uvScale.length >= 2);
+    const rotDeg = Number(def.textureRotation);
+    const rotRad = Number.isFinite(rotDeg) && rotDeg !== 0 ? (rotDeg * Math.PI) / 180 : 0;
+
+    function applyStyleTextureMapOpts(tex) {
+      if (!tex) return;
+      if (applyUv) {
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(def.uvScale[0], def.uvScale[1]);
+      }
+      if (rotRad !== 0) {
+        tex.center.set(0.5, 0.5);
+        tex.rotation = rotRad;
+      }
+    }
 
     (async () => {
       if (!mat?.isMeshStandardMaterial) return;
@@ -1080,33 +1094,21 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!diffTex && !roughTex && !normalTex && !metalnessTex) return;
 
       if (diffTex) {
-        if (applyUv) {
-          diffTex.wrapS = diffTex.wrapT = THREE.RepeatWrapping;
-          diffTex.repeat.set(def.uvScale[0], def.uvScale[1]);
-        }
+        applyStyleTextureMapOpts(diffTex);
         mat.map = diffTex;
         mat.color.setHex(0xffffff);
       }
       if (roughTex) {
-        if (applyUv) {
-          roughTex.wrapS = roughTex.wrapT = THREE.RepeatWrapping;
-          roughTex.repeat.set(def.uvScale[0], def.uvScale[1]);
-        }
+        applyStyleTextureMapOpts(roughTex);
         mat.roughnessMap = roughTex;
       }
       if (normalTex) {
-        if (applyUv) {
-          normalTex.wrapS = normalTex.wrapT = THREE.RepeatWrapping;
-          normalTex.repeat.set(def.uvScale[0], def.uvScale[1]);
-        }
+        applyStyleTextureMapOpts(normalTex);
         mat.normalMap = normalTex;
         mat.normalScale = new THREE.Vector2(1, 1);
       }
       if (metalnessTex) {
-        if (applyUv) {
-          metalnessTex.wrapS = metalnessTex.wrapT = THREE.RepeatWrapping;
-          metalnessTex.repeat.set(def.uvScale[0], def.uvScale[1]);
-        }
+        applyStyleTextureMapOpts(metalnessTex);
         mat.metalnessMap = metalnessTex;
       }
       mat.needsUpdate = true;
