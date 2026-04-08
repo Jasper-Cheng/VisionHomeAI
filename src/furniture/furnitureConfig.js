@@ -256,7 +256,7 @@ export function resolveTextureAssetUrl(pathFromRoot) {
   if (!pathFromRoot) return "";
   const clean = String(pathFromRoot).replace(/^\//, "");
   if (clean.startsWith("assets/")) return `./${clean}`;
-  return `./assets/textures/${clean}`;
+  return `./assets/furniture/textures/${clean}`;
 }
 
 /**

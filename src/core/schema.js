@@ -16,10 +16,10 @@ export const DATA_PATHS = {
   designManifest: "assets/design/manifest.json",
   /** 本地开发服务器 dev_server.py（项目根目录）提供的保存接口（同源 POST） */
   designSaveApi: "/api/design/save",
-  assetsModels: "assets/models",
-  assetsTextures: "assets/textures",
-  /** 家具库卡片预览：`assets/thumbnails/{id}.webp|png|jpg` */
-  assetsThumbnails: "assets/thumbnails",
+  assetsModels: "assets/furniture/models",
+  assetsTextures: "assets/furniture/textures",
+  /** 家具库卡片预览：`assets/furniture/thumbnails/{id}.webp|png|jpg` */
+  assetsThumbnails: "assets/furniture/thumbnails",
   /** 户型装饰包：`assets/floorplans/style/<floorplanId>.json`（含多套 styles），贴图见同目录 `textures/` */
   stylesDir: "assets/floorplans/style",
 };

@@ -2,8 +2,8 @@
   "id": "sofa_02",
   "name": "现代皮革沙发（2K）",
   "category": "sofa",
-  "model": "assets/models/sofa_02.glb",
-  "thumbnail": "assets/thumbnails/sofa_02.png",
+  "model": "assets/furniture/models/sofa_02.glb",
+  "thumbnail": "assets/furniture/thumbnails/sofa_02.png",
   "size": {
     "width": 215.0,
     "depth": 92.0,
@@ -47,9 +47,9 @@
             "id": "napa",
             "name": "纳帕皮",
             "texture": {
-              "albedo": "assets/textures/sofa_02/leather/napa/diff.png",
-              "roughness": "assets/textures/sofa_02/leather/napa/rough.png",
-              "normal": "assets/textures/sofa_02/leather/napa/normal.png"
+              "albedo": "assets/furniture/textures/sofa_02/leather/napa/diff.png",
+              "roughness": "assets/furniture/textures/sofa_02/leather/napa/rough.png",
+              "normal": "assets/furniture/textures/sofa_02/leather/napa/normal.png"
             },
             "colors": [
               {

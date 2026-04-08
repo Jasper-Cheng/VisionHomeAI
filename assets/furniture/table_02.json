@@ -2,8 +2,8 @@
   "id": "table_02",
   "name": "条纹木桌几",
   "category": "table",
-  "model": "assets/models/table_02.glb",
-  "thumbnail": "assets/thumbnails/table_02.png",
+  "model": "assets/furniture/models/table_02.glb",
+  "thumbnail": "assets/furniture/thumbnails/table_02.png",
   "size": {
     "width": 140.0,
     "depth": 70.0,
@@ -48,9 +48,9 @@
             "id": "row",
             "name": "条纹木",
             "texture": {
-              "albedo": "assets/textures/table_02/wood/row/diff.jpg",
-              "roughness": "assets/textures/table_02/wood/row/rough.jpg",
-              "normal": "assets/textures/table_02/wood/row/normal.jpg"
+              "albedo": "assets/furniture/textures/table_02/wood/row/diff.jpg",
+              "roughness": "assets/furniture/textures/table_02/wood/row/rough.jpg",
+              "normal": "assets/furniture/textures/table_02/wood/row/normal.jpg"
             },
             "colors": [
               {

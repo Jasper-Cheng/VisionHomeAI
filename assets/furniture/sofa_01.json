@@ -2,8 +2,8 @@
   "id": "sofa_01",
   "name": "简约布艺沙发（2K）",
   "category": "sofa",
-  "model": "assets/models/sofa_01.glb",
-  "thumbnail": "assets/thumbnails/sofa_01.png",
+  "model": "assets/furniture/models/sofa_01.glb",
+  "thumbnail": "assets/furniture/thumbnails/sofa_01.png",
   "size": {
     "width": 210.0,
     "depth": 90.0,
@@ -47,9 +47,9 @@
             "id": "woven",
             "name": "平织布",
             "texture": {
-              "albedo": "assets/textures/sofa_01/fabric/woven/diff.jpg",
-              "roughness": "assets/textures/sofa_01/fabric/woven/rough.jpg",
-              "normal": "assets/textures/sofa_01/fabric/woven/normal.jpg"
+              "albedo": "assets/furniture/textures/sofa_01/fabric/woven/diff.jpg",
+              "roughness": "assets/furniture/textures/sofa_01/fabric/woven/rough.jpg",
+              "normal": "assets/furniture/textures/sofa_01/fabric/woven/normal.jpg"
             },
             "colors": [
               {

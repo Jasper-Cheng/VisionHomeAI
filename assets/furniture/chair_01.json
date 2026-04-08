@@ -2,8 +2,8 @@
   "id": "chair_01",
   "name": "橡木餐椅",
   "category": "chair",
-  "model": "assets/models/chair_01.glb",
-  "thumbnail": "assets/thumbnails/chair_01.png",
+  "model": "assets/furniture/models/chair_01.glb",
+  "thumbnail": "assets/furniture/thumbnails/chair_01.png",
   "size": {
     "width": 52.0,
     "depth": 48.0,
@@ -49,9 +49,9 @@
             "id": "oak",
             "name": "橡木",
             "texture": {
-              "albedo": "assets/textures/chair_01/wood/oak/diff.jpg",
-              "roughness": "assets/textures/chair_01/wood/oak/rough.jpg",
-              "normal": "assets/textures/chair_01/wood/oak/normal.jpg"
+              "albedo": "assets/furniture/textures/chair_01/wood/oak/diff.jpg",
+              "roughness": "assets/furniture/textures/chair_01/wood/oak/rough.jpg",
+              "normal": "assets/furniture/textures/chair_01/wood/oak/normal.jpg"
             },
             "colors": [
               {

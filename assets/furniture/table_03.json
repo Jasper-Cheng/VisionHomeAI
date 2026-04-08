@@ -2,8 +2,8 @@
   "id": "table_03",
   "name": "橡木茶桌",
   "category": "table",
-  "model": "assets/models/table_03.glb",
-  "thumbnail": "assets/thumbnails/table_03.png",
+  "model": "assets/furniture/models/table_03.glb",
+  "thumbnail": "assets/furniture/thumbnails/table_03.png",
   "size": {
     "width": 80.0,
     "depth": 80.0,
@@ -49,9 +49,9 @@
             "id": "oak",
             "name": "橡木",
             "texture": {
-              "albedo": "assets/textures/table_03/wood/oak/diff.jpg",
-              "roughness": "assets/textures/table_03/wood/oak/rough.jpg",
-              "normal": "assets/textures/table_03/wood/oak/normal.jpg"
+              "albedo": "assets/furniture/textures/table_03/wood/oak/diff.jpg",
+              "roughness": "assets/furniture/textures/table_03/wood/oak/rough.jpg",
+              "normal": "assets/furniture/textures/table_03/wood/oak/normal.jpg"
             },
             "colors": [
               {
