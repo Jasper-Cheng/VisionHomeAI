@@ -3395,15 +3395,25 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     furnitureRoot.children.forEach((g) => {
       if (!g.userData?.isFurniture) return;
       const modelType = g.userData.modelType;
-      // 装饰库组件不计入底部预算和空间利用率
-      if (decCatalog?.byId instanceof Map && decCatalog.byId.has(modelType)) return;
-      const item = byId.get(modelType);
-      const price = getFurnitureLinePrice(item, g);
-      if (price > 0) totalPrice += price;
-      // 用 footprint 矩形近似面积（hw/hh 单位 cm）
-      const hw = g.userData.footprint?.hw ?? 0;
-      const hh = g.userData.footprint?.hh ?? 0;
-      furnitureAreaCm2 += hw * hh * 4;
+      const isDecoration = decCatalog?.byId instanceof Map && decCatalog.byId.has(modelType);
+
+      // 价格：只计入家具，装饰库组件不计入
+      if (!isDecoration) {
+        const item = byId.get(modelType);
+        const price = getFurnitureLinePrice(item, g);
+        if (price > 0) totalPrice += price;
+      }
+
+      // 面积：家具和装饰库都计入，各自从对应 catalog 取 footprint
+      if (isDecoration) {
+        const decItem = decCatalog.byId.get(modelType);
+        const fp = extractFurnitureFootprintCm(decItem);
+        furnitureAreaCm2 += fp.hw * fp.hh * 4;
+      } else {
+        const hw = g.userData.footprint?.hw ?? 0;
+        const hh = g.userData.footprint?.hh ?? 0;
+        furnitureAreaCm2 += hw * hh * 4;
+      }
     });
 
     if (priceEl) {
