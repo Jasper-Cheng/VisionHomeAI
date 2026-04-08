@@ -218,6 +218,51 @@
                   </button>
                   <div class="svg-style-dropdown" id="svgStyleDropdown" hidden role="menu" aria-label="装饰风格列表"></div>
                 </div>
+                <div class="svg-lighting-wrap" id="svgLightingWrap">
+                  <button
+                    type="button"
+                    class="svg-view-btn svg-view-btn--wide"
+                    id="svgLightingBtn"
+                    title="环境光调节"
+                    aria-label="环境光调节"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  >
+                    环境光
+                  </button>
+                  <div class="svg-lighting-dropdown" id="svgLightingDropdown" hidden role="menu" aria-label="环境光调节">
+                    <div class="svg-lighting-section">
+                      <div class="svg-lighting-row">
+                        <label class="svg-lighting-label">曝光</label>
+                        <input type="range" class="svg-lighting-range" id="svgLightingExposure" min="0.1" max="2" step="0.01" value="0.88">
+                        <span class="svg-lighting-value" id="svgLightingExposureVal">0.88</span>
+                      </div>
+                      <div class="svg-lighting-row">
+                        <label class="svg-lighting-label">环境光</label>
+                        <input type="range" class="svg-lighting-range" id="svgLightingAmbient" min="0" max="1" step="0.01" value="0.26">
+                        <span class="svg-lighting-value" id="svgLightingAmbientVal">0.26</span>
+                      </div>
+                      <div class="svg-lighting-row">
+                        <label class="svg-lighting-label">半球光</label>
+                        <input type="range" class="svg-lighting-range" id="svgLightingHemi" min="0" max="1" step="0.01" value="0.36">
+                        <span class="svg-lighting-value" id="svgLightingHemiVal">0.36</span>
+                      </div>
+                      <div class="svg-lighting-row">
+                        <label class="svg-lighting-label">主光源</label>
+                        <input type="range" class="svg-lighting-range" id="svgLightingDir" min="0" max="2" step="0.01" value="1.0">
+                        <span class="svg-lighting-value" id="svgLightingDirVal">1.00</span>
+                      </div>
+                      <div class="svg-lighting-row">
+                        <label class="svg-lighting-label">环境贴图</label>
+                        <input type="range" class="svg-lighting-range" id="svgLightingEnv" min="0" max="1.5" step="0.01" value="0.35">
+                        <span class="svg-lighting-value" id="svgLightingEnvVal">0.35</span>
+                      </div>
+                    </div>
+                    <div class="svg-lighting-actions">
+                      <button type="button" class="svg-lighting-reset" id="svgLightingReset">恢复默认</button>
+                    </div>
+                  </div>
+                </div>
                 <div
                   id="otherLayersOpacityWrap"
                   class="svg-other-opacity-wrap"

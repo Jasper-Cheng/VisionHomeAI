@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1775618440978",
+  "name": "1",
+  "description": "",
+  "createdAt": "2026-04-08T03:20:40.978Z",
+  "updatedAt": "2026-04-08T03:20:40.978Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_01",
+      "floorId": "floor1",
+      "positionCm": [
+        169,
+        62
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "furniture": [
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": 169,
+        "y": 62,
+        "rotation": 0
+      }
+    ],
+    "surfaceOverrides": {
+      "floor1": {
+        "allWalls": {
+          "color": "#e6dacb",
+          "materialId": "wall_Ivory001A",
+          "roughness": 0.9,
+          "metalness": 0,
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0,
+          "textureAlbedo": "PaintedWood002_2K-JPG_Color.jpg"
+        }
+      }
+    }
+  }
+}
