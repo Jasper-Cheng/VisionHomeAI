@@ -1103,7 +1103,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       mat.transparent = true;
       applyFloorplanSurfaceAlpha(mat, Math.min(1, opMult * floorOp));
     } else {
-      applyFloorplanSurfaceAlpha(mat, floorOp);
+      // 与玻璃一致：库/面板「不透明度」× 楼层透明度；仅压 floorOp 会让表面像被乘灰、而非真透明
+      applyFloorplanSurfaceAlpha(mat, Math.min(1, opMult * floorOp));
     }
     mat.side = options.side ?? THREE.FrontSide;
     tagFloorplanLayerOpacity(mat, floorOp);
@@ -1274,7 +1275,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (isRoomFloor) {
       mat.userData.__floorplanRoomFloorDepthWrite = true;
     }
-    applyFloorplanSurfaceAlpha(mat, opacity);
+    // create 已写入 opMult×层透明度；此处用 mat.opacity 再跑一遍以应用「房间地面」depth 规则，避免被单层系数覆盖
+    applyFloorplanSurfaceAlpha(mat, mat.opacity);
     const applyUvOpts =
       isRoomFloor ||
       (Array.isArray(ov.uvScale) && ov.uvScale.length >= 2) ||
@@ -1500,6 +1502,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       ov.materialPresetCleared;
     if (!useColorPath) return;
     const layerOp = Number.isFinite(mesh.userData.floorplanSurfaceOpacity) ? mesh.userData.floorplanSurfaceOpacity : 1;
+    const isRoomFloorMesh = mesh.userData.floorplanRoomFloor === true;
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     const next = mats.map((m) => {
       if (!m?.isMeshStandardMaterial && !m?.isMeshPhysicalMaterial) return m;
@@ -1536,8 +1539,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       if (ov.opacity != null && Number.isFinite(Number(ov.opacity))) {
         const op = Math.min(1, Math.max(0, Number(ov.opacity))) * layerOp;
-        c.opacity = op;
-        c.transparent = op < 1 - 1e-6;
+        if (isRoomFloorMesh) {
+          c.userData.__floorplanRoomFloorDepthWrite = true;
+        } else {
+          delete c.userData.__floorplanRoomFloorDepthWrite;
+        }
+        applyFloorplanSurfaceAlpha(c, op);
       }
       c.needsUpdate = true;
       return c;
