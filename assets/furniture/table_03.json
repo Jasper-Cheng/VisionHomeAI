@@ -49,9 +49,9 @@
             "id": "oak",
             "name": "橡木",
             "texture": {
-              "albedo": "assets/furniture/textures/table_03/wood/oak/diff.jpg",
-              "roughness": "assets/furniture/textures/table_03/wood/oak/rough.jpg",
-              "normal": "assets/furniture/textures/table_03/wood/oak/normal.jpg"
+              "albedo": "assets/furniture/textures/table_03_wood_oak_diff.jpg",
+              "roughness": "assets/furniture/textures/table_03_wood_oak_rough.jpg",
+              "normal": "assets/furniture/textures/table_03_wood_oak_normal.jpg"
             },
             "colors": [
               {
