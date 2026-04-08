@@ -2,7 +2,6 @@
  * 户型装饰 JSON（assets/floorplans/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；材质可在根级或包在 materials 内。
  * 可选根级 mapping：与户型元素 id 对应；各风格未写 mapping 时沿用根级，避免重复。
  * 各风格可选 sceneLighting：曝光、环境光/半球光/主光强度与色温、户型 PBR envMapIntensity（见 apt 风格 JSON）。
- * 可选根级 editorDefaultScene：编辑器「设置风格」写入的默认场景（v:1，与 localStorage 旧格式一致），由 dev_server.py 合并保存。
  * loadStyleConfig(floorplanId, styleKey) 返回合并后的单套风格，供 getMaterialDef。
  * floors[].walls|doors|windows：优先用风格包 mapping.walls|doors|windows 中以元素 id 为键的条目；若无则回退到 style 短键或直连材质 id。
  * floors[].rooms：优先 mapping.rooms[room.id]（{ floor, wall }）；否则 rooms[].style → mapping.rooms 短键。
@@ -212,27 +211,6 @@ export function clearStyleConfigCache() {
   styleCache.clear();
   materialsLibraryCache = null;
   materialsLibraryPromise = null;
-}
-
-/**
- * 读取户型装饰 JSON 根级的 editorDefaultScene（设置风格 / 默认载入场景）
- * 默认绕过 HTTP 缓存：否则保存后再次拖入户型仍可能拿到旧的缓存文件，风格会回退为户型 JSON 里的默认（如奶油风）。
- * @param {string} floorplanId
- * @param {{ bustCache?: boolean }} [opts] 设为 false 可尝试走缓存（一般勿用）
- * @returns {Promise<object|null>}
- */
-export async function loadEditorDefaultSceneFromStyleFile(floorplanId, opts = {}) {
-  const fp = safeStyleId(floorplanId);
-  if (!fp) return null;
-  let url = `./${DATA_PATHS.stylesDir}/${fp}.json`;
-  if (opts.bustCache !== false) url += `${url.includes("?") ? "&" : "?"}t=${Date.now()}`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return null;
-  const data = await res.json();
-  const scene = data.editorDefaultScene;
-  if (!scene || typeof scene !== "object") return null;
-  if (Number(scene.v) !== 1) return null;
-  return scene;
 }
 
 /**

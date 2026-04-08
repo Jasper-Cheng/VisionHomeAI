@@ -20,8 +20,6 @@ import {
   findWallSideRoomsAt,
   loadMaterialsLibrary,
   resolveMaterialDefFromLibrary,
-  loadEditorDefaultSceneFromStyleFile,
-  clearStyleConfigCache,
 } from "../floorplan/floorplanStyle.js";
 import { getFurnitureDisplayName, getFurnitureTags } from "../furniture/furnitureManager.js";
 import {
@@ -553,19 +551,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let floorplanSelected = false;
   /** @type {{ kind: "allWalls" | "allFloors" | "allDoors" | "allWindows", floorLevelId: string } | null} */
   let selectedFloorplanSurface = null;
-
-  /**
-   * 当前户型下侧栏拖入家具/装饰时套用的默认材质与装饰抬升（来自「设置风格」持久化）
-   * @type {{ furnitureSelectionByModel: Record<string, object>, decorationLiftCmByModel: Record<string, number> } | null}
-   */
-  let floorplanPlacementDefaults = null;
-
-  /** 风格工具栏按钮显示「默认」：当前场景由户型装饰包内 editorDefaultScene 驱动（非户型 JSON 的默认 styleKey 文案） */
-  let styleToolbarShowEditorDefaultLabel = false;
-
-  function setStyleToolbarEditorDefaultLabel(on) {
-    styleToolbarShowEditorDefaultLabel = !!on;
-  }
 
   /** @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} kind */
   function floorplanSurfaceScopeFromKind(kind) {
@@ -3080,7 +3065,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           style = await loadStyleConfig(fpId, skFallback);
           if (style) {
             floorplanStyleKeyOverride = null;
-            setStyleToolbarEditorDefaultLabel(false);
             window.dispatchEvent(
               new CustomEvent("visionhome:floorplan-applied-to-svg", {
                 detail: {
@@ -3298,8 +3282,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     currentFloorplanEntry = null;
     floorplanStyleKeyOverride = null;
     floorplanSurfaceOverrides = {};
-    floorplanPlacementDefaults = null;
-    setStyleToolbarEditorDefaultLabel(false);
     currentFloorIndex = 0;
     floorSelectionEnabled = true;
     syncOtherOpacityUi();
@@ -3309,43 +3291,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (historyReady && !isRestoring) pushHistorySnapshot();
   }
 
-  function applySavedFloorplanDefaultStyleFromPayload(payload) {
-    if (!payload || typeof payload !== "object" || Number(payload.v) !== 1) return;
-    const sk = payload.floorplanStyleKey;
-    floorplanStyleKeyOverride = sk != null && String(sk).trim() ? String(sk).trim() : null;
-    floorplanSurfaceOverrides = migrateFloorplanSurfaceOverrides(
-      payload.surfaceOverrides && typeof payload.surfaceOverrides === "object"
-        ? JSON.parse(JSON.stringify(payload.surfaceOverrides))
-        : {},
-    );
-    if (payload.lightingConfig && typeof payload.lightingConfig === "object") {
-      const cfg = payload.lightingConfig;
-      if (Number.isFinite(cfg.toneMappingExposure)) renderer.toneMappingExposure = cfg.toneMappingExposure;
-      if (cfg.ambient && Number.isFinite(cfg.ambient.intensity)) ambientLight.intensity = cfg.ambient.intensity;
-      if (cfg.hemisphere && Number.isFinite(cfg.hemisphere.intensity)) hemiLight.intensity = cfg.hemisphere.intensity;
-      if (cfg.directional && Number.isFinite(cfg.directional.intensity)) dirLight.intensity = cfg.directional.intensity;
-      if (Number.isFinite(cfg.envMapIntensity)) sceneLightingEnvMapIntensity = cfg.envMapIntensity;
-    }
-  }
-
-  function refreshFloorplanPlacementDefaultsFromPayload(payload) {
-    if (!payload || typeof payload !== "object" || Number(payload.v) !== 1) {
-      floorplanPlacementDefaults = null;
-      return;
-    }
-    floorplanPlacementDefaults = {
-      furnitureSelectionByModel:
-        payload.furnitureSelectionByModel && typeof payload.furnitureSelectionByModel === "object"
-          ? payload.furnitureSelectionByModel
-          : {},
-      decorationLiftCmByModel:
-        payload.decorationLiftCmByModel && typeof payload.decorationLiftCmByModel === "object"
-          ? payload.decorationLiftCmByModel
-          : {},
-    };
-  }
-
-  async function applyFloorplanEntryAtWorld(entry, _wx, _wy, options = {}) {
+  function applyFloorplanEntryAtWorld(entry, _wx, _wy, options = {}) {
     if (!entry) return;
     /** 从户型库拖入/替换户型时清空；从设计文件或 undo 恢复时已先写入 overrides 时需传 preserveSurfaceOverrides: true */
     if (!options.preserveSurfaceOverrides) {
@@ -3354,62 +3300,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     currentFloorplanEntry = entry;
     currentFloorIndex = normalizeFloorIndex(entry, options.floorIndex);
     if (!options.preserveStyleKeyOverride) floorplanStyleKeyOverride = null;
-
-    const fpId = String(entry?.id ?? "").trim();
-    let filePayload = null;
-    if (fpId && !options.skipSavedFloorplanDefaultStyle) {
-      filePayload = await loadEditorDefaultSceneFromStyleFile(fpId);
-    }
-    if (!options.preserveSurfaceOverrides && filePayload) {
-      applySavedFloorplanDefaultStyleFromPayload(filePayload);
-      setStyleToolbarEditorDefaultLabel(true);
-    } else {
-      setStyleToolbarEditorDefaultLabel(false);
-    }
-    refreshFloorplanPlacementDefaultsFromPayload(filePayload);
-
     floorSelectionEnabled = true;
     syncOtherOpacityUi();
-
-    const layoutToRestore =
-      filePayload &&
-      Array.isArray(filePayload.furnitureLayout) &&
-      filePayload.furnitureLayout.length > 0
-        ? normalizeSavedFurnitureLayout(filePayload.furnitureLayout)
-        : null;
-
-    function finishAfterFloorplanApply() {
-      setFloorLevelsVisible();
-      updateFurnitureFloorVisibility();
-      updateBottomUI();
-      if (historyReady && !isRestoring) pushHistorySnapshot();
-    }
-
-    if (layoutToRestore && layoutToRestore.length) {
-      const wasRestoring = isRestoring;
-      isRestoring = true;
-      void rebuildFloorplan3D()
-        .then(async () => {
-          try {
-            await rebuildFromLayout(layoutToRestore);
-            selectFurniture(null);
-          } catch (err) {
-            console.warn("[VisionHome] 载入默认风格中的家具/装饰失败", err);
-          } finally {
-            isRestoring = wasRestoring;
-            finishAfterFloorplanApply();
-          }
-        })
-        .catch((err) => {
-          console.warn("[VisionHome] 户型三维重建失败", err);
-          isRestoring = wasRestoring;
-          finishAfterFloorplanApply();
-        });
-      return;
-    }
-
     rebuildFloorplan3D();
-    finishAfterFloorplanApply();
+    setFloorLevelsVisible();
+    updateFurnitureFloorVisibility();
+    if (historyReady && !isRestoring) pushHistorySnapshot();
   }
 
   async function createFurnitureMesh(furnitureId) {
@@ -3493,33 +3389,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     let rot = Math.round(Number(rotationDeg) || 0) % 360;
     if (rot < 0) rot += 360;
     group.userData.rotDeg = rot;
-
-    const placeDef = floorplanPlacementDefaults;
-    const selFromRow = opts.furnitureSelection ?? opts.furnitureSelectionOverride;
-    if (selFromRow && hasFurnitureMaterialConfig(item)) {
-      const sel = normalizeFurnitureSelection(item, selFromRow);
-      if (sel) {
-        group.userData.furnitureSelection = sel;
-        await refreshFurnitureVisualForConfig(group, item);
-      }
-    } else if (placeDef?.furnitureSelectionByModel && hasFurnitureMaterialConfig(item)) {
-      const raw = placeDef.furnitureSelectionByModel[modelId];
-      if (raw && typeof raw === "object") {
-        const sel = normalizeFurnitureSelection(item, raw);
-        if (sel) {
-          group.userData.furnitureSelection = sel;
-          await refreshFurnitureVisualForConfig(group, item);
-        }
-      }
-    }
-
     setFurnitureFromLayoutCm(group, xCm, yCm, rot, opts);
     if (modelIdIsDecoration(modelId)) {
-      let cm = opts.decorationLiftCm;
-      if (cm == null && placeDef?.decorationLiftCmByModel && Object.prototype.hasOwnProperty.call(placeDef.decorationLiftCmByModel, modelId)) {
-        cm = placeDef.decorationLiftCmByModel[modelId];
-      }
-      cm = cm != null ? Number(cm) : 0;
+      const cm = opts.decorationLiftCm != null ? Number(opts.decorationLiftCm) : 0;
       const liftM = Number.isFinite(cm) ? cm / 100 : 0;
       group.userData.decorationLiftM = clampDecorationLiftMForGroup(group, liftM);
     }
@@ -3540,7 +3412,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       await appendFurnitureItem(row.model, row.x, row.y, row.rotation ?? 0, row.floorId ?? null, {
         wallSnap: false,
         decorationLiftCm: row.decorationLiftCm,
-        furnitureSelection: row.furnitureSelection,
       });
     }
     updateFurnitureFloorVisibility();
@@ -3830,18 +3701,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (modelIdIsDecoration(g.userData.modelType)) {
         row.decorationLiftCm = Math.round((Number(g.userData.decorationLiftM) || 0) * 100);
       }
-      const item = byId.get(g.userData.modelType);
-      if (item && hasFurnitureMaterialConfig(item) && g.userData.furnitureSelection) {
-        const sel = normalizeFurnitureSelection(item, g.userData.furnitureSelection);
-        if (sel) {
-          row.furnitureSelection = {
-            skuId: sel.skuId,
-            materialId: sel.materialId,
-            textureId: sel.textureId,
-            colorId: sel.colorId,
-          };
-        }
-      }
       out.push(row);
     });
     return out;
@@ -3926,7 +3785,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           } else {
             floorplanStyleKeyOverride = null;
           }
-          await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
+          applyFloorplanEntryAtWorld(entry, undefined, undefined, {
             floorIndex: state.floorLevelIndex,
             preserveStyleKeyOverride: true,
             preserveSurfaceOverrides: true,
@@ -5191,7 +5050,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       await rebuildFromLayout([]);
       selectFurniture(null);
     }
-    await applyFloorplanEntryAtWorld(entry);
+    applyFloorplanEntryAtWorld(entry);
     return true;
   }
 
@@ -5385,29 +5244,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function normalizeSavedFurnitureLayout(arr) {
     if (!Array.isArray(arr)) return [];
     return arr
-      .map((row) => {
-        const base = {
-          model: String(row?.model ?? row?.furnitureId ?? "").trim(),
-          floorId: row?.floorId != null && String(row.floorId).trim() ? String(row.floorId).trim() : "floor1",
-          x: Math.round(Number(row?.x)),
-          y: Math.round(Number(row?.y)),
-          rotation: Math.round(Number(row?.rotation ?? row?.rotationDeg ?? 0) || 0),
-        };
-        const out = { ...base };
-        if (row?.decorationLiftCm != null && Number.isFinite(Number(row.decorationLiftCm))) {
-          out.decorationLiftCm = Math.round(Number(row.decorationLiftCm));
-        }
-        if (row?.furnitureSelection && typeof row.furnitureSelection === "object") {
-          const fs = row.furnitureSelection;
-          out.furnitureSelection = {
-            skuId: String(fs.skuId ?? "").trim(),
-            materialId: String(fs.materialId ?? "").trim(),
-            textureId: String(fs.textureId ?? "").trim(),
-            colorId: String(fs.colorId ?? "").trim(),
-          };
-        }
-        return out;
-      })
+      .map((row) => ({
+        model: String(row?.model ?? row?.furnitureId ?? "").trim(),
+        floorId: row?.floorId != null && String(row.floorId).trim() ? String(row.floorId).trim() : "floor1",
+        x: Math.round(Number(row?.x)),
+        y: Math.round(Number(row?.y)),
+        rotation: Math.round(Number(row?.rotation ?? row?.rotationDeg ?? 0) || 0),
+      }))
       .filter((r) => r.model && Number.isFinite(r.x) && Number.isFinite(r.y));
   }
 
@@ -5450,7 +5293,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
         if (entry) {
-          await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
+          applyFloorplanEntryAtWorld(entry, undefined, undefined, {
             floorIndex: floorLevelIndex,
             preserveSurfaceOverrides: true,
           });
@@ -5506,21 +5349,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   async function restoreEditorSession(payload) {
-    async function applyFloorplanByPayload() {
+    function applyFloorplanByPayload() {
       const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
       const floorLevelIndex = Math.max(0, Math.trunc(Number(payload.floorLevelIndex) || 0));
       if (fpId) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
         if (entry) {
-          await applyFloorplanEntryAtWorld(entry, undefined, undefined, { floorIndex: floorLevelIndex });
+          applyFloorplanEntryAtWorld(entry, undefined, undefined, { floorIndex: floorLevelIndex });
           return;
         }
       }
       clearFloorplan();
     }
 
-    try {
     if (!payload || Number(payload.version) !== 1) return;
 
     const v = payload.view;
@@ -5545,11 +5387,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       if (idx < 0 || idx >= entries.length) {
         isRestoring = true;
-        try {
-          await applyFloorplanByPayload();
-        } finally {
-          isRestoring = false;
-        }
+        try { applyFloorplanByPayload(); } finally { isRestoring = false; }
         await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
         if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
         return;
@@ -5565,11 +5403,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } catch {
         historyReady = true;
         isRestoring = true;
-        try {
-          await applyFloorplanByPayload();
-        } finally {
-          isRestoring = false;
-        }
+        try { applyFloorplanByPayload(); } finally { isRestoring = false; }
         await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
         if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
         return;
@@ -5585,19 +5419,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       emitLayoutChanged();
     } else {
       isRestoring = true;
-      try {
-        await applyFloorplanByPayload();
-      } finally {
-        isRestoring = false;
-      }
+      try { applyFloorplanByPayload(); } finally { isRestoring = false; }
       await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
       if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
-    }
-    } finally {
-      if (payload && Number(payload.version) === 1 && Object.prototype.hasOwnProperty.call(payload, "styleToolbarEditorDefault")) {
-        setStyleToolbarEditorDefaultLabel(!!payload.styleToolbarEditorDefault);
-        window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
-      }
     }
   }
 
@@ -5745,15 +5569,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         btn.setAttribute("aria-label", "装饰风格");
         return;
       }
-      if (styleToolbarShowEditorDefaultLabel) {
-        const hit = list.find((s) => s.key === cur);
-        const name = hit?.name ? String(hit.name).trim() : cur;
-        btn.textContent = "默认";
-        const tip = `户型默认方案（${name}）`;
-        btn.title = tip;
-        btn.setAttribute("aria-label", `装饰风格，${tip}`);
-        return;
-      }
       const hit = list.find((s) => s.key === cur);
       const label = hit?.name ? String(hit.name).trim() : cur || STYLE_BTN_DEFAULT;
       btn.textContent = label || STYLE_BTN_DEFAULT;
@@ -5814,7 +5629,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const key = String(tag.dataset.styleKey ?? "").trim();
       if (!key || !currentFloorplanEntry) return;
       floorplanStyleKeyOverride = key;
-      setStyleToolbarEditorDefaultLabel(false);
       const picked = String(tag.textContent ?? "").trim();
       if (picked) {
         btn.textContent = picked;
@@ -5842,101 +5656,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       directional: { intensity: dirLight.intensity },
       envMapIntensity: sceneLightingEnvMapIntensity,
     };
-  }
-
-  async function saveCurrentFloorplanDefaultStyleToStyleFile() {
-    const fpId = getCurrentFloorplanId();
-    if (!fpId) return { ok: false, reason: "no_floorplan" };
-    const furnitureSelectionByModel = {};
-    const decorationLiftCmByModel = {};
-    furnitureRoot.children.forEach((g) => {
-      if (!g.userData?.isFurniture) return;
-      const mid = g.userData.modelType;
-      const item = byId.get(mid);
-      if (item && hasFurnitureMaterialConfig(item) && g.userData.furnitureSelection) {
-        const sel = normalizeFurnitureSelection(item, g.userData.furnitureSelection);
-        if (sel) furnitureSelectionByModel[mid] = { ...sel };
-      }
-      if (modelIdIsDecoration(mid)) {
-        decorationLiftCmByModel[mid] = Math.round((Number(g.userData.decorationLiftM) || 0) * 100);
-      }
-    });
-    const editorDefaultScene = {
-      v: 1,
-      floorplanStyleKey: getEffectiveFloorplanStyleKey(),
-      surfaceOverrides: JSON.parse(JSON.stringify(floorplanSurfaceOverrides)),
-      lightingConfig: getCurrentLightingConfig(),
-      furnitureSelectionByModel,
-      decorationLiftCmByModel,
-      furnitureLayout: JSON.parse(JSON.stringify(getLayout())),
-    };
-    try {
-      const res = await fetch(DATA_PATHS.floorplanStyleSaveApi, {
-        method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({ floorplanId: fpId, editorDefaultScene }),
-      });
-      let data = null;
-      try {
-        data = await res.json();
-      } catch (_) {
-        data = null;
-      }
-      if (!res.ok) {
-        return { ok: false, reason: res.status === 404 ? "no_api" : "http", status: res.status };
-      }
-      if (!data || data.ok !== true) {
-        return { ok: false, reason: "bad_response" };
-      }
-      clearStyleConfigCache();
-      refreshFloorplanPlacementDefaultsFromPayload(editorDefaultScene);
-      setStyleToolbarEditorDefaultLabel(true);
-      window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
-      return { ok: true };
-    } catch (err) {
-      console.warn("[VisionHome] 默认风格保存失败", err);
-      return { ok: false, reason: "network" };
-    }
-  }
-
-  function initFloorplanDefaultStyleDialog() {
-    const btn = document.getElementById("btnFloorplanDefaultStyle");
-    const dlg = document.getElementById("setFloorplanDefaultStyleDialog");
-    const cancel = document.getElementById("setFloorplanDefaultStyleCancel");
-    const confirm = document.getElementById("setFloorplanDefaultStyleConfirm");
-    if (!btn || !dlg) return;
-    btn.addEventListener("click", () => {
-      if (!getCurrentFloorplanId()) {
-        window.alert("请先载入户型后再设置默认风格。");
-        return;
-      }
-      if (typeof dlg.showModal === "function") dlg.showModal();
-      else dlg.setAttribute("open", "");
-    });
-    cancel?.addEventListener("click", () => {
-      try {
-        if (typeof dlg.close === "function") dlg.close();
-        else dlg.removeAttribute("open");
-      } catch (_) {}
-    });
-    confirm?.addEventListener("click", () => {
-      void (async () => {
-        const r = await saveCurrentFloorplanDefaultStyleToStyleFile();
-        try {
-          if (typeof dlg.close === "function") dlg.close();
-          else dlg.removeAttribute("open");
-        } catch (_) {}
-        if (r && !r.ok && r.reason === "no_floorplan") {
-          window.alert("请先载入户型后再设置默认风格。");
-        } else if (r && !r.ok && (r.reason === "no_api" || r.reason === "network")) {
-          window.alert(
-            "无法写入户型风格文件。请使用项目根目录的 python3 dev_server.py 启动本地服务（纯静态 http.server 无保存接口），并确保 assets/floorplans/style 下存在对应 JSON。",
-          );
-        } else if (r && !r.ok) {
-          window.alert("保存失败，请稍后重试或查看控制台。");
-        }
-      })();
-    });
   }
 
   function applyLightingFromSliders() {
@@ -6021,7 +5740,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   initLightingToolbar();
-  initFloorplanDefaultStyleDialog();
 
   window.svgEditorAddFurniture = addFurniture;
   window.svgEditorGetLayout = getLayout;
@@ -6066,8 +5784,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
   window.svgEditorGetCurrentFloorId = getCurrentFloorId;
   window.svgEditorGetFloorplanStyleKey = getEffectiveFloorplanStyleKey;
-  window.svgEditorGetStyleToolbarEditorDefaultLabel = () => styleToolbarShowEditorDefaultLabel;
-  window.svgEditorSaveFloorplanDefaultStyle = saveCurrentFloorplanDefaultStyleToStyleFile;
   window.svgEditorRestoreSession = restoreEditorSession;
   window.svgEditorGetUndoHistory = () => ({ entries: [...history], index: historyIndex });
   window.svgEditorFlushHistoryDebounce = flushHistoryDebounce;

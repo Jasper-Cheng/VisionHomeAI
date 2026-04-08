@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-VisionHomeAI 本地开发：提供静态资源，并将「保存方案」POST 写入 assets/design/ 且更新 manifest.json；
-将「设置风格」POST 合并写入 assets/floorplans/style/<floorplanId>.json 的 editorDefaultScene。
+VisionHomeAI 本地开发：提供静态资源，并将「保存方案」POST 写入 assets/design/ 且更新 manifest.json。
 
 用法（在项目根目录执行）：
   python3 dev_server.py
@@ -22,11 +21,9 @@ from urllib.parse import urlparse
 PORT = int(os.environ.get("PORT", "8080"))
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DESIGN_DIR = os.path.join(ROOT, "assets", "design")
-STYLES_DIR = os.path.join(ROOT, "assets", "floorplans", "style")
 MANIFEST_PATH = os.path.join(DESIGN_DIR, "manifest.json")
 
 FILENAME_OK = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]*\.json$")
-FLOORPLAN_ID_OK = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
 def ensure_manifest() -> None:
@@ -45,11 +42,7 @@ class DevHTTPRequestHandler(SimpleHTTPRequestHandler):
         sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
 
     def do_POST(self) -> None:
-        path = urlparse(self.path).path
-        if path == "/api/floorplan-style/save":
-            self._post_floorplan_style_save()
-            return
-        if path != "/api/design/save":
+        if urlparse(self.path).path != "/api/design/save":
             self.send_error(404, "Not Found")
             return
         try:
@@ -114,69 +107,12 @@ class DevHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(out)
 
-    def _post_floorplan_style_save(self) -> None:
-        try:
-            length = int(self.headers.get("Content-Length", "0") or 0)
-        except ValueError:
-            self.send_error(400, "Bad Content-Length")
-            return
-        if length <= 0 or length > 8 * 1024 * 1024:
-            self.send_error(400, "Bad body size")
-            return
-        raw = self.rfile.read(length)
-        try:
-            body = json.loads(raw.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError):
-            self.send_error(400, "Invalid JSON")
-            return
-        fp_id = body.get("floorplanId")
-        scene = body.get("editorDefaultScene")
-        if not isinstance(fp_id, str) or not isinstance(scene, dict):
-            self.send_error(400, "Missing floorplanId or editorDefaultScene")
-            return
-        fp_id = fp_id.strip()
-        if not fp_id or not FLOORPLAN_ID_OK.match(fp_id):
-            self.send_error(400, "Invalid floorplanId")
-            return
-        styles_dir_real = os.path.realpath(STYLES_DIR)
-        path = os.path.realpath(os.path.join(STYLES_DIR, f"{fp_id}.json"))
-        if not path.startswith(styles_dir_real + os.sep) and path != styles_dir_real:
-            self.send_error(400, "Invalid path")
-            return
-        if not os.path.isfile(path):
-            self.send_error(404, "Style file not found")
-            return
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-        except (OSError, json.JSONDecodeError) as e:
-            self.send_error(500, str(e))
-            return
-        if not isinstance(data, dict):
-            self.send_error(500, "Invalid style JSON root")
-            return
-        data["editorDefaultScene"] = scene
-        text = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
-        try:
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(text)
-        except OSError as e:
-            self.send_error(500, str(e))
-            return
-        out = json.dumps({"ok": True, "file": f"{fp_id}.json"}).encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(out)))
-        self.end_headers()
-        self.wfile.write(out)
-
 
 def main() -> None:
     os.chdir(ROOT)
     httpd = HTTPServer(("", PORT), DevHTTPRequestHandler)
     print(f"VisionHomeAI dev server  http://localhost:{PORT}/  (root={ROOT})")
     print("保存方案 → assets/design/  + 更新 manifest.json")
-    print("设置风格 → POST /api/floorplan-style/save → assets/floorplans/style/<id>.json")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
