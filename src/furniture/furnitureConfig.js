@@ -289,18 +289,41 @@ function tintColorForSharedAlbedoMap(THREE, hex) {
   return c;
 }
 
+/** @param {unknown} raw */
+function normalizeMeshNamePatterns(raw) {
+  if (raw == null) return [];
+  const arr = Array.isArray(raw) ? raw : [raw];
+  return arr.map((s) => String(s).trim().toLowerCase()).filter(Boolean);
+}
+
 /**
- * GLB 载入后：用条目中的 albedo + roughness（及可选 normal）路径替换为 MeshStandardMaterial。
- * diffuse：sRGB；roughness：线性数据；normal：NoColorSpace（切线空间法线，如 OpenGL / gl 朝向）。
- * 多 mesh 常共享同一材质实例：必须先全部换完新材质，再按材质引用去重后 dispose，否则会提前销毁共享贴图。
- * @param {object | null | undefined} selectionOverride 与 `group.userData.furnitureSelection` 一致；不传则回落到条目 `selection`（勿用于已选实例）
- * @returns {Promise<boolean>} 是否成功应用外部 PBR
+ * 是否在 `config.materials[]` 上声明了 `meshNameIncludes`（按 GLB mesh/node 名匹配多材质）。
  */
-export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOverride = null) {
-  if (!root || !item || !hasFurnitureMaterialConfig(item)) return false;
-  const sel = normalizeFurnitureSelection(item, selectionOverride);
-  if (!sel) return false;
-  const det = resolveFurnitureSelectionDetail(item, sel);
+export function hasMeshMaterialRules(item) {
+  const mats = getConfigMaterials(item);
+  return mats.some((m) => normalizeMeshNamePatterns(m.meshNameIncludes).length > 0);
+}
+
+/**
+ * 按 mesh.name 选择材质条目：先匹配带 `meshNameIncludes` 的项（数组顺序优先），否则用未声明 includes 的项作默认，再否则第一项。
+ */
+export function pickMaterialEntryForMeshName(mats, meshName) {
+  const n = String(meshName || "").toLowerCase();
+  for (const m of mats) {
+    const pats = normalizeMeshNamePatterns(m.meshNameIncludes);
+    if (!pats.length) continue;
+    if (pats.some((p) => n.includes(p))) return m;
+  }
+  const fallback = mats.find((x) => !normalizeMeshNamePatterns(x.meshNameIncludes).length);
+  return fallback ?? mats[0];
+}
+
+/**
+ * @param {typeof import("three")} THREE
+ * @param {object} det resolveFurnitureSelectionDetail 返回值
+ * @returns {Promise<{ diffTex: import("three").Texture | null, roughTex: import("three").Texture | null, normalTex: import("three").Texture | null }>}
+ */
+async function loadPbrTextureMapsForDetail(THREE, det) {
   const texLayer = det.texture?.texture;
   const colorAlbedoPath = det.color?.assets?.albedo;
   const textureAlbedoPath =
@@ -316,23 +339,22 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOver
     texLayer && typeof texLayer === "object" && texLayer.normal != null
       ? String(texLayer.normal).trim()
       : "";
-  if (!albedoPath && !roughnessPath && !normalPath) return false;
 
   const loader = new THREE.TextureLoader();
-  const au = albedoPath ? resolveTextureAssetUrl(albedoPath) : "";
-  const ru = roughnessPath ? resolveTextureAssetUrl(roughnessPath) : "";
   let diffTex = null;
   let roughTex = null;
   let normalTex = null;
 
-  if (au) {
+  if (albedoPath) {
+    const au = resolveTextureAssetUrl(albedoPath);
     try {
       diffTex = await loader.loadAsync(au);
     } catch (e) {
       console.warn("[VisionHome] albedo 贴图加载失败:", au, e);
     }
   }
-  if (ru) {
+  if (roughnessPath) {
+    const ru = resolveTextureAssetUrl(roughnessPath);
     try {
       roughTex = await loader.loadAsync(ru);
     } catch (e) {
@@ -359,8 +381,17 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOver
     }
   }
 
-  if (!diffTex && !roughTex && !normalTex) return false;
+  return { diffTex, roughTex, normalTex };
+}
 
+/**
+ * @param {typeof import("three")} THREE
+ * @param {object} det
+ * @param {import("three").Texture | null} diffTex
+ * @param {import("three").Texture | null} roughTex
+ * @param {import("three").Texture | null} normalTex
+ */
+function createMeshStandardMaterialFromPbrBundle(THREE, det, diffTex, roughTex, normalTex) {
   const normalScale = new THREE.Vector2(1, 1);
   const roughness = Number.isFinite(det.materialParams?.roughness) ? det.materialParams.roughness : 1.0;
   const metalness = Number.isFinite(det.materialParams?.metalness) ? det.materialParams.metalness : 0.0;
@@ -374,6 +405,112 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOver
       color = new THREE.Color(0x888888);
     }
   }
+  return new THREE.MeshStandardMaterial({
+    color,
+    ...(diffTex ? { map: diffTex } : {}),
+    ...(roughTex ? { roughnessMap: roughTex } : {}),
+    roughness,
+    metalness,
+    ...(normalTex
+      ? {
+          normalMap: normalTex,
+          normalScale,
+        }
+      : {}),
+  });
+}
+
+/**
+ * @param {typeof import("three")} THREE
+ * @param {import("three").Object3D} root
+ * @param {object} item
+ */
+async function applyFurnitureGltfPbrMapsMeshRules(THREE, root, item) {
+  const mats = getConfigMaterials(item);
+  /** @type {Map<string, { det: object, diffTex: import("three").Texture | null, roughTex: import("three").Texture | null, normalTex: import("three").Texture | null }>} */
+  const bundleByMaterialId = new Map();
+
+  async function getBundleForMaterialId(materialId) {
+    const mid = String(materialId ?? "").trim();
+    if (bundleByMaterialId.has(mid)) return bundleByMaterialId.get(mid);
+    const sel = normalizeFurnitureSelection(item, { materialId: mid, textureId: "default", colorId: "" });
+    if (!sel) return null;
+    const det = resolveFurnitureSelectionDetail(item, sel);
+    const maps = await loadPbrTextureMapsForDetail(THREE, det);
+    const bundle = { det, ...maps };
+    bundleByMaterialId.set(mid, bundle);
+    return bundle;
+  }
+
+  /** @type {Set<import("three").Material>} */
+  const oldMaterials = new Set();
+  root.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    const list = Array.isArray(o.material) ? o.material : [o.material];
+    list.forEach((m) => {
+      if (m) oldMaterials.add(m);
+    });
+  });
+
+  /** @type {import("three").Mesh[]} */
+  const meshList = [];
+  root.traverse((o) => {
+    if (o.isMesh) meshList.push(o);
+  });
+
+  for (const mesh of meshList) {
+    const matEntry = pickMaterialEntryForMeshName(mats, mesh.name);
+    const mid = String(matEntry?.id ?? "").trim();
+    const bundle = mid ? await getBundleForMaterialId(mid) : null;
+    if (!bundle) continue;
+    const { det, diffTex, roughTex, normalTex } = bundle;
+    const old = mesh.material;
+    const list = Array.isArray(old) ? old : [old];
+    const next = list.map(() => createMeshStandardMaterialFromPbrBundle(THREE, det, diffTex, roughTex, normalTex));
+    mesh.material = next.length === 1 ? next[0] : next;
+  }
+
+  oldMaterials.forEach((m) => {
+    disposeSingleMaterialMaps(m);
+    m.dispose?.();
+  });
+
+  return true;
+}
+
+/**
+ * GLB 载入后：用条目中的 albedo + roughness（及可选 normal）路径替换为 MeshStandardMaterial。
+ * diffuse：sRGB；roughness：线性数据；normal：NoColorSpace（切线空间法线，如 OpenGL / gl 朝向）。
+ * 多 mesh 常共享同一材质实例：必须先全部换完新材质，再按材质引用去重后 dispose，否则会提前销毁共享贴图。
+ *
+ * 若 `config.materials[]` 中任意项带有 `meshNameIncludes`，则按 **mesh/node 名称** 子串匹配为不同材质槽分别加载贴图（用于一盆多材质等）。
+ *
+ * @param {object | null | undefined} selectionOverride 与 `group.userData.furnitureSelection` 一致；不传则回落到条目 `selection`（勿用于已选实例）
+ * @returns {Promise<boolean>} 是否成功应用外部 PBR
+ */
+export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOverride = null) {
+  if (!root || !item || !hasFurnitureMaterialConfig(item)) return false;
+
+  if (hasMeshMaterialRules(item)) {
+    return applyFurnitureGltfPbrMapsMeshRules(THREE, root, item);
+  }
+
+  const sel = normalizeFurnitureSelection(item, selectionOverride);
+  if (!sel) return false;
+  const det = resolveFurnitureSelectionDetail(item, sel);
+  const texLayer = det.texture?.texture;
+  const albedoPath =
+    (texLayer && typeof texLayer === "object" && texLayer.albedo != null ? String(texLayer.albedo).trim() : "") ||
+    (det.color?.assets?.albedo != null ? String(det.color.assets.albedo).trim() : "");
+  const roughnessPath =
+    texLayer && typeof texLayer === "object" && texLayer.roughness != null ? String(texLayer.roughness).trim() : "";
+  const normalPath =
+    texLayer && typeof texLayer === "object" && texLayer.normal != null ? String(texLayer.normal).trim() : "";
+  if (!albedoPath && !roughnessPath && !normalPath) return false;
+
+  const { diffTex, roughTex, normalTex } = await loadPbrTextureMapsForDetail(THREE, det);
+  if (!diffTex && !roughTex && !normalTex) return false;
+
   /** @type {Set<import("three").Material>} */
   const oldMaterials = new Set();
   root.traverse((o) => {
@@ -388,21 +525,7 @@ export async function applyFurnitureGltfPbrMaps(THREE, root, item, selectionOver
     if (!o.isMesh) return;
     const old = o.material;
     const list = Array.isArray(old) ? old : [old];
-    const next = list.map(() =>
-      new THREE.MeshStandardMaterial({
-        color,
-        ...(diffTex ? { map: diffTex } : {}),
-        ...(roughTex ? { roughnessMap: roughTex } : {}),
-        roughness,
-        metalness,
-        ...(normalTex
-          ? {
-              normalMap: normalTex,
-              normalScale,
-            }
-          : {}),
-      })
-    );
+    const next = list.map(() => createMeshStandardMaterialFromPbrBundle(THREE, det, diffTex, roughTex, normalTex));
     o.material = next.length === 1 ? next[0] : next;
   });
 
@@ -429,6 +552,39 @@ function disposeSingleMaterialMaps(material) {
  */
 export function applyFurnitureAppearanceToGroup(THREE, group, item) {
   if (!group || !item || !hasFurnitureMaterialConfig(item)) return;
+  const mats = getConfigMaterials(item);
+
+  if (hasMeshMaterialRules(item)) {
+    group.traverse((o) => {
+      if (!o.isMesh || !o.material) return;
+      const matEntry = pickMaterialEntryForMeshName(mats, o.name);
+      const mid = String(matEntry?.id ?? "").trim();
+      const sel = normalizeFurnitureSelection(item, { materialId: mid, textureId: "default", colorId: "" });
+      if (!sel) return;
+      const det = resolveFurnitureSelectionDetail(item, sel);
+      let c;
+      try {
+        c = new THREE.Color(det.hex);
+      } catch {
+        c = new THREE.Color(0x888888);
+      }
+      const matArr = Array.isArray(o.material) ? o.material : [o.material];
+      matArr.forEach((m) => {
+        if (m.color) {
+          const apply = m.map ? tintColorForSharedAlbedoMap(THREE, det.hex) : c;
+          m.color.copy(apply);
+          m.needsUpdate = true;
+        }
+        const mp = det.materialParams;
+        if (mp && typeof mp === "object") {
+          if (Number.isFinite(mp.roughness)) m.roughness = mp.roughness;
+          if (Number.isFinite(mp.metalness)) m.metalness = mp.metalness;
+        }
+      });
+    });
+    return;
+  }
+
   const sel = group.userData.furnitureSelection ?? normalizeFurnitureSelection(item, null);
   if (!sel) return;
   const det = resolveFurnitureSelectionDetail(item, sel);
@@ -440,8 +596,8 @@ export function applyFurnitureAppearanceToGroup(THREE, group, item) {
   }
   group.traverse((o) => {
     if (!o.isMesh || !o.material) return;
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
-    mats.forEach((m) => {
+    const matArr = Array.isArray(o.material) ? o.material : [o.material];
+    matArr.forEach((m) => {
       /* MeshStandard：漫反射为 map × color。多色共用同一张 albedo 时需用目录 hex 乘色才能区分色款 */
       if (m.color) {
         const apply = m.map ? tintColorForSharedAlbedoMap(THREE, det.hex) : c;
