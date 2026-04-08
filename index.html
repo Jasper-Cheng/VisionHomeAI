@@ -108,6 +108,15 @@
             </svg>
           </button>
 
+          <button class="rail-btn" type="button" aria-label="装饰库" data-panel="decorations">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
+              />
+            </svg>
+          </button>
+
           <button class="rail-btn" type="button" aria-label="设计文件" data-panel="files">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -165,6 +174,31 @@
             <div class="asset-grid furniture-asset-grid" id="furnitureAssetGrid" aria-label="家具列表"></div>
           </div>
 
+        </section>
+
+        <section class="side-panel" data-panel="decorations" aria-label="装饰库面板">
+          <div class="panel-header">
+            <div class="panel-title">装饰库</div>
+            <label class="search" aria-label="搜索装饰">
+              <span class="search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M10.5 3a7.5 7.5 0 1 1 4.67 13.36l3.48 3.48-1.41 1.41-3.48-3.48A7.5 7.5 0 0 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z"
+                  />
+                </svg>
+              </span>
+              <input class="search-input" type="search" placeholder="搜索装饰..." />
+            </label>
+          </div>
+
+          <div class="panel-catalog-body">
+            <div class="panel-tabs decoration-tabs" role="tablist" aria-label="装饰分类">
+              <button class="panel-tab is-active" role="tab" data-decoration-category="widgets">小部件</button>
+              <button class="panel-tab" role="tab" data-decoration-category="stickers">贴画</button>
+            </div>
+            <div class="asset-grid decoration-asset-grid" id="decorationAssetGrid" aria-label="装饰列表"></div>
+          </div>
         </section>
 
         <section class="side-panel" data-panel="files" aria-label="设计文件面板">

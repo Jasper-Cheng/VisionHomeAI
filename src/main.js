@@ -2,6 +2,7 @@
  * 应用入口：加载户型库 / 家具库 → 渲染侧栏 → 3D 编辑（Three.js）→ 全景 3D 视口
  */
 import { loadFurnitureCatalog, mountFurnitureLibrary } from "./furniture/furnitureManager.js";
+import { mountDecorationLibrary } from "./decorations/decorationManager.js";
 import { loadFloorPlanCatalog, mountFloorplanLibrary } from "./floorplan/floorPlanManager.js";
 import {
   loadDesignProjectsFromManifest,
@@ -131,6 +132,8 @@ async function boot() {
   window.__furnitureCatalog = catalog;
   mountFurnitureLibrary(catalog, { loadError });
 
+  mountDecorationLibrary();
+
   let designEntries = [];
   let designLoadError = false;
   try {
@@ -156,6 +159,9 @@ async function boot() {
   tryRestoreEditSession();
 
   window.addEventListener("pagehide", () => persistEditSession());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") persistEditSession();
+  });
 
   try {
     await import("./editor3d/viewer.js");

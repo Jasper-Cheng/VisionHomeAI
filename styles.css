@@ -2515,6 +2515,26 @@ a.avatar:hover {
   color: rgba(235, 233, 255, 0.98);
 }
 
+.panel-tab {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.panel-tab.is-active {
+  background: rgba(109, 92, 255, 0.32);
+  border-color: rgba(109, 92, 255, 0.45);
+  color: rgba(235, 233, 255, 0.98);
+}
+
 .asset-grid {
   padding: 0 12px 12px;
   display: grid;
@@ -2629,6 +2649,18 @@ a.avatar:hover {
 }
 
 .furniture-asset-grid::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* 装饰库：可滚动但不显示滚动条 */
+.decoration-asset-grid {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.decoration-asset-grid::-webkit-scrollbar {
   display: none;
   width: 0;
   height: 0;

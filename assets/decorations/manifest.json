@@ -1,0 +1,99 @@
+{
+  "version": "1.0",
+  "categories": {
+    "widgets": {
+      "name": "小部件",
+      "description": "有体积的小模型，包括台灯、窗帘、电视、地毯、马桶等"
+    },
+    "stickers": {
+      "name": "贴画",
+      "description": "常见的图片贴画，如墙纸、海报、挂钟等"
+    }
+  },
+  "items": [
+    {
+      "id": "widget_lamp_01",
+      "name": "台灯",
+      "category": "widgets",
+      "tags": ["照明", "桌面"]
+    },
+    {
+      "id": "widget_curtain_01",
+      "name": "窗帘",
+      "category": "widgets",
+      "tags": ["窗饰", "遮光"]
+    },
+    {
+      "id": "widget_tv_01",
+      "name": "电视",
+      "category": "widgets",
+      "tags": ["家电", "客厅"]
+    },
+    {
+      "id": "widget_rug_01",
+      "name": "地毯",
+      "category": "widgets",
+      "tags": ["地面", "装饰"]
+    },
+    {
+      "id": "widget_toilet_01",
+      "name": "马桶",
+      "category": "widgets",
+      "tags": ["卫浴", "卫生间"]
+    },
+    {
+      "id": "widget_plant_01",
+      "name": "盆栽",
+      "category": "widgets",
+      "tags": ["绿植", "装饰"]
+    },
+    {
+      "id": "widget_vase_01",
+      "name": "花瓶",
+      "category": "widgets",
+      "tags": ["装饰", "桌面"]
+    },
+    {
+      "id": "widget_frame_01",
+      "name": "挂画",
+      "category": "widgets",
+      "tags": ["墙面", "装饰"]
+    },
+    {
+      "id": "sticker_wallpaper_01",
+      "name": "墙纸",
+      "category": "stickers",
+      "tags": ["墙面", "装饰"]
+    },
+    {
+      "id": "sticker_poster_01",
+      "name": "海报",
+      "category": "stickers",
+      "tags": ["墙面", "装饰"]
+    },
+    {
+      "id": "sticker_banner_01",
+      "name": "挂旗",
+      "category": "stickers",
+      "tags": ["墙面", "装饰"]
+    },
+    {
+      "id": "sticker_clock_01",
+      "name": "挂钟",
+      "category": "stickers",
+      "tags": ["墙面", "计时"]
+    },
+    {
+      "id": "sticker_mirror_01",
+      "name": "装饰镜",
+      "category": "stickers",
+      "tags": ["墙面", "装饰"]
+    },
+    {
+      "id": "sticker_wallart_01",
+      "name": "墙贴",
+      "category": "stickers",
+      "tags": ["墙面", "装饰"]
+    }
+  ]
+}
