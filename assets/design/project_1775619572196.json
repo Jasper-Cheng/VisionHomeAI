@@ -4,7 +4,7 @@
   "name": "2",
   "description": "",
   "createdAt": "2026-04-08T03:39:32.196Z",
-  "updatedAt": "2026-04-08T03:39:32.196Z",
+  "updatedAt": "2026-04-08T07:23:51.453Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -14,8 +14,58 @@
       "furnitureId": "sofa_01",
       "floorId": "floor1",
       "positionCm": [
-        -79,
-        166
+        -110,
+        145
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "sofa_02",
+      "floorId": "floor1",
+      "positionCm": [
+        -280,
+        49
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_3",
+      "furnitureId": "sofa_01",
+      "floorId": "floor1",
+      "positionCm": [
+        15,
+        -14
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_4",
+      "furnitureId": "potted_plant_02",
+      "floorId": "floor1",
+      "positionCm": [
+        138,
+        379
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_5",
+      "furnitureId": "potted_plant_02",
+      "floorId": "floor1",
+      "positionCm": [
+        -312,
+        289
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_6",
+      "furnitureId": "potted_plant_02",
+      "floorId": "floor1",
+      "positionCm": [
+        -377,
+        164
       ],
       "rotationDeg": 0
     }
@@ -28,15 +78,88 @@
       {
         "model": "sofa_01",
         "floorId": "floor1",
-        "x": -79,
-        "y": 166,
+        "x": -110,
+        "y": 145,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_02",
+        "floorId": "floor1",
+        "x": -280,
+        "y": 49,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": 15,
+        "y": -14,
+        "rotation": 0
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": 138,
+        "y": 379,
+        "rotation": 0
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -312,
+        "y": 289,
+        "rotation": 0
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -377,
+        "y": 164,
         "rotation": 0
       }
     ],
+    "surfaceOverrides": {
+      "floor1": {
+        "allDoors": {
+          "color": "#bd792a",
+          "materialId": "door_PaintedWood002",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "uvScale": [
+            1,
+            1
+          ],
+          "textureRotation": 0
+        },
+        "allWalls": {
+          "color": "#c6b39c",
+          "materialId": "wall_Ivory001A",
+          "roughness": 0.9,
+          "metalness": 0,
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "allFloors": {
+          "color": "#ffffff",
+          "materialId": "floor_WoodFloor040",
+          "roughness": 0.35,
+          "metalness": 0,
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90,
+          "textureAlbedo": "Ivory001A_2K-JPG_Color.jpg"
+        }
+      }
+    },
     "lightingConfig": {
-      "toneMappingExposure": 2,
+      "toneMappingExposure": 0.72,
       "ambient": {
-        "intensity": 0.94
+        "intensity": 0.22
       },
       "hemisphere": {
         "intensity": 0.34

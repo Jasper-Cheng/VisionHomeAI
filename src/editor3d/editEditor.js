@@ -4409,9 +4409,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       syncPropPanelAppearance(null, null);
       return;
     }
+    // 检查是否是装饰模型
+    const modelType = group.userData.modelType;
+    const decCatalog = window.__decorationCatalog;
+    const isDecoration = decCatalog?.byId instanceof Map && decCatalog.byId.has(modelType);
+    if (isDecoration) {
+      propertiesPanel.classList.remove("is-visible");
+      return;
+    }
     propertiesPanel.classList.add("is-visible");
-    const item = byId.get(group.userData.modelType);
-    if (propertiesName) propertiesName.textContent = item ? getFurnitureDisplayName(item) : group.userData.modelType || "家具";
+    const item = byId.get(modelType);
+    if (propertiesName) propertiesName.textContent = item ? getFurnitureDisplayName(item) : modelType || "家具";
     syncPropPanelDimsFromItem(item);
     syncPropPanelAppearance(group, item);
     const o = sceneXZToCenteredCm(group.position.x, group.position.z);
@@ -4421,7 +4429,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (propInputRotY) propInputRotY.value = String(Math.round(rot));
   }
 
-  function selectFurniture(group) {
+  function selectFurniture(group, skipPanelSync = false) {
     if (selectedGroup && selectedGroup !== group) {
       selectedGroup.traverse((o) => {
         if (o.isMesh && o.material?.emissive) o.material.emissive.setHex(0x000000);
@@ -4434,7 +4442,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (o.isMesh && o.material?.emissive) o.material.emissive.setHex(0x332200);
       });
     }
-    syncPropertiesPanelForSelection(selectedGroup);
+    if (!skipPanelSync) {
+      syncPropertiesPanelForSelection(selectedGroup);
+    }
   }
 
   function deselectVisualOnly() {
@@ -4560,9 +4570,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return { x: snap(cm.x), y: snap(cm.y) };
   }
 
-  async function addFurniture(modelId, xCm = 0, yCm = 0) {
+  async function addFurniture(modelId, xCm = 0, yCm = 0, skipPanelSync = false) {
     const g = await appendFurnitureItem(modelId, xCm, yCm, 0, null, { wallSnap: wallSnapEnabled });
-    if (g) selectFurniture(g);
+    if (g) selectFurniture(g, skipPanelSync);
     updateFurnitureFloorVisibility();
     updateBottomUI();
     if (historyReady) pushHistorySnapshot();
@@ -5007,7 +5017,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!floorSelectionEnabled) return;
     if (!byId.has(p.model)) return;
     const cm = intersectPlaneCm(x, y, getPlacementPlaneWorldY());
-    if (cm) void addFurniture(p.model, cm.x, cm.y).catch((err) => console.warn("[VisionHome] addFurniture:", err));
+    if (cm) void addFurniture(p.model, cm.x, cm.y, p.isDecoration).catch((err) => console.warn("[VisionHome] addFurniture:", err));
   }
 
   function onFpMove(e) {
@@ -5042,23 +5052,48 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     (e) => {
       const card = e.target.closest?.(".asset-card[data-model]");
       if (card) {
-        const panel = card.closest?.(".side-panel[data-panel='assets']");
-        if (!panel || !panel.classList.contains("is-visible") || !isEditViewActive()) return;
-        if (e.shiftKey) {
-          if (!floorSelectionEnabled) return;
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          const n = Math.floor(Math.random() * 5) - 2, m = Math.floor(Math.random() * 5) - 2;
-          void addFurniture(card.dataset.model, n * GRID, m * GRID).catch((err) => console.warn("[VisionHome] addFurniture:", err));
+        const furniturePanel = card.closest?.(".side-panel[data-panel='assets']");
+        const decorationPanel = card.closest?.(".side-panel[data-panel='decorations']");
+
+        if (furniturePanel && furniturePanel.classList.contains("is-visible") && isEditViewActive()) {
+          // 家具库卡片拖动
+          if (e.shiftKey) {
+            if (!floorSelectionEnabled) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            const n = Math.floor(Math.random() * 5) - 2, m = Math.floor(Math.random() * 5) - 2;
+            void addFurniture(card.dataset.model, n * GRID, m * GRID, false).catch((err) => console.warn("[VisionHome] addFurniture:", err));
+            return;
+          }
+          if (!e.isPrimary) return;
+          window.__selectFurnitureLibraryCardByModel?.(card.dataset.model);
+          pushPtr();
+          pendingLibraryDrag = { model: card.dataset.model, sourceCard: card, sx: e.clientX, sy: e.clientY, pointerId: e.pointerId, didDrag: false, ghostEl: null, isDecoration: false };
+          window.addEventListener("pointermove", onLibMove, { passive: true });
+          window.addEventListener("pointerup", endLibDrag);
+          window.addEventListener("pointercancel", endLibDrag);
           return;
         }
-        if (!e.isPrimary) return;
-        window.__selectFurnitureLibraryCardByModel?.(card.dataset.model);
-        pushPtr();
-        pendingLibraryDrag = { model: card.dataset.model, sourceCard: card, sx: e.clientX, sy: e.clientY, pointerId: e.pointerId, didDrag: false, ghostEl: null };
-        window.addEventListener("pointermove", onLibMove, { passive: true });
-        window.addEventListener("pointerup", endLibDrag);
-        window.addEventListener("pointercancel", endLibDrag);
+
+        if (decorationPanel && decorationPanel.classList.contains("is-visible") && isEditViewActive()) {
+          // 装饰库卡片拖动
+          if (e.shiftKey) {
+            if (!floorSelectionEnabled) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            const n = Math.floor(Math.random() * 5) - 2, m = Math.floor(Math.random() * 5) - 2;
+            void addFurniture(card.dataset.model, n * GRID, m * GRID, true).catch((err) => console.warn("[VisionHome] addDecoration:", err));
+            return;
+          }
+          if (!e.isPrimary) return;
+          window.__selectDecorationLibraryCardByModel?.(card.dataset.model);
+          pushPtr();
+          pendingLibraryDrag = { model: card.dataset.model, sourceCard: card, sx: e.clientX, sy: e.clientY, pointerId: e.pointerId, didDrag: false, ghostEl: null, isDecoration: true };
+          window.addEventListener("pointermove", onLibMove, { passive: true });
+          window.addEventListener("pointerup", endLibDrag);
+          window.addEventListener("pointercancel", endLibDrag);
+          return;
+        }
         return;
       }
       const fpCard = e.target.closest?.(".asset-card[data-floor-plan-id]");

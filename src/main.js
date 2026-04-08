@@ -2,7 +2,7 @@
  * 应用入口：加载户型库 / 家具库 → 渲染侧栏 → 3D 编辑（Three.js）→ 全景 3D 视口
  */
 import { loadFurnitureCatalog, mountFurnitureLibrary } from "./furniture/furnitureManager.js";
-import { mountDecorationLibrary } from "./decorations/decorationManager.js";
+import { loadDecorationCatalog, mountDecorationLibrary } from "./decorations/decorationManager.js";
 import { loadFloorPlanCatalog, mountFloorplanLibrary } from "./floorplan/floorPlanManager.js";
 import {
   loadDesignProjectsFromManifest,
@@ -132,6 +132,21 @@ async function boot() {
   window.__furnitureCatalog = catalog;
   mountFurnitureLibrary(catalog, { loadError });
 
+  // 加载装饰库并合并到家具目录中
+  let decorationCatalog = { items: [], byId: new Map() };
+  try {
+    decorationCatalog = await loadDecorationCatalog();
+  } catch (err) {
+    console.warn("[Decoration] Failed to load catalog:", err);
+  }
+  window.__decorationCatalog = decorationCatalog;
+
+  // 将装饰库合并到家具目录（用于编辑器拖放）
+  const mergedCatalog = {
+    items: [...catalog.items, ...decorationCatalog.items],
+    byId: new Map([...catalog.byId, ...decorationCatalog.byId]),
+  };
+
   mountDecorationLibrary();
 
   let designEntries = [];
@@ -148,7 +163,7 @@ async function boot() {
   mountHeaderCurrentDesignLabel();
 
   try {
-    initThreeEditor(catalog);
+    initThreeEditor(mergedCatalog);
   } catch (err) {
     console.error(err);
     window.__visionHomeSvgEditor = { ok: false, reason: "threw", error: String(err) };

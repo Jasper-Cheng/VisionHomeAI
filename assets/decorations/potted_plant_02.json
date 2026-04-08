@@ -1,0 +1,55 @@
+{
+  "id": "potted_plant_02",
+  "name": "盆栽植物",
+  "category": "widgets",
+  "model": "assets/decorations/models/potted_plant_02.glb",
+  "thumbnail": "assets/decorations/thumbnails/potted_plant_02.png",
+  "tags": ["绿植", "装饰", "室内"],
+  "placement": {
+    "allowRooms": ["living", "bedroom", "balcony"],
+    "snapToWall": false,
+    "minDistanceToWall": 0
+  },
+  "config": {
+    "materials": [
+      {
+        "id": "pot",
+        "name": "陶盆",
+        "material": {
+          "roughness": 0.8,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "default",
+            "name": "默认",
+            "texture": {
+              "albedo": "assets/decorations/textures/potted_plant_02_pot_diff.jpg",
+              "roughness": "assets/decorations/textures/potted_plant_02_pot_rough.jpg",
+              "normal": "assets/decorations/textures/potted_plant_02_pot_normal.jpg"
+            }
+          }
+        ]
+      },
+      {
+        "id": "leaves",
+        "name": "叶片",
+        "material": {
+          "roughness": 0.9,
+          "metalness": 0.0
+        },
+        "textures": [
+          {
+            "id": "default",
+            "name": "默认",
+            "texture": {
+              "albedo": "assets/decorations/textures/potted_plant_02_leaves_diff.jpg",
+              "roughness": "assets/decorations/textures/potted_plant_02_leaves_rough.jpg",
+              "normal": "assets/decorations/textures/potted_plant_02_leaves_normal.jpg"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -3,6 +3,8 @@
  * 支持小部件（widgets）和贴画（stickers）两种分类
  */
 
+import { loadItemsFromManifest } from "../core/catalogLoader.js";
+
 const DECORATION_CATEGORIES = {
   widgets: "小部件",
   stickers: "贴画",
@@ -11,56 +13,37 @@ const DECORATION_CATEGORIES = {
 /** 缩略图骨架色（循环使用） */
 const THUMB_VARIANTS = ["", "thumb-skeleton--green", "thumb-skeleton--warm", "thumb-skeleton--red", "thumb-skeleton--gray", "thumb-skeleton--blue"];
 
-/**
- * 小部件列表（示例数据，后续可从清单文件加载）
- */
-const WIDGETS_ITEMS = [
-  { id: "widget_lamp_01", name: "台灯", category: "widgets", tags: ["照明", "桌面"] },
-  { id: "widget_curtain_01", name: "窗帘", category: "widgets", tags: ["窗饰", "遮光"] },
-  { id: "widget_tv_01", name: "电视", category: "widgets", tags: ["家电", "客厅"] },
-  { id: "widget_rug_01", name: "地毯", category: "widgets", tags: ["地面", "装饰"] },
-  { id: "widget_toilet_01", name: "马桶", category: "widgets", tags: ["卫浴", "卫生间"] },
-  { id: "widget_plant_01", name: "盆栽", category: "widgets", tags: ["绿植", "装饰"] },
-  { id: "widget_vase_01", name: "花瓶", category: "widgets", tags: ["装饰", "桌面"] },
-  { id: "widget_frame_01", name: "挂画", category: "widgets", tags: ["墙面", "装饰"] },
-];
+const DECORATIONS_DIR = "assets/decorations";
 
 /**
- * 贴画列表（示例数据，后续可从清单文件加载）
+ * 加载装饰库目录 - 从 assets/decorations/ 目录的 JSON 文件加载
+ * @returns {{ items: object[], byId: Map<string, object> }}
  */
-const STICKERS_ITEMS = [
-  { id: "sticker_wallpaper_01", name: "墙纸", category: "stickers", tags: ["墙面", "装饰"] },
-  { id: "sticker_poster_01", name: "海报", category: "stickers", tags: ["墙面", "装饰"] },
-  { id: "sticker_banner_01", name: "挂旗", category: "stickers", tags: ["墙面", "装饰"] },
-  { id: "sticker_clock_01", name: "挂钟", category: "stickers", tags: ["墙面", "计时"] },
-  { id: "sticker_mirror_01", name: "装饰镜", category: "stickers", tags: ["墙面", "装饰"] },
-  { id: "sticker_wallart_01", name: "墙贴", category: "stickers", tags: ["墙面", "装饰"] },
-];
+export async function loadDecorationCatalog() {
+  const items = await loadItemsFromManifest({
+    manifestUrl: `${DECORATIONS_DIR}/manifest.json`,
+    itemsBaseUrl: DECORATIONS_DIR,
+  });
+  const byId = new Map(items.map((item) => [item.id, item]));
+  return { items, byId };
+}
 
 /**
- * 获取所有装饰项
+ * 获取所有装饰项（需先调用 loadDecorationCatalog）
  */
 export function getDecorationItems() {
-  return [...WIDGETS_ITEMS, ...STICKERS_ITEMS];
+  return window.__decorationCatalog?.items || [];
 }
 
 /**
  * 按分类获取装饰项
  */
 export function getDecorationItemsByCategory(category) {
-  if (!category || category === "all") {
-    return getDecorationItems();
-  }
-  return getDecorationItems().filter((item) => item.category === category);
-}
-
-/**
- * 加载装饰库目录（目前使用静态数据，后续可扩展为从清单文件加载）
- */
-export async function loadDecorationCatalog() {
   const items = getDecorationItems();
-  const byId = new Map(items.map((item) => [item.id, item]));
-  return { items, byId };
+  if (!category || category === "all") {
+    return items;
+  }
+  return items.filter((item) => item.category === category);
 }
 
 /**
@@ -94,6 +77,22 @@ function createDecorationCard(item, idx) {
   skeleton.className = variant ? `thumb-skeleton ${variant}` : "thumb-skeleton";
   thumb.appendChild(skeleton);
 
+  const thumbImg = document.createElement("img");
+  thumbImg.className = "asset-thumb-img";
+  thumbImg.alt = displayName;
+  thumbImg.loading = "lazy";
+  thumbImg.decoding = "async";
+  thumbImg.draggable = false;
+  const thumbUrl = item.thumbnail ? `./${item.thumbnail}` : null;
+  if (thumbUrl) {
+    thumbImg.src = thumbUrl;
+    thumbImg.onload = () => thumb.classList.add("has-image");
+    thumbImg.onerror = () => thumbImg.remove();
+  } else {
+    thumbImg.remove();
+  }
+  thumb.appendChild(thumbImg);
+
   const nameEl = document.createElement("div");
   nameEl.className = "furniture-asset-label";
   const titleSpan = document.createElement("span");
@@ -110,12 +109,21 @@ function createDecorationCard(item, idx) {
 /**
  * 渲染装饰库 UI
  */
-export function mountDecorationLibrary() {
+export async function mountDecorationLibrary() {
   const tabsContainer = document.querySelector(".decoration-tabs");
   const grid = document.getElementById("decorationAssetGrid");
   const searchInput = document.querySelector('.side-panel[data-panel="decorations"] .search-input');
 
   if (!tabsContainer || !grid) return;
+
+  // 加载数据
+  let catalog = { items: [], byId: new Map() };
+  try {
+    catalog = await loadDecorationCatalog();
+    window.__decorationCatalog = catalog;
+  } catch (err) {
+    console.error("[Decoration] Failed to load catalog:", err);
+  }
 
   grid.replaceChildren();
 
@@ -159,7 +167,7 @@ export function mountDecorationLibrary() {
     if (id) {
       window.dispatchEvent(
         new CustomEvent("visionhome:decoration-library-select", {
-          detail: { modelId: id, item: null },
+          detail: { modelId: id, item: catalog.byId?.get(id) ?? null },
         }),
       );
     }

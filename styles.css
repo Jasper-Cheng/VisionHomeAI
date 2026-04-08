@@ -2654,8 +2654,11 @@ a.avatar:hover {
   height: 0;
 }
 
-/* 装饰库：可滚动但不显示滚动条 */
+/* 装饰库：可滚动但不显示滚动条；卡片高度随内容，与家具库布局一致 */
 .decoration-asset-grid {
+  grid-auto-rows: auto;
+  align-items: start;
+  align-content: start;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -2664,6 +2667,45 @@ a.avatar:hover {
   display: none;
   width: 0;
   height: 0;
+}
+
+.decoration-asset-grid .asset-card {
+  height: auto;
+  width: 100%;
+  padding: 8px 10px 10px;
+  box-sizing: border-box;
+}
+
+.decoration-asset-grid .asset-thumb-img {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: 90%;
+  height: 90%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+}
+
+.decoration-asset-grid .furniture-asset-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  margin-top: 6px;
+  min-height: auto;
+  text-align: center;
+  overflow: visible;
+}
+
+.decoration-asset-grid .furniture-asset-label__title {
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.78);
+  overflow-wrap: anywhere;
 }
 
 .asset-card {
