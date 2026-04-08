@@ -560,6 +560,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    */
   let floorplanPlacementDefaults = null;
 
+  /** 风格工具栏按钮显示「默认」：当前场景由户型装饰包内 editorDefaultScene 驱动（非户型 JSON 的默认 styleKey 文案） */
+  let styleToolbarShowEditorDefaultLabel = false;
+
+  function setStyleToolbarEditorDefaultLabel(on) {
+    styleToolbarShowEditorDefaultLabel = !!on;
+  }
+
   /** @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} kind */
   function floorplanSurfaceScopeFromKind(kind) {
     if (kind === "allFloors") return "allFloors";
@@ -3073,6 +3080,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           style = await loadStyleConfig(fpId, skFallback);
           if (style) {
             floorplanStyleKeyOverride = null;
+            setStyleToolbarEditorDefaultLabel(false);
             window.dispatchEvent(
               new CustomEvent("visionhome:floorplan-applied-to-svg", {
                 detail: {
@@ -3291,6 +3299,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     floorplanStyleKeyOverride = null;
     floorplanSurfaceOverrides = {};
     floorplanPlacementDefaults = null;
+    setStyleToolbarEditorDefaultLabel(false);
     currentFloorIndex = 0;
     floorSelectionEnabled = true;
     syncOtherOpacityUi();
@@ -3353,6 +3362,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     if (!options.preserveSurfaceOverrides && filePayload) {
       applySavedFloorplanDefaultStyleFromPayload(filePayload);
+      setStyleToolbarEditorDefaultLabel(true);
+    } else {
+      setStyleToolbarEditorDefaultLabel(false);
     }
     refreshFloorplanPlacementDefaultsFromPayload(filePayload);
 
@@ -5508,6 +5520,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       clearFloorplan();
     }
 
+    try {
     if (!payload || Number(payload.version) !== 1) return;
 
     const v = payload.view;
@@ -5579,6 +5592,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
       if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
+    }
+    } finally {
+      if (payload && Number(payload.version) === 1 && Object.prototype.hasOwnProperty.call(payload, "styleToolbarEditorDefault")) {
+        setStyleToolbarEditorDefaultLabel(!!payload.styleToolbarEditorDefault);
+        window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
+      }
     }
   }
 
@@ -5726,6 +5745,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         btn.setAttribute("aria-label", "装饰风格");
         return;
       }
+      if (styleToolbarShowEditorDefaultLabel) {
+        const hit = list.find((s) => s.key === cur);
+        const name = hit?.name ? String(hit.name).trim() : cur;
+        btn.textContent = "默认";
+        const tip = `户型默认方案（${name}）`;
+        btn.title = tip;
+        btn.setAttribute("aria-label", `装饰风格，${tip}`);
+        return;
+      }
       const hit = list.find((s) => s.key === cur);
       const label = hit?.name ? String(hit.name).trim() : cur || STYLE_BTN_DEFAULT;
       btn.textContent = label || STYLE_BTN_DEFAULT;
@@ -5786,6 +5814,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const key = String(tag.dataset.styleKey ?? "").trim();
       if (!key || !currentFloorplanEntry) return;
       floorplanStyleKeyOverride = key;
+      setStyleToolbarEditorDefaultLabel(false);
       const picked = String(tag.textContent ?? "").trim();
       if (picked) {
         btn.textContent = picked;
@@ -5861,6 +5890,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       clearStyleConfigCache();
       refreshFloorplanPlacementDefaultsFromPayload(editorDefaultScene);
+      setStyleToolbarEditorDefaultLabel(true);
+      window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
       return { ok: true };
     } catch (err) {
       console.warn("[VisionHome] 默认风格保存失败", err);
@@ -6035,6 +6066,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
   window.svgEditorGetCurrentFloorId = getCurrentFloorId;
   window.svgEditorGetFloorplanStyleKey = getEffectiveFloorplanStyleKey;
+  window.svgEditorGetStyleToolbarEditorDefaultLabel = () => styleToolbarShowEditorDefaultLabel;
   window.svgEditorSaveFloorplanDefaultStyle = saveCurrentFloorplanDefaultStyleToStyleFile;
   window.svgEditorRestoreSession = restoreEditorSession;
   window.svgEditorGetUndoHistory = () => ({ entries: [...history], index: historyIndex });

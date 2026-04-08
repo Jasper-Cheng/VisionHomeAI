@@ -43,6 +43,10 @@ function captureEditSessionForStorage() {
       undoHistory,
       floorPlanId: typeof getFp === "function" ? getFp() : null,
       floorLevelIndex: typeof getFloorLevel === "function" ? getFloorLevel() : null,
+      styleToolbarEditorDefault:
+        typeof window.svgEditorGetStyleToolbarEditorDefaultLabel === "function"
+          ? window.svgEditorGetStyleToolbarEditorDefaultLabel()
+          : false,
       view: typeof getView === "function" ? getView() : { tx: 0, ty: 0, scale: 1 },
       gridVisible: typeof getGrid === "function" ? getGrid() : true,
       lightingConfig: typeof getLighting === "function" ? getLighting() : null,
