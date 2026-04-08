@@ -4,7 +4,7 @@
   "name": "2",
   "description": "",
   "createdAt": "2026-04-08T03:39:32.196Z",
-  "updatedAt": "2026-04-08T07:50:23.374Z",
+  "updatedAt": "2026-04-08T09:00:52.287Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -24,8 +24,8 @@
       "furnitureId": "sofa_02",
       "floorId": "floor1",
       "positionCm": [
-        -273,
-        49
+        -223,
+        -13
       ],
       "rotationDeg": 0
     },
@@ -154,7 +154,7 @@
       "furnitureId": "sofa_02",
       "floorId": "floor1",
       "positionCm": [
-        -304,
+        -302,
         109
       ],
       "rotationDeg": 0
@@ -185,8 +185,8 @@
       {
         "model": "sofa_02",
         "floorId": "floor1",
-        "x": -273,
-        "y": 49,
+        "x": -223,
+        "y": -13,
         "rotation": 0
       },
       {
@@ -276,7 +276,7 @@
       {
         "model": "sofa_02",
         "floorId": "floor1",
-        "x": -304,
+        "x": -302,
         "y": 109,
         "rotation": 0
       },
@@ -327,7 +327,7 @@
       }
     },
     "lightingConfig": {
-      "toneMappingExposure": 0.72,
+      "toneMappingExposure": 1.02,
       "ambient": {
         "intensity": 0.22
       },
