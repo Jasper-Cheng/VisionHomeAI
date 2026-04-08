@@ -5163,6 +5163,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       await rebuildFromLayout(layout);
       resetCameraView();
       setGridVisible(gridWasVisible);
+      if (hasSvgEditor && se.lightingConfig && typeof se.lightingConfig === "object") {
+        window.svgEditorApplyLightingConfig(se.lightingConfig);
+      }
     } finally {
       isRestoring = false;
     }
@@ -5247,6 +5250,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         isRestoring = true;
         try { applyFloorplanByPayload(); } finally { isRestoring = false; }
         await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
+        if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
         return;
       }
       historyReady = false;
@@ -5262,6 +5266,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         isRestoring = true;
         try { applyFloorplanByPayload(); } finally { isRestoring = false; }
         await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
+        if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
         return;
       }
       isRestoring = false;
@@ -5271,11 +5276,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         typeof payload.designLayoutBaseline === "string" ? payload.designLayoutBaseline : serializeDesignBaseline();
       if (undoBtn) undoBtn.disabled = historyIndex <= 0;
       if (redoBtn) redoBtn.disabled = historyIndex >= history.length - 1;
+      if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
       emitLayoutChanged();
     } else {
       isRestoring = true;
       try { applyFloorplanByPayload(); } finally { isRestoring = false; }
       await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
+      if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
     }
   }
 
@@ -5619,6 +5626,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorToggleShadows = () => setShadowsEnabled(!shadowsEnabled);
   window.svgEditorSetShadowsEnabled = setShadowsEnabled;
   window.svgEditorGetShadowsEnabled = () => shadowsEnabled;
+  window.svgEditorGetLightingConfig = () => getCurrentLightingConfig();
+  window.svgEditorApplyLightingConfig = (cfg) => {
+    if (!cfg || typeof cfg !== "object") return;
+    if (Number.isFinite(cfg.toneMappingExposure)) renderer.toneMappingExposure = cfg.toneMappingExposure;
+    if (cfg.ambient && Number.isFinite(cfg.ambient.intensity)) ambientLight.intensity = cfg.ambient.intensity;
+    if (cfg.hemisphere && Number.isFinite(cfg.hemisphere.intensity)) hemiLight.intensity = cfg.hemisphere.intensity;
+    if (cfg.directional && Number.isFinite(cfg.directional.intensity)) dirLight.intensity = cfg.directional.intensity;
+    if (Number.isFinite(cfg.envMapIntensity)) sceneLightingEnvMapIntensity = cfg.envMapIntensity;
+    renderEditorScene();
+  };
 
   document.getElementById("svgDimToggleBtn")?.addEventListener("click", () => setDimensionsVisible(!showDimensions));
   document.getElementById("svgWallSnapToggleBtn")?.addEventListener("click", () => setWallSnapEnabled(!wallSnapEnabled));

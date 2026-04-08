@@ -24,6 +24,7 @@ function captureEditSessionForStorage() {
     const getFloorLevel = window.svgEditorGetCurrentFloorLevelIndex;
     const getView = window.svgEditorGetViewTransform;
     const getGrid = window.svgEditorGetGridVisible;
+    const getLighting = window.svgEditorGetLightingConfig;
     const getUndo = window.svgEditorGetUndoHistory;
     const undoHistory =
       typeof getUndo === "function"
@@ -43,6 +44,7 @@ function captureEditSessionForStorage() {
       floorLevelIndex: typeof getFloorLevel === "function" ? getFloorLevel() : null,
       view: typeof getView === "function" ? getView() : { tx: 0, ty: 0, scale: 1 },
       gridVisible: typeof getGrid === "function" ? getGrid() : true,
+      lightingConfig: typeof getLighting === "function" ? getLighting() : null,
       designLayoutBaseline: window.__designLayoutBaseline,
       design: {
         file: window.__activeDesignFile ?? null,

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1775619572196",
+  "name": "2",
+  "description": "",
+  "createdAt": "2026-04-08T03:39:32.196Z",
+  "updatedAt": "2026-04-08T03:39:32.196Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -79,
+        166
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "furniture": [
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": -79,
+        "y": 166,
+        "rotation": 0
+      }
+    ],
+    "lightingConfig": {
+      "toneMappingExposure": 2,
+      "ambient": {
+        "intensity": 0.94
+      },
+      "hemisphere": {
+        "intensity": 0.34
+      },
+      "directional": {
+        "intensity": 0.72
+      },
+      "envMapIntensity": 0.28
+    }
+  }
+}

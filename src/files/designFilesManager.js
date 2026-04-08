@@ -380,6 +380,7 @@ function collectSvgEditorState(layout) {
   const getFp = window.svgEditorGetCurrentFloorplanId;
   const getFloorLevel = window.svgEditorGetCurrentFloorLevelIndex;
   const getSurf = window.svgEditorGetSurfaceOverrides;
+  const getLighting = window.svgEditorGetLightingConfig;
   const floorPlanId = typeof getFp === "function" ? getFp() : null;
   const floorLevelIndex = typeof getFloorLevel === "function" ? getFloorLevel() : null;
   const furniture = (Array.isArray(layout) ? layout : []).map((item) => ({
@@ -391,6 +392,8 @@ function collectSvgEditorState(layout) {
   }));
   const surfaceOverrides =
     typeof getSurf === "function" ? getSurf() : null;
+  const lightingConfig =
+    typeof getLighting === "function" ? getLighting() : null;
   const out = {
     version: 1,
     floorPlanId,
@@ -399,6 +402,9 @@ function collectSvgEditorState(layout) {
   };
   if (surfaceOverrides && typeof surfaceOverrides === "object" && Object.keys(surfaceOverrides).length > 0) {
     out.surfaceOverrides = surfaceOverrides;
+  }
+  if (lightingConfig && typeof lightingConfig === "object") {
+    out.lightingConfig = lightingConfig;
   }
   return out;
 }

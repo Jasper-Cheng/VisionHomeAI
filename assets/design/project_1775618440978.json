@@ -4,7 +4,7 @@
   "name": "1",
   "description": "",
   "createdAt": "2026-04-08T03:20:40.978Z",
-  "updatedAt": "2026-04-08T03:20:40.978Z",
+  "updatedAt": "2026-04-08T03:21:46.138Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -16,6 +16,16 @@
       "positionCm": [
         169,
         62
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "sofa_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -44,
+        150
       ],
       "rotationDeg": 0
     }
@@ -30,6 +40,13 @@
         "floorId": "floor1",
         "x": 169,
         "y": 62,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": -44,
+        "y": 150,
         "rotation": 0
       }
     ],
