@@ -752,7 +752,7 @@
     <dialog id="setFloorplanDefaultStyleDialog" class="save-design-dialog" aria-labelledby="setFloorplanDefaultStyleTitle">
       <div class="save-design-dialog__panel">
         <h2 id="setFloorplanDefaultStyleTitle" class="save-design-dialog__title">设置默认风格</h2>
-        <p class="save-design-dialog__hint">是否将当前的设计设置为当前户型的默认风格？将同时保存墙面、地面、光照及场景中已有家具与装饰的位置与材质。下次从户型库载入该户型时，会一并恢复显示；之后从侧栏新拖入的物件仍会按该方案中的默认材质与样式。</p>
+        <p class="save-design-dialog__hint">是否将当前的设计设置为当前户型的默认风格？将保存到仓库内该户型对应的装饰包 JSON（如 assets/floorplans/style/&lt;户型id&gt;.json 中的 editorDefaultScene），含墙面、地面、光照及家具与装饰布局与材质。请使用 python3 dev_server.py 启动本地服务，以便写入文件；换浏览器也会从该文件载入。之后从侧栏新拖入的物件仍按该方案中的默认材质与样式。</p>
         <div class="save-design-dialog__actions">
           <button type="button" class="save-design-dialog__cancel" id="setFloorplanDefaultStyleCancel">取消</button>
           <button type="button" class="btn-primary btn-save" id="setFloorplanDefaultStyleConfirm">确定</button>

@@ -41,6 +41,8 @@ python3 dev_server.py
 
 默认端口与上面相同为 **8080**（可用环境变量 `PORT` 修改）。浏览器打开：**http://localhost:8080/index.html**（或根路径 `/`）。若用 `file://` 打开或主脚本 404，页面顶部会出现提示条。
 
+同一开发服务还提供 **POST `/api/floorplan-style/save`**：将编辑页「设置风格」写入 **`assets/floorplans/style/<户型id>.json`** 根级字段 **`editorDefaultScene`**（与户型装饰包同文件，可随仓库版本管理；换浏览器仍有效）。纯 `python3 -m http.server` 无此接口，保存会失败。
+
 ## 数据说明
 
 - **户型库**：`assets/floorplans/manifest.json` 的 **`files`**（如 `apt_2b1l_compact_01.json`）→ 与同目录下的 **`assets/floorplans/<文件>`** 一一对应。新增户型：在该目录增加 `<id>.json`，并把文件名写入 manifest。工程里 **`templateId`** 对应条目的 **`id`**。

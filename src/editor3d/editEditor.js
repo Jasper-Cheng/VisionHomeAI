@@ -20,6 +20,8 @@ import {
   findWallSideRoomsAt,
   loadMaterialsLibrary,
   resolveMaterialDefFromLibrary,
+  loadEditorDefaultSceneFromStyleFile,
+  clearStyleConfigCache,
 } from "../floorplan/floorplanStyle.js";
 import { getFurnitureDisplayName, getFurnitureTags } from "../furniture/furnitureManager.js";
 import {
@@ -43,8 +45,6 @@ const VIEW_H = 3000;
 const CENTER_HALF = VIEW_W / 2;
 const GRID = 1;
 const FLOORPLAN_PAD = 80;
-/** localStorage：按户型 id 存默认风格（墙面/地面、风格包、光照、侧栏拖入家具材质模板） */
-const FLOORPLAN_DEFAULT_STYLE_STORAGE_KEY = "visionhome:floorplanDefaultStyle:v1";
 const FLOORPLAN_SIZE_FACTOR = 0.38;
 const MAX_HISTORY = 80;
 /** 户型墙体与地面挤出块统一颜色 */
@@ -3300,20 +3300,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (historyReady && !isRestoring) pushHistorySnapshot();
   }
 
-  function getSavedFloorplanDefaultStylePayload(fpId) {
-    const id = String(fpId ?? "").trim();
-    if (!id) return null;
-    try {
-      const raw = localStorage.getItem(FLOORPLAN_DEFAULT_STYLE_STORAGE_KEY);
-      if (!raw) return null;
-      const map = JSON.parse(raw);
-      if (!map || typeof map !== "object") return null;
-      return map[id] ?? null;
-    } catch {
-      return null;
-    }
-  }
-
   function applySavedFloorplanDefaultStyleFromPayload(payload) {
     if (!payload || typeof payload !== "object" || Number(payload.v) !== 1) return;
     const sk = payload.floorplanStyleKey;
@@ -3333,13 +3319,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
   }
 
-  function refreshFloorplanPlacementDefaultsFromStorage() {
-    const fpId = getCurrentFloorplanId();
-    if (!fpId) {
-      floorplanPlacementDefaults = null;
-      return;
-    }
-    const payload = getSavedFloorplanDefaultStylePayload(fpId);
+  function refreshFloorplanPlacementDefaultsFromPayload(payload) {
     if (!payload || typeof payload !== "object" || Number(payload.v) !== 1) {
       floorplanPlacementDefaults = null;
       return;
@@ -3356,7 +3336,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     };
   }
 
-  function applyFloorplanEntryAtWorld(entry, _wx, _wy, options = {}) {
+  async function applyFloorplanEntryAtWorld(entry, _wx, _wy, options = {}) {
     if (!entry) return;
     /** 从户型库拖入/替换户型时清空；从设计文件或 undo 恢复时已先写入 overrides 时需传 preserveSurfaceOverrides: true */
     if (!options.preserveSurfaceOverrides) {
@@ -3367,21 +3347,23 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!options.preserveStyleKeyOverride) floorplanStyleKeyOverride = null;
 
     const fpId = String(entry?.id ?? "").trim();
-    let savedDefaultPayload = null;
-    if (!options.preserveSurfaceOverrides && !options.skipSavedFloorplanDefaultStyle) {
-      savedDefaultPayload = getSavedFloorplanDefaultStylePayload(fpId);
-      if (savedDefaultPayload) applySavedFloorplanDefaultStyleFromPayload(savedDefaultPayload);
+    let filePayload = null;
+    if (fpId && !options.skipSavedFloorplanDefaultStyle) {
+      filePayload = await loadEditorDefaultSceneFromStyleFile(fpId);
     }
-    refreshFloorplanPlacementDefaultsFromStorage();
+    if (!options.preserveSurfaceOverrides && filePayload) {
+      applySavedFloorplanDefaultStyleFromPayload(filePayload);
+    }
+    refreshFloorplanPlacementDefaultsFromPayload(filePayload);
 
     floorSelectionEnabled = true;
     syncOtherOpacityUi();
 
     const layoutToRestore =
-      savedDefaultPayload &&
-      Array.isArray(savedDefaultPayload.furnitureLayout) &&
-      savedDefaultPayload.furnitureLayout.length > 0
-        ? normalizeSavedFurnitureLayout(savedDefaultPayload.furnitureLayout)
+      filePayload &&
+      Array.isArray(filePayload.furnitureLayout) &&
+      filePayload.furnitureLayout.length > 0
+        ? normalizeSavedFurnitureLayout(filePayload.furnitureLayout)
         : null;
 
     function finishAfterFloorplanApply() {
@@ -3932,7 +3914,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           } else {
             floorplanStyleKeyOverride = null;
           }
-          applyFloorplanEntryAtWorld(entry, undefined, undefined, {
+          await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
             floorIndex: state.floorLevelIndex,
             preserveStyleKeyOverride: true,
             preserveSurfaceOverrides: true,
@@ -5197,7 +5179,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       await rebuildFromLayout([]);
       selectFurniture(null);
     }
-    applyFloorplanEntryAtWorld(entry);
+    await applyFloorplanEntryAtWorld(entry);
     return true;
   }
 
@@ -5456,7 +5438,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
         if (entry) {
-          applyFloorplanEntryAtWorld(entry, undefined, undefined, {
+          await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
             floorIndex: floorLevelIndex,
             preserveSurfaceOverrides: true,
           });
@@ -5512,14 +5494,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   async function restoreEditorSession(payload) {
-    function applyFloorplanByPayload() {
+    async function applyFloorplanByPayload() {
       const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
       const floorLevelIndex = Math.max(0, Math.trunc(Number(payload.floorLevelIndex) || 0));
       if (fpId) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
         if (entry) {
-          applyFloorplanEntryAtWorld(entry, undefined, undefined, { floorIndex: floorLevelIndex });
+          await applyFloorplanEntryAtWorld(entry, undefined, undefined, { floorIndex: floorLevelIndex });
           return;
         }
       }
@@ -5550,7 +5532,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       if (idx < 0 || idx >= entries.length) {
         isRestoring = true;
-        try { applyFloorplanByPayload(); } finally { isRestoring = false; }
+        try {
+          await applyFloorplanByPayload();
+        } finally {
+          isRestoring = false;
+        }
         await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
         if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
         return;
@@ -5566,7 +5552,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } catch {
         historyReady = true;
         isRestoring = true;
-        try { applyFloorplanByPayload(); } finally { isRestoring = false; }
+        try {
+          await applyFloorplanByPayload();
+        } finally {
+          isRestoring = false;
+        }
         await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
         if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
         return;
@@ -5582,7 +5572,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       emitLayoutChanged();
     } else {
       isRestoring = true;
-      try { applyFloorplanByPayload(); } finally { isRestoring = false; }
+      try {
+        await applyFloorplanByPayload();
+      } finally {
+        isRestoring = false;
+      }
       await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
       if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
     }
@@ -5821,7 +5815,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     };
   }
 
-  function saveCurrentFloorplanDefaultStyleToStorage() {
+  async function saveCurrentFloorplanDefaultStyleToStyleFile() {
     const fpId = getCurrentFloorplanId();
     if (!fpId) return { ok: false, reason: "no_floorplan" };
     const furnitureSelectionByModel = {};
@@ -5838,13 +5832,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         decorationLiftCmByModel[mid] = Math.round((Number(g.userData.decorationLiftM) || 0) * 100);
       }
     });
-    let map = {};
-    try {
-      const raw = localStorage.getItem(FLOORPLAN_DEFAULT_STYLE_STORAGE_KEY);
-      if (raw) map = JSON.parse(raw) || {};
-    } catch (_) {}
-    if (!map || typeof map !== "object") map = {};
-    map[fpId] = {
+    const editorDefaultScene = {
       v: 1,
       floorplanStyleKey: getEffectiveFloorplanStyleKey(),
       surfaceOverrides: JSON.parse(JSON.stringify(floorplanSurfaceOverrides)),
@@ -5854,13 +5842,30 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       furnitureLayout: JSON.parse(JSON.stringify(getLayout())),
     };
     try {
-      localStorage.setItem(FLOORPLAN_DEFAULT_STYLE_STORAGE_KEY, JSON.stringify(map));
+      const res = await fetch(DATA_PATHS.floorplanStyleSaveApi, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ floorplanId: fpId, editorDefaultScene }),
+      });
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (_) {
+        data = null;
+      }
+      if (!res.ok) {
+        return { ok: false, reason: res.status === 404 ? "no_api" : "http", status: res.status };
+      }
+      if (!data || data.ok !== true) {
+        return { ok: false, reason: "bad_response" };
+      }
+      clearStyleConfigCache();
+      refreshFloorplanPlacementDefaultsFromPayload(editorDefaultScene);
+      return { ok: true };
     } catch (err) {
       console.warn("[VisionHome] 默认风格保存失败", err);
-      return { ok: false, reason: "storage" };
+      return { ok: false, reason: "network" };
     }
-    refreshFloorplanPlacementDefaultsFromStorage();
-    return { ok: true };
   }
 
   function initFloorplanDefaultStyleDialog() {
@@ -5884,16 +5889,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } catch (_) {}
     });
     confirm?.addEventListener("click", () => {
-      const r = saveCurrentFloorplanDefaultStyleToStorage();
-      try {
-        if (typeof dlg.close === "function") dlg.close();
-        else dlg.removeAttribute("open");
-      } catch (_) {}
-      if (r && !r.ok && r.reason === "no_floorplan") {
-        window.alert("请先载入户型后再设置默认风格。");
-      } else if (r && !r.ok && r.reason === "storage") {
-        window.alert("无法保存默认风格，请检查浏览器是否允许本地存储。");
-      }
+      void (async () => {
+        const r = await saveCurrentFloorplanDefaultStyleToStyleFile();
+        try {
+          if (typeof dlg.close === "function") dlg.close();
+          else dlg.removeAttribute("open");
+        } catch (_) {}
+        if (r && !r.ok && r.reason === "no_floorplan") {
+          window.alert("请先载入户型后再设置默认风格。");
+        } else if (r && !r.ok && (r.reason === "no_api" || r.reason === "network")) {
+          window.alert(
+            "无法写入户型风格文件。请使用项目根目录的 python3 dev_server.py 启动本地服务（纯静态 http.server 无保存接口），并确保 assets/floorplans/style 下存在对应 JSON。",
+          );
+        } else if (r && !r.ok) {
+          window.alert("保存失败，请稍后重试或查看控制台。");
+        }
+      })();
     });
   }
 
@@ -6024,7 +6035,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
   window.svgEditorGetCurrentFloorId = getCurrentFloorId;
   window.svgEditorGetFloorplanStyleKey = getEffectiveFloorplanStyleKey;
-  window.svgEditorSaveFloorplanDefaultStyle = saveCurrentFloorplanDefaultStyleToStorage;
+  window.svgEditorSaveFloorplanDefaultStyle = saveCurrentFloorplanDefaultStyleToStyleFile;
   window.svgEditorRestoreSession = restoreEditorSession;
   window.svgEditorGetUndoHistory = () => ({ entries: [...history], index: historyIndex });
   window.svgEditorFlushHistoryDebounce = flushHistoryDebounce;

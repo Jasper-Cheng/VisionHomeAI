@@ -150,5 +150,240 @@
         }
       }
     }
+  },
+  "editorDefaultScene": {
+    "v": 1,
+    "floorplanStyleKey": "cream_style_v1",
+    "surfaceOverrides": {
+      "floor1": {
+        "allFloors": {
+          "color": "#ffffff",
+          "materialId": "floor_WoodFloor040",
+          "roughness": 0.35,
+          "metalness": 0,
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90,
+          "textureAlbedo": "Metal044A_2K-JPG_Color.jpg"
+        }
+      }
+    },
+    "lightingConfig": {
+      "toneMappingExposure": 0.72,
+      "ambient": {
+        "intensity": 0.22
+      },
+      "hemisphere": {
+        "intensity": 0.34
+      },
+      "directional": {
+        "intensity": 0.72
+      },
+      "envMapIntensity": 0.28
+    },
+    "furnitureSelectionByModel": {
+      "sofa_01": {
+        "skuId": "SOF-01-WOV-IVO",
+        "materialId": "fabric",
+        "textureId": "woven",
+        "colorId": "ivory"
+      },
+      "potted_plant_02": {
+        "skuId": "",
+        "materialId": "leaves",
+        "textureId": "default",
+        "colorId": ""
+      },
+      "table_03": {
+        "skuId": "TBL-03-OAK-NAT",
+        "materialId": "wood",
+        "textureId": "oak",
+        "colorId": "natural"
+      }
+    },
+    "decorationLiftCmByModel": {
+      "potted_plant_02": 0
+    },
+    "furnitureLayout": [
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": -275,
+        "y": 89,
+        "rotation": 0,
+        "furnitureSelection": {
+          "skuId": "SOF-01-WOV-IVO",
+          "materialId": "fabric",
+          "textureId": "woven",
+          "colorId": "ivory"
+        }
+      },
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": -275,
+        "y": 89,
+        "rotation": 0,
+        "furnitureSelection": {
+          "skuId": "SOF-01-WOV-IVO",
+          "materialId": "fabric",
+          "textureId": "woven",
+          "colorId": "ivory"
+        }
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": 58,
+        "y": 68,
+        "rotation": 0,
+        "decorationLiftCm": 0,
+        "furnitureSelection": {
+          "skuId": "",
+          "materialId": "leaves",
+          "textureId": "default",
+          "colorId": ""
+        }
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": 58,
+        "y": 68,
+        "rotation": 0,
+        "decorationLiftCm": 0,
+        "furnitureSelection": {
+          "skuId": "",
+          "materialId": "leaves",
+          "textureId": "default",
+          "colorId": ""
+        }
+      },
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": -140,
+        "y": -190,
+        "rotation": 0,
+        "furnitureSelection": {
+          "skuId": "SOF-01-WOV-IVO",
+          "materialId": "fabric",
+          "textureId": "woven",
+          "colorId": "ivory"
+        }
+      },
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": -140,
+        "y": -190,
+        "rotation": 0,
+        "furnitureSelection": {
+          "skuId": "SOF-01-WOV-IVO",
+          "materialId": "fabric",
+          "textureId": "woven",
+          "colorId": "ivory"
+        }
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -378,
+        "y": -423,
+        "rotation": 0,
+        "decorationLiftCm": 0,
+        "furnitureSelection": {
+          "skuId": "",
+          "materialId": "leaves",
+          "textureId": "default",
+          "colorId": ""
+        }
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -378,
+        "y": -423,
+        "rotation": 0,
+        "decorationLiftCm": 0,
+        "furnitureSelection": {
+          "skuId": "",
+          "materialId": "leaves",
+          "textureId": "default",
+          "colorId": ""
+        }
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -326,
+        "y": 195,
+        "rotation": 0,
+        "decorationLiftCm": 0,
+        "furnitureSelection": {
+          "skuId": "",
+          "materialId": "leaves",
+          "textureId": "default",
+          "colorId": ""
+        }
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -326,
+        "y": 195,
+        "rotation": 0,
+        "decorationLiftCm": 0,
+        "furnitureSelection": {
+          "skuId": "",
+          "materialId": "leaves",
+          "textureId": "default",
+          "colorId": ""
+        }
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -42,
+        "y": 197,
+        "rotation": 0,
+        "decorationLiftCm": 0,
+        "furnitureSelection": {
+          "skuId": "",
+          "materialId": "leaves",
+          "textureId": "default",
+          "colorId": ""
+        }
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -42,
+        "y": 197,
+        "rotation": 0,
+        "decorationLiftCm": 0,
+        "furnitureSelection": {
+          "skuId": "",
+          "materialId": "leaves",
+          "textureId": "default",
+          "colorId": ""
+        }
+      },
+      {
+        "model": "table_03",
+        "floorId": "floor1",
+        "x": -202,
+        "y": 313,
+        "rotation": 0,
+        "furnitureSelection": {
+          "skuId": "TBL-03-OAK-NAT",
+          "materialId": "wood",
+          "textureId": "oak",
+          "colorId": "natural"
+        }
+      }
+    ]
   }
 }
