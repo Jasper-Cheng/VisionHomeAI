@@ -2807,6 +2807,13 @@ a.avatar:hover {
   box-shadow: none;
 }
 
+/* 装饰库拖拽跟随图比家具库小一号 */
+.furniture-library-drag-ghost.is-decoration {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+}
+
 .furniture-library-drag-ghost .asset-thumb {
   height: 100%;
   width: 100%;

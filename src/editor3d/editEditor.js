@@ -3391,9 +3391,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 1. 家具总价（含 SKU 加价）
     let totalPrice = 0;
     let furnitureAreaCm2 = 0;
+    const decCatalog = window.__decorationCatalog;
     furnitureRoot.children.forEach((g) => {
       if (!g.userData?.isFurniture) return;
-      const item = byId.get(g.userData.modelType);
+      const modelType = g.userData.modelType;
+      // 装饰库组件不计入底部预算和空间利用率
+      if (decCatalog?.byId instanceof Map && decCatalog.byId.has(modelType)) return;
+      const item = byId.get(modelType);
       const price = getFurnitureLinePrice(item, g);
       if (price > 0) totalPrice += price;
       // 用 footprint 矩形近似面积（hw/hh 单位 cm）
@@ -3460,6 +3464,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     furnitureRoot.children.forEach((g) => {
       if (!g.userData?.isFurniture) return;
       const modelType = g.userData.modelType;
+      // 装饰库组件不计入预算明细
+      const decCatalog = window.__decorationCatalog;
+      if (decCatalog?.byId instanceof Map && decCatalog.byId.has(modelType)) return;
       const item = byId.get(modelType);
       const name = item ? getFurnitureDisplayName(item) : (modelType || "家具");
       const line = getFurnitureLinePrice(item, g);
@@ -4974,7 +4981,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function ensureGhost(pending) {
     if (!pending || pending.ghostEl) return;
     const ghost = document.createElement("div");
-    ghost.className = "furniture-library-drag-ghost";
+    ghost.className = "furniture-library-drag-ghost" + (pending.isDecoration ? " is-decoration" : "");
     ghost.setAttribute("aria-hidden", "true");
     const thumb = pending.sourceCard?.querySelector(".asset-thumb");
     if (thumb) ghost.appendChild(thumb.cloneNode(true));
