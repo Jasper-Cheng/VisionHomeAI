@@ -565,6 +565,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    */
   let floorplanSurfaceOverrides = {};
   let dragState = null;
+  /** Alt+左键调节装饰模型高度：{ pointerId, group, startClientY, startLiftM } */
+  let altDragState = null;
   /** 墙/地：短按才打开属性面板；长按或滑动取消（与 pointerup 配对） */
   let pendingSurfacePick = null;
   const history = [];
@@ -903,6 +905,37 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const floor = getCurrentFloorFromEntry(currentFloorplanEntry, currentFloorIndex);
     if (floor?.id != null && String(floor.id).trim()) return String(floor.id).trim();
     return "floor1";
+  }
+
+  function modelIdIsDecoration(modelId) {
+    const dec = window.__decorationCatalog;
+    return dec?.byId instanceof Map && dec.byId.has(modelId);
+  }
+
+  /** 某楼层净空高度（米），与户型墙高 defaultH 一致 */
+  function getFloorHeightMForFloorId(floorIdStr) {
+    if (!currentFloorplanEntry) return 2.8;
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    const want = normalizeFloorKey(floorIdStr);
+    for (let i = 0; i < floors.length; i++) {
+      const fl = floors[i];
+      const fidRaw = String(fl?.id ?? "").trim() || `floor${i + 1}`;
+      if (normalizeFloorKey(fidRaw) !== want) continue;
+      const fh = Number(fl?.height);
+      return Number.isFinite(fh) && fh > 0 ? fh / 100 : 2.8;
+    }
+    return 2.8;
+  }
+
+  /** 装饰物在楼板之上的抬升（米），顶面不高于本层天花板 */
+  function clampDecorationLiftMForGroup(group, liftM) {
+    const fp = group?.userData?.footprint;
+    const hM = fp && Number.isFinite(fp.h) ? fp.h / 100 : 0.8;
+    const floorH = getFloorHeightMForFloorId(String(group?.userData?.floorId ?? ""));
+    const maxLift = Math.max(0, floorH - hM);
+    const v = Number(liftM);
+    if (!Number.isFinite(v)) return 0;
+    return Math.min(maxLift, Math.max(0, v));
   }
   function clearInteractiveList() { interactiveMeshes.length = 0; }
   function registerFurnitureMeshes(group) {
@@ -3350,6 +3383,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (rot < 0) rot += 360;
     group.userData.rotDeg = rot;
     setFurnitureFromLayoutCm(group, xCm, yCm, rot, opts);
+    if (modelIdIsDecoration(modelId)) {
+      const cm = opts.decorationLiftCm != null ? Number(opts.decorationLiftCm) : 0;
+      const liftM = Number.isFinite(cm) ? cm / 100 : 0;
+      group.userData.decorationLiftM = clampDecorationLiftMForGroup(group, liftM);
+    }
     furnitureRoot.add(group);
     registerFurnitureMeshes(group);
     return group;
@@ -3364,7 +3402,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
     });
     for (const row of layout) {
-      await appendFurnitureItem(row.model, row.x, row.y, row.rotation ?? 0, row.floorId ?? null, { wallSnap: false });
+      await appendFurnitureItem(row.model, row.x, row.y, row.rotation ?? 0, row.floorId ?? null, {
+        wallSnap: false,
+        decorationLiftCm: row.decorationLiftCm,
+      });
     }
     updateFurnitureFloorVisibility();
     updateBottomUI();
@@ -3609,8 +3650,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const fid = String(g.userData.floorId || "").trim();
       const key = normalizeFloorKey(fid);
       const yOff = floorYOffsetById.get(key) ?? 0;
-      // group.position.y 只负责把家具放到对应楼层高度；mesh.position.y（h/2）保持不动
-      g.position.y = yOff;
+      let liftM = 0;
+      if (modelIdIsDecoration(g.userData.modelType)) {
+        liftM = clampDecorationLiftMForGroup(g, g.userData.decorationLiftM ?? 0);
+        g.userData.decorationLiftM = liftM;
+      }
+      // group.position.y：楼板高度 + 装饰物垂直偏移；普通家具仅楼板；mesh 本地 y 不变
+      g.position.y = yOff + liftM;
       const isActiveFloor = !hasFloor || !fid || key === activeKey;
       g.userData.isFloorActive = isActiveFloor;
       // 未开启“仅当前层”：其它楼层弱化且不可选中
@@ -3638,13 +3684,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     furnitureRoot.children.forEach((g) => {
       if (!g.userData?.isFurniture) return;
       const cm = sceneXZToCenteredCm(g.position.x, g.position.z);
-      out.push({
+      const row = {
         model: g.userData.modelType,
         floorId: String(g.userData.floorId || "").trim() || null,
         x: Math.round(cm.x),
         y: Math.round(cm.y),
         rotation: Math.round(g.userData.rotDeg ?? 0),
-      });
+      };
+      if (modelIdIsDecoration(g.userData.modelType)) {
+        row.decorationLiftCm = Math.round((Number(g.userData.decorationLiftM) || 0) * 100);
+      }
+      out.push(row);
     });
     return out;
   }
@@ -4623,6 +4673,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return;
     }
     const fur = rayPickFurniture(e.clientX, e.clientY);
+    if (fur && e.altKey && modelIdIsDecoration(fur.userData.modelType)) {
+      selectFurniture(fur);
+      altDragState = {
+        pointerId: e.pointerId,
+        group: fur,
+        startClientY: e.clientY,
+        startLiftM: Number(fur.userData.decorationLiftM) || 0,
+      };
+      controls.enabled = false;
+      e.preventDefault();
+      return;
+    }
     if (fur) {
       selectFurniture(fur);
       // 拖拽锚点：记录按下时鼠标射线与“家具所在楼层平面”的交点相对家具(x/z)的偏移
@@ -4678,6 +4740,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         pendingSurfacePick = null;
       }
     }
+    if (altDragState && e.pointerId === altDragState.pointerId) {
+      const dy = e.clientY - altDragState.startClientY;
+      const sensitivity = 0.0025;
+      const g = altDragState.group;
+      if (g?.userData?.isFurniture && modelIdIsDecoration(g.userData.modelType)) {
+        const newLift = altDragState.startLiftM - dy * sensitivity;
+        g.userData.decorationLiftM = clampDecorationLiftMForGroup(g, newLift);
+        updateFurnitureFloorVisibility();
+      }
+      return;
+    }
     if (!dragState || e.pointerId !== dragState.pointerId) return;
     // 拖拽时让交点平面跟随当前家具楼层高度，避免切层后“第一下跳动”
     const planeY = dragState.group?.position?.y ?? 0;
@@ -4702,6 +4775,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (e.type !== "pointercancel") {
         void selectFloorplanSurface(surf);
       }
+    }
+    if (altDragState && e.pointerId === altDragState.pointerId) {
+      altDragState = null;
+      controls.enabled = true;
+      if (historyReady) pushHistorySnapshot();
+      return;
     }
     if (!dragState || e.pointerId !== dragState.pointerId) return;
     dragState = null;
@@ -4792,6 +4871,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (
       selectedGroup?.userData?.isFurniture &&
       !dragState &&
+      !altDragState &&
       !["INPUT", "TEXTAREA"].includes(e.target?.tagName || "") &&
       !e.target?.isContentEditable
     ) {
