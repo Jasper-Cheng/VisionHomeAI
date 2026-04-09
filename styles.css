@@ -680,6 +680,11 @@ a.avatar:hover {
   display: none;
 }
 
+/* Ensure native `hidden` always wins (some blocks use grid/flex). */
+[hidden] {
+  display: none !important;
+}
+
 .svg-style-dropdown-hint {
   padding: 6px 4px;
   font-size: 12px;

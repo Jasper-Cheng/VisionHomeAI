@@ -4210,11 +4210,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           : 0;
     if (propSurfaceRoughness) propSurfaceRoughness.value = String(Math.round(r * 1000) / 1000);
     if (propSurfaceMetalness) propSurfaceMetalness.value = String(Math.round(m * 1000) / 1000);
-    if (!isWindowSurface) {
-      if (propSurfaceUvScaleX) propSurfaceUvScaleX.value = String(Math.round(us[0] * 1000) / 1000);
-      if (propSurfaceUvScaleY) propSurfaceUvScaleY.value = String(Math.round(us[1] * 1000) / 1000);
-      if (propSurfaceTextureRotation) propSurfaceTextureRotation.value = String(Math.round(rot * 10) / 10);
-    }
+
     if (propSurfaceGlassFields) propSurfaceGlassFields.hidden = !isWindowSurface;
     if (isWindowSurface && propSurfaceOpacity && propSurfaceTransmission && propSurfaceIor) {
       const oOp =
@@ -4238,6 +4234,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       propSurfaceOpacity.value = String(Math.round(oOp * 1000) / 1000);
       propSurfaceTransmission.value = String(Math.round(oTr * 1000) / 1000);
       propSurfaceIor.value = String(Math.round(oIor * 1000) / 1000);
+    }
+
+    if (!isWindowSurface) {
+      if (propSurfaceUvScaleX) propSurfaceUvScaleX.value = String(Math.round(us[0] * 1000) / 1000);
+      if (propSurfaceUvScaleY) propSurfaceUvScaleY.value = String(Math.round(us[1] * 1000) / 1000);
+      if (propSurfaceTextureRotation) propSurfaceTextureRotation.value = String(Math.round(rot * 10) / 10);
     }
   }
 
