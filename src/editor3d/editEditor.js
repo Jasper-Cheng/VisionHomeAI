@@ -11,6 +11,7 @@ import {
   loadStyleConfig,
   loadStylePackIndex,
   getDefaultStyleKeyForFloorplan,
+  clearStyleConfigCache,
   getMaterialDef,
   resolveStyleTextureUrl,
   resolveWallMaterialKey,
@@ -545,6 +546,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let currentFloorplanEntry = null;
   /** 覆盖户型 JSON 的 styleKey；null 表示使用 entry.styleKey */
   let floorplanStyleKeyOverride = null;
+  /** 最近一次成功应用到场景的风格包单套风格（用于「覆盖 / 新建」写回 JSON） */
+  let lastMergedFloorplanStyle = null;
   let currentFloorIndex = 0;
   let floorSelectionEnabled = true;
   let activeFloorId = null;
@@ -3035,6 +3038,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     floorplanRoot.clear();
     floorplanSelected = false;
     if (!currentFloorplanEntry) {
+      lastMergedFloorplanStyle = null;
       floorYOffsetById.clear();
       floorElevationBaseCm = 0;
       rebuildWallSnapData(null);
@@ -3078,6 +3082,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         }
       }
     }
+    lastMergedFloorplanStyle = style;
     if (gen !== floorplanRebuildGen) return;
 
     const lightingMerged = mergeSceneLighting(style?.sceneLighting ?? null);
@@ -5525,6 +5530,223 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.addEventListener("resize", resizeRenderer);
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(resizeRenderer).observe(container);
 
+  function threeColorToHexForStylePack(c) {
+    if (!c?.getHexString) return "#ffffff";
+    return `#${c.getHexString()}`;
+  }
+
+  function getSceneLightingForStylePack() {
+    return {
+      toneMappingExposure: renderer.toneMappingExposure,
+      ambient: {
+        color: threeColorToHexForStylePack(ambientLight.color),
+        intensity: ambientLight.intensity,
+      },
+      hemisphere: {
+        sky: threeColorToHexForStylePack(hemiLight.color),
+        ground: threeColorToHexForStylePack(hemiLight.groundColor),
+        intensity: hemiLight.intensity,
+      },
+      directional: {
+        color: threeColorToHexForStylePack(dirLight.color),
+        intensity: dirLight.intensity,
+      },
+      envMapIntensity: sceneLightingEnvMapIntensity,
+    };
+  }
+
+  function stripLibraryMetaFromMaterials(materials) {
+    if (!materials || typeof materials !== "object") return {};
+    const out = JSON.parse(JSON.stringify(materials));
+    for (const k of Object.keys(out)) {
+      const m = out[k];
+      if (m && typeof m === "object" && !Array.isArray(m)) delete m.__libraryMaterialId;
+    }
+    return out;
+  }
+
+  function slugStyleKeyFromName(name) {
+    let s = String(name ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_-]/g, "");
+    if (!s) s = `style_${Date.now()}`;
+    if (!/^[a-z_]/.test(s)) s = `s_${s}`;
+    return s.slice(0, 48);
+  }
+
+  function ensureUniqueStyleKeyInPack(base, stylesObj) {
+    if (!stylesObj || typeof stylesObj !== "object") return base;
+    let k = base;
+    let n = 0;
+    while (stylesObj[k]) {
+      n += 1;
+      k = `${base}_${n}`;
+    }
+    return k;
+  }
+
+  function buildStyleBlockFromSceneForPack(styleKey, displayName, styleObj) {
+    const materials = stripLibraryMetaFromMaterials(styleObj?.materials);
+    const layout = getLayout();
+    const placements = [];
+    for (const row of layout) {
+      if (!modelIdIsDecoration(row.model)) continue;
+      const p = {
+        model: row.model,
+        x: row.x,
+        y: row.y,
+        rotation: row.rotation ?? 0,
+      };
+      if (row.floorId) p.floorId = row.floorId;
+      if (row.decorationLiftCm != null) p.decorationLiftCm = row.decorationLiftCm;
+      placements.push(p);
+    }
+    return {
+      id: styleKey,
+      name: displayName,
+      sceneLighting: getSceneLightingForStylePack(),
+      materials,
+      decorations: { placements },
+    };
+  }
+
+  async function fetchRawFloorplanStylePack(fpId) {
+    const url = `./${DATA_PATHS.stylesDir}/${fpId}.json`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`无法读取风格包 (${res.status})`);
+    return res.json();
+  }
+
+  async function postFloorplanStylePackSave(fpId, pack) {
+    const res = await fetch(DATA_PATHS.floorplanStyleSaveApi, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ floorplanId: fpId, pack }),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(t || `保存失败 (${res.status})，请使用 python3 dev_server.py 启动本地服务`);
+    }
+    return res.json();
+  }
+
+  function initStylePackSaveDialogs() {
+    const overwriteBtn = document.getElementById("svgStyleOverwriteBtn");
+    const newBtn = document.getElementById("svgStyleNewBtn");
+    const dlgOver = document.getElementById("styleOverwriteDialog");
+    const dlgNew = document.getElementById("styleNewDialog");
+    const msgOver = document.getElementById("styleOverwriteMessage");
+    const inpName = document.getElementById("styleNewNameInput");
+    const errNew = document.getElementById("styleNewNameError");
+
+    async function resolveStyleDisplayName(fpId, sk) {
+      try {
+        const idx = await loadStylePackIndex(fpId);
+        const hit = idx.styles.find((s) => s.key === sk);
+        if (hit?.name) return String(hit.name).trim();
+      } catch {
+        /* ignore */
+      }
+      return sk;
+    }
+
+    overwriteBtn?.addEventListener("click", async () => {
+      const fpId = getCurrentFloorplanId();
+      if (!fpId || !currentFloorplanEntry) {
+        alert("请先加载户型。");
+        return;
+      }
+      if (!lastMergedFloorplanStyle) {
+        alert("当前风格包未成功加载，无法覆盖。");
+        return;
+      }
+      const sk = getEffectiveFloorplanStyleKey();
+      const name = await resolveStyleDisplayName(fpId, sk);
+      if (msgOver) msgOver.textContent = `将用当前场景的光照、材质与装饰覆盖风格「${name}」（${sk}）。确定吗？`;
+      dlgOver?.showModal();
+    });
+
+    document.getElementById("styleOverwriteCancel")?.addEventListener("click", () => dlgOver?.close());
+    document.getElementById("styleOverwriteConfirm")?.addEventListener("click", async () => {
+      dlgOver?.close();
+      const fpId = getCurrentFloorplanId();
+      const sk = getEffectiveFloorplanStyleKey();
+      if (!fpId || !lastMergedFloorplanStyle) return;
+      try {
+        const pack = await fetchRawFloorplanStylePack(fpId);
+        const displayName = await resolveStyleDisplayName(fpId, sk);
+        const block = buildStyleBlockFromSceneForPack(sk, displayName, lastMergedFloorplanStyle);
+        if (!pack.styles || typeof pack.styles !== "object") pack.styles = {};
+        pack.styles[sk] = block;
+        await postFloorplanStylePackSave(fpId, pack);
+        clearStyleConfigCache();
+        await loadStylePackIndex(fpId);
+        await rebuildFloorplan3D();
+        window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
+        if (historyReady) schedulePushHistory();
+      } catch (e) {
+        console.error(e);
+        alert(e?.message || String(e));
+      }
+    });
+
+    newBtn?.addEventListener("click", () => {
+      const fpId = getCurrentFloorplanId();
+      if (!fpId || !currentFloorplanEntry) {
+        alert("请先加载户型。");
+        return;
+      }
+      if (!lastMergedFloorplanStyle) {
+        alert("当前风格包未成功加载，无法新建。");
+        return;
+      }
+      if (inpName) inpName.value = "";
+      if (errNew) {
+        errNew.hidden = true;
+        errNew.textContent = "";
+      }
+      dlgNew?.showModal();
+      inpName?.focus();
+    });
+
+    document.getElementById("styleNewCancel")?.addEventListener("click", () => dlgNew?.close());
+    document.getElementById("styleNewConfirm")?.addEventListener("click", async () => {
+      const raw = String(inpName?.value ?? "").trim();
+      if (!raw) {
+        if (errNew) {
+          errNew.textContent = "请输入风格名称";
+          errNew.hidden = false;
+        }
+        return;
+      }
+      if (errNew) errNew.hidden = true;
+      dlgNew?.close();
+      const fpId = getCurrentFloorplanId();
+      if (!fpId || !lastMergedFloorplanStyle) return;
+      try {
+        const pack = await fetchRawFloorplanStylePack(fpId);
+        const styles = pack.styles && typeof pack.styles === "object" ? pack.styles : {};
+        const base = slugStyleKeyFromName(raw);
+        const newKey = ensureUniqueStyleKeyInPack(base, styles);
+        const block = buildStyleBlockFromSceneForPack(newKey, raw, lastMergedFloorplanStyle);
+        styles[newKey] = block;
+        pack.styles = styles;
+        await postFloorplanStylePackSave(fpId, pack);
+        floorplanStyleKeyOverride = newKey;
+        clearStyleConfigCache();
+        await loadStylePackIndex(fpId);
+        await rebuildFloorplan3D();
+        window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
+        if (historyReady) schedulePushHistory();
+      } catch (e) {
+        console.error(e);
+        alert(e?.message || String(e));
+      }
+    });
+  }
+
   function initFloorplanStyleToolbar() {
     const btn = document.getElementById("svgStyleRecommendBtn");
     const dropdown = document.getElementById("svgStyleDropdown");
@@ -5637,6 +5859,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   initFloorplanStyleToolbar();
+  initStylePackSaveDialogs();
 
   function getCurrentLightingConfig() {
     return {

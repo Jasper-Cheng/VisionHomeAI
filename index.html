@@ -251,6 +251,12 @@
                     风格
                   </button>
                   <div class="svg-style-dropdown" id="svgStyleDropdown" hidden role="menu" aria-label="装饰风格列表"></div>
+                  <button type="button" class="svg-view-btn" id="svgStyleOverwriteBtn" title="覆盖当前风格" aria-label="覆盖当前风格">
+                    覆盖
+                  </button>
+                  <button type="button" class="svg-view-btn" id="svgStyleNewBtn" title="新建风格" aria-label="新建风格">
+                    新建
+                  </button>
                 </div>
                 <div class="svg-lighting-wrap" id="svgLightingWrap">
                   <button
@@ -745,6 +751,41 @@
         <div class="save-design-dialog__actions">
           <button type="button" class="save-design-dialog__cancel" id="deleteFloorplanCancel">取消</button>
           <button type="button" class="btn-primary btn-save" id="deleteFloorplanConfirm">删除</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="styleOverwriteDialog" class="save-design-dialog" aria-labelledby="styleOverwriteDialogTitle">
+      <div class="save-design-dialog__panel">
+        <h2 id="styleOverwriteDialogTitle" class="save-design-dialog__title">覆盖风格</h2>
+        <p id="styleOverwriteMessage" class="save-design-dialog__hint"></p>
+        <div class="save-design-dialog__actions">
+          <button type="button" class="save-design-dialog__cancel" id="styleOverwriteCancel">取消</button>
+          <button type="button" class="btn-primary btn-save" id="styleOverwriteConfirm">确定</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="styleNewDialog" class="save-design-dialog" aria-labelledby="styleNewDialogTitle">
+      <div class="save-design-dialog__panel">
+        <h2 id="styleNewDialogTitle" class="save-design-dialog__title">新建风格</h2>
+        <p class="save-design-dialog__hint">将当前场景的光照、材质与装饰保存为新的风格条目。</p>
+        <label class="save-design-dialog__label">
+          风格名称
+          <input
+            id="styleNewNameInput"
+            class="save-design-dialog__input"
+            type="text"
+            name="styleNewName"
+            autocomplete="off"
+            maxlength="80"
+            placeholder="例如：北欧浅色"
+          />
+        </label>
+        <p id="styleNewNameError" class="save-design-dialog__error" role="alert" hidden></p>
+        <div class="save-design-dialog__actions">
+          <button type="button" class="save-design-dialog__cancel" id="styleNewCancel">取消</button>
+          <button type="button" class="btn-primary btn-save" id="styleNewConfirm">确定</button>
         </div>
       </div>
     </dialog>

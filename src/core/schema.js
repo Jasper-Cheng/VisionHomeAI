@@ -16,6 +16,8 @@ export const DATA_PATHS = {
   designManifest: "assets/design/manifest.json",
   /** 本地开发服务器 dev_server.py（项目根目录）提供的保存接口（同源 POST） */
   designSaveApi: "/api/design/save",
+  /** 保存户型装饰包 JSON → assets/floorplans/style/<id>.json（仅 dev_server 提供） */
+  floorplanStyleSaveApi: "/api/floorplan-style/save",
   assetsModels: "assets/furniture/models",
   assetsTextures: "assets/furniture/textures",
   /** 家具库卡片预览：`assets/furniture/thumbnails/{id}.webp|png|jpg` */
