@@ -595,6 +595,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function getCurrentSurfaceOverridesBucket() {
     return getSurfaceOverridesBucketForStyle(getEffectiveFloorplanStyleKey(), { create: true });
   }
+
+  function clearSurfaceOverridesForStyle(styleKey) {
+    const key = normalizeStyleKeyForSurfaceOverrides(styleKey);
+    if (floorplanSurfaceOverridesByStyleKey && typeof floorplanSurfaceOverridesByStyleKey === "object") {
+      delete floorplanSurfaceOverridesByStyleKey[key];
+    }
+  }
   let dragState = null;
   /** Alt+左键调节装饰模型高度：{ pointerId, group, startClientY, startLiftM } */
   let altDragState = null;
@@ -6149,6 +6156,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const fpId = getCurrentFloorplanId();
       if (!fpId || !lastMergedFloorplanStyle) return;
       try {
+        const sourceStyleKey = getEffectiveFloorplanStyleKey();
         const pack = cloneStylePackDeep(await fetchRawFloorplanStylePack(fpId));
         const styles = pack.styles && typeof pack.styles === "object" ? pack.styles : {};
         const base = slugStyleKeyFromName(raw);
@@ -6163,6 +6171,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         pack.styles = styles;
         // 在已有 styles 上追加新键，不改动其它风格条目
         await postFloorplanStylePackSave(fpId, pack);
+
+        // “新建”语义：把当前场景保存为新风格，但不应污染源风格的临时 overrides。
+        // 新风格已写入磁盘，因此也不需要把旧 overrides 继续叠加到新风格上。
+        clearSurfaceOverridesForStyle(sourceStyleKey);
+        clearSurfaceOverridesForStyle(newKey);
+
         floorplanStyleKeyOverride = newKey;
         clearStyleConfigCache();
         await loadStylePackIndex(fpId);
