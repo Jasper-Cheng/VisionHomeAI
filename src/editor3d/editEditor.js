@@ -65,6 +65,10 @@ const DEFAULT_SCENE_LIGHTING = {
   envMapIntensity: 0.35,
 };
 
+// 地面网格在 y=0.02（见 buildRoomMesh）；家具/装饰的 group.position.y 需要抬到地面之上，
+// 否则很多 glTF 会以 y=0 为底面导致“下陷”。
+const FLOOR_SURFACE_Y_M = 0.02;
+
 /**
  * @param {object | null | undefined} over 风格 JSON 中的 sceneLighting
  */
@@ -3724,7 +3728,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         g.userData.decorationLiftM = liftM;
       }
       // group.position.y：楼板高度 + 装饰物垂直偏移；普通家具仅楼板；mesh 本地 y 不变
-      g.position.y = yOff + liftM;
+      g.position.y = yOff + FLOOR_SURFACE_Y_M + liftM;
       const isActiveFloor = !hasFloor || !fid || key === activeKey;
       g.userData.isFloorActive = isActiveFloor;
       // 未开启“仅当前层”：其它楼层弱化且不可选中
