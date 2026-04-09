@@ -11,6 +11,7 @@ import {
   loadStyleConfig,
   loadStylePackIndex,
   getDefaultStyleKeyForFloorplan,
+  resolveDefaultStyleKeyFromPack,
   clearStyleConfigCache,
   getMaterialDef,
   resolveStyleTextureUrl,
@@ -5712,6 +5713,90 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return k;
   }
 
+  function jsonEqual(a, b) {
+    try {
+      return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    } catch {
+      return false;
+    }
+  }
+
+  function diffMappingAgainstBase(nextMapping, baseMapping) {
+    const next = nextMapping && typeof nextMapping === "object" ? nextMapping : {};
+    const base = baseMapping && typeof baseMapping === "object" ? baseMapping : {};
+    const out = {};
+    for (const bucketKey of ["rooms", "walls", "doors", "windows"]) {
+      const n = next[bucketKey] && typeof next[bucketKey] === "object" ? next[bucketKey] : {};
+      const b = base[bucketKey] && typeof base[bucketKey] === "object" ? base[bucketKey] : {};
+      const diff = {};
+      for (const [k, v] of Object.entries(n)) {
+        if (!jsonEqual(v, b[k])) diff[k] = v;
+      }
+      if (Object.keys(diff).length) out[bucketKey] = diff;
+    }
+    return Object.keys(out).length ? out : null;
+  }
+
+  function collectMaterialKeysFromMapping(mapping) {
+    const keys = new Set();
+    if (!mapping || typeof mapping !== "object") return keys;
+    const walls = mapping.walls && typeof mapping.walls === "object" ? mapping.walls : {};
+    const doors = mapping.doors && typeof mapping.doors === "object" ? mapping.doors : {};
+    const windows = mapping.windows && typeof mapping.windows === "object" ? mapping.windows : {};
+    for (const v of Object.values(walls)) if (typeof v === "string" && v.trim()) keys.add(v.trim());
+    for (const v of Object.values(doors)) if (typeof v === "string" && v.trim()) keys.add(v.trim());
+    for (const v of Object.values(windows)) if (typeof v === "string" && v.trim()) keys.add(v.trim());
+    const rooms = mapping.rooms && typeof mapping.rooms === "object" ? mapping.rooms : {};
+    for (const rv of Object.values(rooms)) {
+      if (!rv || typeof rv !== "object") continue;
+      if (typeof rv.floor === "string" && rv.floor.trim()) keys.add(rv.floor.trim());
+      if (typeof rv.wall === "string" && rv.wall.trim()) keys.add(rv.wall.trim());
+    }
+    return keys;
+  }
+
+  function diffMaterialsForMapping(nextMaterials, baseMaterials, mappingDiff) {
+    const next = nextMaterials && typeof nextMaterials === "object" && !Array.isArray(nextMaterials) ? nextMaterials : {};
+    const base = baseMaterials && typeof baseMaterials === "object" && !Array.isArray(baseMaterials) ? baseMaterials : {};
+    const need = collectMaterialKeysFromMapping(mappingDiff);
+    const out = {};
+    for (const k of need) {
+      if (next[k] === undefined) continue;
+      if (!jsonEqual(next[k], base[k])) out[k] = next[k];
+    }
+    return Object.keys(out).length ? stripLibraryMetaFromMaterials(out) : null;
+  }
+
+  function buildStyleBlockDiffFromBaseForPack(styleKey, displayName, styleObj, baseStyleObj, baseKey) {
+    const layout = getLayout();
+    const placements = [];
+    for (const row of layout) {
+      if (!modelIdIsDecoration(row.model)) continue;
+      const p = { model: row.model, x: row.x, y: row.y, rotation: row.rotation ?? 0 };
+      if (row.floorId) p.floorId = row.floorId;
+      if (row.decorationLiftCm != null) p.decorationLiftCm = row.decorationLiftCm;
+      placements.push(p);
+    }
+
+    const baseLighting = baseStyleObj?.sceneLighting;
+    const nextLighting = getSceneLightingForStylePack();
+    const mappingDiff = diffMappingAgainstBase(styleObj?.mapping, baseStyleObj?.mapping);
+    const materialsDiff = mappingDiff
+      ? diffMaterialsForMapping(styleObj?.materials, baseStyleObj?.materials, mappingDiff)
+      : null;
+
+    const block = {
+      id: styleKey,
+      name: displayName,
+      extends: baseKey,
+      decorations: { placements },
+    };
+    if (!jsonEqual(nextLighting, baseLighting)) block.sceneLighting = nextLighting;
+    if (mappingDiff) block.mapping = mappingDiff;
+    if (materialsDiff) block.materials = materialsDiff;
+    return block;
+  }
+
   function buildStyleBlockFromSceneForPack(styleKey, displayName, styleObj) {
     const materials = stripLibraryMetaFromMaterials(styleObj?.materials);
     const layout = getLayout();
@@ -5946,6 +6031,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const inpName = document.getElementById("styleNewNameInput");
     const errNew = document.getElementById("styleNewNameError");
 
+    function syncOverwriteBtnLockState() {
+      if (!overwriteBtn) return;
+      const fpId = getCurrentFloorplanId();
+      const cur = getEffectiveFloorplanStyleKey();
+      const def = fpId ? getDefaultStyleKeyForFloorplan(fpId) : "";
+      const locked = !!(fpId && cur && def && cur === def);
+      overwriteBtn.disabled = locked;
+      overwriteBtn.title = locked ? "默认风格不可覆盖" : "覆盖当前风格";
+      overwriteBtn.setAttribute("aria-label", overwriteBtn.title);
+    }
+
     async function resolveStyleDisplayName(fpId, sk) {
       try {
         const idx = await loadStylePackIndex(fpId);
@@ -5968,6 +6064,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         return;
       }
       const sk = getEffectiveFloorplanStyleKey();
+      try {
+        const pack = await fetchRawFloorplanStylePack(fpId);
+        const defKey = resolveDefaultStyleKeyFromPack(pack);
+        if (defKey && sk === defKey) {
+          alert("默认风格不可覆盖。请新建风格后再保存。");
+          syncOverwriteBtnLockState();
+          return;
+        }
+      } catch {
+        // ignore: 仅用于阻止默认风格覆盖；读取失败则继续走现有覆盖流程
+      }
       const name = await resolveStyleDisplayName(fpId, sk);
       if (msgOver) msgOver.textContent = `将用当前场景的光照、材质与装饰覆盖风格「${name}」（${sk}）。确定吗？`;
       dlgOver?.showModal();
@@ -5981,6 +6088,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!fpId || !lastMergedFloorplanStyle) return;
       try {
         const pack = cloneStylePackDeep(await fetchRawFloorplanStylePack(fpId));
+        const defKey = resolveDefaultStyleKeyFromPack(pack);
+        if (defKey && sk === defKey) {
+          alert("默认风格不可覆盖。请使用“新建”创建一个新风格后再保存。");
+          syncOverwriteBtnLockState();
+          return;
+        }
         const displayName = await resolveStyleDisplayName(fpId, sk);
         const surfaceOverridesBucket = getSurfaceOverridesBucketForStyle(sk, { create: false });
         const libraryBag = await getFloorplanMaterialsLibraryBag();
@@ -5995,6 +6108,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         await rebuildFloorplan3D();
         window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
         if (historyReady) schedulePushHistory();
+        syncOverwriteBtnLockState();
       } catch (e) {
         console.error(e);
         alert(e?.message || String(e));
@@ -6039,10 +6153,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const styles = pack.styles && typeof pack.styles === "object" ? pack.styles : {};
         const base = slugStyleKeyFromName(raw);
         const newKey = ensureUniqueStyleKeyInPack(base, styles);
+        const defKey = resolveDefaultStyleKeyFromPack(pack) || (fpId ? getDefaultStyleKeyForFloorplan(fpId) : "") || "default";
+        const baseStyleObj = await loadStyleConfig(fpId, defKey);
         const surfaceOverridesBucket = getCurrentSurfaceOverridesBucket();
         const libraryBag = await getFloorplanMaterialsLibraryBag();
         const bakedStyle = bakeSurfaceOverridesIntoStyle(lastMergedFloorplanStyle, surfaceOverridesBucket, currentFloorplanEntry, libraryBag);
-        const block = buildStyleBlockFromSceneForPack(newKey, raw, bakedStyle);
+        const block = buildStyleBlockDiffFromBaseForPack(newKey, raw, bakedStyle, baseStyleObj, defKey);
         styles[newKey] = block;
         pack.styles = styles;
         // 在已有 styles 上追加新键，不改动其它风格条目
@@ -6053,11 +6169,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         await rebuildFloorplan3D();
         window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
         if (historyReady) schedulePushHistory();
+        syncOverwriteBtnLockState();
       } catch (e) {
         console.error(e);
         alert(e?.message || String(e));
       }
     });
+
+    window.addEventListener("visionhome:floorplan-applied-to-svg", () => syncOverwriteBtnLockState());
+    syncOverwriteBtnLockState();
   }
 
   function initFloorplanStyleToolbar() {

@@ -264,7 +264,51 @@ export async function loadStyleConfig(floorplanId, styleKey) {
   const cacheKey = `${fp}::${sk}::libMatId1`;
   if (styleCache.has(cacheKey)) return styleCache.get(cacheKey);
 
-  const inner = styles[sk];
+  function mergePlainDeep(base, child) {
+    const b = isPlainObject(base) ? base : {};
+    const c = isPlainObject(child) ? child : {};
+    /** @type {Record<string, any>} */
+    const out = { ...b, ...c };
+    for (const k of Object.keys(out)) {
+      const bv = b[k];
+      const cv = c[k];
+      if (isPlainObject(bv) && isPlainObject(cv)) {
+        out[k] = mergePlainDeep(bv, cv);
+      }
+    }
+    return out;
+  }
+
+  function mergeStyleBlocks(baseStyle, childStyle) {
+    const base = isPlainObject(baseStyle) ? baseStyle : {};
+    const child = isPlainObject(childStyle) ? childStyle : {};
+    const merged = { ...base, ...child };
+    if (base.materials || child.materials) merged.materials = mergePlainDeep(base.materials, child.materials);
+    if (base.mapping || child.mapping) merged.mapping = mergePlainDeep(base.mapping, child.mapping);
+    if (child.decorations !== undefined) merged.decorations = child.decorations;
+    if (child.sceneLighting !== undefined) merged.sceneLighting = child.sceneLighting;
+    return merged;
+  }
+
+  function resolveStyleWithExtends(styleKey0) {
+    const curKey = safeStyleKey(styleKey0) || styleKey0;
+    const cur = styles[curKey];
+    if (!isPlainObject(cur)) return null;
+    let out = { ...cur };
+    const seen = new Set();
+    let ext = safeStyleKey(cur.extends);
+    while (ext) {
+      if (seen.has(ext)) throw new Error(`Circular style extends: ${Array.from(seen).join(" -> ")} -> ${ext}`);
+      seen.add(ext);
+      const parent = styles[ext];
+      if (!isPlainObject(parent)) break;
+      out = mergeStyleBlocks(parent, out);
+      ext = safeStyleKey(parent.extends);
+    }
+    return out;
+  }
+
+  const inner = resolveStyleWithExtends(sk) || styles[sk];
   if (!inner || typeof inner !== "object") throw new Error(`Unknown styleKey: ${sk}`);
   const materialsLibrary = await loadMaterialsLibrary();
   const merged = resolveStyleMaterialRefs({ ...inner }, materialsLibrary, fp, sk);
