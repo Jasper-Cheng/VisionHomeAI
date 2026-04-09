@@ -5619,7 +5619,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    */
   async function fetchRawFloorplanStylePack(fpId) {
     const url = `./${DATA_PATHS.stylesDir}/${fpId}.json`;
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error(`无法读取风格包 (${res.status})`);
     return res.json();
   }
@@ -5776,6 +5776,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const dropdown = document.getElementById("svgStyleDropdown");
     if (!btn || !dropdown) return;
 
+    /** 防止多次并发 refresh 在 await 后重复 append 风格按钮 */
+    let styleDropdownRefreshGen = 0;
+
     function openDropdown() {
       dropdown.hidden = false;
       btn.setAttribute("aria-expanded", "true");
@@ -5814,6 +5817,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
 
     async function refreshStyleDropdown() {
+      const gen = ++styleDropdownRefreshGen;
       dropdown.replaceChildren();
       const fpId = getCurrentFloorplanId();
       if (!fpId) {
@@ -5827,9 +5831,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       let list;
       try {
         const idx = await loadStylePackIndex(fpId);
+        if (gen !== styleDropdownRefreshGen) return;
         list = idx.styles;
       } catch (err) {
         console.warn("[VisionHome] 风格列表加载失败:", err);
+        if (gen !== styleDropdownRefreshGen) return;
         setStyleToolbarButtonLabel(null);
         const hint = document.createElement("div");
         hint.className = "svg-style-dropdown-hint";
@@ -5838,6 +5844,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         return;
       }
       if (!list.length) {
+        if (gen !== styleDropdownRefreshGen) return;
         setStyleToolbarButtonLabel(null);
         const hint = document.createElement("div");
         hint.className = "svg-style-dropdown-hint";
@@ -5845,8 +5852,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         dropdown.appendChild(hint);
         return;
       }
-      const cur = getEffectiveFloorplanStyleKey();
+      const seenKeys = new Set();
+      const deduped = [];
       for (const s of list) {
+        const k = String(s?.key ?? "").trim();
+        if (!k || seenKeys.has(k)) continue;
+        seenKeys.add(k);
+        deduped.push(s);
+      }
+      if (gen !== styleDropdownRefreshGen) return;
+      const cur = getEffectiveFloorplanStyleKey();
+      for (const s of deduped) {
         const tag = document.createElement("button");
         tag.type = "button";
         tag.className = "svg-style-tag";
@@ -5856,7 +5872,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (s.key === cur) tag.classList.add("is-active");
         dropdown.appendChild(tag);
       }
-      setStyleToolbarButtonLabel(list);
+      setStyleToolbarButtonLabel(deduped);
     }
 
     dropdown.addEventListener("click", (e) => {

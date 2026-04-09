@@ -134,7 +134,7 @@ async function fetchStylePackJson(floorplanId) {
   if (!fp) throw new Error("Invalid floorplanId for decor");
   if (stylePackJsonCache.has(fp)) return stylePackJsonCache.get(fp);
   const url = `./${DATA_PATHS.stylesDir}/${fp}.json`;
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Decor fetch failed: ${res.status} ${url}`);
   const data = await res.json();
   stylePackJsonCache.set(fp, data);
