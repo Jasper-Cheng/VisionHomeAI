@@ -5612,6 +5612,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     };
   }
 
+  /**
+   * 读取 `./assets/floorplans/style/{floorplanId}.json` 全量内容。
+   * 当前编辑 apt 户型时即 `apt_2b1l_compact_01.json`。
+   * @param {string} fpId 户型 id（与 JSON 文件名一致）
+   */
   async function fetchRawFloorplanStylePack(fpId) {
     const url = `./${DATA_PATHS.stylesDir}/${fpId}.json`;
     const res = await fetch(url);
@@ -5619,7 +5624,24 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return res.json();
   }
 
+  /**
+   * 写回前保证根级 floorplanId 与 JSON 文件名一致；保留 mapping、defaultStyleKey、styles 中其它条目。
+   * @param {string} fpId
+   * @param {object} pack
+   */
+  function normalizeStylePackRootForDisk(fpId, pack) {
+    if (!pack || typeof pack !== "object") return;
+    pack.floorplanId = fpId;
+    if (!pack.styles || typeof pack.styles !== "object") pack.styles = {};
+  }
+
+  /**
+   * POST 整文件写入 `assets/floorplans/style/{floorplanId}.json`（需 dev_server）。
+   * @param {string} fpId
+   * @param {object} pack 完整装饰包（含 mapping、defaultStyleKey、styles 等）
+   */
   async function postFloorplanStylePackSave(fpId, pack) {
+    normalizeStylePackRootForDisk(fpId, pack);
     const res = await fetch(DATA_PATHS.floorplanStyleSaveApi, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -5679,6 +5701,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const displayName = await resolveStyleDisplayName(fpId, sk);
         const block = buildStyleBlockFromSceneForPack(sk, displayName, lastMergedFloorplanStyle);
         if (!pack.styles || typeof pack.styles !== "object") pack.styles = {};
+        // 覆盖该 JSON 内 styles[当前风格键]：sceneLighting、materials、decorations
         pack.styles[sk] = block;
         await postFloorplanStylePackSave(fpId, pack);
         clearStyleConfigCache();
@@ -5733,6 +5756,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const block = buildStyleBlockFromSceneForPack(newKey, raw, lastMergedFloorplanStyle);
         styles[newKey] = block;
         pack.styles = styles;
+        // 在同一 JSON 的 styles 下追加新键
         await postFloorplanStylePackSave(fpId, pack);
         floorplanStyleKeyOverride = newKey;
         clearStyleConfigCache();
