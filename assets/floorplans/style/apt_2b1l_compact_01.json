@@ -352,7 +352,16 @@
         }
       },
       "decorations": {
-        "placements": []
+        "placements": [
+          {
+            "model": "potted_plant_02",
+            "x": -16,
+            "y": 105,
+            "rotation": 0,
+            "floorId": "floor1",
+            "decorationLiftCm": 0
+          }
+        ]
       }
     },
     "style_1775694797480": {

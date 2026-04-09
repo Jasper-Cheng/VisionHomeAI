@@ -5471,11 +5471,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * 是否存在「户型需按半透明处理」的楼层（非 1 不透明）：此时用分层渲染（深度预写入 + 颜色）稳定遮挡。
+   * 注意：多遍合成会让整幅画面偏暗，易被误认为环境光变弱。以下情况不要走多遍：
+   * - 仅调当前层透明度（见上条提交）；
+   * - 再次点击当前楼层 Tab 取消选中（floorSelectionEnabled=false）：单层户型时全层 0.2 透明度，若再用「非楼层选中」单独触发多遍，会不必要地压暗画面；多层叠显且其它层半透明由下一条判断覆盖。
+   * 多遍仅保留：多层同时可见且其它层为半透明（与 hideOtherFloors / otherLayersOpacity 一致）等真正需要稳定排序的情形。
    */
   function floorplanNeedsTranslucentPass() {
     if (!floorplanRoot.children.length) return false;
-    if (!floorSelectionEnabled) return true;
-    if (activeLayerOpacity < 1 - 1e-4) return true;
     const floors = getFloorsFromEntry(currentFloorplanEntry);
     const n = floors?.length ?? 0;
     if (n > 1 && !hideOtherFloors && otherLayersOpacity < 1 - 1e-4) return true;
