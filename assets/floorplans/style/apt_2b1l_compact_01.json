@@ -69,7 +69,7 @@
       "id": "default",
       "name": "默认",
       "sceneLighting": {
-        "toneMappingExposure": 0.72,
+        "toneMappingExposure": 1.57,
         "ambient": {
           "color": "#f3e8dd",
           "intensity": 0.22

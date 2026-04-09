@@ -565,10 +565,35 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return "allWalls";
   }
   /**
-   * 按楼层 id 记录**整层**墙/地颜色与材质库 id 覆盖（与户型 style 叠加）
-   * @type {Record<string, { allWalls?: SurfaceScopeOverride, allFloors?: SurfaceScopeOverride, allDoors?: SurfaceScopeOverride, allWindows?: SurfaceScopeOverride }>}
+   * 按风格键 + 楼层 id 记录**整层**墙/地/门窗材质覆盖（与风格包材质叠加）
+   * 需求：切换风格时，不应沿用其它风格下的覆盖。
+   * @type {Record<string, Record<string, { allWalls?: SurfaceScopeOverride, allFloors?: SurfaceScopeOverride, allDoors?: SurfaceScopeOverride, allWindows?: SurfaceScopeOverride }>>}
    */
-  let floorplanSurfaceOverrides = {};
+  let floorplanSurfaceOverridesByStyleKey = {};
+
+  function normalizeStyleKeyForSurfaceOverrides(styleKey) {
+    const k = styleKey != null ? String(styleKey).trim() : "";
+    return k || "__default__";
+  }
+
+  /**
+   * @param {string | null | undefined} styleKey
+   * @param {{ create?: boolean }} [opts]
+   */
+  function getSurfaceOverridesBucketForStyle(styleKey, opts = {}) {
+    const key = normalizeStyleKeyForSurfaceOverrides(styleKey);
+    const create = Boolean(opts.create);
+    const hit = floorplanSurfaceOverridesByStyleKey[key];
+    if (hit && typeof hit === "object") return hit;
+    if (!create) return {};
+    const next = {};
+    floorplanSurfaceOverridesByStyleKey[key] = next;
+    return next;
+  }
+
+  function getCurrentSurfaceOverridesBucket() {
+    return getSurfaceOverridesBucketForStyle(getEffectiveFloorplanStyleKey(), { create: true });
+  }
   let dragState = null;
   /** Alt+左键调节装饰模型高度：{ pointerId, group, startClientY, startLiftM } */
   let altDragState = null;
@@ -1320,7 +1345,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
    */
   function getFloorplanSurfaceGlobalOverride(floorLevelId, scope) {
-    const bag = floorplanSurfaceOverrides[String(floorLevelId ?? "").trim()];
+    const overrides = getCurrentSurfaceOverridesBucket();
+    const bag = overrides[String(floorLevelId ?? "").trim()];
     if (!bag) return null;
     if (scope === "allWalls") return bag.allWalls ?? null;
     if (scope === "allFloors") return bag.allFloors ?? null;
@@ -1333,7 +1359,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * 将旧版 { rooms:{id}, walls:{id} } 转为 allFloors / allWalls（取各组第一条，仅迁移兼容）
    * @param {Record<string, object>} raw
    */
-  function migrateFloorplanSurfaceOverrides(raw) {
+  function migrateFloorplanSurfaceOverridesBucket(raw) {
     if (!raw || typeof raw !== "object") return {};
     const out = {};
     for (const [fid, bag] of Object.entries(raw)) {
@@ -1364,7 +1390,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function setFloorplanSurfaceGlobalOverride(floorLevelId, scope, data) {
     const fid = String(floorLevelId ?? "").trim();
     if (!fid) return;
-    if (!floorplanSurfaceOverrides[fid]) floorplanSurfaceOverrides[fid] = {};
+    const overrides = getCurrentSurfaceOverridesBucket();
+    if (!overrides[fid]) overrides[fid] = {};
     const key =
       scope === "allWalls"
         ? "allWalls"
@@ -1377,9 +1404,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
               : "";
     if (!key) return;
     if (data && typeof data === "object" && Object.keys(data).length > 0) {
-      floorplanSurfaceOverrides[fid][key] = data;
+      overrides[fid][key] = data;
     } else {
-      delete floorplanSurfaceOverrides[fid][key];
+      delete overrides[fid][key];
     }
   }
 
@@ -1563,13 +1590,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const gWorld = floorplanRoot.children[0];
     if (!gWorld?.userData?.floorplanGWorld) return;
     const libraryBag = await getFloorplanMaterialsLibraryBag();
+    const overrides = getCurrentSurfaceOverridesBucket();
     /** @type {Map<string, { ov: SurfaceScopeOverride, meshes: import("three").Mesh[], isRoomFloor: boolean }>} */
     const batches = new Map();
     gWorld.traverse((o) => {
       if (!o.isMesh) return;
       const fid = String(o.userData.floorplanFloorLevelId ?? "").trim();
       if (!fid) return;
-      const bag = floorplanSurfaceOverrides[fid];
+      const bag = overrides[fid];
       if (!bag) return;
       if (o.userData.floorplanRoomFloor && bag.allFloors && surfaceOverrideIsActive(bag.allFloors)) {
         const k = `${fid}\0allFloors`;
@@ -1641,7 +1669,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const fid = String(floorLevelId ?? "").trim();
     if (!fid) return;
     const libraryBag = await getFloorplanMaterialsLibraryBag();
-    const bag = floorplanSurfaceOverrides[fid];
+    const overrides = getCurrentSurfaceOverridesBucket();
+    const bag = overrides[fid];
     /** @type {SurfaceScopeOverride | null} */
     let ov = null;
     if (scope === "allWalls" && bag?.allWalls && surfaceOverrideIsActive(bag.allWalls)) ov = bag.allWalls;
@@ -3293,7 +3322,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function clearFloorplan() {
     currentFloorplanEntry = null;
     floorplanStyleKeyOverride = null;
-    floorplanSurfaceOverrides = {};
+    floorplanSurfaceOverridesByStyleKey = {};
     currentFloorIndex = 0;
     floorSelectionEnabled = true;
     syncOtherOpacityUi();
@@ -3308,7 +3337,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!entry) return;
     /** 从户型库拖入/替换户型时清空；从设计文件或 undo 恢复时已先写入 overrides 时需传 preserveSurfaceOverrides: true */
     if (!options.preserveSurfaceOverrides) {
-      floorplanSurfaceOverrides = {};
+      floorplanSurfaceOverridesByStyleKey = {};
     }
     currentFloorplanEntry = entry;
     currentFloorIndex = normalizeFloorIndex(entry, options.floorIndex);
@@ -3737,7 +3766,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       floorPlanId: getCurrentFloorplanId(),
       floorLevelIndex: getCurrentFloorLevelIndex(),
       floorplanStyleKey: getEffectiveFloorplanStyleKey(),
-      surfaceOverrides: JSON.parse(JSON.stringify(floorplanSurfaceOverrides)),
+      // 兼容旧版：surfaceOverrides 仅当前风格 bucket；新版优先使用 surfaceOverridesByStyleKey。
+      surfaceOverrides: JSON.parse(JSON.stringify(getCurrentSurfaceOverridesBucket())),
+      surfaceOverridesByStyleKey: JSON.parse(JSON.stringify(floorplanSurfaceOverridesByStyleKey)),
     });
   }
 
@@ -3770,11 +3801,28 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const surfaceOverrides = Object.prototype.hasOwnProperty.call(parsed, "surfaceOverrides")
         ? cloneSurfaceOverridesPayload(parsed.surfaceOverrides)
         : undefined;
+      const surfaceOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "surfaceOverridesByStyleKey")
+        ? cloneSurfaceOverridesPayload(parsed.surfaceOverridesByStyleKey)
+        : undefined;
       if (id === undefined) {
-        return { furniture: parsed.furniture, floorPlanId: undefined, floorLevelIndex, floorplanStyleKey, surfaceOverrides };
+        return {
+          furniture: parsed.furniture,
+          floorPlanId: undefined,
+          floorLevelIndex,
+          floorplanStyleKey,
+          surfaceOverrides,
+          surfaceOverridesByStyleKey,
+        };
       }
       if (id === null || String(id).trim() === "") {
-        return { furniture: parsed.furniture, floorPlanId: null, floorLevelIndex, floorplanStyleKey, surfaceOverrides };
+        return {
+          furniture: parsed.furniture,
+          floorPlanId: null,
+          floorLevelIndex,
+          floorplanStyleKey,
+          surfaceOverrides,
+          surfaceOverridesByStyleKey,
+        };
       }
       return {
         furniture: parsed.furniture,
@@ -3782,6 +3830,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         floorLevelIndex,
         floorplanStyleKey,
         surfaceOverrides,
+        surfaceOverridesByStyleKey,
       };
     }
     return null;
@@ -3789,14 +3838,26 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   async function applyHistorySnapshotState(state) {
     if (!state) return;
-    if (Object.prototype.hasOwnProperty.call(state, "surfaceOverrides")) {
-      floorplanSurfaceOverrides = migrateFloorplanSurfaceOverrides(
+    if (Object.prototype.hasOwnProperty.call(state, "surfaceOverridesByStyleKey")) {
+      const raw = state.surfaceOverridesByStyleKey && typeof state.surfaceOverridesByStyleKey === "object"
+        ? JSON.parse(JSON.stringify(state.surfaceOverridesByStyleKey))
+        : {};
+      const next = {};
+      for (const [sk, bucket] of Object.entries(raw)) {
+        if (!bucket || typeof bucket !== "object") continue;
+        next[normalizeStyleKeyForSurfaceOverrides(sk)] = migrateFloorplanSurfaceOverridesBucket(bucket);
+      }
+      floorplanSurfaceOverridesByStyleKey = next;
+    } else if (Object.prototype.hasOwnProperty.call(state, "surfaceOverrides")) {
+      const legacy = migrateFloorplanSurfaceOverridesBucket(
         state.surfaceOverrides && typeof state.surfaceOverrides === "object"
           ? JSON.parse(JSON.stringify(state.surfaceOverrides))
           : {},
       );
+      const sk = normalizeStyleKeyForSurfaceOverrides(state.floorplanStyleKey);
+      floorplanSurfaceOverridesByStyleKey = { [sk]: legacy };
     } else {
-      floorplanSurfaceOverrides = {};
+      floorplanSurfaceOverridesByStyleKey = {};
     }
     if (state.floorPlanId !== undefined) {
       if (state.floorPlanId) {
@@ -5305,17 +5366,37 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     isRestoring = true;
     try {
-      floorplanSurfaceOverrides = migrateFloorplanSurfaceOverrides(
-        hasSvgEditor && se.surfaceOverrides && typeof se.surfaceOverrides === "object"
-          ? JSON.parse(JSON.stringify(se.surfaceOverrides))
-          : {},
-      );
+      // 恢复风格键（若有）；再恢复各风格的 surfaceOverrides
+      if (hasSvgEditor && Object.prototype.hasOwnProperty.call(se, "floorplanStyleKey")) {
+        const sk = se.floorplanStyleKey;
+        floorplanStyleKeyOverride = sk != null && String(sk).trim() ? String(sk).trim() : null;
+      } else {
+        floorplanStyleKeyOverride = null;
+      }
+      if (hasSvgEditor && se.surfaceOverridesByStyleKey && typeof se.surfaceOverridesByStyleKey === "object") {
+        const raw = JSON.parse(JSON.stringify(se.surfaceOverridesByStyleKey));
+        const next = {};
+        for (const [sk, bucket] of Object.entries(raw)) {
+          if (!bucket || typeof bucket !== "object") continue;
+          next[normalizeStyleKeyForSurfaceOverrides(sk)] = migrateFloorplanSurfaceOverridesBucket(bucket);
+        }
+        floorplanSurfaceOverridesByStyleKey = next;
+      } else {
+        const legacyBucket = migrateFloorplanSurfaceOverridesBucket(
+          hasSvgEditor && se.surfaceOverrides && typeof se.surfaceOverrides === "object"
+            ? JSON.parse(JSON.stringify(se.surfaceOverrides))
+            : {},
+        );
+        const sk = normalizeStyleKeyForSurfaceOverrides(floorplanStyleKeyOverride);
+        floorplanSurfaceOverridesByStyleKey = Object.keys(legacyBucket).length ? { [sk]: legacyBucket } : {};
+      }
       if (fpId) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
         if (entry) {
           await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
             floorIndex: floorLevelIndex,
+            preserveStyleKeyOverride: true,
             preserveSurfaceOverrides: true,
             skipDecorFromStyleMerge: true,
           });
@@ -6093,7 +6174,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorRestoreSession = restoreEditorSession;
   window.svgEditorGetUndoHistory = () => ({ entries: [...history], index: historyIndex });
   window.svgEditorFlushHistoryDebounce = flushHistoryDebounce;
-  window.svgEditorGetSurfaceOverrides = () => JSON.parse(JSON.stringify(floorplanSurfaceOverrides));
+  // 新版：返回“按 styleKey 分桶”的覆盖（兼容多风格切换互不污染）
+  window.svgEditorGetSurfaceOverrides = () => JSON.parse(JSON.stringify(floorplanSurfaceOverridesByStyleKey));
   window.svgEditorDeselect = () => {
     deselectVisualOnly();
     clearFloorplanSurfaceSelection();
