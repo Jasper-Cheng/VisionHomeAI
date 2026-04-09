@@ -10,6 +10,7 @@ import { normalizeWindowStyle, defaultWindowStyleWhite } from "../floorplan/wind
 import {
   loadStyleConfig,
   loadStylePackIndex,
+  getDefaultStyleKeyForFloorplan,
   getMaterialDef,
   resolveStyleTextureUrl,
   resolveWallMaterialKey,
@@ -51,7 +52,7 @@ const FLOORPLAN_SURFACE_COLOR = 0xc9c4be;
 
 /**
  * 风格包未配置 sceneLighting 时的默认曝光与灯光（偏中性）。
- * 奶油风等在 `assets/floorplans/style/<floorplanId>.json` 的 `styles.<key>.sceneLighting` 覆盖。
+ * 户型风格包 `assets/floorplans/style/<floorplanId>.json` 中 `styles.<key>.sceneLighting` 可覆盖全局光照。
  */
 const DEFAULT_SCENE_LIGHTING = {
   toneMappingExposure: 0.88,
@@ -3020,7 +3021,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!entry) return "modern_minimal_v1";
     const o = floorplanStyleKeyOverride != null ? String(floorplanStyleKeyOverride).trim() : "";
     if (o) return o;
-    return String(entry?.styleKey ?? entry?.styleId ?? "").trim() || "modern_minimal_v1";
+    const fromEntry = String(entry?.styleKey ?? entry?.styleId ?? "").trim();
+    if (fromEntry) return fromEntry;
+    const fpId = String(entry?.id ?? "").trim();
+    const fromPack = fpId ? getDefaultStyleKeyForFloorplan(fpId) : "";
+    return fromPack || "modern_minimal_v1";
   }
 
   async function rebuildFloorplan3D() {
@@ -3041,6 +3046,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     const entry = currentFloorplanEntry;
     const fpId = String(entry?.id ?? "").trim();
+    if (fpId) await loadStylePackIndex(fpId);
     const skEffective = getEffectiveFloorplanStyleKey();
     let style = null;
     try {

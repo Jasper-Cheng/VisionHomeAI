@@ -1,5 +1,6 @@
 {
   "floorplanId": "apt_2b1l_compact_01",
+  "defaultStyleKey": "default",
   "mapping": {
     "rooms": {
       "r_bed1": {
@@ -64,9 +65,9 @@
     }
   },
   "styles": {
-    "cream_style_v1": {
-      "id": "cream_style_v1",
-      "name": "奶油风",
+    "default": {
+      "id": "default",
+      "name": "默认",
       "sceneLighting": {
         "toneMappingExposure": 0.72,
         "ambient": {

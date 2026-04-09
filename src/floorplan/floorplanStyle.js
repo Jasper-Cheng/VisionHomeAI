@@ -1,5 +1,5 @@
 /**
- * 户型装饰 JSON（assets/floorplans/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；styles.{key}.materials 为内联参数。
+ * 户型装饰 JSON（assets/floorplans/style/<floorplanId>.json）：根级 defaultStyleKey 为默认风格键；缺省时用 styles 中第一个风格。loadStyleConfig 未传 styleKey 时用该默认。
  * 可选根级 mapping：与户型元素 id 对应；各风格未写 mapping 时沿用根级，避免重复。
  * 各风格可选 sceneLighting：曝光、环境光/半球光/主光强度与色温、户型 PBR envMapIntensity（见 apt 风格 JSON）。
  * loadStyleConfig(floorplanId, styleKey) 返回合并后的单套风格，供 getMaterialDef。
@@ -11,6 +11,10 @@
 import { DATA_PATHS } from "../core/schema.js";
 
 const styleCache = new Map();
+/** @type {Map<string, object>} */
+const stylePackJsonCache = new Map();
+/** 与风格包 JSON 同步：该户型默认风格键（供无户型 styleKey 时回退） */
+const styleDefaultKeyByFloorplanId = new Map();
 let materialsLibraryCache = null;
 
 function snapCm(v) {
@@ -101,6 +105,53 @@ function parseMaterialRefId(raw) {
 
 function isPlainObject(v) {
   return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+/**
+ * 从风格包根对象解析默认风格键：优先 defaultStyleKey 且须在 styles 内；否则取 styles 中第一条目。
+ * @param {object} data
+ * @returns {string}
+ */
+export function resolveDefaultStyleKeyFromPack(data) {
+  if (!data || typeof data !== "object") return "";
+  const styles = data.styles;
+  if (!styles || typeof styles !== "object") return "";
+  const explicit = safeStyleKey(data.defaultStyleKey);
+  if (explicit && isPlainObject(styles[explicit])) return explicit;
+  for (const key of Object.keys(styles)) {
+    if (isPlainObject(styles[key])) return safeStyleKey(key) || key;
+  }
+  return "";
+}
+
+/**
+ * 拉取并缓存户型装饰包 JSON（按 floorplanId 仅请求一次，直至 clearStyleConfigCache）。
+ * @param {string} floorplanId
+ * @returns {Promise<object>}
+ */
+async function fetchStylePackJson(floorplanId) {
+  const fp = safeStyleId(floorplanId);
+  if (!fp) throw new Error("Invalid floorplanId for decor");
+  if (stylePackJsonCache.has(fp)) return stylePackJsonCache.get(fp);
+  const url = `./${DATA_PATHS.stylesDir}/${fp}.json`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Decor fetch failed: ${res.status} ${url}`);
+  const data = await res.json();
+  stylePackJsonCache.set(fp, data);
+  const def = resolveDefaultStyleKeyFromPack(data) || "modern_minimal_v1";
+  styleDefaultKeyByFloorplanId.set(fp, def);
+  return data;
+}
+
+/**
+ * 已加载过的户型装饰包默认风格键（需先 loadStyleConfig / loadStylePackIndex / fetchStylePackJson 成功）
+ * @param {string} floorplanId
+ * @returns {string}
+ */
+export function getDefaultStyleKeyForFloorplan(floorplanId) {
+  const fp = safeStyleId(floorplanId);
+  if (!fp) return "";
+  return styleDefaultKeyByFloorplanId.get(fp) ?? "";
 }
 
 /**
@@ -199,22 +250,20 @@ function resolveStyleMaterialRefs(style, library, floorplanId, styleKey) {
 
 /**
  * @param {string} floorplanId 与户型 id 一致，对应 assets/floorplans/style/<floorplanId>.json
- * @param {string} [styleKey] 装饰文件内 styles 的键，缺省为 modern_minimal_v1
+ * @param {string} [styleKey] 装饰文件内 styles 的键，缺省为该文件 defaultStyleKey（或第一套风格）
  * @returns {Promise<object>}
  */
 export async function loadStyleConfig(floorplanId, styleKey) {
   const fp = safeStyleId(floorplanId);
   if (!fp) throw new Error("Invalid floorplanId for decor");
-  const sk = safeStyleKey(styleKey) || "modern_minimal_v1";
+  const data = await fetchStylePackJson(fp);
+  const styles = data.styles;
+  if (!styles || typeof styles !== "object") throw new Error("Decor JSON missing styles");
+  const defaultSk = resolveDefaultStyleKeyFromPack(data) || "modern_minimal_v1";
+  const sk = safeStyleKey(styleKey) || defaultSk;
   const cacheKey = `${fp}::${sk}::libMatId1`;
   if (styleCache.has(cacheKey)) return styleCache.get(cacheKey);
 
-  const url = `./${DATA_PATHS.stylesDir}/${fp}.json`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Decor fetch failed: ${res.status} ${url}`);
-  const data = await res.json();
-  const styles = data.styles;
-  if (!styles || typeof styles !== "object") throw new Error("Decor JSON missing styles");
   const inner = styles[sk];
   if (!inner || typeof inner !== "object") throw new Error(`Unknown styleKey: ${sk}`);
   const materialsLibrary = await loadMaterialsLibrary();
@@ -228,24 +277,30 @@ export async function loadStyleConfig(floorplanId, styleKey) {
 
 export function clearStyleConfigCache() {
   styleCache.clear();
+  stylePackJsonCache.clear();
+  styleDefaultKeyByFloorplanId.clear();
   materialsLibraryCache = null;
 }
 
 /**
  * 列出某户型装饰包中的全部风格（工具栏下拉）
  * @param {string} floorplanId
- * @returns {Promise<{ floorplanId: string, styles: { key: string, id: string, name: string }[] }>}
+ * @returns {Promise<{ floorplanId: string, styles: { key: string, id: string, name: string }[], defaultStyleKey: string }>}
  */
 export async function loadStylePackIndex(floorplanId) {
   const fp = safeStyleId(floorplanId);
-  if (!fp) return { floorplanId: "", styles: [] };
+  if (!fp) return { floorplanId: "", styles: [], defaultStyleKey: "" };
 
-  const url = `./${DATA_PATHS.stylesDir}/${fp}.json`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Decor fetch failed: ${res.status} ${url}`);
-  const data = await res.json();
+  let data;
+  try {
+    data = await fetchStylePackJson(fp);
+  } catch {
+    return { floorplanId: fp, styles: [], defaultStyleKey: "" };
+  }
   const stylesObj = data.styles;
-  if (!stylesObj || typeof stylesObj !== "object") return { floorplanId: fp, styles: [] };
+  if (!stylesObj || typeof stylesObj !== "object") {
+    return { floorplanId: fp, styles: [], defaultStyleKey: "" };
+  }
 
   const styles = [];
   for (const key of Object.keys(stylesObj)) {
@@ -255,7 +310,8 @@ export async function loadStylePackIndex(floorplanId) {
     const name = String(s.name ?? key).trim() || key;
     styles.push({ key, id, name });
   }
-  return { floorplanId: fp, styles };
+  const defaultStyleKey = resolveDefaultStyleKeyFromPack(data) || "modern_minimal_v1";
+  return { floorplanId: fp, styles, defaultStyleKey };
 }
 
 const STYLE_ROOT_RESERVED = new Set([
