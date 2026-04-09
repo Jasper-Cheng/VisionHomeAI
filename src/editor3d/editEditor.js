@@ -5806,6 +5806,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   function buildStyleBlockFromSceneForPack(styleKey, displayName, styleObj) {
     const materials = stripLibraryMetaFromMaterials(styleObj?.materials);
+    const mapping =
+      styleObj?.mapping && typeof styleObj.mapping === "object" && !Array.isArray(styleObj.mapping) ? styleObj.mapping : null;
     const layout = getLayout();
     const placements = [];
     for (const row of layout) {
@@ -5820,13 +5822,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (row.decorationLiftCm != null) p.decorationLiftCm = row.decorationLiftCm;
       placements.push(p);
     }
-    return {
+    const block = {
       id: styleKey,
       name: displayName,
       sceneLighting: getSceneLightingForStylePack(),
       materials,
       decorations: { placements },
     };
+    if (mapping) block.mapping = mapping;
+    if (styleObj?.extends && typeof styleObj.extends === "string" && styleObj.extends.trim()) {
+      block.extends = styleObj.extends.trim();
+    }
+    return block;
   }
 
   /**
@@ -6118,6 +6125,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         // 仅替换当前键；其它 styles.* 保持从文件读出时的快照
         pack.styles[sk] = block;
         await postFloorplanStylePackSave(fpId, pack);
+
+        // 已写入磁盘：覆盖语义也不应继续叠加旧的临时 overrides
+        clearSurfaceOverridesForStyle(sk);
+
         clearStyleConfigCache();
         await loadStylePackIndex(fpId);
         await rebuildFloorplan3D();
@@ -6311,7 +6322,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!tag) return;
       const key = String(tag.dataset.styleKey ?? "").trim();
       if (!key || !currentFloorplanEntry) return;
+      const prevKey = getEffectiveFloorplanStyleKey();
       floorplanStyleKeyOverride = key;
+
+      // 切换风格：未保存的墙/地/门窗“面板覆盖”不应保留，也不应在切回时复现。
+      // 这里直接清空所有风格的 overrides，保证任何风格切换都会回到该风格 JSON 的默认状态。
+      floorplanSurfaceOverridesByStyleKey = {};
+      clearFloorplanSurfaceSelection();
+
       const picked = String(tag.textContent ?? "").trim();
       if (picked) {
         btn.textContent = picked;
