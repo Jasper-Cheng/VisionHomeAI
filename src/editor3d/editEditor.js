@@ -351,7 +351,7 @@ function clampFurnitureToCanvas(cx, cy, rotDeg, hw, hh) {
  * @property {string} [textureAlbedo] 仅覆盖库材质 `texture.albedo` 的文件名（如 `Concrete003_2K-JPG_Color.jpg`）或 `textures/...` 路径
  * @property {number} [roughness]
  * @property {number} [metalness]
- * @property {number} [opacity] 库材质「不透明度」乘子（0–1，与 materials.library 中 glass 的 opacity 一致）
+ * @property {number} [opacity] 库材质「不透明度」乘子（0–1，与玻璃材质定义中的 opacity 一致）
  * @property {number} [transmission]
  * @property {number} [ior]
  * @property {[number, number]} [uvScale]
@@ -1557,12 +1557,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!floorplanRoot.children.length) return;
     const gWorld = floorplanRoot.children[0];
     if (!gWorld?.userData?.floorplanGWorld) return;
-    let libraryBag;
-    try {
-      libraryBag = await loadMaterialsLibrary();
-    } catch {
-      libraryBag = {};
-    }
+    const libraryBag = await getFloorplanMaterialsLibraryBag();
     /** @type {Map<string, { ov: SurfaceScopeOverride, meshes: import("three").Mesh[], isRoomFloor: boolean }>} */
     const batches = new Map();
     gWorld.traverse((o) => {
@@ -1640,12 +1635,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!gWorld?.userData?.floorplanGWorld) return;
     const fid = String(floorLevelId ?? "").trim();
     if (!fid) return;
-    let libraryBag;
-    try {
-      libraryBag = await loadMaterialsLibrary();
-    } catch {
-      libraryBag = {};
-    }
+    const libraryBag = await getFloorplanMaterialsLibraryBag();
     const bag = floorplanSurfaceOverrides[fid];
     /** @type {SurfaceScopeOverride | null} */
     let ov = null;
@@ -3967,6 +3957,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return style;
   }
 
+  /** 可选 materials.library.json + 当前风格包 materials（无库文件时仅内联材质，供面板与覆盖解析） */
+  async function getFloorplanMaterialsLibraryBag() {
+    let lib = {};
+    try {
+      lib = await loadMaterialsLibrary();
+    } catch {
+      lib = {};
+    }
+    const style = await getCurrentFloorplanStyleForPanel();
+    const mats =
+      style?.materials && typeof style.materials === "object" && !Array.isArray(style.materials) ? style.materials : {};
+    return { ...lib, ...mats };
+  }
+
   /**
    * 本层第一个房间地面 / 第一条墙在风格包中对应的材质键（与渲染时 resolve*MaterialKey 一致）。
    * @param {{ floorLevelId: string }} sel
@@ -4219,12 +4223,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!albedoFn) return;
       const sel = selectedFloorplanSurface;
       if (!sel || !propSurfaceMaterial || !propSurfaceTextureAlbedo) return;
-      let lib = {};
-      try {
-        lib = await loadMaterialsLibrary();
-      } catch {
-        /* ignore */
-      }
+      const lib = await getFloorplanMaterialsLibraryBag();
       const scope = floorplanSurfaceScopeFromKind(sel.kind);
       const baseOv = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
       let mid =
@@ -4275,12 +4274,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (propSurfaceColor) propSurfaceColor.value = normalizedHex;
     surfaceColorPicker?.setHex(normalizedHex, true);
 
-    let lib = {};
-    try {
-      lib = await loadMaterialsLibrary();
-    } catch {
-      /* ignore */
-    }
+    const lib = await getFloorplanMaterialsLibraryBag();
 
     const selectVal = await resolveBaseMaterialIdForSurfacePanel(sel, scope, ov, lib);
     const texAlbedoRaw = String(ov?.textureAlbedo ?? "").trim();
@@ -4348,12 +4342,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return;
     }
     const scope = floorplanSurfaceScopeFromKind(sel.kind);
-    let lib = {};
-    try {
-      lib = await loadMaterialsLibrary();
-    } catch {
-      /* ignore */
-    }
+    const lib = await getFloorplanMaterialsLibraryBag();
     const fid = sel.floorLevelId;
     const prevOv = getFloorplanSurfaceGlobalOverride(fid, scope);
 
@@ -4826,12 +4815,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       pendingSurfaceMaterialPresetClear = true;
       propSurfaceMaterial.value = "";
       if (propSurfaceTextureAlbedo) propSurfaceTextureAlbedo.value = "";
-      let lib = {};
-      try {
-        lib = await loadMaterialsLibrary();
-      } catch {
-        /* ignore */
-      }
+      const lib = await getFloorplanMaterialsLibraryBag();
       updateSurfaceMaterialNameLabel("", lib);
       propSurfaceMaterialGrid?.querySelectorAll(".prop-surface-material__cell").forEach((el) => {
         el.classList.remove("is-selected");

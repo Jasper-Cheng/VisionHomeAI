@@ -1,5 +1,5 @@
 /**
- * 户型装饰 JSON（assets/floorplans/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；材质可在根级或包在 materials 内。
+ * 户型装饰 JSON（assets/floorplans/style/<floorplanId>.json）：含 styles.{styleKey} 多套风格；styles.{key}.materials 为内联参数。
  * 可选根级 mapping：与户型元素 id 对应；各风格未写 mapping 时沿用根级，避免重复。
  * 各风格可选 sceneLighting：曝光、环境光/半球光/主光强度与色温、户型 PBR envMapIntensity（见 apt 风格 JSON）。
  * loadStyleConfig(floorplanId, styleKey) 返回合并后的单套风格，供 getMaterialDef。
@@ -12,7 +12,6 @@ import { DATA_PATHS } from "../core/schema.js";
 
 const styleCache = new Map();
 let materialsLibraryCache = null;
-let materialsLibraryPromise = null;
 
 function snapCm(v) {
   return Math.round(Number(v) * 1000) / 1000;
@@ -42,28 +41,12 @@ export function resolveStyleTextureUrl(relPath) {
   return `./${DATA_PATHS.stylesDir}/${clean}`;
 }
 
-/** @returns {Promise<Record<string, object>>} */
+/** 共享材质表（当前项目不请求网络文件，恒为空对象；风格包用内联 materials；与 editEditor 中合并 style.materials 配合使用）
+ * @returns {Promise<Record<string, object>>} */
 export async function loadMaterialsLibrary() {
   if (materialsLibraryCache) return materialsLibraryCache;
-  if (materialsLibraryPromise) return materialsLibraryPromise;
-  const url = `./${DATA_PATHS.stylesDir}/materials.library.json`;
-  materialsLibraryPromise = (async () => {
-    const res = await fetch(url);
-    if (!res.ok) {
-      if (res.status === 404) return {};
-      throw new Error(`Materials library fetch failed: ${res.status} ${url}`);
-    }
-    const data = await res.json();
-    const bag = data?.materials;
-    if (!bag || typeof bag !== "object" || Array.isArray(bag)) return {};
-    return bag;
-  })();
-  try {
-    materialsLibraryCache = await materialsLibraryPromise;
-    return materialsLibraryCache;
-  } finally {
-    materialsLibraryPromise = null;
-  }
+  materialsLibraryCache = {};
+  return materialsLibraryCache;
 }
 
 function clonePlain(obj) {
@@ -121,7 +104,7 @@ function isPlainObject(v) {
 }
 
 /**
- * 从 materials.library.json 的 materials 表解析某 id（支持 $ref 链）
+ * 从材质表（可选 materials.library.json 的 materials）解析某 id（支持 $ref 链）
  * @param {Record<string, object>} library
  * @param {string} id
  * @returns {object | null}
@@ -146,7 +129,7 @@ export function resolveMaterialDefFromLibrary(library, id) {
 }
 
 /**
- * 沿 materials.library 的 $ref 链解析到**顶层表中的叶子 id**（供属性面板与库键对齐）
+ * 沿材质表的 $ref 链解析到**顶层表中的叶子 id**（供属性面板与库键对齐）
  * @param {Record<string, object>} library
  * @param {string} startId
  * @returns {string}
@@ -246,7 +229,6 @@ export async function loadStyleConfig(floorplanId, styleKey) {
 export function clearStyleConfigCache() {
   styleCache.clear();
   materialsLibraryCache = null;
-  materialsLibraryPromise = null;
 }
 
 /**
