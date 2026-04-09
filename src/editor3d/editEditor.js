@@ -5304,6 +5304,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         }
         if (!e.isPrimary) return;
         window.__selectFloorplanLibraryCardById?.(floorPlanId);
+        // 拖动户型卡片：关闭属性面板，避免遮挡与误操作
+        clearFloorplanSurfaceSelection();
+        selectFurniture(null);
+        floorplanSelected = false;
+        propertiesPanel?.classList.remove("is-visible");
         pushPtr();
         pendingFloorplanDrag = { floorPlanId, sourceCard: fpCard, sx: e.clientX, sy: e.clientY, pointerId: e.pointerId, didDrag: false, ghostEl: null };
         window.addEventListener("pointermove", onFpMove, { passive: true });
@@ -6329,6 +6334,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       // 这里直接清空所有风格的 overrides，保证任何风格切换都会回到该风格 JSON 的默认状态。
       floorplanSurfaceOverridesByStyleKey = {};
       clearFloorplanSurfaceSelection();
+      selectFurniture(null);
+      floorplanSelected = false;
+      propertiesPanel?.classList.remove("is-visible");
 
       const picked = String(tag.textContent ?? "").trim();
       if (picked) {
