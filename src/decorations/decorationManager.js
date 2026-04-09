@@ -86,10 +86,17 @@ function createDecorationCard(item, idx) {
   const thumbUrl = item.thumbnail ? `./${item.thumbnail}` : null;
   if (thumbUrl) {
     thumbImg.src = thumbUrl;
-    thumbImg.onload = () => thumb.classList.add("has-image");
-    thumbImg.onerror = () => thumbImg.remove();
+    thumbImg.onload = () => {
+      thumb.classList.add("has-image");
+      skeleton.remove();
+    };
+    thumbImg.onerror = () => {
+      thumbImg.remove();
+      skeleton.remove();
+    };
   } else {
     thumbImg.remove();
+    skeleton.remove();
   }
   thumb.appendChild(thumbImg);
 
