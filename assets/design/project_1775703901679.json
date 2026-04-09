@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1775703901679",
+  "name": "1",
+  "description": "",
+  "createdAt": "2026-04-09T03:05:01.679Z",
+  "updatedAt": "2026-04-09T03:05:12.439Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "sofa_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -146,
+        203
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "sofa_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -354,
+        216
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_3",
+      "furnitureId": "potted_plant_02",
+      "floorId": "floor1",
+      "positionCm": [
+        -78,
+        88
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "floorplanStyleKey": "default",
+    "furniture": [
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": -146,
+        "y": 203,
+        "rotation": 0
+      },
+      {
+        "model": "sofa_01",
+        "floorId": "floor1",
+        "x": -354,
+        "y": 216,
+        "rotation": 0
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -78,
+        "y": 88,
+        "rotation": 0
+      }
+    ],
+    "surfaceOverrides": {
+      "default": {
+        "floor1": {
+          "allFloors": {
+            "color": "#a84747",
+            "materialId": "floor_bed1",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90
+          }
+        }
+      }
+    },
+    "lightingConfig": {
+      "toneMappingExposure": 1.57,
+      "ambient": {
+        "intensity": 0.22
+      },
+      "hemisphere": {
+        "intensity": 0.34
+      },
+      "directional": {
+        "intensity": 0.72
+      },
+      "envMapIntensity": 0.28
+    }
+  }
+}

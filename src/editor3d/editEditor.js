@@ -5738,6 +5738,155 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
+   * 将「面板覆盖」烘焙进风格包：生成/覆盖 style.materials 并写入 style.mapping（按房间/墙/门/窗 id）。
+   * 不在风格包中存 surfaceOverrides 字段，避免与 style 本体重复表达。
+   * @param {object | null} styleObj loadStyleConfig 返回的单套风格
+   * @param {Record<string, any> | null | undefined} overridesBucket 当前风格下的 surfaceOverrides bucket（按楼层 id）
+   * @param {object | null} entry 当前户型 entry（含 floors/rooms/walls/doors/windows）
+   * @param {Record<string, object>} libraryBag 材质库（含 style.materials 合并后的 bag）
+   */
+  function bakeSurfaceOverridesIntoStyle(styleObj, overridesBucket, entry, libraryBag) {
+    if (!styleObj || typeof styleObj !== "object") return styleObj;
+    if (!overridesBucket || typeof overridesBucket !== "object") return styleObj;
+    if (!entry || typeof entry !== "object") return styleObj;
+    const floors = getFloorsFromEntry(entry);
+    if (!floors.length) return styleObj;
+
+    let next;
+    try {
+      next = JSON.parse(JSON.stringify(styleObj));
+    } catch {
+      next = { ...styleObj };
+    }
+
+    if (!next.materials || typeof next.materials !== "object" || Array.isArray(next.materials)) {
+      next.materials = {};
+    }
+    if (!next.mapping || typeof next.mapping !== "object" || Array.isArray(next.mapping)) {
+      next.mapping = {};
+    }
+    if (!next.mapping.rooms || typeof next.mapping.rooms !== "object" || Array.isArray(next.mapping.rooms)) {
+      next.mapping.rooms = {};
+    }
+    if (!next.mapping.walls || typeof next.mapping.walls !== "object" || Array.isArray(next.mapping.walls)) {
+      next.mapping.walls = {};
+    }
+    if (!next.mapping.doors || typeof next.mapping.doors !== "object" || Array.isArray(next.mapping.doors)) {
+      next.mapping.doors = {};
+    }
+    if (!next.mapping.windows || typeof next.mapping.windows !== "object" || Array.isArray(next.mapping.windows)) {
+      next.mapping.windows = {};
+    }
+
+    function safeBakeKey(s) {
+      return String(s ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, "_")
+        .slice(0, 64);
+    }
+
+    /**
+     * @param {string} floorLevelId
+     * @param {"allWalls"|"allFloors"|"allDoors"|"allWindows"} scope
+     * @param {SurfaceScopeOverride} ovRaw
+     * @returns {string | null} baked material key
+     */
+    function bakeOneScopeMaterialKey(floorLevelId, scope, ovRaw) {
+      if (!surfaceOverrideIsActive(ovRaw)) return null;
+      const ov = scope === "allWindows" ? windowSurfaceOverrideForApply(ovRaw) : ovRaw;
+      if (!ov || !surfaceOverrideIsActive(ov)) return null;
+
+      let baseDef = null;
+      if (ov.materialId) {
+        baseDef = resolveMaterialDefFromLibrary(libraryBag, ov.materialId);
+      } else {
+        // 沿风格包解析当前 scope 的基准材质（取本层第一个元素）
+        const sel = { floorLevelId };
+        let k = "";
+        if (scope === "allFloors" || scope === "allWalls") {
+          k = resolveStyleMaterialKeyForSurfaceScope(sel, scope === "allFloors" ? "allFloors" : "allWalls", next);
+        } else if (scope === "allDoors") {
+          k = resolveStyleMaterialKeyForDoorScope(sel, next);
+        } else if (scope === "allWindows") {
+          k = resolveStyleMaterialKeyForWindowScope(sel, next);
+        }
+        if (k) {
+          const def = getMaterialDef(next, k);
+          if (def) {
+            try {
+              baseDef = JSON.parse(JSON.stringify(def));
+            } catch {
+              baseDef = { ...def };
+            }
+          }
+        }
+      }
+      if (!baseDef) return null;
+
+      const mergedDef = mergeMaterialOverrideIntoDef(baseDef, ov);
+      const bakedKey = `baked_${safeBakeKey(floorLevelId)}_${scope}`;
+      next.materials[bakedKey] = mergedDef;
+      return bakedKey;
+    }
+
+    for (const [fidRaw, bag] of Object.entries(overridesBucket)) {
+      if (!bag || typeof bag !== "object") continue;
+      const fid = String(fidRaw ?? "").trim();
+      if (!fid) continue;
+      const want = normalizeFloorKey(fid);
+      const fl = floors.find((f) => normalizeFloorKey(f?.id ?? "") === want) ?? null;
+      if (!fl) continue;
+
+      if (bag.allFloors) {
+        const key = bakeOneScopeMaterialKey(fid, "allFloors", bag.allFloors);
+        if (key) {
+          for (const room of fl.rooms || []) {
+            const rid = String(room?.id ?? "").trim();
+            if (!rid) continue;
+            const prev = next.mapping.rooms[rid];
+            const obj = prev && typeof prev === "object" && !Array.isArray(prev) ? { ...prev } : {};
+            obj.floor = key;
+            next.mapping.rooms[rid] = obj;
+          }
+        }
+      }
+      if (bag.allWalls) {
+        const key = bakeOneScopeMaterialKey(fid, "allWalls", bag.allWalls);
+        if (key) {
+          for (const w of fl.walls || []) {
+            const wid = String(w?.id ?? "").trim();
+            if (!wid) continue;
+            next.mapping.walls[wid] = key;
+          }
+        }
+      }
+      if (bag.allDoors) {
+        const key = bakeOneScopeMaterialKey(fid, "allDoors", bag.allDoors);
+        if (key) {
+          for (const d of fl.doors || []) {
+            const did = String(d?.id ?? "").trim();
+            if (!did) continue;
+            next.mapping.doors[did] = key;
+          }
+        }
+      }
+      if (bag.allWindows) {
+        const key = bakeOneScopeMaterialKey(fid, "allWindows", bag.allWindows);
+        if (key) {
+          for (const win of fl.windows || []) {
+            const wid = String(win?.id ?? "").trim();
+            if (!wid) continue;
+            next.mapping.windows[wid] = key;
+          }
+        }
+      }
+    }
+
+    return next;
+  }
+
+  /**
    * 读取 `./assets/floorplans/style/{floorplanId}.json` 全量内容。
    * 当前编辑 apt 户型时即 `apt_2b1l_compact_01.json`。
    * @param {string} fpId 户型 id（与 JSON 文件名一致）
@@ -5833,7 +5982,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       try {
         const pack = cloneStylePackDeep(await fetchRawFloorplanStylePack(fpId));
         const displayName = await resolveStyleDisplayName(fpId, sk);
-        const block = buildStyleBlockFromSceneForPack(sk, displayName, lastMergedFloorplanStyle);
+        const surfaceOverridesBucket = getSurfaceOverridesBucketForStyle(sk, { create: false });
+        const libraryBag = await getFloorplanMaterialsLibraryBag();
+        const bakedStyle = bakeSurfaceOverridesIntoStyle(lastMergedFloorplanStyle, surfaceOverridesBucket, currentFloorplanEntry, libraryBag);
+        const block = buildStyleBlockFromSceneForPack(sk, displayName, bakedStyle);
         if (!pack.styles || typeof pack.styles !== "object") pack.styles = {};
         // 仅替换当前键；其它 styles.* 保持从文件读出时的快照
         pack.styles[sk] = block;
@@ -5887,7 +6039,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const styles = pack.styles && typeof pack.styles === "object" ? pack.styles : {};
         const base = slugStyleKeyFromName(raw);
         const newKey = ensureUniqueStyleKeyInPack(base, styles);
-        const block = buildStyleBlockFromSceneForPack(newKey, raw, lastMergedFloorplanStyle);
+        const surfaceOverridesBucket = getCurrentSurfaceOverridesBucket();
+        const libraryBag = await getFloorplanMaterialsLibraryBag();
+        const bakedStyle = bakeSurfaceOverridesIntoStyle(lastMergedFloorplanStyle, surfaceOverridesBucket, currentFloorplanEntry, libraryBag);
+        const block = buildStyleBlockFromSceneForPack(newKey, raw, bakedStyle);
         styles[newKey] = block;
         pack.styles = styles;
         // 在已有 styles 上追加新键，不改动其它风格条目
