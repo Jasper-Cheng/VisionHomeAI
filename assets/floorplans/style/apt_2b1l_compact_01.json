@@ -1532,6 +1532,305 @@
           }
         ]
       }
+    },
+    "style_1775695080993": {
+      "id": "style_1775695080993",
+      "name": "创新下",
+      "sceneLighting": {
+        "toneMappingExposure": 0.72,
+        "ambient": {
+          "color": "#f3e8dd",
+          "intensity": 0.22
+        },
+        "hemisphere": {
+          "sky": "#ebe2d8",
+          "ground": "#b8a99a",
+          "intensity": 0.34
+        },
+        "directional": {
+          "color": "#faf4eb",
+          "intensity": 0.72
+        },
+        "envMapIntensity": 0.28
+      },
+      "materials": {
+        "wall_bed1": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ]
+        },
+        "wall_bed2": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ]
+        },
+        "wall_living": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ]
+        },
+        "wall_living_co": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ]
+        },
+        "wall_kitchen": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ]
+        },
+        "wall_bath": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ]
+        },
+        "wall_interior_general": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ]
+        },
+        "floor_bed1": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
+            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "floor_bed2": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
+            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "floor_living": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
+            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "floor_living_co": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
+            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "floor_kitchen": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
+            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "floor_bath": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
+            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "door_main": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+          }
+        },
+        "door_bath": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+          }
+        },
+        "door_kitchen": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+          }
+        },
+        "door_bed1": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+          }
+        },
+        "door_bed2": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+          }
+        },
+        "window_Clear": {
+          "type": "glass",
+          "color": "#E4E2DA",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
+        },
+        "window_Frosted": {
+          "type": "glass",
+          "color": "#DCD8D0",
+          "opacity": 0.55,
+          "roughness": 0.82,
+          "metalness": 0,
+          "transmission": 0.42,
+          "ior": 1.45
+        },
+        "window_Tinted": {
+          "type": "glass",
+          "color": "#C4C2B8",
+          "opacity": 0.38,
+          "roughness": 0.22,
+          "metalness": 0,
+          "transmission": 0.68,
+          "ior": 1.45
+        }
+      },
+      "decorations": {
+        "placements": [
+          {
+            "model": "potted_plant_02",
+            "x": -136,
+            "y": 184,
+            "rotation": 0,
+            "floorId": "floor1",
+            "decorationLiftCm": 0
+          }
+        ]
+      }
     }
   }
 }

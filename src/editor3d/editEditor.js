@@ -22,6 +22,7 @@ import {
   findWallSideRoomsAt,
   loadMaterialsLibrary,
   resolveMaterialDefFromLibrary,
+  decorationPlacementsToLayoutRows,
 } from "../floorplan/floorplanStyle.js";
 import { getFurnitureDisplayName, getFurnitureTags } from "../furniture/furnitureManager.js";
 import {
@@ -3031,7 +3032,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return fromPack || "modern_minimal_v1";
   }
 
-  async function rebuildFloorplan3D() {
+  /**
+   * @param {{ applyDecorFromStyle?: boolean }} [opts]
+   *        applyDecorFromStyle：用当前风格 JSON 中的装饰替换场景装饰（切换风格、首次加载户型时）；undo/设计恢复时不要开启。
+   */
+  async function rebuildFloorplan3D(opts = {}) {
+    const applyDecorFromStyle = Boolean(opts.applyDecorFromStyle);
     const gen = ++floorplanRebuildGen;
     clearInteractiveList();
     disposeObject3D(floorplanRoot);
@@ -3215,6 +3221,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     rebuildWallSnapData(entry);
     updateBottomUI();
 
+    if (applyDecorFromStyle && style && gen === floorplanRebuildGen) {
+      await mergeLayoutWithStyleDecorations(style);
+      if (gen !== floorplanRebuildGen) return;
+    }
+
     window.dispatchEvent(
       new CustomEvent("visionhome:floorplan-applied-to-svg", {
         detail: { id: entry?.id != null ? String(entry.id) : "", floorIndex, floorId: String(floor?.id ?? "") },
@@ -3292,7 +3303,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (historyReady && !isRestoring) pushHistorySnapshot();
   }
 
-  function applyFloorplanEntryAtWorld(entry, _wx, _wy, options = {}) {
+  /** @param {{ preserveSurfaceOverrides?: boolean, preserveStyleKeyOverride?: boolean, floorIndex?: number, skipDecorFromStyleMerge?: boolean }} [options] */
+  async function applyFloorplanEntryAtWorld(entry, _wx, _wy, options = {}) {
     if (!entry) return;
     /** 从户型库拖入/替换户型时清空；从设计文件或 undo 恢复时已先写入 overrides 时需传 preserveSurfaceOverrides: true */
     if (!options.preserveSurfaceOverrides) {
@@ -3303,7 +3315,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!options.preserveStyleKeyOverride) floorplanStyleKeyOverride = null;
     floorSelectionEnabled = true;
     syncOtherOpacityUi();
-    rebuildFloorplan3D();
+    await rebuildFloorplan3D({ applyDecorFromStyle: !options.skipDecorFromStyleMerge });
     setFloorLevelsVisible();
     updateFurnitureFloorVisibility();
     if (historyReady && !isRestoring) pushHistorySnapshot();
@@ -3417,6 +3429,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     updateFurnitureFloorVisibility();
     updateBottomUI();
+  }
+
+  /**
+   * 用当前风格包中的装饰实例替换场景里的装饰（家具行保留）。切换风格时必须调用，否则装饰一直停留在全局 layout 中。
+   * @param {object | null | undefined} style loadStyleConfig 的合并结果
+   */
+  async function mergeLayoutWithStyleDecorations(style) {
+    const layout = getLayout();
+    const furnitureOnly = layout.filter((row) => !modelIdIsDecoration(row.model));
+    const decRows = decorationPlacementsToLayoutRows(style);
+    await rebuildFromLayout([...furnitureOnly, ...decRows]);
   }
 
   // ── 底部实时预算 & 空间利用率 ──────────────────────────────────────
@@ -3786,10 +3809,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           } else {
             floorplanStyleKeyOverride = null;
           }
-          applyFloorplanEntryAtWorld(entry, undefined, undefined, {
+          await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
             floorIndex: state.floorLevelIndex,
             preserveStyleKeyOverride: true,
             preserveSurfaceOverrides: true,
+            skipDecorFromStyleMerge: true,
           });
         } else clearFloorplan();
       } else clearFloorplan();
@@ -5045,7 +5069,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       await rebuildFromLayout([]);
       selectFurniture(null);
     }
-    applyFloorplanEntryAtWorld(entry);
+    await applyFloorplanEntryAtWorld(entry);
     return true;
   }
 
@@ -5288,9 +5312,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
         if (entry) {
-          applyFloorplanEntryAtWorld(entry, undefined, undefined, {
+          await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
             floorIndex: floorLevelIndex,
             preserveSurfaceOverrides: true,
+            skipDecorFromStyleMerge: true,
           });
         } else clearFloorplan();
       } else clearFloorplan();
@@ -5344,14 +5369,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   async function restoreEditorSession(payload) {
-    function applyFloorplanByPayload() {
+    async function applyFloorplanByPayload() {
       const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
       const floorLevelIndex = Math.max(0, Math.trunc(Number(payload.floorLevelIndex) || 0));
       if (fpId) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
         if (entry) {
-          applyFloorplanEntryAtWorld(entry, undefined, undefined, { floorIndex: floorLevelIndex });
+          await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
+            floorIndex: floorLevelIndex,
+            skipDecorFromStyleMerge: true,
+          });
           return;
         }
       }
@@ -5382,7 +5410,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       if (idx < 0 || idx >= entries.length) {
         isRestoring = true;
-        try { applyFloorplanByPayload(); } finally { isRestoring = false; }
+        try {
+          await applyFloorplanByPayload();
+        } finally {
+          isRestoring = false;
+        }
         await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
         if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
         return;
@@ -5398,7 +5430,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } catch {
         historyReady = true;
         isRestoring = true;
-        try { applyFloorplanByPayload(); } finally { isRestoring = false; }
+        try {
+          await applyFloorplanByPayload();
+        } finally {
+          isRestoring = false;
+        }
         await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
         if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
         return;
@@ -5414,7 +5450,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       emitLayoutChanged();
     } else {
       isRestoring = true;
-      try { applyFloorplanByPayload(); } finally { isRestoring = false; }
+      try {
+        await applyFloorplanByPayload();
+      } finally {
+        isRestoring = false;
+      }
       await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
       if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
     }
@@ -5624,6 +5664,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return res.json();
   }
 
+  /** 保存前深拷贝整包，避免与运行时缓存等共享引用；仅改 styles[当前键] 时不应影响其它风格条目 */
+  function cloneStylePackDeep(pack) {
+    try {
+      return JSON.parse(JSON.stringify(pack));
+    } catch {
+      return pack;
+    }
+  }
+
   /**
    * 写回前保证根级 floorplanId 与 JSON 文件名一致；保留 mapping、defaultStyleKey、styles 中其它条目。
    * @param {string} fpId
@@ -5697,11 +5746,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const sk = getEffectiveFloorplanStyleKey();
       if (!fpId || !lastMergedFloorplanStyle) return;
       try {
-        const pack = await fetchRawFloorplanStylePack(fpId);
+        const pack = cloneStylePackDeep(await fetchRawFloorplanStylePack(fpId));
         const displayName = await resolveStyleDisplayName(fpId, sk);
         const block = buildStyleBlockFromSceneForPack(sk, displayName, lastMergedFloorplanStyle);
         if (!pack.styles || typeof pack.styles !== "object") pack.styles = {};
-        // 覆盖该 JSON 内 styles[当前风格键]：sceneLighting、materials、decorations
+        // 仅替换当前键；其它 styles.* 保持从文件读出时的快照
         pack.styles[sk] = block;
         await postFloorplanStylePackSave(fpId, pack);
         clearStyleConfigCache();
@@ -5749,14 +5798,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const fpId = getCurrentFloorplanId();
       if (!fpId || !lastMergedFloorplanStyle) return;
       try {
-        const pack = await fetchRawFloorplanStylePack(fpId);
+        const pack = cloneStylePackDeep(await fetchRawFloorplanStylePack(fpId));
         const styles = pack.styles && typeof pack.styles === "object" ? pack.styles : {};
         const base = slugStyleKeyFromName(raw);
         const newKey = ensureUniqueStyleKeyInPack(base, styles);
         const block = buildStyleBlockFromSceneForPack(newKey, raw, lastMergedFloorplanStyle);
         styles[newKey] = block;
         pack.styles = styles;
-        // 在同一 JSON 的 styles 下追加新键
+        // 在已有 styles 上追加新键，不改动其它风格条目
         await postFloorplanStylePackSave(fpId, pack);
         floorplanStyleKeyOverride = newKey;
         clearStyleConfigCache();
@@ -5888,7 +5937,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         btn.title = tip;
         btn.setAttribute("aria-label", tip);
       }
-      void rebuildFloorplan3D().then(() => pushHistorySnapshot());
+      void rebuildFloorplan3D({ applyDecorFromStyle: true }).then(() => pushHistorySnapshot());
       closeDropdown();
     });
 
