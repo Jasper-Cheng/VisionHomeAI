@@ -5951,6 +5951,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             if (!wid) continue;
             next.mapping.walls[wid] = key;
           }
+          for (const room of fl.rooms || []) {
+            const rid = String(room?.id ?? "").trim();
+            if (!rid) continue;
+            const prev = next.mapping.rooms[rid];
+            const obj = prev && typeof prev === "object" && !Array.isArray(prev) ? { ...prev } : {};
+            obj.wall = key;
+            next.mapping.rooms[rid] = obj;
+          }
         }
       }
       if (bag.allDoors) {

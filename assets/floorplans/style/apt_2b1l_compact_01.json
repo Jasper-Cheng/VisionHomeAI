@@ -362,6 +362,186 @@
           }
         ]
       }
+    },
+    "s_1": {
+      "id": "s_1",
+      "name": "1",
+      "extends": "default",
+      "decorations": {
+        "placements": [
+          {
+            "model": "potted_plant_02",
+            "x": -16,
+            "y": 105,
+            "rotation": 0,
+            "floorId": "floor1",
+            "decorationLiftCm": 0
+          }
+        ]
+      },
+      "mapping": {
+        "rooms": {
+          "r_bed1": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_bed2": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_living": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_living_co": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_kitchen": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_bath": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          }
+        },
+        "walls": {
+          "w_ext_left_n": "baked_floor1_allWalls",
+          "w_ext_left_s": "baked_floor1_allWalls",
+          "w_ext_top_w": "baked_floor1_allWalls",
+          "w_ext_top_e": "baked_floor1_allWalls",
+          "w_ext_right_n": "baked_floor1_allWalls",
+          "w_ext_right_m": "baked_floor1_allWalls",
+          "w_ext_right_s": "baked_floor1_allWalls",
+          "w_ext_bot_w": "baked_floor1_allWalls",
+          "w_ext_bot_e": "baked_floor1_allWalls",
+          "w_int_v_mid_n_top": "baked_floor1_allWalls",
+          "w_int_v_mid_n_bot": "baked_floor1_allWalls",
+          "w_int_v_mid_s": "baked_floor1_allWalls",
+          "w_int_h_mid_w": "baked_floor1_allWalls",
+          "w_int_h_bed2_kitchen": "baked_floor1_allWalls",
+          "w_int_h_low_w": "baked_floor1_allWalls",
+          "w_int_h_low_e": "baked_floor1_allWalls",
+          "w_int_v_bath": "baked_floor1_allWalls",
+          "w_int_v_niche": "baked_floor1_allWalls",
+          "w_int_h_niche": "baked_floor1_allWalls"
+        }
+      },
+      "materials": {
+        "baked_floor1_allWalls": {
+          "type": "paint",
+          "color": "#bc9e78",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "baked_floor1_allFloors": {
+          "type": "wood_floor",
+          "color": "#9c4040",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
+            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
+            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        }
+      }
+    },
+    "s_11111": {
+      "id": "s_11111",
+      "name": "11111",
+      "extends": "default",
+      "decorations": {
+        "placements": [
+          {
+            "model": "potted_plant_02",
+            "x": -16,
+            "y": 105,
+            "rotation": 0,
+            "floorId": "floor1",
+            "decorationLiftCm": 0
+          }
+        ]
+      },
+      "mapping": {
+        "rooms": {
+          "r_bed1": {
+            "floor": "floor_bed1",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_bed2": {
+            "floor": "floor_bed2",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_living": {
+            "floor": "floor_living",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_living_co": {
+            "floor": "floor_living_co",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_kitchen": {
+            "floor": "floor_kitchen",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_bath": {
+            "floor": "floor_bath",
+            "wall": "baked_floor1_allWalls"
+          }
+        },
+        "walls": {
+          "w_ext_left_n": "baked_floor1_allWalls",
+          "w_ext_left_s": "baked_floor1_allWalls",
+          "w_ext_top_w": "baked_floor1_allWalls",
+          "w_ext_top_e": "baked_floor1_allWalls",
+          "w_ext_right_n": "baked_floor1_allWalls",
+          "w_ext_right_m": "baked_floor1_allWalls",
+          "w_ext_right_s": "baked_floor1_allWalls",
+          "w_ext_bot_w": "baked_floor1_allWalls",
+          "w_ext_bot_e": "baked_floor1_allWalls",
+          "w_int_v_mid_n_top": "baked_floor1_allWalls",
+          "w_int_v_mid_n_bot": "baked_floor1_allWalls",
+          "w_int_v_mid_s": "baked_floor1_allWalls",
+          "w_int_h_mid_w": "baked_floor1_allWalls",
+          "w_int_h_bed2_kitchen": "baked_floor1_allWalls",
+          "w_int_h_low_w": "baked_floor1_allWalls",
+          "w_int_h_low_e": "baked_floor1_allWalls",
+          "w_int_v_bath": "baked_floor1_allWalls",
+          "w_int_v_niche": "baked_floor1_allWalls",
+          "w_int_h_niche": "baked_floor1_allWalls"
+        }
+      },
+      "materials": {
+        "baked_floor1_allWalls": {
+          "type": "paint",
+          "color": "#916937",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        }
+      }
     }
   }
 }
