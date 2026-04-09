@@ -1,0 +1,132 @@
+{
+  "id": "apt_studio_open_01",
+  "styleKey": "default",
+  "project": {
+    "id": "vision_home_template_001",
+    "name": "开间·开放式",
+    "category": "开间",
+    "unit": "cm",
+    "version": 1.0,
+    "areaM2": 38.5
+  },
+  "floors": [
+    {
+      "id": "floor1",
+      "name": "一层",
+      "elevation": 0,
+      "height": 280,
+      "rooms": [
+        { "id": "r_living", "name": "起居区", "type": "living", "polygon": [[0, 0], [820, 0], [820, 640], [0, 640]] },
+        { "id": "r_kitchen", "name": "厨房", "type": "kitchen", "polygon": [[820, 0], [980, 0], [980, 360], [820, 360]] },
+        { "id": "r_bath", "name": "卫生间", "type": "bathroom", "polygon": [[820, 360], [980, 360], [980, 640], [820, 640]] }
+      ],
+      "walls": [
+        {
+          "id": "w_ext_w",
+          "name": "西外墙",
+          "start": [0, -12],
+          "end": [0, 652],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "polygon": [[-12, -12], [12, -12], [12, 652], [-12, 652]],
+          "faces": [
+            { "id": "face_a", "normal": [-1, 0], "side": "exterior" },
+            { "id": "face_b", "normal": [1, 0], "roomId": "r_living" }
+          ]
+        },
+        {
+          "id": "w_ext_n",
+          "name": "北外墙",
+          "start": [12, 0],
+          "end": [980, 0],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "polygon": [[12, -12], [980, -12], [980, 12], [12, 12]],
+          "faces": [
+            { "id": "face_a", "normal": [0, -1], "side": "exterior" },
+            { "id": "face_b", "normal": [0, 1], "roomId": "r_living" }
+          ]
+        },
+        {
+          "id": "w_ext_e_top",
+          "name": "东外墙·上段",
+          "start": [980, -12],
+          "end": [980, 360],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "polygon": [[968, -12], [992, -12], [992, 360], [968, 360]],
+          "faces": [
+            { "id": "face_a", "normal": [1, 0], "side": "exterior" },
+            { "id": "face_b", "normal": [-1, 0], "roomId": "r_kitchen" }
+          ]
+        },
+        {
+          "id": "w_ext_e_bot",
+          "name": "东外墙·下段",
+          "start": [980, 360],
+          "end": [980, 652],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "polygon": [[968, 360], [992, 360], [992, 652], [968, 652]],
+          "faces": [
+            { "id": "face_a", "normal": [1, 0], "side": "exterior" },
+            { "id": "face_b", "normal": [-1, 0], "roomId": "r_bath" }
+          ]
+        },
+        {
+          "id": "w_ext_s",
+          "name": "南外墙",
+          "start": [12, 640],
+          "end": [980, 640],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "polygon": [[12, 628], [980, 628], [980, 652], [12, 652]],
+          "faces": [
+            { "id": "face_a", "normal": [0, 1], "side": "exterior" },
+            { "id": "face_b", "normal": [0, -1], "roomId": "r_living" }
+          ]
+        },
+        {
+          "id": "w_int_kitchen",
+          "name": "厨房隔墙",
+          "start": [820, 12],
+          "end": [820, 360],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "polygon": [[814, 12], [826, 12], [826, 360], [814, 360]],
+          "faces": [
+            { "id": "face_a", "normal": [-1, 0], "roomId": "r_living" },
+            { "id": "face_b", "normal": [1, 0], "roomId": "r_kitchen" }
+          ]
+        },
+        {
+          "id": "w_int_bath",
+          "name": "卫生间隔墙",
+          "start": [820, 360],
+          "end": [820, 628],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "polygon": [[814, 360], [826, 360], [826, 628], [814, 628]],
+          "faces": [
+            { "id": "face_a", "normal": [-1, 0], "roomId": "r_living" },
+            { "id": "face_b", "normal": [1, 0], "roomId": "r_bath" }
+          ]
+        }
+      ],
+      "doors": [
+        { "id": "d_main", "wallId": "w_ext_s", "pos": 160, "width": 95, "height": 220, "name": "入户门", "type": "entrance" },
+        { "id": "d_bath", "wallId": "w_int_bath", "pos": 120, "width": 75, "height": 210, "name": "卫生间门", "type": "interior" }
+      ],
+      "windows": [
+        { "id": "win_living_s", "wallId": "w_ext_s", "pos": 660, "width": 260, "height": 180, "altitude": 80, "name": "南向窗", "type": "casement" }
+      ]
+    }
+  ]
+}

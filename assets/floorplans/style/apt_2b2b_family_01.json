@@ -1,0 +1,92 @@
+{
+  "floorplanId": "apt_2b2b_family_01",
+  "styles": {
+    "default": {
+      "id": "default",
+      "name": "默认·原木奶油",
+      "mapping": {
+        "rooms": {
+          "r_bed1": { "floor": "floor_wood_light", "wall": "wall_cream" },
+          "r_bed2": { "floor": "floor_wood_light", "wall": "wall_cream" },
+          "r_living": { "floor": "floor_wood_light", "wall": "wall_cream" },
+          "r_kitchen": { "floor": "floor_stone_gray", "wall": "wall_cream" },
+          "r_bath1": { "floor": "floor_stone_gray", "wall": "wall_cream" },
+          "r_bath2": { "floor": "floor_stone_gray", "wall": "wall_cream" }
+        },
+        "walls": {
+          "w_ext_w": "wall_cream",
+          "w_ext_n_w": "wall_cream",
+          "w_ext_n_e": "wall_cream",
+          "w_ext_e": "wall_cream",
+          "w_ext_s": "wall_cream",
+          "w_int_mid": "wall_cream",
+          "w_int_living_kitchen": "wall_cream",
+          "w_int_kitchen_bath": "wall_cream",
+          "w_int_bath_split": "wall_cream"
+        },
+        "doors": {
+          "d_main": "door_paint_warm",
+          "d_bath1": "door_paint_warm",
+          "d_bath2": "door_paint_warm",
+          "d_kitchen": "door_paint_warm"
+        },
+        "windows": {
+          "win_bed1_w": "window_Clear",
+          "win_bed2_e": "window_Clear",
+          "win_living_s": "window_Clear"
+        }
+      },
+      "sceneLighting": {
+        "toneMappingExposure": 1.58,
+        "ambient": { "color": "#f3e8dd", "intensity": 0.22 },
+        "hemisphere": { "sky": "#ebe2d8", "ground": "#b8a99a", "intensity": 0.34 },
+        "directional": { "color": "#faf4eb", "intensity": 0.72 },
+        "envMapIntensity": 0.28
+      },
+      "materials": {
+        "wall_cream": { "type": "paint", "color": "#E8DBC9", "roughness": 0.9, "metalness": 0, "texture": { "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg" }, "uvScale": [2, 2] },
+        "floor_wood_light": { "type": "wood_floor", "color": "#ffffff", "roughness": 0.35, "metalness": 0, "texture": { "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg", "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg", "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg" }, "uvScale": [0.15, 0.15], "textureRotation": 90 },
+        "floor_stone_gray": { "type": "wood_floor", "color": "#ffffff", "roughness": 0.55, "metalness": 0, "texture": { "albedo": "textures/Metal031_2K-JPG_Color.jpg", "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg", "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg" }, "uvScale": [0.22, 0.22], "textureRotation": 0 },
+        "door_paint_warm": { "type": "paint_wood", "color": "#CEC2B4", "roughness": 0.8, "metalness": 0.02, "texture": { "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg", "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg" } },
+        "window_Clear": { "type": "glass", "color": "#E4E2DA", "opacity": 0.22, "roughness": 0.04, "metalness": 0, "transmission": 0.96, "ior": 1.45 }
+      },
+      "decorations": {
+        "placements": [
+          { "model": "potted_plant_02", "x": -120, "y": 260, "rotation": 0, "floorId": "floor1", "decorationLiftCm": 0 }
+        ]
+      }
+    },
+    "modern_gray": {
+      "id": "modern_gray",
+      "name": "现代·灰白清爽",
+      "extends": "default",
+      "sceneLighting": {
+        "toneMappingExposure": 1.66,
+        "ambient": { "color": "#f2f4f7", "intensity": 0.24 },
+        "hemisphere": { "sky": "#eef2f7", "ground": "#b6bcc4", "intensity": 0.3 },
+        "directional": { "color": "#ffffff", "intensity": 0.76 },
+        "envMapIntensity": 0.26
+      },
+      "materials": {
+        "wall_cream": { "type": "paint", "color": "#F1F1EE", "roughness": 0.92, "metalness": 0, "texture": { "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg" }, "uvScale": [2, 2] },
+        "floor_wood_light": { "type": "wood_floor", "color": "#ffffff", "roughness": 0.33, "metalness": 0, "texture": { "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg", "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg", "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg" }, "uvScale": [0.14, 0.14], "textureRotation": 90 }
+      }
+    },
+    "walnut_warm": {
+      "id": "walnut_warm",
+      "name": "胡桃·暖棕墙",
+      "extends": "default",
+      "sceneLighting": {
+        "toneMappingExposure": 1.46,
+        "ambient": { "color": "#ead9c7", "intensity": 0.2 },
+        "hemisphere": { "sky": "#e7d6c4", "ground": "#a28f7b", "intensity": 0.34 },
+        "directional": { "color": "#fff0db", "intensity": 0.66 },
+        "envMapIntensity": 0.32
+      },
+      "materials": {
+        "wall_cream": { "type": "paint", "color": "#D8C1A7", "roughness": 0.9, "metalness": 0, "texture": { "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg" }, "uvScale": [2, 2] },
+        "floor_wood_light": { "type": "wood_floor", "color": "#ffffff", "roughness": 0.35, "metalness": 0, "texture": { "albedo": "textures/PaintedWood002_2K-JPG_Color.jpg", "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg", "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg" }, "uvScale": [0.17, 0.17], "textureRotation": 90 }
+      }
+    }
+  }
+}
