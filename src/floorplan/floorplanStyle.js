@@ -3,6 +3,8 @@
  * 可选根级 mapping：与户型元素 id 对应；各风格未写 mapping 时沿用根级，避免重复。
  * 各风格可选 sceneLighting：曝光、环境光/半球光/主光强度与色温、户型 PBR envMapIntensity（见 apt 风格 JSON）。
  * loadStyleConfig(floorplanId, styleKey) 返回合并后的单套风格，供 getMaterialDef。
+ * styles.{styleKey}.decorations：写在具体风格内；loadStyleConfig 合并后挂在返回对象 decorations（无根级 decorations）。
+ *   placements：装饰实例列表，每项含 model（装饰库 id）、floorId、平面坐标 x/y（cm，编辑区中心原点）、rotation（度）；可选 decorationLiftCm、furnitureSelection。
  * floors[].walls|doors|windows：优先用风格包 mapping.walls|doors|windows 中以元素 id 为键的条目；若无则回退到 style 短键或直连材质 id。
  * floors[].rooms：优先 mapping.rooms[room.id]（{ floor, wall }）；否则 rooms[].style → mapping.rooms 短键。
  */
@@ -66,6 +68,40 @@ export async function loadMaterialsLibrary() {
 
 function clonePlain(obj) {
   return JSON.parse(JSON.stringify(obj));
+}
+
+/**
+ * 将风格包中的 decorations 转为与编辑器 rebuildFromLayout 兼容的行（仅装饰条目；可与家具 layout 拼接）。
+ * @param {object | null | undefined} style loadStyleConfig 返回的单套风格
+ * @returns {object[]}
+ */
+export function decorationPlacementsToLayoutRows(style) {
+  const d = style?.decorations;
+  if (!isPlainObject(d)) return [];
+  const placements = Array.isArray(d.placements) ? d.placements : [];
+  const rows = [];
+  for (const p of placements) {
+    if (!isPlainObject(p)) continue;
+    const model = String(p.model ?? "").trim();
+    if (!model) continue;
+    const x = Number(p.x);
+    const y = Number(p.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    /** @type {Record<string, unknown>} */
+    const row = { model, x, y };
+    let rot = Math.round(Number(p.rotation) || 0) % 360;
+    if (rot < 0) rot += 360;
+    row.rotation = rot;
+    const fid = p.floorId != null ? String(p.floorId).trim() : "";
+    if (fid) row.floorId = fid;
+    const lift = p.decorationLiftCm != null ? Number(p.decorationLiftCm) : NaN;
+    if (Number.isFinite(lift)) row.decorationLiftCm = Math.round(lift);
+    if (p.furnitureSelection != null && isPlainObject(p.furnitureSelection)) {
+      row.furnitureSelection = clonePlain(p.furnitureSelection);
+    }
+    rows.push(row);
+  }
+  return rows;
 }
 
 function parseMaterialRefId(raw) {
@@ -240,7 +276,15 @@ export async function loadStylePackIndex(floorplanId) {
   return { floorplanId: fp, styles };
 }
 
-const STYLE_ROOT_RESERVED = new Set(["id", "name", "mapping", "furniturePreset", "materials", "sceneLighting"]);
+const STYLE_ROOT_RESERVED = new Set([
+  "id",
+  "name",
+  "mapping",
+  "decorations",
+  "furniturePreset",
+  "materials",
+  "sceneLighting",
+]);
 
 /**
  * @param {object | null} style
