@@ -295,7 +295,7 @@ function fitGltfToFootprint(root, widthM, heightM, depthM) {
       const sx = widthM / size.x;
       const sy = heightM / size.y;
       const sz = depthM / size.z;
-      root.scale.setScalar(Math.min(sx, sy, sz));
+      root.scale.set(sx, sy, sz);
       root.updateMatrixWorld(true);
     }
   }
@@ -652,12 +652,31 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const y1 = snap(Number(w.start[1]));
         const x2 = snap(Number(w.end[0]));
         const y2 = snap(Number(w.end[1]));
-        const ax = worldX + s * (x1 - cx);
-        const ay = worldY + s * (y1 - cy);
-        const bx = worldX + s * (x2 - cx);
-        const by = worldY + s * (y2 - cy);
-        if (Math.hypot(bx - ax, by - ay) < 1e-3) continue;
-        list.push({ ax, ay, bx, by });
+        const th = Number(w.thickness);
+        const thickCm = Number.isFinite(th) && th > 0 ? th : 12;
+        const halfThick = thickCm / 2;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.hypot(dx, dy);
+        if (len < 1e-3) continue;
+        const faces = Array.isArray(w.faces) ? w.faces : [];
+        for (const face of faces) {
+          if (face.side === "exterior") continue;
+          if (!Array.isArray(face.normal) || face.normal.length < 2) continue;
+          const fnx = Number(face.normal[0]);
+          const fny = Number(face.normal[1]);
+          if (!Number.isFinite(fnx) || !Number.isFinite(fny)) continue;
+          const ox1 = x1 + fnx * halfThick;
+          const oy1 = y1 + fny * halfThick;
+          const ox2 = x2 + fnx * halfThick;
+          const oy2 = y2 + fny * halfThick;
+          const ax = worldX + s * (ox1 - cx);
+          const ay = worldY + s * (oy1 - cy);
+          const bx = worldX + s * (ox2 - cx);
+          const by = worldY + s * (oy2 - cy);
+          if (Math.hypot(bx - ax, by - ay) < 1e-3) continue;
+          list.push({ ax, ay, bx, by });
+        }
       }
       wallSnapSegmentsByFloorId.set(key, list);
     });
