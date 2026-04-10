@@ -105,6 +105,17 @@ function createDecorationCard(item, idx) {
   titleSpan.textContent = displayName;
   nameEl.appendChild(titleSpan);
 
+  // 添加尺寸显示
+  if (item.size) {
+    const sizeSpan = document.createElement("span");
+    sizeSpan.className = "furniture-asset-label__dims";
+    const w = Math.round(item.size.width || 0);
+    const d = Math.round(item.size.depth || 0);
+    const h = Math.round(item.size.height || 0);
+    sizeSpan.textContent = `${w}×${d}×${h} cm`;
+    nameEl.appendChild(sizeSpan);
+  }
+
   card.appendChild(thumb);
   card.appendChild(nameEl);
 
