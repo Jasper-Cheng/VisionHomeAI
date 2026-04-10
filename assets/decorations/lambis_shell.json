@@ -1,0 +1,23 @@
+{
+  "id": "lambis_shell",
+  "name": "贝壳",
+  "category": "widgets",
+  "model": "assets/decorations/models/lambis_shell_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/lambis_shell.png",
+  "size": {
+    "width": 13.9,
+    "depth": 7.5,
+    "height": 4.7
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 0
+  }
+}

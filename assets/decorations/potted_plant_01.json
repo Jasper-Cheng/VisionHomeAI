@@ -1,18 +1,23 @@
 {
   "id": "potted_plant_01",
-  "name": "盆栽植物",
+  "name": "盆栽植物 01",
   "category": "widgets",
-  "model": "assets/decorations/models/potted_plant_01_2k.glb",
+  "model": "assets/decorations/models/potted_plant_01_1k.glb",
   "thumbnail": "assets/decorations/thumbnails/potted_plant_01.png",
   "size": {
-    "width": 50.0,
-    "depth": 50.0,
-    "height": 60.0
+    "width": 58.9,
+    "depth": 63.7,
+    "height": 135.1
   },
-  "tags": ["绿植", "装饰", "室内"],
+  "tags": [],
   "placement": {
-    "allowRooms": ["living", "bedroom", "balcony"],
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
     "snapToWall": false,
-    "minDistanceToWall": 0
+    "minDistanceToWall": 20
   }
 }

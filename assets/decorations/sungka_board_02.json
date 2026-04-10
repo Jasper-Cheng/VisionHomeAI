@@ -1,0 +1,23 @@
+{
+  "id": "sungka_board_02",
+  "name": "sungka棋盘 02",
+  "category": "widgets",
+  "model": "assets/decorations/models/sungka_board_02_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/sungka_board_02.png",
+  "size": {
+    "width": 93.2,
+    "depth": 17.6,
+    "height": 2.6
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 0
+  }
+}

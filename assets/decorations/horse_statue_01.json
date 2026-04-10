@@ -1,0 +1,23 @@
+{
+  "id": "horse_statue_01",
+  "name": "马雕塑 01",
+  "category": "widgets",
+  "model": "assets/decorations/models/horse_statue_01_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/horse_statue_01.png",
+  "size": {
+    "width": 16.4,
+    "depth": 10.8,
+    "height": 22.0
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 20
+  }
+}

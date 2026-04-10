@@ -1,0 +1,22 @@
+{
+  "id": "Chandelier_03",
+  "name": "吊灯 03",
+  "category": "widgets",
+  "model": "assets/decorations/models/Chandelier_03_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/Chandelier_03.png",
+  "size": {
+    "width": 78.0,
+    "depth": 78.5,
+    "height": 104.1
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 0
+  }
+}

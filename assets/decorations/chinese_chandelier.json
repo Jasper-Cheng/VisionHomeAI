@@ -1,0 +1,22 @@
+{
+  "id": "chinese_chandelier",
+  "name": "中式吊灯",
+  "category": "widgets",
+  "model": "assets/decorations/models/chinese_chandelier_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/chinese_chandelier.png",
+  "size": {
+    "width": 87.8,
+    "depth": 87.9,
+    "height": 74.8
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 0
+  }
+}

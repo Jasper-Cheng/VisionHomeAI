@@ -1,0 +1,22 @@
+{
+  "id": "ornate_mirror_01",
+  "name": "装饰镜 01",
+  "category": "widgets",
+  "model": "assets/decorations/models/ornate_mirror_01_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/ornate_mirror_01.png",
+  "size": {
+    "width": 48.6,
+    "depth": 2.6,
+    "height": 74.4
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 0
+  }
+}

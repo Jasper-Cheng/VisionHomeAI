@@ -1,0 +1,22 @@
+{
+  "id": "hanging_picture_frame_01",
+  "name": "悬挂画框 01",
+  "category": "widgets",
+  "model": "assets/decorations/models/hanging_picture_frame_01_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/hanging_picture_frame_01.png",
+  "size": {
+    "width": 59.4,
+    "depth": 1.6,
+    "height": 84.1
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 0
+  }
+}

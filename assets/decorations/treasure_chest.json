@@ -1,0 +1,23 @@
+{
+  "id": "treasure_chest",
+  "name": "宝箱",
+  "category": "widgets",
+  "model": "assets/decorations/models/treasure_chest_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/treasure_chest.png",
+  "size": {
+    "width": 95.9,
+    "depth": 52.3,
+    "height": 61.9
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 20
+  }
+}

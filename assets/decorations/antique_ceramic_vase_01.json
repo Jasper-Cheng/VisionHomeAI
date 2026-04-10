@@ -1,0 +1,23 @@
+{
+  "id": "antique_ceramic_vase_01",
+  "name": "古董陶瓷花瓶 01",
+  "category": "widgets",
+  "model": "assets/decorations/models/antique_ceramic_vase_01_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/antique_ceramic_vase_01.png",
+  "size": {
+    "width": 25.5,
+    "depth": 25.5,
+    "height": 44.0
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 20
+  }
+}

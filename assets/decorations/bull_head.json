@@ -1,0 +1,23 @@
+{
+  "id": "bull_head",
+  "name": "牛头雕塑",
+  "category": "widgets",
+  "model": "assets/decorations/models/bull_head_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/bull_head.png",
+  "size": {
+    "width": 30.6,
+    "depth": 28.1,
+    "height": 43.3
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 0
+  }
+}

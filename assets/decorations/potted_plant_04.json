@@ -1,0 +1,23 @@
+{
+  "id": "potted_plant_04",
+  "name": "盆栽植物 04",
+  "category": "widgets",
+  "model": "assets/decorations/models/potted_plant_04_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/potted_plant_04.png",
+  "size": {
+    "width": 17.0,
+    "depth": 18.6,
+    "height": 26.8
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 20
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "industrial_wall_sconce",
+  "name": "工业壁灯",
+  "category": "widgets",
+  "model": "assets/decorations/models/industrial_wall_sconce_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/industrial_wall_sconce.png",
+  "size": {
+    "width": 15.0,
+    "depth": 25.2,
+    "height": 34.2
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 0
+  }
+}

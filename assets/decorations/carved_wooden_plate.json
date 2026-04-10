@@ -1,0 +1,23 @@
+{
+  "id": "carved_wooden_plate",
+  "name": "木雕盘",
+  "category": "widgets",
+  "model": "assets/decorations/models/carved_wooden_plate_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/carved_wooden_plate.png",
+  "size": {
+    "width": 27.2,
+    "depth": 26.9,
+    "height": 3.8
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 0
+  }
+}

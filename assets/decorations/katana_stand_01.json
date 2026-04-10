@@ -1,0 +1,23 @@
+{
+  "id": "katana_stand_01",
+  "name": "刀架 01",
+  "category": "widgets",
+  "model": "assets/decorations/models/katana_stand_01_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/katana_stand_01.png",
+  "size": {
+    "width": 29.6,
+    "depth": 5.3,
+    "height": 18.2
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 0
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "concrete_cat_statue",
+  "name": "水泥猫雕塑",
+  "category": "widgets",
+  "model": "assets/decorations/models/concrete_cat_statue_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/concrete_cat_statue.png",
+  "size": {
+    "width": 15.3,
+    "depth": 25.0,
+    "height": 28.3
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 20
+  }
+}

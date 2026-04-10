@@ -1,0 +1,23 @@
+{
+  "id": "horse_head",
+  "name": "马头雕塑",
+  "category": "widgets",
+  "model": "assets/decorations/models/horse_head_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/horse_head.png",
+  "size": {
+    "width": 21.5,
+    "depth": 33.4,
+    "height": 41.9
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 0
+  }
+}

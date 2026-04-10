@@ -1,0 +1,22 @@
+{
+  "id": "vintage_telephone_wall_clock",
+  "name": "复古电话墙钟",
+  "category": "widgets",
+  "model": "assets/decorations/models/vintage_telephone_wall_clock_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/vintage_telephone_wall_clock.png",
+  "size": {
+    "width": 34.3,
+    "depth": 19.3,
+    "height": 50.1
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 0
+  }
+}

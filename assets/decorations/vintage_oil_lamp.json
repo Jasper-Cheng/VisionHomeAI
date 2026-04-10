@@ -1,0 +1,22 @@
+{
+  "id": "vintage_oil_lamp",
+  "name": "复古油灯",
+  "category": "widgets",
+  "model": "assets/decorations/models/vintage_oil_lamp_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/vintage_oil_lamp.png",
+  "size": {
+    "width": 22.0,
+    "depth": 22.0,
+    "height": 80.2
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining"
+    ],
+    "snapToWall": true,
+    "minDistanceToWall": 0
+  }
+}

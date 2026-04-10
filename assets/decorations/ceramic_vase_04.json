@@ -1,0 +1,23 @@
+{
+  "id": "ceramic_vase_04",
+  "name": "陶瓷花瓶 04",
+  "category": "widgets",
+  "model": "assets/decorations/models/ceramic_vase_04_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/ceramic_vase_04.png",
+  "size": {
+    "width": 18.3,
+    "depth": 18.2,
+    "height": 34.2
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 20
+  }
+}

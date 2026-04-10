@@ -1,0 +1,23 @@
+{
+  "id": "brass_vase_03",
+  "name": "黄铜花瓶 03",
+  "category": "widgets",
+  "model": "assets/decorations/models/brass_vase_03_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/brass_vase_03.png",
+  "size": {
+    "width": 8.3,
+    "depth": 8.3,
+    "height": 20.0
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 20
+  }
+}

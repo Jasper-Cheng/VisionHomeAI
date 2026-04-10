@@ -1,0 +1,23 @@
+{
+  "id": "lubricant_spray",
+  "name": "润滑油喷雾",
+  "category": "widgets",
+  "model": "assets/decorations/models/lubricant_spray_1k.glb",
+  "thumbnail": "assets/decorations/thumbnails/lubricant_spray.png",
+  "size": {
+    "width": 6.7,
+    "depth": 6.5,
+    "height": 16.5
+  },
+  "tags": [],
+  "placement": {
+    "allowRooms": [
+      "living",
+      "bedroom",
+      "dining",
+      "balcony"
+    ],
+    "snapToWall": false,
+    "minDistanceToWall": 0
+  }
+}
