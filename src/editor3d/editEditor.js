@@ -3457,17 +3457,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const fp = extractFurnitureFootprintCm(item);
     const group = await createFurnitureMesh(modelId);
     group.userData.isFurniture = true;
-    group.userData.footprint = { hw: fp.hw, hh: fp.hh };
+    group.userData.footprint = { hw: fp.hw, hh: fp.hh, h: fp.h };
     group.userData.floorId = String(floorId ?? getActiveFloorIdForFurniture()).trim() || "floor1";
     let rot = Math.round(Number(rotationDeg) || 0) % 360;
     if (rot < 0) rot += 360;
     group.userData.rotDeg = rot;
     setFurnitureFromLayoutCm(group, xCm, yCm, rot, opts);
-    if (modelIdIsDecoration(modelId)) {
-      const cm = opts.decorationLiftCm != null ? Number(opts.decorationLiftCm) : 0;
-      const liftM = Number.isFinite(cm) ? cm / 100 : 0;
-      group.userData.decorationLiftM = clampDecorationLiftMForGroup(group, liftM);
-    }
+    // 所有家具和装饰都支持垂直抬升
+    const cm = opts.decorationLiftCm != null ? Number(opts.decorationLiftCm) : 0;
+    const liftM = Number.isFinite(cm) ? cm / 100 : 0;
+    group.userData.decorationLiftM = clampDecorationLiftMForGroup(group, liftM);
     furnitureRoot.add(group);
     registerFurnitureMeshes(group);
     return group;
@@ -3741,12 +3740,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const fid = String(g.userData.floorId || "").trim();
       const key = normalizeFloorKey(fid);
       const yOff = floorYOffsetById.get(key) ?? 0;
-      let liftM = 0;
-      if (modelIdIsDecoration(g.userData.modelType)) {
-        liftM = clampDecorationLiftMForGroup(g, g.userData.decorationLiftM ?? 0);
-        g.userData.decorationLiftM = liftM;
-      }
-      // group.position.y：楼板高度 + 装饰物垂直偏移；普通家具仅楼板；mesh 本地 y 不变
+      // 所有家具和装饰都支持垂直抬升
+      let liftM = clampDecorationLiftMForGroup(g, g.userData.decorationLiftM ?? 0);
+      g.userData.decorationLiftM = liftM;
+      // group.position.y：楼板高度 + 垂直偏移；mesh 本地 y 不变
       g.position.y = yOff + FLOOR_SURFACE_Y_M + liftM;
       const isActiveFloor = !hasFloor || !fid || key === activeKey;
       g.userData.isFloorActive = isActiveFloor;
@@ -3782,8 +3779,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         y: Math.round(cm.y),
         rotation: Math.round(g.userData.rotDeg ?? 0),
       };
-      if (modelIdIsDecoration(g.userData.modelType)) {
-        row.decorationLiftCm = Math.round((Number(g.userData.decorationLiftM) || 0) * 100);
+      // 所有家具和装饰都保存垂直偏移（如果有的话）
+      const liftCm = Math.round((Number(g.userData.decorationLiftM) || 0) * 100);
+      if (liftCm !== 0) {
+        row.decorationLiftCm = liftCm;
       }
       out.push(row);
     });
@@ -4798,7 +4797,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return;
     }
     const fur = rayPickFurniture(e.clientX, e.clientY);
-    if (fur && e.altKey && modelIdIsDecoration(fur.userData.modelType)) {
+    if (fur && e.altKey) {
       selectFurniture(fur);
       altDragState = {
         pointerId: e.pointerId,
@@ -4869,7 +4868,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const dy = e.clientY - altDragState.startClientY;
       const sensitivity = 0.0025;
       const g = altDragState.group;
-      if (g?.userData?.isFurniture && modelIdIsDecoration(g.userData.modelType)) {
+      if (g?.userData?.isFurniture) {
         const newLift = altDragState.startLiftM - dy * sensitivity;
         g.userData.decorationLiftM = clampDecorationLiftMForGroup(g, newLift);
         updateFurnitureFloorVisibility();
