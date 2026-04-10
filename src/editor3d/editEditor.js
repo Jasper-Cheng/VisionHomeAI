@@ -1347,16 +1347,30 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return { mat, mergedDef };
   }
 
+  let floorplanSurfaceBoxHelpers = []; // 存储户型表面选中框
+
   /**
    * @param {string} floorLevelId
    * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
    * @param {boolean} on
    */
   function setFloorplanGlobalSurfaceHighlight(floorLevelId, scope, on) {
-    if (on) return;
+    // 移除旧的选中框
+    floorplanSurfaceBoxHelpers.forEach((helper) => {
+      if (helper.parent) {
+        helper.parent.remove(helper);
+      }
+      helper.geometry?.dispose();
+      helper.material?.dispose();
+    });
+    floorplanSurfaceBoxHelpers = [];
+
+    if (!on) return;
+
     const fid = String(floorLevelId ?? "").trim();
     if (!fid) return;
-    const emissiveHex = 0x000000;
+
+    // 收集匹配的网格并创建选中框
     floorplanRoot.traverse((o) => {
       if (!o.isMesh || !o.material) return;
       if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
@@ -1364,10 +1378,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (scope === "allFloors" && !o.userData.floorplanRoomFloor) return;
       if (scope === "allDoors" && !o.userData.floorplanDoorFill) return;
       if (scope === "allWindows" && !o.userData.floorplanWindowFill) return;
-      const mats = Array.isArray(o.material) ? o.material : [o.material];
-      mats.forEach((m) => {
-        if (m?.emissive) m.emissive.setHex(emissiveHex);
-      });
+
+      // 为每个匹配的网格创建边框
+      const box = new THREE.BoxHelper(o, 0x00aaff); // 青蓝色
+      box.material.linewidth = 2;
+      box.material.transparent = true;
+      box.material.opacity = 0.8;
+      box.material.depthTest = true;
+      box.material.depthWrite = false;
+      
+      scene.add(box);
+      floorplanSurfaceBoxHelpers.push(box);
     });
   }
 
@@ -4620,31 +4641,50 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (propInputRotY) propInputRotY.value = String(Math.round(rot));
   }
 
+  let selectionBoxHelper = null; // 选中框辅助对象
+
   function selectFurniture(group, skipPanelSync = false) {
-    if (selectedGroup && selectedGroup !== group) {
-      selectedGroup.traverse((o) => {
-        if (o.isMesh && o.material?.emissive) o.material.emissive.setHex(0x000000);
-      });
+    // 移除旧的选中框
+    if (selectionBoxHelper) {
+      if (selectionBoxHelper.parent) {
+        selectionBoxHelper.parent.remove(selectionBoxHelper);
+      }
+      selectionBoxHelper.geometry?.dispose();
+      selectionBoxHelper.material?.dispose();
+      selectionBoxHelper = null;
     }
+
     selectedGroup = group || null;
     floorplanSelected = false;
+
     if (selectedGroup) {
-      selectedGroup.traverse((o) => {
-        if (o.isMesh && o.material?.emissive) o.material.emissive.setHex(0x332200);
-      });
+      // 创建选中框
+      const box = new THREE.BoxHelper(selectedGroup, 0xffaa00); // 橙黄色
+      box.material.linewidth = 2;
+      box.material.transparent = true;
+      box.material.opacity = 0.8;
+      box.material.depthTest = true;
+      box.material.depthWrite = false;
+      
+      scene.add(box);
+      selectionBoxHelper = box;
     }
+
     if (!skipPanelSync) {
       syncPropertiesPanelForSelection(selectedGroup);
     }
   }
 
   function deselectVisualOnly() {
-    if (selectedGroup) {
-      selectedGroup.traverse((o) => {
-        if (o.isMesh && o.material?.emissive) o.material.emissive.setHex(0x000000);
-      });
-      selectedGroup = null;
+    if (selectionBoxHelper) {
+      if (selectionBoxHelper.parent) {
+        selectionBoxHelper.parent.remove(selectionBoxHelper);
+      }
+      selectionBoxHelper.geometry?.dispose();
+      selectionBoxHelper.material?.dispose();
+      selectionBoxHelper = null;
     }
+    selectedGroup = null;
   }
 
   function applyPropertiesFromPanel() {
