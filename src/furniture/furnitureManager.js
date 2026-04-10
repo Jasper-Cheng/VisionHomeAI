@@ -1,4 +1,3 @@
-import { loadItemsFromManifest } from "../core/catalogLoader.js";
 import { DATA_PATHS } from "../core/schema.js";
 import {
   CATEGORY_LABELS,
@@ -14,16 +13,16 @@ export { CATEGORY_LABELS, getFurnitureDisplayName };
 export { getSvgStyleForItem } from "./svgStyle.js";
 
 /**
- * 拉取 manifest + 同目录各条目 JSON
+ * 拉取单文件 furnitureLibrary.json（含 items[]）
  * @returns {{ items: object[], byId: Map<string, object>, raw: object }}
  */
 export async function loadFurnitureCatalog() {
-  const items = await loadItemsFromManifest({
-    manifestUrl: DATA_PATHS.furnitureManifest,
-    itemsBaseUrl: DATA_PATHS.furnitureDir,
-  });
+  const url = `/${DATA_PATHS.furnitureManifest.replace(/^\//, "")}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`furniture library fetch failed: ${url}`);
+  const raw = await res.json();
+  const items = Array.isArray(raw?.items) ? raw.items : [];
   const byId = new Map(items.map((item) => [item.id, item]));
-  const raw = { furnitureLibrary: items };
   return { items, byId, raw };
 }
 
@@ -285,7 +284,7 @@ export function mountFurnitureLibrary(catalog, options = {}) {
   if (options.loadError) {
     const msg = document.createElement("p");
     msg.className = "furniture-load-hint";
-    msg.textContent = "家具库加载失败，请检查 assets/furniture/manifest.json 与同目录条目 JSON。";
+    msg.textContent = "家具库加载失败，请检查 assets/furniture/furnitureLibrary.json。";
     grid.appendChild(msg);
   }
 

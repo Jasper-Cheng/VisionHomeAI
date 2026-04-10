@@ -1,0 +1,263 @@
+{
+  "schemaVersion": "1.0",
+  "items": [
+    {
+      "id": "sofa_01",
+      "name": "简约布艺沙发（2K）",
+      "category": "sofa",
+      "model": "assets/furniture/models/sofa_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/sofa_01.png",
+      "size": {
+        "width": 210.0,
+        "depth": 90.0,
+        "height": 82.0
+      },
+      "polygon": [
+        [-105, -45],
+        [105, -45],
+        [105, 45],
+        [-105, 45]
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "price": 3980,
+      "tags": [
+        "PBR 贴图",
+        "布艺",
+        "客厅"
+      ],
+      "placement": {
+        "allowRooms": [
+          "living",
+          "study"
+        ],
+        "snapToWall": true,
+        "minDistanceToWall": 5.0
+      }
+    },
+    {
+      "id": "sofa_02",
+      "name": "现代皮革沙发（2K）",
+      "category": "sofa",
+      "model": "assets/furniture/models/sofa_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/sofa_02.png",
+      "size": {
+        "width": 215.0,
+        "depth": 92.0,
+        "height": 84.0
+      },
+      "polygon": [
+        [-107.5, -46],
+        [107.5, -46],
+        [107.5, 46],
+        [-107.5, 46]
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "price": 5280,
+      "tags": [
+        "PBR 贴图",
+        "皮革",
+        "客厅"
+      ],
+      "placement": {
+        "allowRooms": [
+          "living",
+          "study"
+        ],
+        "snapToWall": true,
+        "minDistanceToWall": 5.0
+      }
+    },
+    {
+      "id": "sofa_03",
+      "name": "现代布艺沙发（2K）",
+      "category": "sofa",
+      "model": "assets/furniture/models/sofa_03.glb",
+      "thumbnail": "assets/furniture/thumbnails/sofa_03.png",
+      "size": {
+        "width": 220.0,
+        "depth": 94.0,
+        "height": 85.0
+      },
+      "polygon": [
+        [-110, -47],
+        [110, -47],
+        [110, 47],
+        [-110, 47]
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "price": 4580,
+      "tags": [
+        "PBR 贴图",
+        "高精度",
+        "客厅"
+      ],
+      "placement": {
+        "allowRooms": [
+          "living",
+          "study"
+        ],
+        "snapToWall": true,
+        "minDistanceToWall": 5.0
+      }
+    },
+    {
+      "id": "table_01",
+      "name": "胡桃木桌几（2K）",
+      "category": "table",
+      "model": "assets/furniture/models/table_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/table_01.png",
+      "size": {
+        "width": 130.0,
+        "depth": 60.0,
+        "height": 72.0
+      },
+      "polygon": [
+        [-65, -30],
+        [65, -30],
+        [65, 30],
+        [-65, 30]
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "price": 2680,
+      "tags": [
+        "PBR 贴图",
+        "实木",
+        "客厅"
+      ],
+      "placement": {
+        "allowRooms": [
+          "living",
+          "dining",
+          "study"
+        ],
+        "snapToWall": false,
+        "minDistanceToWall": 8.0
+      }
+    },
+    {
+      "id": "table_02",
+      "name": "条纹木桌几",
+      "category": "table",
+      "model": "assets/furniture/models/table_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/table_02.png",
+      "size": {
+        "width": 140.0,
+        "depth": 70.0,
+        "height": 72.0
+      },
+      "polygon": [
+        [-70, -35],
+        [70, -35],
+        [70, 35],
+        [-70, 35]
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "price": 2880,
+      "tags": [
+        "PBR 贴图",
+        "实木",
+        "客厅"
+      ],
+      "placement": {
+        "allowRooms": [
+          "living",
+          "dining",
+          "study"
+        ],
+        "snapToWall": false,
+        "minDistanceToWall": 8.0
+      }
+    },
+    {
+      "id": "table_03",
+      "name": "橡木茶桌",
+      "category": "table",
+      "model": "assets/furniture/models/table_03.glb",
+      "thumbnail": "assets/furniture/thumbnails/table_03.png",
+      "size": {
+        "width": 80.0,
+        "depth": 80.0,
+        "height": 40.0
+      },
+      "polygon": [
+        [-67.5, -34],
+        [67.5, -34],
+        [67.5, 34],
+        [-67.5, 34]
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "price": 2980,
+      "tags": [
+        "PBR 贴图",
+        "实木",
+        "茶桌",
+        "客厅"
+      ],
+      "placement": {
+        "allowRooms": [
+          "living",
+          "dining",
+          "study"
+        ],
+        "snapToWall": false,
+        "minDistanceToWall": 8.0
+      }
+    },
+    {
+      "id": "chair_01",
+      "name": "橡木餐椅",
+      "category": "chair",
+      "model": "assets/furniture/models/chair_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/chair_01.png",
+      "size": {
+        "width": 52.0,
+        "depth": 48.0,
+        "height": 30.0
+      },
+      "polygon": [
+        [-26, -25],
+        [26, -25],
+        [26, 25],
+        [-26, 25]
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "price": 1580,
+      "tags": [
+        "PBR 贴图",
+        "实木",
+        "餐椅",
+        "客厅"
+      ],
+      "placement": {
+        "allowRooms": [
+          "living",
+          "dining",
+          "study"
+        ],
+        "snapToWall": false,
+        "minDistanceToWall": 8.0
+      }
+    }
+  ]
+}
