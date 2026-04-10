@@ -1,0 +1,581 @@
+{
+  "schemaVersion": "1.0",
+  "items": [
+    {
+      "id": "Chandelier_01",
+      "name": "吊灯 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/Chandelier_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/Chandelier_01.png",
+      "size": {
+        "width": 74.6,
+        "depth": 81.6,
+        "height": 79.8
+      }
+    },
+    {
+      "id": "Chandelier_03",
+      "name": "吊灯 03",
+      "category": "widgets",
+      "model": "assets/decorations/models/Chandelier_03_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/Chandelier_03.png",
+      "size": {
+        "width": 78.0,
+        "depth": 78.5,
+        "height": 104.1
+      }
+    },
+    {
+      "id": "antique_ceramic_vase_01",
+      "name": "古董陶瓷花瓶 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/antique_ceramic_vase_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/antique_ceramic_vase_01.png",
+      "size": {
+        "width": 25.5,
+        "depth": 25.5,
+        "height": 44.0
+      }
+    },
+    {
+      "id": "book_encyclopedia_set_01",
+      "name": "百科全书套装 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/book_encyclopedia_set_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/book_encyclopedia_set_01.png",
+      "size": {
+        "width": 55.1,
+        "depth": 16.3,
+        "height": 23.7
+      }
+    },
+    {
+      "id": "brass_diya_lantern",
+      "name": "黄铜油灯",
+      "category": "widgets",
+      "model": "assets/decorations/models/brass_diya_lantern_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/brass_diya_lantern.png",
+      "size": {
+        "width": 12.3,
+        "depth": 12.3,
+        "height": 38.1
+      }
+    },
+    {
+      "id": "brass_vase_01",
+      "name": "黄铜花瓶 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/brass_vase_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/brass_vase_01.png",
+      "size": {
+        "width": 22.7,
+        "depth": 22.7,
+        "height": 69.2
+      }
+    },
+    {
+      "id": "brass_vase_02",
+      "name": "黄铜花瓶 02",
+      "category": "widgets",
+      "model": "assets/decorations/models/brass_vase_02_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/brass_vase_02.png",
+      "size": {
+        "width": 21.0,
+        "depth": 21.0,
+        "height": 52.9
+      }
+    },
+    {
+      "id": "brass_vase_03",
+      "name": "黄铜花瓶 03",
+      "category": "widgets",
+      "model": "assets/decorations/models/brass_vase_03_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/brass_vase_03.png",
+      "size": {
+        "width": 8.3,
+        "depth": 8.3,
+        "height": 20.0
+      }
+    },
+    {
+      "id": "bull_head",
+      "name": "牛头雕塑",
+      "category": "widgets",
+      "model": "assets/decorations/models/bull_head_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/bull_head.png",
+      "size": {
+        "width": 30.6,
+        "depth": 28.1,
+        "height": 43.3
+      }
+    },
+    {
+      "id": "carved_wooden_elephant",
+      "name": "木雕大象",
+      "category": "widgets",
+      "model": "assets/decorations/models/carved_wooden_elephant_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/carved_wooden_elephant.png",
+      "size": {
+        "width": 10.9,
+        "depth": 5.8,
+        "height": 9.6
+      }
+    },
+    {
+      "id": "carved_wooden_plate",
+      "name": "木雕盘",
+      "category": "widgets",
+      "model": "assets/decorations/models/carved_wooden_plate_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/carved_wooden_plate.png",
+      "size": {
+        "width": 27.2,
+        "depth": 26.9,
+        "height": 3.8
+      }
+    },
+    {
+      "id": "ceramic_vase_01",
+      "name": "陶瓷花瓶 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/ceramic_vase_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/ceramic_vase_01.png",
+      "size": {
+        "width": 20.5,
+        "depth": 20.6,
+        "height": 40.1
+      }
+    },
+    {
+      "id": "ceramic_vase_02",
+      "name": "陶瓷花瓶 02",
+      "category": "widgets",
+      "model": "assets/decorations/models/ceramic_vase_02_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/ceramic_vase_02.png",
+      "size": {
+        "width": 22.0,
+        "depth": 22.1,
+        "height": 30.9
+      }
+    },
+    {
+      "id": "ceramic_vase_03",
+      "name": "陶瓷花瓶 03",
+      "category": "widgets",
+      "model": "assets/decorations/models/ceramic_vase_03_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/ceramic_vase_03.png",
+      "size": {
+        "width": 11.2,
+        "depth": 11.2,
+        "height": 41.4
+      }
+    },
+    {
+      "id": "ceramic_vase_04",
+      "name": "陶瓷花瓶 04",
+      "category": "widgets",
+      "model": "assets/decorations/models/ceramic_vase_04_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/ceramic_vase_04.png",
+      "size": {
+        "width": 18.3,
+        "depth": 18.2,
+        "height": 34.2
+      }
+    },
+    {
+      "id": "chinese_chandelier",
+      "name": "中式吊灯",
+      "category": "widgets",
+      "model": "assets/decorations/models/chinese_chandelier_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/chinese_chandelier.png",
+      "size": {
+        "width": 87.8,
+        "depth": 87.9,
+        "height": 74.8
+      }
+    },
+    {
+      "id": "concrete_cat_statue",
+      "name": "水泥猫雕塑",
+      "category": "widgets",
+      "model": "assets/decorations/models/concrete_cat_statue_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/concrete_cat_statue.png",
+      "size": {
+        "width": 15.3,
+        "depth": 25.0,
+        "height": 28.3
+      }
+    },
+    {
+      "id": "dartboard",
+      "name": "飞镖盘",
+      "category": "widgets",
+      "model": "assets/decorations/models/dartboard_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/dartboard.png",
+      "size": {
+        "width": 45.1,
+        "depth": 4.0,
+        "height": 45.1
+      }
+    },
+    {
+      "id": "fancy_picture_frame_01",
+      "name": "装饰画框 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/fancy_picture_frame_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/fancy_picture_frame_01.png",
+      "size": {
+        "width": 60.3,
+        "depth": 2.0,
+        "height": 46.4
+      }
+    },
+    {
+      "id": "fancy_picture_frame_02",
+      "name": "装饰画框 02",
+      "category": "widgets",
+      "model": "assets/decorations/models/fancy_picture_frame_02_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/fancy_picture_frame_02.png",
+      "size": {
+        "width": 66.1,
+        "depth": 8.9,
+        "height": 77.1
+      }
+    },
+    {
+      "id": "garden_gnome",
+      "name": "花园地精",
+      "category": "widgets",
+      "model": "assets/decorations/models/garden_gnome_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/garden_gnome.png",
+      "size": {
+        "width": 25.8,
+        "depth": 21.0,
+        "height": 59.9
+      }
+    },
+    {
+      "id": "hanging_picture_frame_01",
+      "name": "悬挂画框 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/hanging_picture_frame_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/hanging_picture_frame_01.png",
+      "size": {
+        "width": 59.4,
+        "depth": 1.6,
+        "height": 84.1
+      }
+    },
+    {
+      "id": "hanging_picture_frame_03",
+      "name": "悬挂画框 03",
+      "category": "widgets",
+      "model": "assets/decorations/models/hanging_picture_frame_03_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/hanging_picture_frame_03.png",
+      "size": {
+        "width": 38.5,
+        "depth": 3.2,
+        "height": 50.2
+      }
+    },
+    {
+      "id": "horse_head",
+      "name": "马头雕塑",
+      "category": "widgets",
+      "model": "assets/decorations/models/horse_head_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/horse_head.png",
+      "size": {
+        "width": 21.5,
+        "depth": 33.4,
+        "height": 41.9
+      }
+    },
+    {
+      "id": "horse_statue_01",
+      "name": "马雕塑 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/horse_statue_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/horse_statue_01.png",
+      "size": {
+        "width": 16.4,
+        "depth": 10.8,
+        "height": 22.0
+      }
+    },
+    {
+      "id": "industrial_wall_sconce",
+      "name": "工业壁灯",
+      "category": "widgets",
+      "model": "assets/decorations/models/industrial_wall_sconce_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/industrial_wall_sconce.png",
+      "size": {
+        "width": 15.0,
+        "depth": 25.2,
+        "height": 34.2
+      }
+    },
+    {
+      "id": "jug_01",
+      "name": "陶罐 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/jug_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/jug_01.png",
+      "size": {
+        "width": 27.5,
+        "depth": 16.8,
+        "height": 21.1
+      }
+    },
+    {
+      "id": "katana_stand_01",
+      "name": "刀架 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/katana_stand_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/katana_stand_01.png",
+      "size": {
+        "width": 29.6,
+        "depth": 5.3,
+        "height": 18.2
+      }
+    },
+    {
+      "id": "lambis_shell",
+      "name": "贝壳",
+      "category": "widgets",
+      "model": "assets/decorations/models/lambis_shell_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/lambis_shell.png",
+      "size": {
+        "width": 13.9,
+        "depth": 7.5,
+        "height": 4.7
+      }
+    },
+    {
+      "id": "lion_head",
+      "name": "狮头雕塑",
+      "category": "widgets",
+      "model": "assets/decorations/models/lion_head_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/lion_head.png",
+      "size": {
+        "width": 32.1,
+        "depth": 20.7,
+        "height": 43.6
+      }
+    },
+    {
+      "id": "lubricant_spray",
+      "name": "润滑油喷雾",
+      "category": "widgets",
+      "model": "assets/decorations/models/lubricant_spray_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/lubricant_spray.png",
+      "size": {
+        "width": 6.7,
+        "depth": 6.5,
+        "height": 16.5
+      }
+    },
+    {
+      "id": "marble_bust_01",
+      "name": "大理石胸像 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/marble_bust_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/marble_bust_01.png",
+      "size": {
+        "width": 27.2,
+        "depth": 30.0,
+        "height": 51.5
+      }
+    },
+    {
+      "id": "ornate_mirror_01",
+      "name": "装饰镜 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/ornate_mirror_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/ornate_mirror_01.png",
+      "size": {
+        "width": 48.6,
+        "depth": 2.6,
+        "height": 74.4
+      }
+    },
+    {
+      "id": "pot_enamel_01",
+      "name": "搪瓷锅 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/pot_enamel_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/pot_enamel_01.png",
+      "size": {
+        "width": 26.3,
+        "depth": 18.0,
+        "height": 17.8
+      }
+    },
+    {
+      "id": "potted_plant_01",
+      "name": "盆栽植物 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/potted_plant_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/potted_plant_01.png",
+      "size": {
+        "width": 58.9,
+        "depth": 63.7,
+        "height": 135.1
+      }
+    },
+    {
+      "id": "potted_plant_02",
+      "name": "盆栽植物 02",
+      "category": "widgets",
+      "model": "assets/decorations/models/potted_plant_02_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/potted_plant_02.png",
+      "size": {
+        "width": 70.1,
+        "depth": 65.7,
+        "height": 84.1
+      }
+    },
+    {
+      "id": "potted_plant_04",
+      "name": "盆栽植物 04",
+      "category": "widgets",
+      "model": "assets/decorations/models/potted_plant_04_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/potted_plant_04.png",
+      "size": {
+        "width": 17.0,
+        "depth": 18.6,
+        "height": 26.8
+      }
+    },
+    {
+      "id": "rubber_duck_toy",
+      "name": "橡胶鸭玩具",
+      "category": "widgets",
+      "model": "assets/decorations/models/rubber_duck_toy_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/rubber_duck_toy.png",
+      "size": {
+        "width": 21.4,
+        "depth": 30.0,
+        "height": 28.6
+      }
+    },
+    {
+      "id": "standing_picture_frame_01",
+      "name": "站立画框 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/standing_picture_frame_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/standing_picture_frame_01.png",
+      "size": {
+        "width": 20.1,
+        "depth": 10.0,
+        "height": 25.0
+      }
+    },
+    {
+      "id": "sungka_board_02",
+      "name": "sungka棋盘 02",
+      "category": "widgets",
+      "model": "assets/decorations/models/sungka_board_02_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/sungka_board_02.png",
+      "size": {
+        "width": 93.2,
+        "depth": 17.6,
+        "height": 2.6
+      }
+    },
+    {
+      "id": "treasure_chest",
+      "name": "宝箱",
+      "category": "widgets",
+      "model": "assets/decorations/models/treasure_chest_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/treasure_chest.png",
+      "size": {
+        "width": 95.9,
+        "depth": 52.3,
+        "height": 61.9
+      }
+    },
+    {
+      "id": "vintage_grandfather_clock_01",
+      "name": "复古落地钟 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/vintage_grandfather_clock_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/vintage_grandfather_clock_01.png",
+      "size": {
+        "width": 99.7,
+        "depth": 79.5,
+        "height": 219.1
+      }
+    },
+    {
+      "id": "vintage_oil_lamp",
+      "name": "复古油灯",
+      "category": "widgets",
+      "model": "assets/decorations/models/vintage_oil_lamp_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/vintage_oil_lamp.png",
+      "size": {
+        "width": 22.0,
+        "depth": 22.0,
+        "height": 80.2
+      }
+    },
+    {
+      "id": "vintage_telephone_wall_clock",
+      "name": "复古电话墙钟",
+      "category": "widgets",
+      "model": "assets/decorations/models/vintage_telephone_wall_clock_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/vintage_telephone_wall_clock.png",
+      "size": {
+        "width": 34.3,
+        "depth": 19.3,
+        "height": 50.1
+      }
+    },
+    {
+      "id": "wicker_basket_01",
+      "name": "藤编篮子 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/wicker_basket_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/wicker_basket_01.png",
+      "size": {
+        "width": 38.3,
+        "depth": 29.5,
+        "height": 11.7
+      }
+    },
+    {
+      "id": "wicker_basket_02",
+      "name": "藤编篮子 02",
+      "category": "widgets",
+      "model": "assets/decorations/models/wicker_basket_02_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/wicker_basket_02.png",
+      "size": {
+        "width": 37.5,
+        "depth": 27.1,
+        "height": 21.8
+      }
+    },
+    {
+      "id": "wooden_bowl_01",
+      "name": "木碗 01",
+      "category": "widgets",
+      "model": "assets/decorations/models/wooden_bowl_01_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/wooden_bowl_01.png",
+      "size": {
+        "width": 31.3,
+        "depth": 30.9,
+        "height": 9.4
+      }
+    },
+    {
+      "id": "wooden_bowl_02",
+      "name": "木碗 02",
+      "category": "widgets",
+      "model": "assets/decorations/models/wooden_bowl_02_1k.glb",
+      "thumbnail": "assets/decorations/thumbnails/wooden_bowl_02.png",
+      "size": {
+        "width": 13.1,
+        "depth": 12.5,
+        "height": 7.3
+      }
+    }
+  ]
+}

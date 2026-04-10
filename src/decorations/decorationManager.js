@@ -1,29 +1,27 @@
 /**
  * 装饰库管理模块
- * 支持小部件（widgets）和贴画（stickers）两种分类
+ * 支持小部件（widgets）和贴纸（stickers）两种分类
  */
-
-import { loadItemsFromManifest } from "../core/catalogLoader.js";
 
 const DECORATION_CATEGORIES = {
   widgets: "小部件",
-  stickers: "贴画",
+  stickers: "贴纸",
 };
 
 /** 缩略图骨架色（循环使用） */
 const THUMB_VARIANTS = ["", "thumb-skeleton--green", "thumb-skeleton--warm", "thumb-skeleton--red", "thumb-skeleton--gray", "thumb-skeleton--blue"];
 
-const DECORATIONS_DIR = "assets/decorations";
+const DECORATIONS_FILE = "assets/decorations/decorations.json";
 
 /**
- * 加载装饰库目录 - 从 assets/decorations/ 目录的 JSON 文件加载
+ * 加载装饰库目录 - 从 decorations.json 直接加载
  * @returns {{ items: object[], byId: Map<string, object> }}
  */
 export async function loadDecorationCatalog() {
-  const items = await loadItemsFromManifest({
-    manifestUrl: `${DECORATIONS_DIR}/manifest.json`,
-    itemsBaseUrl: DECORATIONS_DIR,
-  });
+  const res = await fetch(DECORATIONS_FILE, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load decorations: ${DECORATIONS_FILE}`);
+  const data = await res.json();
+  const items = data.items || [];
   const byId = new Map(items.map((item) => [item.id, item]));
   return { items, byId };
 }
@@ -147,7 +145,7 @@ export async function mountDecorationLibrary() {
 
   tabsContainer.replaceChildren();
   tabsContainer.appendChild(makeTab("小部件", "widgets", true));
-  tabsContainer.appendChild(makeTab("贴画", "stickers", false));
+  tabsContainer.appendChild(makeTab("贴纸", "stickers", false));
 
   /** @type {HTMLElement | null} */
   let selectedDecorationCard = null;
