@@ -45,7 +45,7 @@
             0.2
           ],
           "textureRotation": 90,
-          "textureAlbedo": "WoodFloor044_2K-JPG_Color.jpg"
+          "textureAlbedo": "wood_floor_diff.jpg"
         },
         "allWalls": {
           "color": "#e6dacb",
@@ -57,7 +57,7 @@
             2
           ],
           "textureRotation": 0,
-          "textureAlbedo": "Plaster001_2K-JPG_Color.jpg"
+          "textureAlbedo": "plastered_wall_02_diff.jpg"
         }
       }
     }

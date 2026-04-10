@@ -91,7 +91,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -104,7 +104,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -117,7 +117,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -130,7 +130,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -143,7 +143,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -156,7 +156,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -169,7 +169,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -182,9 +182,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -198,9 +198,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -214,9 +214,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -230,9 +230,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -246,9 +246,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -262,9 +262,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -278,8 +278,8 @@
           "roughness": 0.8,
           "metalness": 0.02,
           "texture": {
-            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
           }
         },
         "door_bath": {
@@ -288,8 +288,8 @@
           "roughness": 0.8,
           "metalness": 0.02,
           "texture": {
-            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
           }
         },
         "door_kitchen": {
@@ -298,8 +298,8 @@
           "roughness": 0.8,
           "metalness": 0.02,
           "texture": {
-            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
           }
         },
         "door_bed1": {
@@ -308,8 +308,8 @@
           "roughness": 0.8,
           "metalness": 0.02,
           "texture": {
-            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
           }
         },
         "door_bed2": {
@@ -318,8 +318,8 @@
           "roughness": 0.8,
           "metalness": 0.02,
           "texture": {
-            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
           }
         },
         "window_Clear": {
@@ -435,7 +435,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -449,9 +449,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/Metal031_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_rough.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -488,7 +488,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -501,7 +501,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -514,7 +514,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -527,7 +527,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -540,7 +540,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -553,7 +553,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -566,7 +566,7 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [
             2,
@@ -579,9 +579,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -595,9 +595,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -611,9 +611,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -627,9 +627,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -643,9 +643,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -659,9 +659,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/WoodFloor040_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,
@@ -675,8 +675,8 @@
           "roughness": 0.8,
           "metalness": 0.02,
           "texture": {
-            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
           }
         },
         "door_bath": {
@@ -685,8 +685,8 @@
           "roughness": 0.8,
           "metalness": 0.02,
           "texture": {
-            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
           }
         },
         "door_kitchen": {
@@ -695,8 +695,8 @@
           "roughness": 0.8,
           "metalness": 0.02,
           "texture": {
-            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
           }
         },
         "door_bed1": {
@@ -705,8 +705,8 @@
           "roughness": 0.8,
           "metalness": 0.02,
           "texture": {
-            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
           }
         },
         "door_bed2": {
@@ -715,8 +715,8 @@
           "roughness": 0.8,
           "metalness": 0.02,
           "texture": {
-            "normal": "textures/PaintedWood002_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/PaintedWood002_2K-JPG_Roughness.jpg"
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
           }
         },
         "window_Clear": {
@@ -752,8 +752,8 @@
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/Ivory001A_2K-JPG_Roughness.jpg",
-            "albedo": "textures/Ivory001A_2K-JPG_Color.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/painted_plaster_wall_diff.jpg"
           },
           "uvScale": [
             2,
@@ -767,9 +767,9 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/PaintedWood002_2K-JPG_Color.jpg",
-            "normal": "textures/WoodFloor040_2K-JPG_NormalGL.jpg",
-            "roughness": "textures/WoodFloor040_2K-JPG_Roughness.jpg"
+            "albedo": "textures/dark_wood_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
           },
           "uvScale": [
             0.15,

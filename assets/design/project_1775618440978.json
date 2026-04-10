@@ -164,7 +164,7 @@
             2
           ],
           "textureRotation": 0,
-          "textureAlbedo": "Metal044A_2K-JPG_Color.jpg"
+          "textureAlbedo": "plastered_wall_05_diff.jpg"
         },
         "allDoors": {
           "color": "#cec2b4",
@@ -176,7 +176,7 @@
             1
           ],
           "textureRotation": 0,
-          "textureAlbedo": "Concrete048_2K-JPG_Color.jpg"
+          "textureAlbedo": "pavement_04_diff.jpg"
         },
         "allFloors": {
           "color": "#ffffff",
@@ -188,7 +188,7 @@
             0.15
           ],
           "textureRotation": 0,
-          "textureAlbedo": "WoodFloor050_2K-JPG_Color.jpg"
+          "textureAlbedo": "wood_floor_worn_diff.jpg"
         }
       }
     },

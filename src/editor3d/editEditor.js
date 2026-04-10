@@ -356,7 +356,7 @@ function clampFurnitureToCanvas(cx, cy, rotDeg, hw, hh) {
  * @property {string} [color] 覆盖库材质 `color`（与 roughness 等一并并入 mergeMaterialOverrideIntoDef）
  * @property {string} [materialId]
  * @property {boolean} [materialPresetCleared] 用户点击「清除」后不再使用库材质预设（与未设置 materialId 区分，避免同步时回退到风格包默认）
- * @property {string} [textureAlbedo] 仅覆盖库材质 `texture.albedo` 的文件名（如 `Concrete003_2K-JPG_Color.jpg`）或 `textures/...` 路径
+ * @property {string} [textureAlbedo] 仅覆盖库材质 `texture.albedo` 的文件名（如 `wood_floor_diff.jpg`）或 `textures/...` 路径
  * @property {number} [roughness]
  * @property {number} [metalness]
  * @property {number} [opacity] 库材质「不透明度」乘子（0–1，与玻璃材质定义中的 opacity 一致）

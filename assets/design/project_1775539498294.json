@@ -45,7 +45,7 @@
             0.15
           ],
           "textureRotation": 90,
-          "textureAlbedo": "Concrete034_2K-JPG_Color.jpg"
+          "textureAlbedo": "pavement_03_diff.jpg"
         },
         "allWalls": {
           "color": "#976e3b",
