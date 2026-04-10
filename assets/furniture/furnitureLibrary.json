@@ -1,1787 +1,863 @@
 {
-  "schemaVersion": "1.0", 
+  "schemaVersion": "2.0",
   "items": [
     {
-      "id": "ArmChair_01", 
-      "name": "休闲扶手椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/ArmChair_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/ArmChair_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子"
-      ]
-    }, 
-    {
-      "id": "BarberShopChair_01", 
-      "name": "理发椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/BarberShopChair_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/BarberShopChair_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子"
-      ]
-    }, 
-    {
-      "id": "ClassicConsole_01", 
-      "name": "古典条案", 
-      "category": "table", 
-      "model": "assets/furniture/models/ClassicConsole_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/ClassicConsole_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "复古"
-      ]
-    }, 
-    {
-      "id": "ClassicNightstand_01", 
-      "name": "古典床头柜", 
-      "category": "bed", 
-      "model": "assets/furniture/models/ClassicNightstand_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/ClassicNightstand_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 6800, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "复古"
-      ]
-    }, 
-    {
-      "id": "CoffeeCart_01", 
-      "name": "移动茶车", 
-      "category": "decor", 
-      "model": "assets/furniture/models/CoffeeCart_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/CoffeeCart_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 60.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型"
-      ]
-    }, 
-    {
-      "id": "CoffeeTable_01", 
-      "name": "简约茶几", 
-      "category": "table", 
-      "model": "assets/furniture/models/CoffeeTable_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/CoffeeTable_01.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几"
-      ]
-    }, 
-    {
-      "id": "GothicBed_01", 
-      "name": "哥特式床", 
-      "category": "bed", 
-      "model": "assets/furniture/models/GothicBed_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/GothicBed_01.png", 
-      "size": {
-        "width": 200.0, 
-        "depth": 200.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 6800, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "床", 
-        "复古"
-      ]
-    }, 
-    {
-      "id": "GothicCabinet_01", 
-      "name": "哥特式柜", 
-      "category": "storage", 
-      "model": "assets/furniture/models/GothicCabinet_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/GothicCabinet_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "复古"
-      ]
-    }, 
-    {
-      "id": "GothicCommode_01", 
-      "name": "哥特式抽屉柜", 
-      "category": "storage", 
-      "model": "assets/furniture/models/GothicCommode_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/GothicCommode_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "复古"
-      ]
-    }, 
-    {
-      "id": "GreenChair_01", 
-      "name": "绿色布艺椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/GreenChair_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/GreenChair_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子"
-      ]
-    }, 
-    {
-      "id": "Ottoman_01", 
-      "name": "脚凳", 
-      "category": "decor", 
-      "model": "assets/furniture/models/Ottoman_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/Ottoman_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 60.0, 
-        "height": 45.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子"
-      ]
-    }, 
-    {
-      "id": "Rockingchair_01", 
-      "name": "摇椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/Rockingchair_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/Rockingchair_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子"
-      ]
-    }, 
-    {
-      "id": "SchoolChair_01", 
-      "name": "学校木椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/SchoolChair_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/SchoolChair_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子"
-      ]
-    }, 
-    {
-      "id": "SchoolDesk_01", 
-      "name": "学校课桌", 
-      "category": "table", 
-      "model": "assets/furniture/models/SchoolDesk_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/SchoolDesk_01.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几"
-      ]
-    }, 
-    {
-      "id": "Shelf_01", 
-      "name": "置物架", 
-      "category": "storage", 
-      "model": "assets/furniture/models/Shelf_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/Shelf_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物"
-      ]
-    }, 
-    {
-      "id": "Sofa_01", 
-      "name": "简约布艺沙发", 
-      "category": "sofa", 
-      "model": "assets/furniture/models/Sofa_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/Sofa_01.png", 
-      "size": {
-        "width": 200.0, 
-        "depth": 90.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 5800, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "沙发"
-      ]
-    }, 
-    {
-      "id": "WoodenChair_01", 
-      "name": "简约木椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/WoodenChair_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/WoodenChair_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "WoodenTable_01", 
-      "name": "胡桃木桌", 
-      "category": "table", 
-      "model": "assets/furniture/models/WoodenTable_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/WoodenTable_01.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "WoodenTable_02", 
-      "name": "条纹木桌", 
-      "category": "table", 
-      "model": "assets/furniture/models/WoodenTable_02.glb", 
-      "thumbnail": "assets/furniture/thumbnails/WoodenTable_02.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "WoodenTable_03", 
-      "name": "橡木茶桌", 
-      "category": "table", 
-      "model": "assets/furniture/models/WoodenTable_03.glb", 
-      "thumbnail": "assets/furniture/thumbnails/WoodenTable_03.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "bar_chair_round_01", 
-      "name": "圆形吧椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/bar_chair_round_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/bar_chair_round_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子"
-      ]
-    }, 
-    {
-      "id": "chinese_armchair", 
-      "name": "中式扶手椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/chinese_armchair.glb", 
-      "thumbnail": "assets/furniture/thumbnails/chinese_armchair.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "中式"
-      ]
-    }, 
-    {
-      "id": "chinese_cabinet", 
-      "name": "中式橱柜", 
-      "category": "storage", 
-      "model": "assets/furniture/models/chinese_cabinet.glb", 
-      "thumbnail": "assets/furniture/thumbnails/chinese_cabinet.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "中式"
-      ]
-    }, 
-    {
-      "id": "chinese_commode", 
-      "name": "中式储物柜", 
-      "category": "storage", 
-      "model": "assets/furniture/models/chinese_commode.glb", 
-      "thumbnail": "assets/furniture/thumbnails/chinese_commode.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "中式"
-      ]
-    }, 
-    {
-      "id": "chinese_console_table", 
-      "name": "中式条案", 
-      "category": "table", 
-      "model": "assets/furniture/models/chinese_console_table.glb", 
-      "thumbnail": "assets/furniture/thumbnails/chinese_console_table.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "中式"
-      ]
-    }, 
-    {
-      "id": "chinese_screen_panels", 
-      "name": "中式屏风", 
-      "category": "mirror", 
-      "model": "assets/furniture/models/chinese_screen_panels.glb", 
-      "thumbnail": "assets/furniture/thumbnails/chinese_screen_panels.png", 
-      "size": {
-        "width": 150.0, 
-        "depth": 5.0, 
-        "height": 180.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 880, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "屏风", 
-        "中式"
-      ]
-    }, 
-    {
-      "id": "chinese_sofa", 
-      "name": "中式实木沙发", 
-      "category": "sofa", 
-      "model": "assets/furniture/models/chinese_sofa.glb", 
-      "thumbnail": "assets/furniture/thumbnails/chinese_sofa.png", 
-      "size": {
-        "width": 200.0, 
-        "depth": 90.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 5800, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "沙发", 
-        "中式"
-      ]
-    }, 
-    {
-      "id": "chinese_stool", 
-      "name": "中式圆凳", 
-      "category": "chair", 
-      "model": "assets/furniture/models/chinese_stool.glb", 
-      "thumbnail": "assets/furniture/thumbnails/chinese_stool.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "中式"
-      ]
-    }, 
-    {
-      "id": "chinese_tea_table", 
-      "name": "中式茶几", 
-      "category": "table", 
-      "model": "assets/furniture/models/chinese_tea_table.glb", 
-      "thumbnail": "assets/furniture/thumbnails/chinese_tea_table.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "中式"
-      ]
-    }, 
-    {
-      "id": "coffee_table_round_01", 
-      "name": "圆形茶几", 
-      "category": "table", 
-      "model": "assets/furniture/models/coffee_table_round_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/coffee_table_round_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 80.0, 
-        "height": 45.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几"
-      ]
-    }, 
-    {
-      "id": "dining_chair_02", 
-      "name": "餐厅木椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/dining_chair_02.glb", 
-      "thumbnail": "assets/furniture/thumbnails/dining_chair_02.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子"
-      ]
-    }, 
-    {
-      "id": "drawer_cabinet", 
-      "name": "抽屉柜", 
-      "category": "storage", 
-      "model": "assets/furniture/models/drawer_cabinet.glb", 
-      "thumbnail": "assets/furniture/thumbnails/drawer_cabinet.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物"
-      ]
-    }, 
-    {
-      "id": "folding_wooden_stool", 
-      "name": "折叠木凳", 
-      "category": "chair", 
-      "model": "assets/furniture/models/folding_wooden_stool.glb", 
-      "thumbnail": "assets/furniture/thumbnails/folding_wooden_stool.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "gallinera_chair", 
-      "name": "欧式餐椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/gallinera_chair.glb", 
-      "thumbnail": "assets/furniture/thumbnails/gallinera_chair.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子"
-      ]
-    }, 
-    {
-      "id": "gallinera_table", 
-      "name": "欧式餐桌", 
-      "category": "table", 
-      "model": "assets/furniture/models/gallinera_table.glb", 
-      "thumbnail": "assets/furniture/thumbnails/gallinera_table.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几"
-      ]
-    }, 
-    {
-      "id": "gothic_coffee_table", 
-      "name": "哥特式茶几", 
-      "category": "table", 
-      "model": "assets/furniture/models/gothic_coffee_table.glb", 
-      "thumbnail": "assets/furniture/thumbnails/gothic_coffee_table.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 80.0, 
-        "height": 45.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "复古"
-      ]
-    }, 
-    {
-      "id": "industrial_coffee_table", 
-      "name": "工业风茶几", 
-      "category": "table", 
-      "model": "assets/furniture/models/industrial_coffee_table.glb", 
-      "thumbnail": "assets/furniture/thumbnails/industrial_coffee_table.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 80.0, 
-        "height": 45.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "现代"
-      ]
-    }, 
-    {
-      "id": "metal_office_desk", 
-      "name": "金属办公桌", 
-      "category": "table", 
-      "model": "assets/furniture/models/metal_office_desk.glb", 
-      "thumbnail": "assets/furniture/thumbnails/metal_office_desk.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "金属"
-      ]
-    }, 
-    {
-      "id": "metal_stool_01", 
-      "name": "金属吧凳", 
-      "category": "chair", 
-      "model": "assets/furniture/models/metal_stool_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/metal_stool_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "金属"
-      ]
-    }, 
-    {
-      "id": "metal_stool_02", 
-      "name": "金属高凳", 
-      "category": "chair", 
-      "model": "assets/furniture/models/metal_stool_02.glb", 
-      "thumbnail": "assets/furniture/thumbnails/metal_stool_02.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "金属"
-      ]
-    }, 
-    {
-      "id": "mid_century_lounge_chair", 
-      "name": "中世纪休闲椅", 
-      "category": "sofa", 
-      "model": "assets/furniture/models/mid_century_lounge_chair.glb", 
-      "thumbnail": "assets/furniture/thumbnails/mid_century_lounge_chair.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 5800, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "现代"
-      ]
-    }, 
-    {
-      "id": "modern_arm_chair_01", 
-      "name": "现代扶手椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/modern_arm_chair_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/modern_arm_chair_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "现代"
-      ]
-    }, 
-    {
-      "id": "modern_coffee_table_01", 
-      "name": "现代茶几", 
-      "category": "table", 
-      "model": "assets/furniture/models/modern_coffee_table_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/modern_coffee_table_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 80.0, 
-        "height": 45.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "现代"
-      ]
-    }, 
-    {
-      "id": "modern_coffee_table_02", 
-      "name": "现代茶几 02", 
-      "category": "table", 
-      "model": "assets/furniture/models/modern_coffee_table_02.glb", 
-      "thumbnail": "assets/furniture/thumbnails/modern_coffee_table_02.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 80.0, 
-        "height": 45.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "现代"
-      ]
-    }, 
-    {
-      "id": "modern_wooden_cabinet", 
-      "name": "现代木柜", 
-      "category": "storage", 
-      "model": "assets/furniture/models/modern_wooden_cabinet.glb", 
-      "thumbnail": "assets/furniture/thumbnails/modern_wooden_cabinet.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "木质", 
-        "现代"
-      ]
-    }, 
-    {
-      "id": "modular_street_seating", 
-      "name": "街头组合座椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/modular_street_seating.glb", 
-      "thumbnail": "assets/furniture/thumbnails/modular_street_seating.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "户外"
-      ]
-    }, 
-    {
-      "id": "ornate_mirror_01", 
-      "name": "装饰镜", 
-      "category": "mirror", 
-      "model": "assets/furniture/models/ornate_mirror_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/ornate_mirror_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 5.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 880, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "镜子", 
-        "复古"
-      ]
-    }, 
-    {
-      "id": "outdoor_table_chair_set_01", 
-      "name": "户外桌椅套装", 
-      "category": "chair", 
-      "model": "assets/furniture/models/outdoor_table_chair_set_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/outdoor_table_chair_set_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "桌几", 
-        "户外"
-      ]
-    }, 
-    {
-      "id": "painted_wooden_bench", 
-      "name": "漆面木长凳", 
-      "category": "chair", 
-      "model": "assets/furniture/models/painted_wooden_bench.glb", 
-      "thumbnail": "assets/furniture/thumbnails/painted_wooden_bench.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "木质", 
-        "漆面"
-      ]
-    }, 
-    {
-      "id": "painted_wooden_cabinet", 
-      "name": "漆面橱柜", 
-      "category": "storage", 
-      "model": "assets/furniture/models/painted_wooden_cabinet.glb", 
-      "thumbnail": "assets/furniture/thumbnails/painted_wooden_cabinet.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "木质", 
-        "漆面"
-      ]
-    }, 
-    {
-      "id": "painted_wooden_cabinet_02", 
-      "name": "漆面橱柜 02", 
-      "category": "storage", 
-      "model": "assets/furniture/models/painted_wooden_cabinet_02.glb", 
-      "thumbnail": "assets/furniture/thumbnails/painted_wooden_cabinet_02.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "木质", 
-        "漆面"
-      ]
-    }, 
-    {
-      "id": "painted_wooden_chair_01", 
-      "name": "复古木椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/painted_wooden_chair_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/painted_wooden_chair_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "木质", 
-        "漆面"
-      ]
-    }, 
-    {
-      "id": "painted_wooden_chair_02", 
-      "name": "复古木椅 02", 
-      "category": "chair", 
-      "model": "assets/furniture/models/painted_wooden_chair_02.glb", 
-      "thumbnail": "assets/furniture/thumbnails/painted_wooden_chair_02.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "木质", 
-        "漆面"
-      ]
-    }, 
-    {
-      "id": "painted_wooden_nightstand", 
-      "name": "漆面床头柜", 
-      "category": "bed", 
-      "model": "assets/furniture/models/painted_wooden_nightstand.glb", 
-      "thumbnail": "assets/furniture/thumbnails/painted_wooden_nightstand.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 6800, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "木质", 
-        "漆面"
-      ]
-    }, 
-    {
-      "id": "painted_wooden_shelves", 
-      "name": "漆面架子", 
-      "category": "storage", 
-      "model": "assets/furniture/models/painted_wooden_shelves.glb", 
-      "thumbnail": "assets/furniture/thumbnails/painted_wooden_shelves.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "木质", 
-        "漆面"
-      ]
-    }, 
-    {
-      "id": "painted_wooden_sofa", 
-      "name": "复古木框布艺沙发", 
-      "category": "sofa", 
-      "model": "assets/furniture/models/painted_wooden_sofa.glb", 
-      "thumbnail": "assets/furniture/thumbnails/painted_wooden_sofa.png", 
-      "size": {
-        "width": 200.0, 
-        "depth": 90.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 5800, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "沙发", 
-        "木质", 
-        "漆面"
-      ]
-    }, 
-    {
-      "id": "painted_wooden_stool", 
-      "name": "漆面木凳", 
-      "category": "chair", 
-      "model": "assets/furniture/models/painted_wooden_stool.glb", 
-      "thumbnail": "assets/furniture/thumbnails/painted_wooden_stool.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "木质", 
-        "漆面"
-      ]
-    }, 
-    {
-      "id": "painted_wooden_table", 
-      "name": "漆面木桌", 
-      "category": "table", 
-      "model": "assets/furniture/models/painted_wooden_table.glb", 
-      "thumbnail": "assets/furniture/thumbnails/painted_wooden_table.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "木质", 
-        "漆面"
-      ]
-    }, 
-    {
-      "id": "plastic_monobloc_chair_01", 
-      "name": "塑料椅", 
-      "category": "chair", 
-      "model": "assets/furniture/models/plastic_monobloc_chair_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/plastic_monobloc_chair_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子"
-      ]
-    }, 
-    {
-      "id": "round_wooden_table_01", 
-      "name": "圆桌", 
-      "category": "table", 
-      "model": "assets/furniture/models/round_wooden_table_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/round_wooden_table_01.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "round_wooden_table_02", 
-      "name": "圆桌 02", 
-      "category": "table", 
-      "model": "assets/furniture/models/round_wooden_table_02.glb", 
-      "thumbnail": "assets/furniture/thumbnails/round_wooden_table_02.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "side_table_01", 
-      "name": "边几", 
-      "category": "table", 
-      "model": "assets/furniture/models/side_table_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/side_table_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 80.0, 
-        "height": 45.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几"
-      ]
-    }, 
-    {
-      "id": "side_table_tall_01", 
-      "name": "高边几", 
-      "category": "table", 
-      "model": "assets/furniture/models/side_table_tall_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/side_table_tall_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 80.0, 
-        "height": 45.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几"
-      ]
-    }, 
-    {
-      "id": "small_wooden_table_01", 
-      "name": "小木桌", 
-      "category": "table", 
-      "model": "assets/furniture/models/small_wooden_table_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/small_wooden_table_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 80.0, 
-        "height": 45.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "sofa_02", 
-      "name": "现代皮革沙发", 
-      "category": "sofa", 
-      "model": "assets/furniture/models/sofa_02.glb", 
-      "thumbnail": "assets/furniture/thumbnails/sofa_02.png", 
-      "size": {
-        "width": 200.0, 
-        "depth": 90.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 5800, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "沙发"
-      ]
-    }, 
-    {
-      "id": "sofa_03", 
-      "name": "现代布艺沙发", 
-      "category": "sofa", 
-      "model": "assets/furniture/models/sofa_03.glb", 
-      "thumbnail": "assets/furniture/thumbnails/sofa_03.png", 
-      "size": {
-        "width": 200.0, 
-        "depth": 90.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 5800, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "沙发"
-      ]
-    }, 
-    {
-      "id": "steel_frame_shelves_01", 
-      "name": "钢架置物架", 
-      "category": "storage", 
-      "model": "assets/furniture/models/steel_frame_shelves_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/steel_frame_shelves_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "金属"
-      ]
-    }, 
-    {
-      "id": "steel_frame_shelves_02", 
-      "name": "钢架置物架 02", 
-      "category": "storage", 
-      "model": "assets/furniture/models/steel_frame_shelves_02.glb", 
-      "thumbnail": "assets/furniture/thumbnails/steel_frame_shelves_02.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "金属"
-      ]
-    }, 
-    {
-      "id": "steel_frame_shelves_03", 
-      "name": "钢架置物架 03", 
-      "category": "storage", 
-      "model": "assets/furniture/models/steel_frame_shelves_03.glb", 
-      "thumbnail": "assets/furniture/thumbnails/steel_frame_shelves_03.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "金属"
-      ]
-    }, 
-    {
-      "id": "stone_fire_pit", 
-      "name": "石制火坑", 
-      "category": "decor", 
-      "model": "assets/furniture/models/stone_fire_pit.glb", 
-      "thumbnail": "assets/furniture/thumbnails/stone_fire_pit.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 60.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "户外"
-      ]
-    }, 
-    {
-      "id": "vintage_cabinet_01", 
-      "name": "复古柜", 
-      "category": "storage", 
-      "model": "assets/furniture/models/vintage_cabinet_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/vintage_cabinet_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "复古"
-      ]
-    }, 
-    {
-      "id": "vintage_wooden_drawer_01", 
-      "name": "复古木抽屉", 
-      "category": "storage", 
-      "model": "assets/furniture/models/vintage_wooden_drawer_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/vintage_wooden_drawer_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "木质", 
-        "复古"
-      ]
-    }, 
-    {
-      "id": "wooden_bookshelf_worn", 
-      "name": "复古书架", 
-      "category": "storage", 
-      "model": "assets/furniture/models/wooden_bookshelf_worn.glb", 
-      "thumbnail": "assets/furniture/thumbnails/wooden_bookshelf_worn.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "wooden_display_shelves_01", 
-      "name": "展示架", 
-      "category": "storage", 
-      "model": "assets/furniture/models/wooden_display_shelves_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/wooden_display_shelves_01.png", 
-      "size": {
-        "width": 80.0, 
-        "depth": 45.0, 
-        "height": 120.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 3580, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "储物", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "wooden_picnic_table", 
-      "name": "野餐桌", 
-      "category": "table", 
-      "model": "assets/furniture/models/wooden_picnic_table.glb", 
-      "thumbnail": "assets/furniture/thumbnails/wooden_picnic_table.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "木质", 
-        "户外"
-      ]
-    }, 
-    {
-      "id": "wooden_stool_01", 
-      "name": "木凳", 
-      "category": "chair", 
-      "model": "assets/furniture/models/wooden_stool_01.glb", 
-      "thumbnail": "assets/furniture/thumbnails/wooden_stool_01.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "wooden_stool_02", 
-      "name": "木凳 02", 
-      "category": "chair", 
-      "model": "assets/furniture/models/wooden_stool_02.glb", 
-      "thumbnail": "assets/furniture/thumbnails/wooden_stool_02.png", 
-      "size": {
-        "width": 60.0, 
-        "depth": 60.0, 
-        "height": 85.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 1280, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "椅子", 
-        "木质"
-      ]
-    }, 
-    {
-      "id": "wooden_table_02", 
-      "name": "木桌", 
-      "category": "table", 
-      "model": "assets/furniture/models/wooden_table_02.glb", 
-      "thumbnail": "assets/furniture/thumbnails/wooden_table_02.png", 
-      "size": {
-        "width": 120.0, 
-        "depth": 60.0, 
-        "height": 75.0
-      }, 
-      "anchor": {
-        "x": 0.5, 
-        "y": 0.5
-      }, 
-      "price": 2680, 
-      "tags": [
-        "PBR 贴图", 
-        "3D模型", 
-        "桌几", 
-        "木质"
-      ]
+      "id": "ArmChair_01",
+      "name": "休闲扶手椅",
+      "category": "chair",
+      "model": "assets/furniture/models/ArmChair_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/ArmChair_01.png",
+      "size": {"width": 75, "depth": 80, "height": 90},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子"]
+    },
+    {
+      "id": "BarberShopChair_01",
+      "name": "理发椅",
+      "category": "chair",
+      "model": "assets/furniture/models/BarberShopChair_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/BarberShopChair_01.png",
+      "size": {"width": 65, "depth": 65, "height": 120},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子"]
+    },
+    {
+      "id": "ClassicConsole_01",
+      "name": "古典条案",
+      "category": "table",
+      "model": "assets/furniture/models/ClassicConsole_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/ClassicConsole_01.png",
+      "size": {"width": 120, "depth": 40, "height": 85},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "复古"]
+    },
+    {
+      "id": "ClassicNightstand_01",
+      "name": "古典床头柜",
+      "category": "bed",
+      "model": "assets/furniture/models/ClassicNightstand_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/ClassicNightstand_01.png",
+      "size": {"width": 50, "depth": 40, "height": 60},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 6800,
+      "tags": ["PBR 贴图", "3D模型", "复古"]
+    },
+    {
+      "id": "CoffeeCart_01",
+      "name": "移动茶车",
+      "category": "decor",
+      "model": "assets/furniture/models/CoffeeCart_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/CoffeeCart_01.png",
+      "size": {"width": 80, "depth": 50, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1680,
+      "tags": ["PBR 贴图", "3D模型"]
+    },
+    {
+      "id": "CoffeeTable_01",
+      "name": "简约茶几",
+      "category": "table",
+      "model": "assets/furniture/models/CoffeeTable_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/CoffeeTable_01.png",
+      "size": {"width": 120, "depth": 60, "height": 45},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几"]
+    },
+    {
+      "id": "GothicBed_01",
+      "name": "哥特式床",
+      "category": "bed",
+      "model": "assets/furniture/models/GothicBed_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/GothicBed_01.png",
+      "size": {"width": 200, "depth": 220, "height": 140},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 6800,
+      "tags": ["PBR 贴图", "3D模型", "床", "复古"]
+    },
+    {
+      "id": "GothicCabinet_01",
+      "name": "哥特式柜",
+      "category": "storage",
+      "model": "assets/furniture/models/GothicCabinet_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/GothicCabinet_01.png",
+      "size": {"width": 100, "depth": 50, "height": 180},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "复古"]
+    },
+    {
+      "id": "GothicCommode_01",
+      "name": "哥特式抽屉柜",
+      "category": "storage",
+      "model": "assets/furniture/models/GothicCommode_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/GothicCommode_01.png",
+      "size": {"width": 90, "depth": 45, "height": 95},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "复古"]
+    },
+    {
+      "id": "GreenChair_01",
+      "name": "绿色布艺椅",
+      "category": "chair",
+      "model": "assets/furniture/models/GreenChair_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/GreenChair_01.png",
+      "size": {"width": 55, "depth": 60, "height": 85},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子"]
+    },
+    {
+      "id": "Ottoman_01",
+      "name": "脚凳",
+      "category": "decor",
+      "model": "assets/furniture/models/Ottoman_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/Ottoman_01.png",
+      "size": {"width": 60, "depth": 60, "height": 42},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1680,
+      "tags": ["PBR 贴图", "3D模型", "椅子"]
+    },
+    {
+      "id": "Rockingchair_01",
+      "name": "摇椅",
+      "category": "chair",
+      "model": "assets/furniture/models/Rockingchair_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/Rockingchair_01.png",
+      "size": {"width": 70, "depth": 90, "height": 95},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子"]
+    },
+    {
+      "id": "SchoolChair_01",
+      "name": "学校木椅",
+      "category": "chair",
+      "model": "assets/furniture/models/SchoolChair_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/SchoolChair_01.png",
+      "size": {"width": 45, "depth": 45, "height": 80},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子"]
+    },
+    {
+      "id": "SchoolDesk_01",
+      "name": "学校课桌",
+      "category": "table",
+      "model": "assets/furniture/models/SchoolDesk_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/SchoolDesk_01.png",
+      "size": {"width": 120, "depth": 60, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几"]
+    },
+    {
+      "id": "Shelf_01",
+      "name": "置物架",
+      "category": "storage",
+      "model": "assets/furniture/models/Shelf_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/Shelf_01.png",
+      "size": {"width": 100, "depth": 35, "height": 180},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物"]
+    },
+    {
+      "id": "Sofa_01",
+      "name": "简约布艺沙发",
+      "category": "sofa",
+      "model": "assets/furniture/models/Sofa_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/Sofa_01.png",
+      "size": {"width": 210, "depth": 90, "height": 85},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 5800,
+      "tags": ["PBR 贴图", "3D模型", "沙发"]
+    },
+    {
+      "id": "WoodenChair_01",
+      "name": "简约木椅",
+      "category": "chair",
+      "model": "assets/furniture/models/WoodenChair_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/WoodenChair_01.png",
+      "size": {"width": 48, "depth": 50, "height": 85},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "木质"]
+    },
+    {
+      "id": "WoodenTable_01",
+      "name": "胡桃木桌",
+      "category": "table",
+      "model": "assets/furniture/models/WoodenTable_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/WoodenTable_01.png",
+      "size": {"width": 140, "depth": 80, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "木质"]
+    },
+    {
+      "id": "WoodenTable_02",
+      "name": "条纹木桌",
+      "category": "table",
+      "model": "assets/furniture/models/WoodenTable_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/WoodenTable_02.png",
+      "size": {"width": 150, "depth": 85, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "木质"]
+    },
+    {
+      "id": "WoodenTable_03",
+      "name": "橡木茶桌",
+      "category": "table",
+      "model": "assets/furniture/models/WoodenTable_03.glb",
+      "thumbnail": "assets/furniture/thumbnails/WoodenTable_03.png",
+      "size": {"width": 90, "depth": 90, "height": 45},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "木质"]
+    },
+    {
+      "id": "bar_chair_round_01",
+      "name": "圆形吧椅",
+      "category": "chair",
+      "model": "assets/furniture/models/bar_chair_round_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/bar_chair_round_01.png",
+      "size": {"width": 45, "depth": 45, "height": 110},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子"]
+    },
+    {
+      "id": "chinese_armchair",
+      "name": "中式扶手椅",
+      "category": "chair",
+      "model": "assets/furniture/models/chinese_armchair.glb",
+      "thumbnail": "assets/furniture/thumbnails/chinese_armchair.png",
+      "size": {"width": 65, "depth": 70, "height": 95},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "中式"]
+    },
+    {
+      "id": "chinese_cabinet",
+      "name": "中式橱柜",
+      "category": "storage",
+      "model": "assets/furniture/models/chinese_cabinet.glb",
+      "thumbnail": "assets/furniture/thumbnails/chinese_cabinet.png",
+      "size": {"width": 110, "depth": 55, "height": 200},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "中式"]
+    },
+    {
+      "id": "chinese_commode",
+      "name": "中式储物柜",
+      "category": "storage",
+      "model": "assets/furniture/models/chinese_commode.glb",
+      "thumbnail": "assets/furniture/thumbnails/chinese_commode.png",
+      "size": {"width": 95, "depth": 48, "height": 90},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "中式"]
+    },
+    {
+      "id": "chinese_console_table",
+      "name": "中式条案",
+      "category": "table",
+      "model": "assets/furniture/models/chinese_console_table.glb",
+      "thumbnail": "assets/furniture/thumbnails/chinese_console_table.png",
+      "size": {"width": 120, "depth": 40, "height": 85},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "中式"]
+    },
+    {
+      "id": "chinese_screen_panels",
+      "name": "中式屏风",
+      "category": "mirror",
+      "model": "assets/furniture/models/chinese_screen_panels.glb",
+      "thumbnail": "assets/furniture/thumbnails/chinese_screen_panels.png",
+      "size": {"width": 180, "depth": 3, "height": 200},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 880,
+      "tags": ["PBR 贴图", "3D模型", "屏风", "中式"]
+    },
+    {
+      "id": "chinese_sofa",
+      "name": "中式实木沙发",
+      "category": "sofa",
+      "model": "assets/furniture/models/chinese_sofa.glb",
+      "thumbnail": "assets/furniture/thumbnails/chinese_sofa.png",
+      "size": {"width": 180, "depth": 80, "height": 90},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 5800,
+      "tags": ["PBR 贴图", "3D模型", "沙发", "中式"]
+    },
+    {
+      "id": "chinese_stool",
+      "name": "中式圆凳",
+      "category": "chair",
+      "model": "assets/furniture/models/chinese_stool.glb",
+      "thumbnail": "assets/furniture/thumbnails/chinese_stool.png",
+      "size": {"width": 40, "depth": 40, "height": 45},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "中式"]
+    },
+    {
+      "id": "chinese_tea_table",
+      "name": "中式茶几",
+      "category": "table",
+      "model": "assets/furniture/models/chinese_tea_table.glb",
+      "thumbnail": "assets/furniture/thumbnails/chinese_tea_table.png",
+      "size": {"width": 100, "depth": 60, "height": 50},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "中式"]
+    },
+    {
+      "id": "coffee_table_round_01",
+      "name": "圆形茶几",
+      "category": "table",
+      "model": "assets/furniture/models/coffee_table_round_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/coffee_table_round_01.png",
+      "size": {"width": 80, "depth": 80, "height": 42},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几"]
+    },
+    {
+      "id": "dining_chair_02",
+      "name": "餐厅木椅",
+      "category": "chair",
+      "model": "assets/furniture/models/dining_chair_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/dining_chair_02.png",
+      "size": {"width": 48, "depth": 52, "height": 88},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子"]
+    },
+    {
+      "id": "drawer_cabinet",
+      "name": "抽屉柜",
+      "category": "storage",
+      "model": "assets/furniture/models/drawer_cabinet.glb",
+      "thumbnail": "assets/furniture/thumbnails/drawer_cabinet.png",
+      "size": {"width": 80, "depth": 45, "height": 85},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物"]
+    },
+    {
+      "id": "folding_wooden_stool",
+      "name": "折叠木凳",
+      "category": "chair",
+      "model": "assets/furniture/models/folding_wooden_stool.glb",
+      "thumbnail": "assets/furniture/thumbnails/folding_wooden_stool.png",
+      "size": {"width": 35, "depth": 35, "height": 45},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "木质"]
+    },
+    {
+      "id": "gallinera_chair",
+      "name": "欧式餐椅",
+      "category": "chair",
+      "model": "assets/furniture/models/gallinera_chair.glb",
+      "thumbnail": "assets/furniture/thumbnails/gallinera_chair.png",
+      "size": {"width": 50, "depth": 55, "height": 85},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子"]
+    },
+    {
+      "id": "gallinera_table",
+      "name": "欧式餐桌",
+      "category": "table",
+      "model": "assets/furniture/models/gallinera_table.glb",
+      "thumbnail": "assets/furniture/thumbnails/gallinera_table.png",
+      "size": {"width": 160, "depth": 90, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几"]
+    },
+    {
+      "id": "gothic_coffee_table",
+      "name": "哥特式茶几",
+      "category": "table",
+      "model": "assets/furniture/models/gothic_coffee_table.glb",
+      "thumbnail": "assets/furniture/thumbnails/gothic_coffee_table.png",
+      "size": {"width": 110, "depth": 70, "height": 48},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "复古"]
+    },
+    {
+      "id": "industrial_coffee_table",
+      "name": "工业风茶几",
+      "category": "table",
+      "model": "assets/furniture/models/industrial_coffee_table.glb",
+      "thumbnail": "assets/furniture/thumbnails/industrial_coffee_table.png",
+      "size": {"width": 120, "depth": 65, "height": 45},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "现代"]
+    },
+    {
+      "id": "metal_office_desk",
+      "name": "金属办公桌",
+      "category": "table",
+      "model": "assets/furniture/models/metal_office_desk.glb",
+      "thumbnail": "assets/furniture/thumbnails/metal_office_desk.png",
+      "size": {"width": 140, "depth": 70, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "金属"]
+    },
+    {
+      "id": "metal_stool_01",
+      "name": "金属吧凳",
+      "category": "chair",
+      "model": "assets/furniture/models/metal_stool_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/metal_stool_01.png",
+      "size": {"width": 40, "depth": 40, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "金属"]
+    },
+    {
+      "id": "metal_stool_02",
+      "name": "金属高凳",
+      "category": "chair",
+      "model": "assets/furniture/models/metal_stool_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/metal_stool_02.png",
+      "size": {"width": 38, "depth": 38, "height": 65},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "金属"]
+    },
+    {
+      "id": "mid_century_lounge_chair",
+      "name": "中世纪休闲椅",
+      "category": "sofa",
+      "model": "assets/furniture/models/mid_century_lounge_chair.glb",
+      "thumbnail": "assets/furniture/thumbnails/mid_century_lounge_chair.png",
+      "size": {"width": 80, "depth": 85, "height": 85},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 5800,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "现代"]
+    },
+    {
+      "id": "modern_arm_chair_01",
+      "name": "现代扶手椅",
+      "category": "chair",
+      "model": "assets/furniture/models/modern_arm_chair_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/modern_arm_chair_01.png",
+      "size": {"width": 70, "depth": 75, "height": 88},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "现代"]
+    },
+    {
+      "id": "modern_coffee_table_01",
+      "name": "现代茶几",
+      "category": "table",
+      "model": "assets/furniture/models/modern_coffee_table_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/modern_coffee_table_01.png",
+      "size": {"width": 110, "depth": 60, "height": 40},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "现代"]
+    },
+    {
+      "id": "modern_coffee_table_02",
+      "name": "现代茶几 02",
+      "category": "table",
+      "model": "assets/furniture/models/modern_coffee_table_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/modern_coffee_table_02.png",
+      "size": {"width": 100, "depth": 100, "height": 38},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "现代"]
+    },
+    {
+      "id": "modern_wooden_cabinet",
+      "name": "现代木柜",
+      "category": "storage",
+      "model": "assets/furniture/models/modern_wooden_cabinet.glb",
+      "thumbnail": "assets/furniture/thumbnails/modern_wooden_cabinet.png",
+      "size": {"width": 90, "depth": 42, "height": 120},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "木质", "现代"]
+    },
+    {
+      "id": "modular_street_seating",
+      "name": "街头组合座椅",
+      "category": "chair",
+      "model": "assets/furniture/models/modular_street_seating.glb",
+      "thumbnail": "assets/furniture/thumbnails/modular_street_seating.png",
+      "size": {"width": 240, "depth": 60, "height": 45},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "户外"]
+    },
+    {
+      "id": "ornate_mirror_01",
+      "name": "装饰镜",
+      "category": "mirror",
+      "model": "assets/furniture/models/ornate_mirror_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/ornate_mirror_01.png",
+      "size": {"width": 60, "depth": 5, "height": 120},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 880,
+      "tags": ["PBR 贴图", "3D模型", "镜子", "复古"]
+    },
+    {
+      "id": "outdoor_table_chair_set_01",
+      "name": "户外桌椅套装",
+      "category": "chair",
+      "model": "assets/furniture/models/outdoor_table_chair_set_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/outdoor_table_chair_set_01.png",
+      "size": {"width": 150, "depth": 150, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "桌几", "户外"]
+    },
+    {
+      "id": "painted_wooden_bench",
+      "name": "漆面木长凳",
+      "category": "chair",
+      "model": "assets/furniture/models/painted_wooden_bench.glb",
+      "thumbnail": "assets/furniture/thumbnails/painted_wooden_bench.png",
+      "size": {"width": 120, "depth": 40, "height": 45},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "木质", "漆面"]
+    },
+    {
+      "id": "painted_wooden_cabinet",
+      "name": "漆面橱柜",
+      "category": "storage",
+      "model": "assets/furniture/models/painted_wooden_cabinet.glb",
+      "thumbnail": "assets/furniture/thumbnails/painted_wooden_cabinet.png",
+      "size": {"width": 100, "depth": 48, "height": 150},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "木质", "漆面"]
+    },
+    {
+      "id": "painted_wooden_cabinet_02",
+      "name": "漆面橱柜 02",
+      "category": "storage",
+      "model": "assets/furniture/models/painted_wooden_cabinet_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/painted_wooden_cabinet_02.png",
+      "size": {"width": 95, "depth": 45, "height": 140},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "木质", "漆面"]
+    },
+    {
+      "id": "painted_wooden_chair_01",
+      "name": "复古木椅",
+      "category": "chair",
+      "model": "assets/furniture/models/painted_wooden_chair_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/painted_wooden_chair_01.png",
+      "size": {"width": 48, "depth": 50, "height": 90},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "木质", "漆面"]
+    },
+    {
+      "id": "painted_wooden_chair_02",
+      "name": "复古木椅 02",
+      "category": "chair",
+      "model": "assets/furniture/models/painted_wooden_chair_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/painted_wooden_chair_02.png",
+      "size": {"width": 50, "depth": 52, "height": 88},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "木质", "漆面"]
+    },
+    {
+      "id": "painted_wooden_nightstand",
+      "name": "漆面床头柜",
+      "category": "bed",
+      "model": "assets/furniture/models/painted_wooden_nightstand.glb",
+      "thumbnail": "assets/furniture/thumbnails/painted_wooden_nightstand.png",
+      "size": {"width": 48, "depth": 38, "height": 55},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 6800,
+      "tags": ["PBR 贴图", "3D模型", "木质", "漆面"]
+    },
+    {
+      "id": "painted_wooden_shelves",
+      "name": "漆面架子",
+      "category": "storage",
+      "model": "assets/furniture/models/painted_wooden_shelves.glb",
+      "thumbnail": "assets/furniture/thumbnails/painted_wooden_shelves.png",
+      "size": {"width": 110, "depth": 32, "height": 160},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "木质", "漆面"]
+    },
+    {
+      "id": "painted_wooden_sofa",
+      "name": "复古木框布艺沙发",
+      "category": "sofa",
+      "model": "assets/furniture/models/painted_wooden_sofa.glb",
+      "thumbnail": "assets/furniture/thumbnails/painted_wooden_sofa.png",
+      "size": {"width": 190, "depth": 85, "height": 88},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 5800,
+      "tags": ["PBR 贴图", "3D模型", "沙发", "木质", "漆面"]
+    },
+    {
+      "id": "painted_wooden_stool",
+      "name": "漆面木凳",
+      "category": "chair",
+      "model": "assets/furniture/models/painted_wooden_stool.glb",
+      "thumbnail": "assets/furniture/thumbnails/painted_wooden_stool.png",
+      "size": {"width": 38, "depth": 38, "height": 48},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "木质", "漆面"]
+    },
+    {
+      "id": "painted_wooden_table",
+      "name": "漆面木桌",
+      "category": "table",
+      "model": "assets/furniture/models/painted_wooden_table.glb",
+      "thumbnail": "assets/furniture/thumbnails/painted_wooden_table.png",
+      "size": {"width": 160, "depth": 90, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "木质", "漆面"]
+    },
+    {
+      "id": "plastic_monobloc_chair_01",
+      "name": "塑料椅",
+      "category": "chair",
+      "model": "assets/furniture/models/plastic_monobloc_chair_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/plastic_monobloc_chair_01.png",
+      "size": {"width": 52, "depth": 55, "height": 82},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子"]
+    },
+    {
+      "id": "round_wooden_table_01",
+      "name": "圆桌",
+      "category": "table",
+      "model": "assets/furniture/models/round_wooden_table_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/round_wooden_table_01.png",
+      "size": {"width": 100, "depth": 100, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "木质"]
+    },
+    {
+      "id": "round_wooden_table_02",
+      "name": "圆桌 02",
+      "category": "table",
+      "model": "assets/furniture/models/round_wooden_table_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/round_wooden_table_02.png",
+      "size": {"width": 120, "depth": 120, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "木质"]
+    },
+    {
+      "id": "side_table_01",
+      "name": "边几",
+      "category": "table",
+      "model": "assets/furniture/models/side_table_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/side_table_01.png",
+      "size": {"width": 50, "depth": 50, "height": 55},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几"]
+    },
+    {
+      "id": "side_table_tall_01",
+      "name": "高边几",
+      "category": "table",
+      "model": "assets/furniture/models/side_table_tall_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/side_table_tall_01.png",
+      "size": {"width": 40, "depth": 40, "height": 65},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几"]
+    },
+    {
+      "id": "small_wooden_table_01",
+      "name": "小木桌",
+      "category": "table",
+      "model": "assets/furniture/models/small_wooden_table_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/small_wooden_table_01.png",
+      "size": {"width": 70, "depth": 70, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "木质"]
+    },
+    {
+      "id": "sofa_02",
+      "name": "现代皮革沙发",
+      "category": "sofa",
+      "model": "assets/furniture/models/sofa_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/sofa_02.png",
+      "size": {"width": 220, "depth": 95, "height": 80},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 5800,
+      "tags": ["PBR 贴图", "3D模型", "沙发"]
+    },
+    {
+      "id": "sofa_03",
+      "name": "现代布艺沙发",
+      "category": "sofa",
+      "model": "assets/furniture/models/sofa_03.glb",
+      "thumbnail": "assets/furniture/thumbnails/sofa_03.png",
+      "size": {"width": 215, "depth": 92, "height": 82},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 5800,
+      "tags": ["PBR 贴图", "3D模型", "沙发"]
+    },
+    {
+      "id": "steel_frame_shelves_01",
+      "name": "钢架置物架",
+      "category": "storage",
+      "model": "assets/furniture/models/steel_frame_shelves_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/steel_frame_shelves_01.png",
+      "size": {"width": 100, "depth": 35, "height": 180},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "金属"]
+    },
+    {
+      "id": "steel_frame_shelves_02",
+      "name": "钢架置物架 02",
+      "category": "storage",
+      "model": "assets/furniture/models/steel_frame_shelves_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/steel_frame_shelves_02.png",
+      "size": {"width": 120, "depth": 38, "height": 200},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "金属"]
+    },
+    {
+      "id": "steel_frame_shelves_03",
+      "name": "钢架置物架 03",
+      "category": "storage",
+      "model": "assets/furniture/models/steel_frame_shelves_03.glb",
+      "thumbnail": "assets/furniture/thumbnails/steel_frame_shelves_03.png",
+      "size": {"width": 90, "depth": 32, "height": 170},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "金属"]
+    },
+    {
+      "id": "stone_fire_pit",
+      "name": "石制火坑",
+      "category": "decor",
+      "model": "assets/furniture/models/stone_fire_pit.glb",
+      "thumbnail": "assets/furniture/thumbnails/stone_fire_pit.png",
+      "size": {"width": 100, "depth": 100, "height": 40},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1680,
+      "tags": ["PBR 贴图", "3D模型", "户外"]
+    },
+    {
+      "id": "vintage_cabinet_01",
+      "name": "复古柜",
+      "category": "storage",
+      "model": "assets/furniture/models/vintage_cabinet_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/vintage_cabinet_01.png",
+      "size": {"width": 85, "depth": 45, "height": 130},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "复古"]
+    },
+    {
+      "id": "vintage_wooden_drawer_01",
+      "name": "复古木抽屉",
+      "category": "storage",
+      "model": "assets/furniture/models/vintage_wooden_drawer_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/vintage_wooden_drawer_01.png",
+      "size": {"width": 75, "depth": 42, "height": 80},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "木质", "复古"]
+    },
+    {
+      "id": "wooden_bookshelf_worn",
+      "name": "复古书架",
+      "category": "storage",
+      "model": "assets/furniture/models/wooden_bookshelf_worn.glb",
+      "thumbnail": "assets/furniture/thumbnails/wooden_bookshelf_worn.png",
+      "size": {"width": 95, "depth": 35, "height": 190},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "木质"]
+    },
+    {
+      "id": "wooden_display_shelves_01",
+      "name": "展示架",
+      "category": "storage",
+      "model": "assets/furniture/models/wooden_display_shelves_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/wooden_display_shelves_01.png",
+      "size": {"width": 105, "depth": 32, "height": 175},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 3580,
+      "tags": ["PBR 贴图", "3D模型", "储物", "木质"]
+    },
+    {
+      "id": "wooden_picnic_table",
+      "name": "野餐桌",
+      "category": "table",
+      "model": "assets/furniture/models/wooden_picnic_table.glb",
+      "thumbnail": "assets/furniture/thumbnails/wooden_picnic_table.png",
+      "size": {"width": 180, "depth": 75, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "木质", "户外"]
+    },
+    {
+      "id": "wooden_stool_01",
+      "name": "木凳",
+      "category": "chair",
+      "model": "assets/furniture/models/wooden_stool_01.glb",
+      "thumbnail": "assets/furniture/thumbnails/wooden_stool_01.png",
+      "size": {"width": 35, "depth": 35, "height": 45},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "木质"]
+    },
+    {
+      "id": "wooden_stool_02",
+      "name": "木凳 02",
+      "category": "chair",
+      "model": "assets/furniture/models/wooden_stool_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/wooden_stool_02.png",
+      "size": {"width": 38, "depth": 38, "height": 50},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 1280,
+      "tags": ["PBR 贴图", "3D模型", "椅子", "木质"]
+    },
+    {
+      "id": "wooden_table_02",
+      "name": "木桌",
+      "category": "table",
+      "model": "assets/furniture/models/wooden_table_02.glb",
+      "thumbnail": "assets/furniture/thumbnails/wooden_table_02.png",
+      "size": {"width": 140, "depth": 80, "height": 75},
+      "anchor": {"x": 0.5, "y": 0.5},
+      "price": 2680,
+      "tags": ["PBR 贴图", "3D模型", "桌几", "木质"]
     }
   ]
 }

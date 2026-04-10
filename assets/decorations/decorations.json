@@ -8,9 +8,9 @@
       "model": "assets/decorations/models/Chandelier_01_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/Chandelier_01.png",
       "size": {
-        "width": 74.6,
-        "depth": 81.6,
-        "height": 79.8
+        "width": 75,
+        "depth": 82,
+        "height": 80
       }
     },
     {
@@ -20,9 +20,9 @@
       "model": "assets/decorations/models/Chandelier_03_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/Chandelier_03.png",
       "size": {
-        "width": 78.0,
-        "depth": 78.5,
-        "height": 104.1
+        "width": 78,
+        "depth": 79,
+        "height": 104
       }
     },
     {
@@ -32,9 +32,9 @@
       "model": "assets/decorations/models/antique_ceramic_vase_01_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/antique_ceramic_vase_01.png",
       "size": {
-        "width": 25.5,
-        "depth": 25.5,
-        "height": 44.0
+        "width": 26,
+        "depth": 26,
+        "height": 44
       }
     },
     {
@@ -44,9 +44,9 @@
       "model": "assets/decorations/models/book_encyclopedia_set_01_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/book_encyclopedia_set_01.png",
       "size": {
-        "width": 55.1,
-        "depth": 16.3,
-        "height": 23.7
+        "width": 55,
+        "depth": 16,
+        "height": 24
       }
     },
     {
@@ -56,9 +56,9 @@
       "model": "assets/decorations/models/brass_diya_lantern_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/brass_diya_lantern.png",
       "size": {
-        "width": 12.3,
-        "depth": 12.3,
-        "height": 38.1
+        "width": 12,
+        "depth": 12,
+        "height": 38
       }
     },
     {
@@ -68,9 +68,9 @@
       "model": "assets/decorations/models/brass_vase_01_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/brass_vase_01.png",
       "size": {
-        "width": 22.7,
-        "depth": 22.7,
-        "height": 69.2
+        "width": 23,
+        "depth": 23,
+        "height": 69
       }
     },
     {
@@ -80,9 +80,9 @@
       "model": "assets/decorations/models/brass_vase_02_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/brass_vase_02.png",
       "size": {
-        "width": 21.0,
-        "depth": 21.0,
-        "height": 52.9
+        "width": 21,
+        "depth": 21,
+        "height": 53
       }
     },
     {
@@ -92,9 +92,9 @@
       "model": "assets/decorations/models/brass_vase_03_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/brass_vase_03.png",
       "size": {
-        "width": 8.3,
-        "depth": 8.3,
-        "height": 20.0
+        "width": 8,
+        "depth": 8,
+        "height": 20
       }
     },
     {
@@ -104,9 +104,9 @@
       "model": "assets/decorations/models/bull_head_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/bull_head.png",
       "size": {
-        "width": 30.6,
-        "depth": 28.1,
-        "height": 43.3
+        "width": 31,
+        "depth": 28,
+        "height": 43
       }
     },
     {
@@ -116,9 +116,9 @@
       "model": "assets/decorations/models/carved_wooden_elephant_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/carved_wooden_elephant.png",
       "size": {
-        "width": 10.9,
-        "depth": 5.8,
-        "height": 9.6
+        "width": 11,
+        "depth": 6,
+        "height": 10
       }
     },
     {
@@ -128,9 +128,9 @@
       "model": "assets/decorations/models/carved_wooden_plate_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/carved_wooden_plate.png",
       "size": {
-        "width": 27.2,
-        "depth": 26.9,
-        "height": 3.8
+        "width": 27,
+        "depth": 5,
+        "height": 27
       }
     },
     {
@@ -225,7 +225,7 @@
       "thumbnail": "assets/decorations/thumbnails/fancy_picture_frame_01.png",
       "size": {
         "width": 60.3,
-        "depth": 2.0,
+        "depth": 5.0,
         "height": 46.4
       }
     },
@@ -261,7 +261,7 @@
       "thumbnail": "assets/decorations/thumbnails/hanging_picture_frame_01.png",
       "size": {
         "width": 59.4,
-        "depth": 1.6,
+        "depth": 5.0,
         "height": 84.1
       }
     },
@@ -393,7 +393,7 @@
       "thumbnail": "assets/decorations/thumbnails/ornate_mirror_01.png",
       "size": {
         "width": 48.6,
-        "depth": 2.6,
+        "depth": 5.0,
         "height": 74.4
       }
     },
@@ -416,9 +416,9 @@
       "model": "assets/decorations/models/potted_plant_01_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/potted_plant_01.png",
       "size": {
-        "width": 58.9,
-        "depth": 63.7,
-        "height": 135.1
+        "width": 25,
+        "depth": 25,
+        "height": 50
       }
     },
     {
@@ -428,9 +428,9 @@
       "model": "assets/decorations/models/potted_plant_02_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/potted_plant_02.png",
       "size": {
-        "width": 70.1,
-        "depth": 65.7,
-        "height": 84.1
+        "width": 28,
+        "depth": 28,
+        "height": 55
       }
     },
     {
@@ -478,7 +478,7 @@
       "size": {
         "width": 93.2,
         "depth": 17.6,
-        "height": 2.6
+        "height": 5.0
       }
     },
     {
@@ -500,9 +500,9 @@
       "model": "assets/decorations/models/vintage_grandfather_clock_01_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/vintage_grandfather_clock_01.png",
       "size": {
-        "width": 99.7,
-        "depth": 79.5,
-        "height": 219.1
+        "width": 50,
+        "depth": 35,
+        "height": 180
       }
     },
     {
@@ -512,9 +512,9 @@
       "model": "assets/decorations/models/vintage_oil_lamp_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/vintage_oil_lamp.png",
       "size": {
-        "width": 22.0,
-        "depth": 22.0,
-        "height": 80.2
+        "width": 15,
+        "depth": 15,
+        "height": 35
       }
     },
     {
@@ -536,9 +536,9 @@
       "model": "assets/decorations/models/wicker_basket_01_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/wicker_basket_01.png",
       "size": {
-        "width": 38.3,
-        "depth": 29.5,
-        "height": 11.7
+        "width": 40,
+        "depth": 40,
+        "height": 30
       }
     },
     {
@@ -548,9 +548,9 @@
       "model": "assets/decorations/models/wicker_basket_02_1k.glb",
       "thumbnail": "assets/decorations/thumbnails/wicker_basket_02.png",
       "size": {
-        "width": 37.5,
-        "depth": 27.1,
-        "height": 21.8
+        "width": 35,
+        "depth": 35,
+        "height": 25
       }
     },
     {
