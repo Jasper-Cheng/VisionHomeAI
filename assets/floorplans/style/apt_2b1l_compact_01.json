@@ -68,21 +68,21 @@
         }
       },
       "sceneLighting": {
-        "toneMappingExposure": 1.57,
+        "toneMappingExposure": 1.0,
         "ambient": {
-          "color": "#f3e8dd",
-          "intensity": 0.22
+          "color": "#ffffff",
+          "intensity": 0.26
         },
         "hemisphere": {
-          "sky": "#ebe2d8",
-          "ground": "#b8a99a",
-          "intensity": 0.34
+          "sky": "#dbeafe",
+          "ground": "#0b1220",
+          "intensity": 0.36
         },
         "directional": {
-          "color": "#faf4eb",
-          "intensity": 0.72
+          "color": "#ffffff",
+          "intensity": 1.0
         },
-        "envMapIntensity": 0.28
+        "envMapIntensity": 0.35
       },
       "materials": {
         "wall_bed1": {
@@ -465,21 +465,21 @@
       "id": "s_2",
       "name": "2",
       "sceneLighting": {
-        "toneMappingExposure": 1.57,
+        "toneMappingExposure": 1.0,
         "ambient": {
-          "color": "#f3e8dd",
-          "intensity": 0.22
+          "color": "#ffffff",
+          "intensity": 0.26
         },
         "hemisphere": {
-          "sky": "#ebe2d8",
-          "ground": "#b8a99a",
-          "intensity": 0.34
+          "sky": "#dbeafe",
+          "ground": "#0b1220",
+          "intensity": 0.36
         },
         "directional": {
-          "color": "#faf4eb",
-          "intensity": 0.72
+          "color": "#ffffff",
+          "intensity": 1.0
         },
-        "envMapIntensity": 0.28
+        "envMapIntensity": 0.35
       },
       "materials": {
         "wall_bed1": {

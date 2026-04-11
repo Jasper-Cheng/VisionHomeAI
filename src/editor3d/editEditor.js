@@ -58,7 +58,7 @@ const FLOORPLAN_SURFACE_COLOR = 0xc9c4be;
  * 户型风格包 `assets/floorplans/style/<floorplanId>.json` 中 `styles.<key>.sceneLighting` 可覆盖全局光照。
  */
 const DEFAULT_SCENE_LIGHTING = {
-  toneMappingExposure: 0.88,
+  toneMappingExposure: 1.0,
   ambient: { color: "#ffffff", intensity: 0.26 },
   hemisphere: { sky: "#dbeafe", ground: "#0b1220", intensity: 0.36 },
   directional: { color: "#ffffff", intensity: 1.0 },
@@ -6564,7 +6564,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function applyLightingFromSliders() {
-    const exposure = parseFloat(document.getElementById("svgLightingExposure")?.value ?? "0.88");
+    const exposure = parseFloat(document.getElementById("svgLightingExposure")?.value ?? "1.0");
     const ambient = parseFloat(document.getElementById("svgLightingAmbient")?.value ?? "0.26");
     const hemi = parseFloat(document.getElementById("svgLightingHemi")?.value ?? "0.36");
     const dir = parseFloat(document.getElementById("svgLightingDir")?.value ?? "1.0");
