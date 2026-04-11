@@ -410,6 +410,18 @@
                   <span class="bom-popup__total-price" id="bomPopupTotal">¥0.00</span>
                 </div>
               </div>
+              <!-- 空间利用率详情弹出列表 -->
+              <div id="spacePopup" class="space-popup" hidden role="dialog" aria-label="空间利用率详情">
+                <div class="space-popup__header">
+                  <span class="space-popup__title">空间利用率详情</span>
+                  <button class="space-popup__close" id="spacePopupClose" type="button" aria-label="关闭">✕</button>
+                </div>
+                <ul class="space-popup__list" id="spacePopupList"></ul>
+                <div class="space-popup__footer">
+                  <span class="space-popup__total-label">户型总面积</span>
+                  <span class="space-popup__total-area" id="spacePopupTotalArea">0 cm²</span>
+                </div>
+              </div>
               <div class="viewer-bottom-ui" aria-hidden="true">
                 <div class="bottom-ui-left" id="bottomUiBudgetTrigger" style="cursor:pointer" title="点击查看明细">
                   <span class="bottom-ui-icon" aria-hidden="true">🏠</span>
@@ -421,10 +433,10 @@
 
                 <div class="bottom-ui-divider" aria-hidden="true"></div>
 
-                <div class="bottom-ui-right">
+                <div class="bottom-ui-right" id="bottomUiSpaceTrigger" style="cursor:pointer" title="点击查看详情">
                   <span class="bottom-ui-check" aria-hidden="true">✓</span>
                   <div class="bottom-ui-text">
-                    <div class="bottom-ui-link">空间利用率</div>
+                    <div class="bottom-ui-link">空间利用率 <span id="spaceArrow" style="font-size:10px;opacity:0.6;">▲</span></div>
                     <div class="bottom-ui-rate">
                       <span class="bottom-ui-rate-percent" id="bottomUiRatePercent">0%</span>
                       <span class="bottom-ui-rate-level" id="bottomUiRateLevel">-</span>

@@ -3606,6 +3606,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
 
     refreshBomPopupIfOpen();
+    refreshSpacePopupIfOpen();
   }
 
   // ── 预算明细弹出窗 ────────────────────────────────────────────────
@@ -3751,6 +3752,157 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (popup?.hidden) openBomPopup();
   });
   document.getElementById("bomPopupClose")?.addEventListener("click", closeBomPopup);
+
+  // ── 空间利用率详情弹出窗 ───────────────────────────────────────────────
+  function setSpaceArrow(open) {
+    const arrow = document.getElementById("spaceArrow");
+    if (arrow) arrow.textContent = open ? "▼" : "▲";
+  }
+
+  /** 重填空间利用率详情列表（家具和装饰的尺寸、占用比例） */
+  function fillSpacePopupContent() {
+    const list = document.getElementById("spacePopupList");
+    const totalAreaEl = document.getElementById("spacePopupTotalArea");
+    if (!list) return;
+
+    list.replaceChildren();
+
+    // 计算户型总面积
+    let floorAreaCm2 = 0;
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    for (const fl of floors) {
+      for (const room of fl.rooms ?? []) {
+        const poly = room?.polygon;
+        if (!Array.isArray(poly) || poly.length < 3) continue;
+        let area = 0;
+        for (let i = 0; i < poly.length; i++) {
+          const [ax, ay] = poly[i];
+          const [bx, by] = poly[(i + 1) % poly.length];
+          area += ax * by - bx * ay;
+        }
+        floorAreaCm2 += Math.abs(area) / 2;
+      }
+    }
+
+    // 收集所有家具和装饰的面积信息
+    const items = [];
+    const decCatalog = window.__decorationCatalog;
+
+    furnitureRoot.children.forEach((g) => {
+      if (!g.userData?.isFurniture) return;
+      const modelType = g.userData.modelType;
+      const isDecoration = decCatalog?.byId instanceof Map && decCatalog.byId.has(modelType);
+
+      let name, hw, hh;
+      if (isDecoration) {
+        const decItem = decCatalog.byId.get(modelType);
+        name = decItem ? (decItem.name || modelType || "装饰") : (modelType || "装饰");
+        const fp = extractFurnitureFootprintCm(decItem);
+        hw = fp.hw;
+        hh = fp.hh;
+      } else {
+        const item = byId.get(modelType);
+        name = item ? getFurnitureDisplayName(item) : (modelType || "家具");
+        hw = g.userData.footprint?.hw ?? 0;
+        hh = g.userData.footprint?.hh ?? 0;
+      }
+
+      const areaCm2 = hw * hh * 4; // footprint 是半尺寸，乘 4 才是实际平方厘米
+      const pct = floorAreaCm2 > 0 ? (areaCm2 / floorAreaCm2) * 100 : 0;
+
+      items.push({ name, hw, hh, areaCm2, pct, isDecoration });
+    });
+
+    // 更新总面积显示
+    if (totalAreaEl) {
+      totalAreaEl.textContent = `${(floorAreaCm2 / 10000).toFixed(2)} m²`;
+    }
+
+    if (items.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "space-popup__item";
+      empty.style.justifyContent = "center";
+      empty.style.color = "rgba(255,255,255,0.35)";
+      empty.textContent = "暂无家具或装饰";
+      list.appendChild(empty);
+      return;
+    }
+
+    // 按面积降序排列
+    items.sort((a, b) => b.areaCm2 - a.areaCm2);
+
+    // 计算总家具/装饰面积用于显示占比
+    const totalItemsArea = items.reduce((sum, item) => sum + item.areaCm2, 0);
+
+    for (const { name, hw, hh, areaCm2, pct, isDecoration } of items) {
+      const li = document.createElement("li");
+      li.className = "space-popup__item";
+
+      const nameCol = document.createElement("div");
+      nameCol.className = "space-popup__item-name";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "space-popup__item-title";
+      titleEl.textContent = name;
+      nameCol.appendChild(titleEl);
+
+      const dimEl = document.createElement("div");
+      dimEl.className = "space-popup__item-dim";
+      dimEl.textContent = `${(hw * 2).toFixed(0)}×${(hh * 2).toFixed(0)} cm`;
+      nameCol.appendChild(dimEl);
+
+      const percentCol = document.createElement("div");
+      percentCol.className = "space-popup__item-percent";
+
+      const pctValue = document.createElement("div");
+      pctValue.className = "space-popup__item-percent-value";
+      pctValue.textContent = `${pct.toFixed(2)}%`;
+      percentCol.appendChild(pctValue);
+
+      const barWrap = document.createElement("div");
+      barWrap.className = "space-popup__item-percent-bar";
+      const barFill = document.createElement("div");
+      barFill.className = "space-popup__item-percent-bar-fill";
+      barFill.style.width = `${Math.min(100, pct * 5)}%`; // 放大显示
+      barWrap.appendChild(barFill);
+      percentCol.appendChild(barWrap);
+
+      li.appendChild(nameCol);
+      li.appendChild(percentCol);
+      list.appendChild(li);
+    }
+  }
+
+  function refreshSpacePopupIfOpen() {
+    const popup = document.getElementById("spacePopup");
+    if (!popup || popup.hidden) return;
+    fillSpacePopupContent();
+  }
+
+  function openSpacePopup() {
+    const popup = document.getElementById("spacePopup");
+    if (!popup) return;
+    fillSpacePopupContent();
+    popup.hidden = false;
+    setSpaceArrow(true);
+    closeBomPopup(); // 确保预算弹窗关闭
+  }
+
+  function closeSpacePopup() {
+    const popup = document.getElementById("spacePopup");
+    if (popup) popup.hidden = true;
+    setSpaceArrow(false);
+  }
+
+  // 点击空间利用率区域打开详情弹窗
+  document.getElementById("bottomUiSpaceTrigger")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const popup = document.getElementById("spacePopup");
+    if (popup?.hidden) openSpacePopup();
+    else closeSpacePopup();
+  });
+
+  document.getElementById("spacePopupClose")?.addEventListener("click", closeSpacePopup);
 
   function updateFurnitureFloorVisibility() {
     const hasFloor = Boolean(activeFloorId);

@@ -1347,6 +1347,152 @@ a.avatar:hover {
   color: #a78bfa;
 }
 
+/* 空间利用率详情弹出列表 */
+.space-popup {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 70px;
+  width: 320px;
+  background: rgba(18, 18, 18, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.space-popup[hidden] { display: none; }
+
+.space-popup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+.space-popup__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+}
+
+.space-popup__close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.45);
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  cursor: pointer;
+}
+.space-popup__close:hover { color: #fff; }
+
+.space-popup__list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.space-popup__list::-webkit-scrollbar {
+  width: 4px;
+}
+.space-popup__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.space-popup__list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+}
+
+.space-popup__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 14px;
+  color: rgba(200,200,220,0.85);
+  gap: 10px;
+}
+.space-popup__item:hover { background: rgba(255,255,255,0.05); }
+
+.space-popup__item-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.space-popup__item-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba(200, 200, 220, 0.88);
+  font-size: 12px;
+}
+
+.space-popup__item-dim {
+  font-size: 11px;
+  color: rgba(180, 180, 200, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+.space-popup__item-percent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.space-popup__item-percent-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(167, 243, 208, 0.98);
+  font-variant-numeric: tabular-nums;
+}
+
+.space-popup__item-percent-bar {
+  width: 60px;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.space-popup__item-percent-bar-fill {
+  height: 100%;
+  background: rgba(167, 243, 208, 0.7);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.space-popup__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+.space-popup__total-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+}
+
+.space-popup__total-area {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(200, 215, 255, 0.98);
+  font-variant-numeric: tabular-nums;
+}
+
 .viewer-bottom-ui {
   position: absolute;
   left: 50%;
@@ -1430,6 +1576,8 @@ a.avatar:hover {
   justify-content: flex-start;
   gap: 10px;
   min-width: 0;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .bottom-ui-check {
