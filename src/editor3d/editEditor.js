@@ -3534,6 +3534,26 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return base + (Number.isFinite(m) ? m : 0);
   }
 
+  /** 计算户型总建筑面积（平方厘米） */
+  function calcFloorAreaCm2() {
+    let floorAreaCm2 = 0;
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    for (const fl of floors) {
+      for (const room of fl.rooms ?? []) {
+        const poly = room?.polygon;
+        if (!Array.isArray(poly) || poly.length < 3) continue;
+        let area = 0;
+        for (let i = 0; i < poly.length; i++) {
+          const [ax, ay] = poly[i];
+          const [bx, by] = poly[(i + 1) % poly.length];
+          area += ax * by - bx * ay;
+        }
+        floorAreaCm2 += Math.abs(area) / 2;
+      }
+    }
+    return floorAreaCm2;
+  }
+
   function updateBottomUI() {
     const priceEl   = document.getElementById("bottomUiPrice");
     const pctEl     = document.getElementById("bottomUiRatePercent");
@@ -3573,21 +3593,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
 
     // 2. 空间利用率 = 家具总面积 / 户型总房间面积
-    let floorAreaCm2 = 0;
-    const floors = getFloorsFromEntry(currentFloorplanEntry);
-    for (const fl of floors) {
-      for (const room of fl.rooms ?? []) {
-        const poly = room?.polygon;
-        if (!Array.isArray(poly) || poly.length < 3) continue;
-        let area = 0;
-        for (let i = 0; i < poly.length; i++) {
-          const [ax, ay] = poly[i];
-          const [bx, by] = poly[(i + 1) % poly.length];
-          area += ax * by - bx * ay;
-        }
-        floorAreaCm2 += Math.abs(area) / 2;
-      }
-    }
+    const floorAreaCm2 = calcFloorAreaCm2();
 
     if (pctEl || levelEl) {
       const pct = floorAreaCm2 > 0 ? Math.min(100, Math.round((furnitureAreaCm2 / floorAreaCm2) * 100)) : 0;
@@ -3768,21 +3774,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     list.replaceChildren();
 
     // 计算户型总面积
-    let floorAreaCm2 = 0;
-    const floors = getFloorsFromEntry(currentFloorplanEntry);
-    for (const fl of floors) {
-      for (const room of fl.rooms ?? []) {
-        const poly = room?.polygon;
-        if (!Array.isArray(poly) || poly.length < 3) continue;
-        let area = 0;
-        for (let i = 0; i < poly.length; i++) {
-          const [ax, ay] = poly[i];
-          const [bx, by] = poly[(i + 1) % poly.length];
-          area += ax * by - bx * ay;
-        }
-        floorAreaCm2 += Math.abs(area) / 2;
-      }
-    }
+    const floorAreaCm2 = calcFloorAreaCm2();
 
     // 收集所有家具和装饰的面积信息
     const items = [];
@@ -3831,9 +3823,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 按面积降序排列
     items.sort((a, b) => b.areaCm2 - a.areaCm2);
 
-    // 计算总家具/装饰面积用于显示占比
-    const totalItemsArea = items.reduce((sum, item) => sum + item.areaCm2, 0);
-
     for (const { name, hw, hh, areaCm2, pct, isDecoration } of items) {
       const li = document.createElement("li");
       li.className = "space-popup__item";
@@ -3848,7 +3837,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
       const dimEl = document.createElement("div");
       dimEl.className = "space-popup__item-dim";
-      dimEl.textContent = `${(hw * 2).toFixed(0)}×${(hh * 2).toFixed(0)} cm`;
+      dimEl.textContent = `${(hw * 2).toFixed(0)}×${(hh * 2).toFixed(0)} cm  |  ${(areaCm2 / 10000).toFixed(4)} m²`;
       nameCol.appendChild(dimEl);
 
       const percentCol = document.createElement("div");
@@ -3858,14 +3847,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       pctValue.className = "space-popup__item-percent-value";
       pctValue.textContent = `${pct.toFixed(2)}%`;
       percentCol.appendChild(pctValue);
-
-      const barWrap = document.createElement("div");
-      barWrap.className = "space-popup__item-percent-bar";
-      const barFill = document.createElement("div");
-      barFill.className = "space-popup__item-percent-bar-fill";
-      barFill.style.width = `${Math.min(100, pct * 5)}%`; // 放大显示
-      barWrap.appendChild(barFill);
-      percentCol.appendChild(barWrap);
 
       li.appendChild(nameCol);
       li.appendChild(percentCol);

@@ -1443,6 +1443,12 @@ a.avatar:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.space-popup__item-area {
+  font-size: 10px;
+  color: rgba(167, 243, 208, 0.75);
+  font-variant-numeric: tabular-nums;
+}
+
 .space-popup__item-percent {
   display: flex;
   flex-direction: column;
