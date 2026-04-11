@@ -393,7 +393,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     logarithmicDepthBuffer: true,
   });
   /** 户型/家具视图抗锯齿：MSAA + 较高 DPR 上限（过高会明显吃 GPU） */
-  const PIXEL_RATIO_CAP = 2;
+  const PIXEL_RATIO_CAP = 2.5;
   function applyRendererPixelRatio() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO_CAP));
   }
@@ -437,7 +437,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   dirLight.shadow.mapSize.set(2048, 2048);
   dirLight.shadow.bias = 0.00015;
   dirLight.shadow.normalBias = 0.045;
-  dirLight.shadow.radius = 3;
+  dirLight.shadow.radius = 6;
   dirLight.shadow.camera.near = 0.1;
   dirLight.shadow.camera.far = 500;
   dirLight.shadow.camera.left = -40;
@@ -467,6 +467,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /** 方向光阴影开关（与工具栏「光影」同步） */
   let shadowsEnabled = true;
 
+  /** 阴影拟合缓存：场景物体变化时标记为脏 */
+  let shadowCacheDirty = true;
+  const shadowCachedBbox = new THREE.Box3();
+
   const floorplanRoot = new THREE.Group();
   scene.add(floorplanRoot);
   const furnitureRoot = new THREE.Group();
@@ -485,14 +489,21 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /** 将方向光正交阴影范围收紧到户型+家具包围盒（光照空间），避免 ±80m 浪费 texel 导致边缘锯齿 */
   function fitDirectionalShadowFrustum() {
     if (!shadowsEnabled) return;
-    shadowSceneBbox.makeEmpty();
-    if (floorplanRoot.children.length) shadowSceneBbox.expandByObject(floorplanRoot);
-    if (furnitureRoot.children.length) {
-      const b2 = new THREE.Box3().setFromObject(furnitureRoot);
-      if (shadowSceneBbox.isEmpty()) shadowSceneBbox.copy(b2);
-      else shadowSceneBbox.union(b2);
+
+    // 缓存：只在场景物体变化时重算包围盒
+    if (shadowCacheDirty) {
+      shadowCachedBbox.makeEmpty();
+      if (floorplanRoot.children.length) shadowCachedBbox.expandByObject(floorplanRoot);
+      if (furnitureRoot.children.length) {
+        const b2 = new THREE.Box3().setFromObject(furnitureRoot);
+        if (shadowCachedBbox.isEmpty()) shadowCachedBbox.copy(b2);
+        else shadowCachedBbox.union(b2);
+      }
+      shadowCacheDirty = false;
     }
-    if (shadowSceneBbox.isEmpty()) return;
+
+    if (shadowCachedBbox.isEmpty()) return;
+    shadowSceneBbox.copy(shadowCachedBbox);
 
     const cam = dirLight.shadow.camera;
     shadowFitCam.position.copy(dirLight.position);
@@ -3490,6 +3501,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     group.userData.decorationLiftM = clampDecorationLiftMForGroup(group, liftM);
     furnitureRoot.add(group);
     registerFurnitureMeshes(group);
+    shadowCacheDirty = true;
     return group;
   }
 
@@ -3501,6 +3513,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         disposeObject3D(ch);
       }
     });
+    shadowCacheDirty = true;
     for (const row of layout) {
       await appendFurnitureItem(row.model, row.x, row.y, row.rotation ?? 0, row.floorId ?? null, {
         wallSnap: false,
@@ -4948,6 +4961,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     unregisterFurnitureGroup(selectedGroup);
     furnitureRoot.remove(selectedGroup);
     disposeObject3D(selectedGroup);
+    shadowCacheDirty = true;
     selectedGroup = null;
     syncPropertiesPanelForSelection(null);
     updateBottomUI();
