@@ -5075,6 +5075,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const adjY = cm.y - (dragState.offsetCm?.y ?? 0);
     const c = clampFurnitureCentered(adjX, adjY, rot, fp.hw, fp.hh);
     setFurnitureFromLayoutCm(g, c.x, c.y, rot, { wallSnap: wallSnapEnabled });
+    selectionBoxHelper?.update();
     syncPropertiesPanelForSelection(g);
   }
 
@@ -5161,6 +5162,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const fp = fur.userData.footprint;
     const c = clampFurnitureCentered(cm.x, cm.y, r, fp.hw, fp.hh);
     setFurnitureFromLayoutCm(fur, c.x, c.y, r, { wallSnap: wallSnapEnabled });
+    selectionBoxHelper?.update();
     syncPropertiesPanelForSelection(fur);
     if (historyReady) pushHistorySnapshot();
   });
@@ -5194,6 +5196,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const fp = selectedGroup.userData.footprint;
         const c = clampFurnitureCentered(cm.x + dx, cm.y + dy, rot, fp.hw, fp.hh);
         setFurnitureFromLayoutCm(selectedGroup, c.x, c.y, rot, { wallSnap: wallSnapEnabled });
+        selectionBoxHelper?.update();
         syncPropertiesPanelForSelection(selectedGroup);
         schedulePushHistory();
         return;
