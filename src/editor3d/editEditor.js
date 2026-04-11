@@ -393,7 +393,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     logarithmicDepthBuffer: true,
   });
   /** 户型/家具视图抗锯齿：MSAA + 较高 DPR 上限（过高会明显吃 GPU） */
-  const PIXEL_RATIO_CAP = 2.5;
+  const PIXEL_RATIO_CAP = 2;
   function applyRendererPixelRatio() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO_CAP));
   }
@@ -437,7 +437,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   dirLight.shadow.mapSize.set(2048, 2048);
   dirLight.shadow.bias = 0.00015;
   dirLight.shadow.normalBias = 0.045;
-  dirLight.shadow.radius = 6;
+  dirLight.shadow.radius = 3;
   dirLight.shadow.camera.near = 0.1;
   dirLight.shadow.camera.far = 500;
   dirLight.shadow.camera.left = -40;

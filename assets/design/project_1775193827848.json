@@ -4,85 +4,221 @@
   "name": "阿斯顿",
   "description": "",
   "createdAt": "2026-04-03T05:23:47.848Z",
-  "updatedAt": "2026-04-03T06:16:28.744Z",
+  "updatedAt": "2026-04-11T06:34:15.218Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
   "furnitureInstances": [
     {
       "instanceId": "fi_1",
-      "furnitureId": "sofa_01",
+      "furnitureId": "sofa_02",
       "floorId": "floor1",
       "positionCm": [
-        -400,
-        -14
+        -401,
+        142
       ],
       "rotationDeg": 0
     },
     {
       "instanceId": "fi_2",
-      "furnitureId": "sofa_02",
+      "furnitureId": "ClassicNightstand_01",
       "floorId": "floor1",
       "positionCm": [
-        -152,
-        -13
+        -402,
+        -52
       ],
       "rotationDeg": 0
     },
     {
       "instanceId": "fi_3",
-      "furnitureId": "table_01",
+      "furnitureId": "GothicBed_01",
       "floorId": "floor1",
       "positionCm": [
-        -424,
-        487
+        -275,
+        -402
       ],
-      "rotationDeg": 180
+      "rotationDeg": 0
     },
     {
       "instanceId": "fi_4",
-      "furnitureId": "table_03",
+      "furnitureId": "sofa_02",
       "floorId": "floor1",
       "positionCm": [
-        -205,
-        237
+        -253,
+        -4
       ],
-      "rotationDeg": 90
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_5",
+      "furnitureId": "ArmChair_01",
+      "floorId": "floor1",
+      "positionCm": [
+        181,
+        280
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_6",
+      "furnitureId": "ClassicConsole_01",
+      "floorId": "floor1",
+      "positionCm": [
+        9,
+        298
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_7",
+      "furnitureId": "ArmChair_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -131,
+        345
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_8",
+      "furnitureId": "WoodenTable_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -328,
+        390
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_9",
+      "furnitureId": "SchoolChair_01",
+      "floorId": "floor1",
+      "positionCm": [
+        347,
+        -267
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_10",
+      "furnitureId": "potted_plant_02",
+      "floorId": "floor1",
+      "positionCm": [
+        293,
+        -363
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_11",
+      "furnitureId": "Chandelier_03",
+      "floorId": "floor1",
+      "positionCm": [
+        263,
+        -25
+      ],
+      "rotationDeg": 0
     }
   ],
   "svgEditor": {
     "version": 1,
     "floorPlanId": "apt_2b1l_compact_01",
     "floorLevelIndex": 0,
+    "floorplanStyleKey": "s_2",
     "furniture": [
       {
-        "model": "sofa_01",
+        "model": "sofa_02",
         "floorId": "floor1",
-        "x": -400,
-        "y": -14,
+        "x": -401,
+        "y": 142,
+        "rotation": 0
+      },
+      {
+        "model": "ClassicNightstand_01",
+        "floorId": "floor1",
+        "x": -402,
+        "y": -52,
+        "rotation": 0
+      },
+      {
+        "model": "GothicBed_01",
+        "floorId": "floor1",
+        "x": -275,
+        "y": -402,
         "rotation": 0
       },
       {
         "model": "sofa_02",
         "floorId": "floor1",
-        "x": -152,
-        "y": -13,
+        "x": -253,
+        "y": -4,
         "rotation": 0
       },
       {
-        "model": "table_01",
+        "model": "ArmChair_01",
         "floorId": "floor1",
-        "x": -424,
-        "y": 487,
-        "rotation": 180
+        "x": 181,
+        "y": 280,
+        "rotation": 0
       },
       {
-        "model": "table_03",
+        "model": "ClassicConsole_01",
         "floorId": "floor1",
-        "x": -205,
-        "y": 237,
-        "rotation": 90
+        "x": 9,
+        "y": 298,
+        "rotation": 0
+      },
+      {
+        "model": "ArmChair_01",
+        "floorId": "floor1",
+        "x": -131,
+        "y": 345,
+        "rotation": 0
+      },
+      {
+        "model": "WoodenTable_01",
+        "floorId": "floor1",
+        "x": -328,
+        "y": 390,
+        "rotation": 0
+      },
+      {
+        "model": "SchoolChair_01",
+        "floorId": "floor1",
+        "x": 347,
+        "y": -267,
+        "rotation": 0
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": 293,
+        "y": -363,
+        "rotation": 0
+      },
+      {
+        "model": "Chandelier_03",
+        "floorId": "floor1",
+        "x": 263,
+        "y": -25,
+        "rotation": 0
       }
-    ]
+    ],
+    "surfaceOverrides": {
+      "s_2": {}
+    },
+    "lightingConfig": {
+      "toneMappingExposure": 1,
+      "ambient": {
+        "intensity": 0.26
+      },
+      "hemisphere": {
+        "intensity": 0.36
+      },
+      "directional": {
+        "intensity": 1
+      },
+      "envMapIntensity": 0.35
+    }
   }
 }

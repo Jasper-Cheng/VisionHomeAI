@@ -20,7 +20,7 @@ import {
   camera.position.set(7, 7, 9);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  const PIXEL_RATIO_CAP = 2.5;
+  const PIXEL_RATIO_CAP = 2;
   function applyRendererPixelRatio() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO_CAP));
   }
