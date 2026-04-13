@@ -4750,6 +4750,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return null;
     }
 
+    // 获取楼层名称的辅助函数
+    function getFloorName(floorLevelId) {
+      if (!floorLevelId) return null;
+      const floors = getFloorsFromEntry(currentFloorplanEntry);
+      for (const fl of floors) {
+        if (String(fl?.id ?? "").trim() === floorLevelId) {
+          return fl?.name || floorLevelId;
+        }
+      }
+      return floorLevelId;
+    }
+
+    const currentFloorName = getFloorName(sel.floorLevelId);
+
     if (propertiesName) {
       if (hasMultiSelect) {
         // 多选时显示房间名称列表
@@ -4764,26 +4778,27 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
     }
     if (propSurfaceTitle) {
+      const floorLabel = currentFloorName || sel.floorLevelId;
       if (hasMultiSelect) {
-        propSurfaceTitle.textContent = `地面属性（${selectedRoomIds.length} 个房间）`;
+        propSurfaceTitle.textContent = `地面属性（${selectedRoomIds.length} 个房间） · ${floorLabel}`;
       } else if (isFloor && sel.roomId) {
         const roomName = getRoomName(sel.roomId, sel.floorLevelId);
-        propSurfaceTitle.textContent = roomName ? `${roomName} 地面属性` : "地面属性";
+        propSurfaceTitle.textContent = roomName ? `${roomName} 地面属性 · ${floorLabel}` : `地面属性 · ${floorLabel}`;
       } else {
         propSurfaceTitle.textContent = isFloor
-          ? "地面属性（本层所有房间）"
+          ? `地面属性（本层所有房间） · ${floorLabel}`
           : isDoor
-            ? "门属性（本层全部门洞）"
+            ? `门属性（本层全部门洞） · ${floorLabel}`
             : isWin
-              ? "窗户属性（本层全部窗洞玻璃）"
-              : "墙体属性（本层全部墙）";
+              ? `窗户属性（本层全部窗洞玻璃） · ${floorLabel}`
+              : `墙体属性（本层全部墙） · ${floorLabel}`;
       }
     }
     if (propSurfaceIdHint) {
       if (hasMultiSelect) {
         propSurfaceIdHint.textContent = `已选中 ${selectedRoomIds.length} 个房间地板 · 修改将应用于所有选中房间`;
       } else {
-        propSurfaceIdHint.textContent = `本层楼层 id：${sel.floorLevelId || "—"} · 修改将应用于该层全部${isFloor ? "地面" : isDoor ? "门洞填充" : isWin ? "窗洞玻璃" : "墙体"}`;
+        propSurfaceIdHint.textContent = `修改将应用于该层全部${isFloor ? "地面" : isDoor ? "门洞填充" : isWin ? "窗洞玻璃" : "墙体"}`;
       }
     }
 
