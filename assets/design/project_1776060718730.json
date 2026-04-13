@@ -1,0 +1,160 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1776060718730",
+  "name": "d",
+  "description": "",
+  "createdAt": "2026-04-13T06:11:58.730Z",
+  "updatedAt": "2026-04-13T06:11:58.730Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "Chandelier_03",
+      "floorId": "floor1",
+      "positionCm": [
+        -172,
+        253
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "floorplanStyleKey": "s_1",
+    "furniture": [
+      {
+        "model": "Chandelier_03",
+        "floorId": "floor1",
+        "x": -172,
+        "y": 253,
+        "rotation": 0
+      }
+    ],
+    "surfaceOverrides": {
+      "s_1": {
+        "roomFloors": {
+          "floor1": {
+            "r_kitchen": {
+              "color": "#e8dcc8",
+              "materialId": "baked_floor1_allFloors",
+              "roughness": 0.35,
+              "metalness": 0,
+              "uvScale": [
+                0.15,
+                0.15
+              ],
+              "textureRotation": 90,
+              "textureAlbedo": "brick_crosswalk_diff.jpg"
+            },
+            "r_living": {
+              "color": "#f3e2c6",
+              "materialId": "baked_floor1_allFloors",
+              "roughness": 0.35,
+              "metalness": 0,
+              "uvScale": [
+                0.15,
+                0.15
+              ],
+              "textureRotation": 90,
+              "textureAlbedo": "brick_wall_04_diff.jpg"
+            },
+            "r_bath": {
+              "color": "#e8dcc8",
+              "materialId": "baked_floor1_allFloors",
+              "roughness": 0.35,
+              "metalness": 0,
+              "uvScale": [
+                0.15,
+                0.15
+              ],
+              "textureRotation": 90,
+              "textureAlbedo": "clean_asphalt_diff.jpg"
+            },
+            "r_living_co": {
+              "color": "#e8dcc8",
+              "materialId": "baked_floor1_allFloors",
+              "roughness": 0.35,
+              "metalness": 0,
+              "uvScale": [
+                0.15,
+                0.15
+              ],
+              "textureRotation": 90,
+              "textureAlbedo": "beige_wall_001_diff.jpg"
+            },
+            "r_bed2": {
+              "color": "#e8dcc8",
+              "materialId": "baked_floor1_allFloors",
+              "roughness": 0.35,
+              "metalness": 0,
+              "uvScale": [
+                0.15,
+                0.15
+              ],
+              "textureRotation": 90,
+              "textureAlbedo": "blue_metal_plate_diff.jpg"
+            },
+            "r_bed1": {
+              "color": "#e8dcc8",
+              "materialId": "baked_floor1_allFloors",
+              "roughness": 0.35,
+              "metalness": 0,
+              "uvScale": [
+                0.15,
+                0.15
+              ],
+              "textureRotation": 90,
+              "textureAlbedo": "brick_wall_006_diff.jpg"
+            }
+          }
+        },
+        "doorOverrides": {
+          "floor1": {
+            "d_main": {
+              "color": "#decaab",
+              "materialId": "door_main",
+              "roughness": 0.8,
+              "metalness": 0.02,
+              "uvScale": [
+                1,
+                1
+              ],
+              "textureRotation": 0,
+              "textureAlbedo": "brick_crosswalk_diff.jpg"
+            },
+            "d_bath": {
+              "color": "#e8dcc8",
+              "materialId": "door_main",
+              "roughness": 0.8,
+              "metalness": 0.02,
+              "uvScale": [
+                1,
+                1
+              ],
+              "textureRotation": 0,
+              "textureAlbedo": "brick_wall_006_diff.jpg"
+            }
+          }
+        },
+        "windowOverrides": {}
+      }
+    },
+    "lightingConfig": {
+      "toneMappingExposure": 1,
+      "ambient": {
+        "intensity": 0.26
+      },
+      "hemisphere": {
+        "intensity": 0.36
+      },
+      "directional": {
+        "intensity": 1
+      },
+      "envMapIntensity": 0.35
+    }
+  }
+}

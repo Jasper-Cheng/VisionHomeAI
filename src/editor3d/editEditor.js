@@ -5585,10 +5585,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function serializeDesignBaseline() {
+    const getSurf = window.svgEditorGetSurfaceOverrides;
+    const surfaceOverrides = typeof getSurf === "function" ? getSurf() : null;
     return JSON.stringify({
       furniture: getLayout(),
       floorPlanId: getCurrentFloorplanId(),
       floorLevelIndex: getCurrentFloorLevelIndex(),
+      surfaceOverrides: surfaceOverrides,
     });
   }
 
@@ -7539,15 +7542,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       setStyleToolbarButtonLabel(deduped);
     }
 
-    dropdown.addEventListener("click", (e) => {
-      const tag = e.target.closest(".svg-style-tag");
-      if (!tag) return;
-      const key = String(tag.dataset.styleKey ?? "").trim();
-      if (!key || !currentFloorplanEntry) return;
-      const prevKey = getEffectiveFloorplanStyleKey();
+    function hasUnsavedChanges() {
+      // 检查是否有未保存的更改（不要求必须有家具）
+      const cur = serializeDesignBaseline();
+      const baseline = window.__designLayoutBaseline;
+      return baseline !== undefined && cur !== baseline;
+    }
+
+    async function executeStyleSwitch(key, tag) {
       floorplanStyleKeyOverride = key;
 
-      // 切换风格：未保存的墙/地/门窗“面板覆盖”不应保留，也不应在切回时复现。
+      // 切换风格：未保存的墙/地/门窗"面板覆盖"不应保留，也不应在切回时复现。
       // 这里直接清空所有风格的 overrides，保证任何风格切换都会回到该风格 JSON 的默认状态。
       floorplanSurfaceOverridesByStyleKey = {};
       roomFloorOverridesByStyleKey = {};
@@ -7565,7 +7570,43 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         btn.title = tip;
         btn.setAttribute("aria-label", tip);
       }
-      void rebuildFloorplan3D({ applyDecorFromStyle: true }).then(() => pushHistorySnapshot());
+      await rebuildFloorplan3D({ applyDecorFromStyle: true });
+      pushHistorySnapshot();
+      // 更新 baseline，避免下次切换时再次提示
+      window.__designLayoutBaseline = serializeDesignBaseline();
+    }
+
+    dropdown.addEventListener("click", (e) => {
+      const tag = e.target.closest(".svg-style-tag");
+      if (!tag) return;
+      const key = String(tag.dataset.styleKey ?? "").trim();
+      if (!key || !currentFloorplanEntry) return;
+      const prevKey = getEffectiveFloorplanStyleKey();
+      
+      // 如果点击的是当前风格，不做任何操作
+      if (key === prevKey) {
+        closeDropdown();
+        return;
+      }
+      
+      // 检查是否有未保存的更改
+      if (hasUnsavedChanges()) {
+        // 有未保存的更改，显示确认对话框
+        const switchStyleDialog = document.getElementById("switchStyleUnsavedDialog");
+        if (switchStyleDialog) {
+          window.__pendingStyleSwitch = { key, tag };
+          if (typeof switchStyleDialog.showModal === "function") {
+            switchStyleDialog.showModal();
+          } else {
+            switchStyleDialog.setAttribute("open", "");
+          }
+          closeDropdown();
+          return;
+        }
+      }
+      
+      // 没有未保存的更改，直接切换
+      void executeStyleSwitch(key, tag);
       closeDropdown();
     });
 
@@ -7573,6 +7614,69 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       void refreshStyleDropdown();
     });
     void refreshStyleDropdown();
+    
+    // 处理风格切换确认对话框
+    const switchStyleDialog = document.getElementById("switchStyleUnsavedDialog");
+    const switchStyleCancelBtn = document.getElementById("switchStyleUnsavedCancel");
+    const switchStyleDiscardBtn = document.getElementById("switchStyleUnsavedDiscard");
+    const switchStyleSaveBtn = document.getElementById("switchStyleUnsavedSave");
+    
+    function closeSwitchStyleDialog() {
+      if (switchStyleDialog && typeof switchStyleDialog.close === "function") {
+        switchStyleDialog.close();
+      } else if (switchStyleDialog) {
+        switchStyleDialog.removeAttribute("open");
+      }
+    }
+    
+    switchStyleCancelBtn?.addEventListener("click", () => {
+      window.__pendingStyleSwitch = null;
+      closeSwitchStyleDialog();
+    });
+    
+    switchStyleDialog?.addEventListener("cancel", () => {
+      window.__pendingStyleSwitch = null;
+    });
+    
+    switchStyleDiscardBtn?.addEventListener("click", () => {
+      const pending = window.__pendingStyleSwitch;
+      window.__pendingStyleSwitch = null;
+      closeSwitchStyleDialog();
+      if (pending) {
+        void executeStyleSwitch(pending.key, pending.tag);
+      }
+    });
+    
+    switchStyleSaveBtn?.addEventListener("click", async () => {
+      const pending = window.__pendingStyleSwitch;
+      if (!pending) return;
+      closeSwitchStyleDialog();
+      
+      // 先保存
+      const hasResolvedName = Boolean(String(window.__activeDesignProject?.name ?? "").trim());
+      if (hasResolvedName) {
+        const executeSave = window.executeSaveWithName;
+        if (typeof executeSave === "function") {
+          await executeSave(String(window.__activeDesignProject?.name ?? "").trim());
+        }
+      } else {
+        window.dispatchEvent(new CustomEvent("visionhome:open-save-design"));
+        // 等待保存完成后再切换风格
+        const checkSaved = setInterval(() => {
+          const canSave = typeof window.canSaveCurrentDesign === "function" ? window.canSaveCurrentDesign() : false;
+          if (!canSave) {
+            clearInterval(checkSaved);
+            void executeStyleSwitch(pending.key, pending.tag);
+            window.__pendingStyleSwitch = null;
+          }
+        }, 500);
+        return;
+      }
+      
+      // 保存完成后切换风格
+      await executeStyleSwitch(pending.key, pending.tag);
+      window.__pendingStyleSwitch = null;
+    });
   }
 
   initFloorplanStyleToolbar();
@@ -7718,7 +7822,25 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorGetUndoHistory = () => ({ entries: [...history], index: historyIndex });
   window.svgEditorFlushHistoryDebounce = flushHistoryDebounce;
   // 新版：返回“按 styleKey 分桶”的覆盖（兼容多风格切换互不污染）
-  window.svgEditorGetSurfaceOverrides = () => JSON.parse(JSON.stringify(floorplanSurfaceOverridesByStyleKey));
+  window.svgEditorGetSurfaceOverrides = () => {
+    // 返回所有风格键的覆盖数据，用于保存和比较
+    const result = {};
+    const allKeys = new Set([
+      ...Object.keys(floorplanSurfaceOverridesByStyleKey),
+      ...Object.keys(roomFloorOverridesByStyleKey),
+      ...Object.keys(doorOverridesByStyleKey),
+      ...Object.keys(windowOverridesByStyleKey),
+    ]);
+    for (const key of allKeys) {
+      result[key] = {
+        ...JSON.parse(JSON.stringify(floorplanSurfaceOverridesByStyleKey[key] || {})),
+        roomFloors: JSON.parse(JSON.stringify(roomFloorOverridesByStyleKey[key] || {})),
+        doorOverrides: JSON.parse(JSON.stringify(doorOverridesByStyleKey[key] || {})),
+        windowOverrides: JSON.parse(JSON.stringify(windowOverridesByStyleKey[key] || {})),
+      };
+    }
+    return result;
+  };
   window.svgEditorDeselect = () => {
     deselectVisualOnly();
     clearFloorplanSurfaceSelection();

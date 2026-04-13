@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1776060954731",
+  "name": "z",
+  "description": "",
+  "createdAt": "2026-04-13T06:15:54.731Z",
+  "updatedAt": "2026-04-13T06:15:54.731Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "potted_plant_02",
+      "floorId": "floor1",
+      "positionCm": [
+        -16,
+        105
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "floorplanStyleKey": "default",
+    "furniture": [
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -16,
+        "y": 105,
+        "rotation": 0
+      }
+    ],
+    "surfaceOverrides": {
+      "default": {
+        "roomFloors": {},
+        "doorOverrides": {},
+        "windowOverrides": {}
+      }
+    },
+    "lightingConfig": {
+      "toneMappingExposure": 1,
+      "ambient": {
+        "intensity": 0.26
+      },
+      "hemisphere": {
+        "intensity": 0.36
+      },
+      "directional": {
+        "intensity": 1
+      },
+      "envMapIntensity": 0.35
+    }
+  }
+}
