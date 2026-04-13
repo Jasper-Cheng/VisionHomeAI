@@ -976,6 +976,70 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     roomFloorOverridesByStyleKey[key] = JSON.parse(JSON.stringify(roomFloors));
   }
 
+  /**
+   * 应用所有已加载的材质覆盖到场景中（加载设计文件后调用）
+   */
+  async function applyAllOverridesToScene() {
+    if (!floorplanRoot.children.length) return;
+    const libraryBag = await getFloorplanMaterialsLibraryBag();
+    const sk = getEffectiveFloorplanStyleKey();
+    const key = normalizeStyleKeyForSurfaceOverrides(sk);
+    
+    // 应用房间地板覆盖
+    const roomFloorsData = roomFloorOverridesByStyleKey[key];
+    if (roomFloorsData && typeof roomFloorsData === "object") {
+      for (const [floorLevelId, roomsData] of Object.entries(roomFloorsData)) {
+        if (!roomsData || typeof roomsData !== "object") continue;
+        for (const [roomId, override] of Object.entries(roomsData)) {
+          if (!override || !surfaceOverrideIsActive(override)) continue;
+          floorplanRoot.traverse((o) => {
+            if (!o.isMesh) return;
+            if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
+            if (!o.userData.floorplanRoomFloor) return;
+            if (String(o.userData.floorplanRoomId ?? "").trim() !== roomId) return;
+            applySurfaceOverrideToMesh(o, override, libraryBag);
+          });
+        }
+      }
+    }
+    
+    // 应用门覆盖
+    const doorData = doorOverridesByStyleKey[key];
+    if (doorData && typeof doorData === "object") {
+      for (const [floorLevelId, doorsData] of Object.entries(doorData)) {
+        if (!doorsData || typeof doorsData !== "object") continue;
+        for (const [doorId, override] of Object.entries(doorsData)) {
+          if (!override || !surfaceOverrideIsActive(override)) continue;
+          floorplanRoot.traverse((o) => {
+            if (!o.isMesh) return;
+            if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
+            if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle) return;
+            if (String(o.userData.floorplanDoorId ?? "").trim() !== doorId) return;
+            applySurfaceOverrideToMesh(o, override, libraryBag);
+          });
+        }
+      }
+    }
+    
+    // 应用窗户覆盖
+    const windowData = windowOverridesByStyleKey[key];
+    if (windowData && typeof windowData === "object") {
+      for (const [floorLevelId, windowsData] of Object.entries(windowData)) {
+        if (!windowsData || typeof windowsData !== "object") continue;
+        for (const [windowId, override] of Object.entries(windowsData)) {
+          if (!override || !surfaceOverrideIsActive(override)) continue;
+          floorplanRoot.traverse((o) => {
+            if (!o.isMesh) return;
+            if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
+            if (!o.userData.floorplanWindowFill) return;
+            if (String(o.userData.floorplanWindowId ?? "").trim() !== windowId) return;
+            applySurfaceOverrideToMesh(o, override, libraryBag);
+          });
+        }
+      }
+    }
+  }
+
   // --- 按门覆盖（内存） ---
   // 格式: { [styleKey]: { [floorLevelId]: { [doorId]: { color, materialId, roughness, metalness, opacity, transmission, ior } } } }
   let doorOverridesByStyleKey = {};
@@ -5775,6 +5839,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         await applyWindowOverridesForMultiple(fid, windowIds);
         await selectFloorplanSurface(sel);
         if (historyReady) schedulePushHistory();
+        emitLayoutChanged();
         return;
       }
       
@@ -5786,6 +5851,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         await applyWindowOverridesForMultiple(fid, [sel.windowId]);
         await selectFloorplanSurface(sel);
         if (historyReady) schedulePushHistory();
+        emitLayoutChanged();
         return;
       }
       
@@ -5798,6 +5864,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       await selectFloorplanSurface(sel);
       if (historyReady) schedulePushHistory();
+      emitLayoutChanged();
       return;
     }
 
@@ -5857,6 +5924,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       await applyRoomFloorOverridesForMultiple(fid, roomIds);
       await selectFloorplanSurface(sel);
       if (historyReady) schedulePushHistory();
+      emitLayoutChanged();
       return;
     }
 
@@ -5869,6 +5937,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       await applyDoorOverridesForMultiple(fid, doorIds);
       await selectFloorplanSurface(sel);
       if (historyReady) schedulePushHistory();
+      emitLayoutChanged();
       return;
     }
 
@@ -5881,6 +5950,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       await applyWindowOverridesForMultiple(fid, windowIds);
       await selectFloorplanSurface(sel);
       if (historyReady) schedulePushHistory();
+      emitLayoutChanged();
       return;
     }
 
@@ -5892,6 +5962,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     await selectFloorplanSurface(sel);
     if (historyReady) schedulePushHistory();
+    emitLayoutChanged();
   }
 
   async function resetFloorplanSurfaceToDefault() {
@@ -6870,6 +6941,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } else {
         windowOverridesByStyleKey[skForRoom] = {};
       }
+      
+      // 应用恢复的材质覆盖到场景中
+      if (fpId && floorplanRoot.children.length > 0) {
+        await applyAllOverridesToScene();
+      }
+      
       await rebuildFromLayout(layout);
       resetCameraView();
       setGridVisible(gridWasVisible);
@@ -7902,7 +7979,28 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const pending = window.__pendingStyleSwitch;
       if (!pending) return;
       closeSwitchStyleDialog();
-      
+
+      // 监听保存完成事件
+      const handleSaveComplete = async () => {
+        window.removeEventListener("visionhome:design-saved", handleSaveComplete);
+        window.removeEventListener("visionhome:save-design-cancelled", handleSaveCancel);
+        if (window.__pendingStyleSwitch) {
+          const p = window.__pendingStyleSwitch;
+          window.__pendingStyleSwitch = null;
+          await executeStyleSwitch(p.key, p.tag);
+        }
+      };
+
+      // 监听保存取消事件
+      const handleSaveCancel = () => {
+        window.removeEventListener("visionhome:design-saved", handleSaveComplete);
+        window.removeEventListener("visionhome:save-design-cancelled", handleSaveCancel);
+        window.__pendingStyleSwitch = null;
+      };
+
+      window.addEventListener("visionhome:design-saved", handleSaveComplete, { once: true });
+      window.addEventListener("visionhome:save-design-cancelled", handleSaveCancel, { once: true });
+
       // 先保存
       const hasResolvedName = Boolean(String(window.__activeDesignProject?.name ?? "").trim());
       if (hasResolvedName) {
@@ -7910,32 +8008,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (typeof executeSave === "function") {
           await executeSave(String(window.__activeDesignProject?.name ?? "").trim());
         }
-        // 保存完成后切换风格
-        await executeStyleSwitch(pending.key, pending.tag);
-        window.__pendingStyleSwitch = null;
       } else {
-        // 没有文件名，需要用户输入
-        // 监听保存完成事件
-        const handleSaveComplete = async () => {
-          window.removeEventListener("visionhome:design-saved", handleSaveComplete);
-          if (window.__pendingStyleSwitch) {
-            const p = window.__pendingStyleSwitch;
-            window.__pendingStyleSwitch = null;
-            await executeStyleSwitch(p.key, p.tag);
-          }
-        };
-        
-        // 监听保存取消事件
-        const handleSaveCancel = () => {
-          window.removeEventListener("visionhome:design-saved", handleSaveComplete);
-          window.removeEventListener("visionhome:save-design-cancelled", handleSaveCancel);
-          window.__pendingStyleSwitch = null;
-        };
-        
-        window.addEventListener("visionhome:design-saved", handleSaveComplete, { once: true });
-        window.addEventListener("visionhome:save-design-cancelled", handleSaveCancel, { once: true });
-        
-        // 打开保存对话框
+        // 没有文件名，需要用户输入，打开保存对话框
         window.dispatchEvent(new CustomEvent("visionhome:open-save-design"));
       }
     });

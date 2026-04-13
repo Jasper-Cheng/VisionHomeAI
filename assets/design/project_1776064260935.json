@@ -1,31 +1,31 @@
 {
   "schemaVersion": "1.1",
-  "id": "project_1775724280185",
-  "name": "中",
+  "id": "project_1776064260935",
+  "name": "1",
   "description": "",
-  "createdAt": "2026-04-09T08:44:40.185Z",
-  "updatedAt": "2026-04-13T02:43:24.491Z",
+  "createdAt": "2026-04-13T07:11:00.935Z",
+  "updatedAt": "2026-04-13T07:11:00.935Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
   "furnitureInstances": [
     {
       "instanceId": "fi_1",
-      "furnitureId": "sofa_03",
-      "floorId": "floor1",
-      "positionCm": [
-        -195,
-        30
-      ],
-      "rotationDeg": 0
-    },
-    {
-      "instanceId": "fi_2",
       "furnitureId": "potted_plant_02",
       "floorId": "floor1",
       "positionCm": [
         -16,
         105
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "ArmChair_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -199,
+        97
       ],
       "rotationDeg": 0
     }
@@ -34,25 +34,34 @@
     "version": 1,
     "floorPlanId": "apt_2b1l_compact_01",
     "floorLevelIndex": 0,
-    "floorplanStyleKey": "default",
+    "floorplanStyleKey": "s_1",
     "furniture": [
-      {
-        "model": "sofa_03",
-        "floorId": "floor1",
-        "x": -195,
-        "y": 30,
-        "rotation": 0
-      },
       {
         "model": "potted_plant_02",
         "floorId": "floor1",
         "x": -16,
         "y": 105,
         "rotation": 0
+      },
+      {
+        "model": "ArmChair_01",
+        "floorId": "floor1",
+        "x": -199,
+        "y": 97,
+        "rotation": 0
       }
     ],
     "surfaceOverrides": {
-      "default": {}
+      "s_1": {
+        "roomFloors": {},
+        "doorOverrides": {},
+        "windowOverrides": {}
+      },
+      "default": {
+        "roomFloors": {},
+        "doorOverrides": {},
+        "windowOverrides": {}
+      }
     },
     "lightingConfig": {
       "toneMappingExposure": 1,
