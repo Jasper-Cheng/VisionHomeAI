@@ -4,7 +4,7 @@
   "name": "大",
   "description": "",
   "createdAt": "2026-04-13T07:45:27.012Z",
-  "updatedAt": "2026-04-13T08:06:36.940Z",
+  "updatedAt": "2026-04-13T08:23:49.369Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -14,8 +14,28 @@
       "furnitureId": "potted_plant_02",
       "floorId": "floor1",
       "positionCm": [
-        -16,
-        105
+        314,
+        -289
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "ArmChair_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -46,
+        320
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_3",
+      "furnitureId": "BarberShopChair_01",
+      "floorId": "floor1",
+      "positionCm": [
+        119,
+        479
       ],
       "rotationDeg": 0
     }
@@ -24,22 +44,36 @@
     "version": 1,
     "floorPlanId": "apt_2b1l_compact_01",
     "floorLevelIndex": 0,
-    "floorplanStyleKey": "default",
+    "floorplanStyleKey": "s_1",
     "furniture": [
       {
         "model": "potted_plant_02",
         "floorId": "floor1",
-        "x": -16,
-        "y": 105,
+        "x": 314,
+        "y": -289,
+        "rotation": 0
+      },
+      {
+        "model": "ArmChair_01",
+        "floorId": "floor1",
+        "x": -46,
+        "y": 320,
+        "rotation": 0
+      },
+      {
+        "model": "BarberShopChair_01",
+        "floorId": "floor1",
+        "x": 119,
+        "y": 479,
         "rotation": 0
       }
     ],
     "surfaceOverridesByStyleKey": {
-      "default": {
+      "s_1": {
         "roomFloors": {
           "floor1": {
             "r_living": {
-              "color": "#e8dcc8",
+              "color": "#93661c",
               "materialId": "r_bed1",
               "roughness": 0.35,
               "metalness": 0,
@@ -47,64 +81,16 @@
                 0.15,
                 0.15
               ],
-              "textureRotation": 90,
-              "textureAlbedo": "brick_wall_04_diff.jpg"
+              "textureRotation": 90
             }
           }
         },
-        "doorOverrides": {
-          "floor1": {
-            "d_main": {
-              "color": "#e8dcc8",
-              "materialId": "d_main",
-              "roughness": 0.8,
-              "metalness": 0.02,
-              "uvScale": [
-                1,
-                1
-              ],
-              "textureRotation": 0,
-              "textureAlbedo": "brick_crosswalk_diff.jpg"
-            }
-          }
-        },
-        "windowOverrides": {
-          "floor1": {
-            "win_left_floor": {
-              "color": "#0a0600",
-              "roughness": 0.04,
-              "metalness": 0,
-              "opacity": 0.22,
-              "transmission": 0.96,
-              "ior": 1.45
-            },
-            "win_left_small": {
-              "color": "#c50ec5",
-              "roughness": 0.04,
-              "metalness": 0,
-              "opacity": 0.22,
-              "transmission": 0.96,
-              "ior": 1.45
-            }
-          }
-        },
-        "floor1": {
-          "allWalls": {
-            "color": "#140b00",
-            "materialId": "w_ext_left_n",
-            "roughness": 0.9,
-            "metalness": 0,
-            "uvScale": [
-              2,
-              2
-            ],
-            "textureRotation": 0
-          }
-        }
+        "doorOverrides": {},
+        "windowOverrides": {}
       }
     },
     "lightingConfig": {
-      "toneMappingExposure": 1,
+      "toneMappingExposure": 0.99,
       "ambient": {
         "intensity": 0.26
       },

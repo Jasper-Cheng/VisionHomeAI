@@ -556,7 +556,7 @@
       "id": "s_1",
       "name": "1",
       "sceneLighting": {
-        "toneMappingExposure": 1,
+        "toneMappingExposure": 1.61,
         "ambient": {
           "color": "#ffffff",
           "intensity": 0.26
@@ -591,11 +591,12 @@
         },
         "r_bed1_wall": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -621,11 +622,12 @@
         },
         "r_bed2_wall": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -651,11 +653,12 @@
         },
         "r_living_wall": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -681,11 +684,12 @@
         },
         "r_living_co_wall": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -711,11 +715,12 @@
         },
         "r_kitchen_wall": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -741,11 +746,12 @@
         },
         "r_bath_wall": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -755,11 +761,12 @@
         },
         "w_ext_left_n": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -769,11 +776,12 @@
         },
         "w_ext_left_s": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -783,11 +791,12 @@
         },
         "w_ext_top_w": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -797,11 +806,12 @@
         },
         "w_ext_top_e": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -811,11 +821,12 @@
         },
         "w_ext_right_n": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -825,11 +836,12 @@
         },
         "w_ext_right_m": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -839,11 +851,12 @@
         },
         "w_ext_right_s": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -853,11 +866,12 @@
         },
         "w_ext_bot_w": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -867,11 +881,12 @@
         },
         "w_ext_bot_e": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -881,11 +896,12 @@
         },
         "w_int_v_mid_n_top": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -895,11 +911,12 @@
         },
         "w_int_v_mid_n_bot": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -909,11 +926,12 @@
         },
         "w_int_v_mid_s": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -923,11 +941,12 @@
         },
         "w_int_h_mid_w": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -937,11 +956,12 @@
         },
         "w_int_h_bed2_kitchen": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -951,11 +971,12 @@
         },
         "w_int_h_low_w": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -965,11 +986,12 @@
         },
         "w_int_h_low_e": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -979,11 +1001,12 @@
         },
         "w_int_v_bath": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -993,11 +1016,12 @@
         },
         "w_int_v_niche": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -1007,11 +1031,12 @@
         },
         "w_int_h_niche": {
           "type": "paint",
-          "color": "#392b19",
+          "color": "#e2dcd5",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg"
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -1119,8 +1144,8 @@
         "placements": [
           {
             "model": "potted_plant_02",
-            "x": -16,
-            "y": 105,
+            "x": 314,
+            "y": -289,
             "rotation": 0,
             "floorId": "floor1"
           }

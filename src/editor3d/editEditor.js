@@ -1038,6 +1038,29 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         }
       }
     }
+
+    // 应用墙面（按面）覆盖
+    const wallFaceData = wallFaceOverridesByStyleKey[key];
+    if (wallFaceData && typeof wallFaceData === "object") {
+      for (const [floorLevelId, wallsData] of Object.entries(wallFaceData)) {
+        if (!wallsData || typeof wallsData !== "object") continue;
+        for (const [wallId, faces] of Object.entries(wallsData)) {
+          if (!faces || typeof faces !== "object") continue;
+          const pairs = [];
+          if (faces.face_a && surfaceOverrideIsActive(faces.face_a)) pairs.push({ wallId, faceId: "face_a" });
+          if (faces.face_b && surfaceOverrideIsActive(faces.face_b)) pairs.push({ wallId, faceId: "face_b" });
+          if (!pairs.length) continue;
+          for (const { wallId: wid, faceId } of pairs) {
+            floorplanRoot.traverse((o) => {
+              if (!o.isMesh) return;
+              if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
+              if (String(o.userData.floorplanWallId ?? "").trim() !== wid) return;
+              applySurfaceOverrideToMeshFace(o, faceId, faces[faceId], libraryBag);
+            });
+          }
+        }
+      }
+    }
   }
 
   // --- 按门覆盖（内存） ---
@@ -1252,11 +1275,170 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     windowOverridesByStyleKey[key] = JSON.parse(JSON.stringify(windowOverrides));
   }
 
+  // --- 多选墙面 ---
+  /**
+   * 当前选中的墙面集合，key 格式为 "wallId::faceId"（如 "w_ext_left_n::face_a"）
+   * faceId 为 null 时 key 为 "wallId::null"（整段，两面都选）
+   * @type {Set<string>}
+   */
+  let selectedWallFaceIds = new Set();
+
+  function makeWallFaceKey(wallId, faceId) {
+    return `${String(wallId ?? "").trim()}::${faceId ?? "null"}`;
+  }
+
+  function toggleWallFaceSelection(wallId, faceId) {
+    if (!wallId) return;
+    const key = makeWallFaceKey(wallId, faceId);
+    if (selectedWallFaceIds.has(key)) {
+      selectedWallFaceIds.delete(key);
+    } else {
+      selectedWallFaceIds.add(key);
+    }
+  }
+
+  function clearWallFaceSelection() {
+    selectedWallFaceIds.clear();
+  }
+
+  function isWallFaceSelected(wallId, faceId) {
+    return selectedWallFaceIds.has(makeWallFaceKey(wallId, faceId));
+  }
+
+  /** @returns {{ wallId: string, faceId: string | null }[]} */
+  function getSelectedWallFaces() {
+    return [...selectedWallFaceIds].map((key) => {
+      const idx = key.lastIndexOf("::");
+      const wallId = key.slice(0, idx);
+      const faceIdRaw = key.slice(idx + 2);
+      return { wallId, faceId: faceIdRaw === "null" ? null : faceIdRaw };
+    });
+  }
+
+  // --- 按墙面覆盖（内存） ---
+  // 格式: { [styleKey]: { [floorLevelId]: { [wallId]: { face_a?: SurfaceScopeOverride, face_b?: SurfaceScopeOverride } } } }
+  // face_a 对应 Box materialIndex 4 (+Z 面)，face_b 对应 materialIndex 5 (-Z 面)
+  let wallFaceOverridesByStyleKey = {};
+
+  function getWallFaceOverridesBucket(styleKey, opts = {}) {
+    const key = normalizeStyleKeyForSurfaceOverrides(styleKey);
+    const create = Boolean(opts.create);
+    const hit = wallFaceOverridesByStyleKey[key];
+    if (hit && typeof hit === "object") return hit;
+    if (!create) return {};
+    const next = {};
+    wallFaceOverridesByStyleKey[key] = next;
+    return next;
+  }
+
+  function getCurrentWallFaceOverridesBucket() {
+    return getWallFaceOverridesBucket(getEffectiveFloorplanStyleKey(), { create: true });
+  }
+
+  /**
+   * @param {string} floorLevelId
+   * @param {string} wallId
+   * @param {string | null} faceId - "face_a" | "face_b" | null
+   * @returns {object | null}
+   */
+  function getWallFaceOverride(floorLevelId, wallId, faceId) {
+    const fid = String(floorLevelId ?? "").trim();
+    const wid = String(wallId ?? "").trim();
+    if (!fid || !wid) return null;
+    const bucket = getCurrentWallFaceOverridesBucket();
+    const floorBag = bucket[fid];
+    if (!floorBag) return null;
+    const wallBag = floorBag[wid];
+    if (!wallBag) return null;
+    if (faceId === null) {
+      // 整段：优先返回 face_a（两面相同）
+      return wallBag.face_a ?? wallBag.face_b ?? null;
+    }
+    return wallBag[faceId] ?? null;
+  }
+
+  /**
+   * @param {string} floorLevelId
+   * @param {string} wallId
+   * @param {string | null} faceId
+   * @param {object | null} override
+   */
+  function setWallFaceOverride(floorLevelId, wallId, faceId, override) {
+    const fid = String(floorLevelId ?? "").trim();
+    const wid = String(wallId ?? "").trim();
+    if (!fid || !wid) return;
+    const bucket = getCurrentWallFaceOverridesBucket();
+    if (!bucket[fid]) bucket[fid] = {};
+    if (!bucket[fid][wid]) bucket[fid][wid] = {};
+    const hasData = override && typeof override === "object" && Object.keys(override).length > 0;
+    if (faceId === null) {
+      // 整段：同时写两面
+      if (hasData) {
+        bucket[fid][wid].face_a = JSON.parse(JSON.stringify(override));
+        bucket[fid][wid].face_b = JSON.parse(JSON.stringify(override));
+      } else {
+        delete bucket[fid][wid].face_a;
+        delete bucket[fid][wid].face_b;
+      }
+    } else {
+      if (hasData) {
+        bucket[fid][wid][faceId] = JSON.parse(JSON.stringify(override));
+      } else {
+        delete bucket[fid][wid][faceId];
+      }
+    }
+    // 清理空对象
+    if (Object.keys(bucket[fid][wid]).length === 0) delete bucket[fid][wid];
+    if (Object.keys(bucket[fid]).length === 0) delete bucket[fid];
+  }
+
+  /**
+   * 批量设置多个墙面的覆盖
+   * @param {string} floorLevelId
+   * @param {{ wallId: string, faceId: string | null }[]} wallFacePairs
+   * @param {object} override
+   */
+  function setWallFaceOverridesForMultiple(floorLevelId, wallFacePairs, override) {
+    if (!Array.isArray(wallFacePairs)) return;
+    for (const { wallId, faceId } of wallFacePairs) {
+      setWallFaceOverride(floorLevelId, wallId, faceId, override);
+    }
+  }
+
+  /**
+   * 同步墙面覆盖到 Design JSON（修改墙面时调用）
+   */
+  function syncWallFaceOverridesToDesignJson() {
+    const proj = window.__currentDesignProject;
+    if (!proj || !proj.svgEditor) return;
+    const sk = getEffectiveFloorplanStyleKey();
+    const key = normalizeStyleKeyForSurfaceOverrides(sk);
+    if (!proj.svgEditor.surfaceOverrides) proj.svgEditor.surfaceOverrides = {};
+    if (!proj.svgEditor.surfaceOverrides[key]) proj.svgEditor.surfaceOverrides[key] = {};
+    proj.svgEditor.surfaceOverrides[key].wallFaceOverrides = JSON.parse(JSON.stringify(wallFaceOverridesByStyleKey[key] || {}));
+  }
+
+  /**
+   * 从 Design JSON 加载墙面覆盖（加载项目时调用）
+   */
+  function loadWallFaceOverridesFromDesignJson(designSurfaceOverrides) {
+    if (!designSurfaceOverrides || typeof designSurfaceOverrides !== "object") return;
+    const sk = getEffectiveFloorplanStyleKey();
+    const key = normalizeStyleKeyForSurfaceOverrides(sk);
+    const styleBag = designSurfaceOverrides[key];
+    if (!styleBag || typeof styleBag !== "object") return;
+    const wallFaceOverrides = styleBag.wallFaceOverrides;
+    if (!wallFaceOverrides || typeof wallFaceOverrides !== "object") return;
+    wallFaceOverridesByStyleKey[key] = JSON.parse(JSON.stringify(wallFaceOverrides));
+  }
+
   let dragState = null;
   /** Alt+左键调节装饰模型高度：{ pointerId, group, startClientY, startLiftM } */
   let altDragState = null;
   /** 墙/地：短按才打开属性面板；长按或滑动取消（与 pointerup 配对） */
   let pendingSurfacePick = null;
+  /** 点击空白/户型时延迟清除选中，拖拽旋转时取消（与 pointerup 配对） */
+  let pendingClearSelection = null;
   const history = [];
   let historyIndex = -1;
   let historyReady = false;
@@ -1983,14 +2165,81 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {boolean} on
    * @param {Set<string>} [roomIdFilter] 可选的房间 ID 过滤器，用于多选时只高亮选中的房间
    */
-  function setFloorplanGlobalSurfaceHighlight(floorLevelId, scope, on, roomIdFilter, doorIdFilter, windowIdFilter) {
+  /**
+   * 为墙体 mesh 的某个面创建平面矩形线框。
+   * BoxGeometry 局部坐标中：face_a(materialIndex 4) 是 +Z 面，face_b(5) 是 -Z 面。
+   * @param {import("three").Mesh} mesh
+   * @param {"face_a" | "face_b" | null} faceId null 表示整堵墙（用 BoxHelper 包围盒）
+   * @returns {import("three").LineLoop | import("three").BoxHelper}
+   */
+  function createWallFaceHelper(mesh, faceId) {
+    const LINE_COLOR = 0x00aaff;
+    const matLine = new THREE.LineBasicMaterial({
+      color: LINE_COLOR,
+      transparent: true,
+      opacity: 0.9,
+      depthTest: true,
+      depthWrite: false,
+    });
+
+    if (!faceId || !mesh.geometry?.parameters) {
+      // 整堵墙：用普通 BoxHelper
+      const box = new THREE.BoxHelper(mesh, LINE_COLOR);
+      box.material.transparent = true;
+      box.material.opacity = 0.8;
+      box.material.depthTest = true;
+      box.material.depthWrite = false;
+      matLine.dispose();
+      return box;
+    }
+
+    // 从 BoxGeometry 参数取宽/高/厚（局部坐标）
+    const params = mesh.geometry.parameters;
+    const hw = (params.width ?? 1) / 2;   // 半宽
+    const hh = (params.height ?? 1) / 2;  // 半高
+    const hd = (params.depth ?? 0.1) / 2; // 半厚
+    // face_a = +Z 面，face_b = -Z 面
+    const z = faceId === "face_a" ? hd : -hd;
+
+    // 四角在局部坐标（逆时针，法线朝外）
+    const pts = faceId === "face_a"
+      ? [
+          new THREE.Vector3(-hw, -hh, z),
+          new THREE.Vector3( hw, -hh, z),
+          new THREE.Vector3( hw,  hh, z),
+          new THREE.Vector3(-hw,  hh, z),
+          new THREE.Vector3(-hw, -hh, z), // 闭合
+        ]
+      : [
+          new THREE.Vector3( hw, -hh, z),
+          new THREE.Vector3(-hw, -hh, z),
+          new THREE.Vector3(-hw,  hh, z),
+          new THREE.Vector3( hw,  hh, z),
+          new THREE.Vector3( hw, -hh, z), // 闭合
+        ];
+
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const line = new THREE.Line(geo, matLine);
+
+    // 将局部坐标转换到世界坐标：复制 mesh 的世界矩阵
+    mesh.updateWorldMatrix(true, false);
+    line.applyMatrix4(mesh.matrixWorld);
+
+    return line;
+  }
+
+  function setFloorplanGlobalSurfaceHighlight(floorLevelId, scope, on, roomIdFilter, doorIdFilter, windowIdFilter, wallFaceFilter) {
     // 移除旧的选中框
     floorplanSurfaceBoxHelpers.forEach((helper) => {
       if (helper.parent) {
         helper.parent.remove(helper);
       }
       helper.geometry?.dispose();
-      helper.material?.dispose();
+      if (Array.isArray(helper.material)) {
+        helper.material.forEach((m) => m?.dispose());
+      } else {
+        helper.material?.dispose();
+      }
     });
     floorplanSurfaceBoxHelpers = [];
 
@@ -2004,9 +2253,33 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!o.isMesh || !o.material) return;
       if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
       if (scope === "allWalls" && !o.userData.floorplanWallId) return;
+      if (scope === "wallFace" && !o.userData.floorplanWallId) return;
       if (scope === "allFloors" && !o.userData.floorplanRoomFloor) return;
       if (scope === "allDoors" && !o.userData.floorplanDoorFill) return;
       if (scope === "allWindows" && !o.userData.floorplanWindowFill) return;
+
+      if (scope === "wallFace") {
+        // wallFaceFilter: Map<wallId, Set<faceId | null>>
+        const meshWallId = String(o.userData.floorplanWallId ?? "").trim();
+        if (!meshWallId) return;
+        if (wallFaceFilter && wallFaceFilter.size > 0 && !wallFaceFilter.has(meshWallId)) return;
+
+        // 为每个选中的 faceId 创建单面线框
+        const faceIds = wallFaceFilter?.get(meshWallId);
+        if (faceIds && faceIds.size > 0) {
+          for (const faceId of faceIds) {
+            const helper = createWallFaceHelper(o, faceId);
+            scene.add(helper);
+            floorplanSurfaceBoxHelpers.push(helper);
+          }
+        } else {
+          // 没有 faceId 信息（整堵墙）
+          const helper = createWallFaceHelper(o, null);
+          scene.add(helper);
+          floorplanSurfaceBoxHelpers.push(helper);
+        }
+        return;
+      }
 
       // 多选房间地板时，检查是否在选中列表中
       if (scope === "allFloors" && roomIdFilter && roomIdFilter.size > 0) {
@@ -2089,6 +2362,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 保留 windowOverrides（按窗户的覆盖）
     if (raw.windowOverrides && typeof raw.windowOverrides === "object") {
       out.windowOverrides = JSON.parse(JSON.stringify(raw.windowOverrides));
+    }
+    // 保留 wallFaceOverrides（按墙段+面的覆盖）
+    if (raw.wallFaceOverrides && typeof raw.wallFaceOverrides === "object") {
+      out.wallFaceOverrides = JSON.parse(JSON.stringify(raw.wallFaceOverrides));
     }
     return out;
   }
@@ -2294,6 +2571,119 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     });
     disposeFloorplanOverrideMaterial(mesh);
     mesh.material = next.length === 1 ? next[0] : next;
+  }
+
+  /**
+   * 对墙体 mesh 单个面（Box materialIndex 4=face_a/+Z, 5=face_b/-Z）应用覆盖材质。
+   * 若 faceId 为 null，则对两面都应用（整段）。
+   * 若 mesh 当前为单材质，自动扩展为 6 元素材质数组。
+   * @param {import("three").Mesh} mesh
+   * @param {string | null} faceId - "face_a" | "face_b" | null
+   * @param {object} ov
+   * @param {object} libraryBag
+   */
+  function applySurfaceOverrideToMeshFace(mesh, faceId, ov, libraryBag) {
+    if (!mesh?.isMesh || !ov) return;
+    if (!surfaceOverrideIsActive(ov)) return;
+
+    const opacity = Number.isFinite(mesh.userData.floorplanSurfaceOpacity)
+      ? mesh.userData.floorplanSurfaceOpacity
+      : 1;
+
+    // 确保 mesh.material 是 6 元素数组（Box 面顺序：+X,-X,+Y,-Y,+Z(4),-Z(5)）
+    function ensureMaterialArray(mesh) {
+      if (Array.isArray(mesh.material)) return mesh.material;
+      const base = mesh.material;
+      const arr = [base, base, base, base, base.clone ? base.clone() : base, base.clone ? base.clone() : base];
+      arr[4].userData = { ...arr[4].userData };
+      arr[5].userData = { ...arr[5].userData };
+      mesh.material = arr;
+      return arr;
+    }
+
+    function buildFaceMat(existingMat) {
+      if (ov.materialId) {
+        const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity, false);
+        return built ? built.mat : existingMat;
+      }
+      const useColorPath =
+        ov.color ||
+        ov.roughness != null ||
+        ov.metalness != null ||
+        ov.opacity != null ||
+        ov.materialPresetCleared;
+      if (!useColorPath) return existingMat;
+      const m = existingMat;
+      if (!m?.isMeshStandardMaterial && !m?.isMeshPhysicalMaterial) return existingMat;
+      const c = m.clone();
+      c.userData.__floorplanOverrideOwned = true;
+      if (ov.materialPresetCleared) {
+        c.map = null;
+        c.normalMap = null;
+        c.roughnessMap = null;
+        c.metalnessMap = null;
+        c.aoMap = null;
+      }
+      if (ov.color) {
+        try {
+          const h = String(ov.color).trim();
+          c.color.setStyle(h.startsWith("#") ? h : `#${h}`);
+        } catch { /* ignore */ }
+      }
+      if (ov.roughness != null && Number.isFinite(Number(ov.roughness))) {
+        c.roughness = Math.min(1, Math.max(0, Number(ov.roughness)));
+      }
+      if (ov.metalness != null && Number.isFinite(Number(ov.metalness))) {
+        c.metalness = Math.min(1, Math.max(0, Number(ov.metalness)));
+      }
+      const us = ov.uvScale;
+      if (Array.isArray(us) && us.length >= 2 && Number.isFinite(us[0]) && Number.isFinite(us[1])) {
+        c.userData.__uvScaleX = us[0];
+        c.userData.__uvScaleY = us[1];
+      }
+      if (ov.textureRotation != null && Number.isFinite(Number(ov.textureRotation))) {
+        c.userData.__textureRotation = Number(ov.textureRotation);
+      }
+      c.needsUpdate = true;
+      return c;
+    }
+
+    const mats = ensureMaterialArray(mesh);
+    if (faceId === null) {
+      // 整段：更新正面和反面
+      mats[4] = buildFaceMat(mats[4]);
+      mats[5] = buildFaceMat(mats[5]);
+    } else if (faceId === "face_a") {
+      mats[4] = buildFaceMat(mats[4]);
+    } else if (faceId === "face_b") {
+      mats[5] = buildFaceMat(mats[5]);
+    }
+    mesh.material = mats;
+  }
+
+  /**
+   * 对多个墙面应用覆盖（不重建几何体）
+   * @param {string} floorLevelId
+   * @param {{ wallId: string, faceId: string | null }[]} wallFacePairs
+   */
+  async function applyWallFaceOverridesToScene(floorLevelId, wallFacePairs) {
+    if (!floorplanRoot.children.length) return;
+    if (!Array.isArray(wallFacePairs) || !wallFacePairs.length) return;
+    const fid = String(floorLevelId ?? "").trim();
+    if (!fid) return;
+    const libraryBag = await getFloorplanMaterialsLibraryBag();
+    for (const { wallId, faceId } of wallFacePairs) {
+      const wid = String(wallId ?? "").trim();
+      if (!wid) continue;
+      const ov = getWallFaceOverride(fid, wid, faceId);
+      if (!ov || !surfaceOverrideIsActive(ov)) continue;
+      floorplanRoot.traverse((o) => {
+        if (!o.isMesh) return;
+        if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
+        if (String(o.userData.floorplanWallId ?? "").trim() !== wid) return;
+        applySurfaceOverrideToMeshFace(o, faceId, ov, libraryBag);
+      });
+    }
   }
 
   async function applySurfaceOverridesToFloorplan() {
@@ -2641,7 +3031,19 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     function wallFaceMaterialsAtT(t) {
       const baseMat = makeWallMaterial();
       const useRoomWalls = style && typeof getMaterialForKey === "function";
+
+      // 优先检查风格包中按面烘焙的材质（wallId__face_a / wallId__face_b）
+      const faceAKey = wallIdStr ? `${wallIdStr}__face_a` : null;
+      const faceBKey = wallIdStr ? `${wallIdStr}__face_b` : null;
+      const bakedFaceA = faceAKey && typeof getMaterialForKey === "function" ? getMaterialForKey(faceAKey) : null;
+      const bakedFaceB = faceBKey && typeof getMaterialForKey === "function" ? getMaterialForKey(faceBKey) : null;
+
       if (!useRoomWalls) {
+        if (bakedFaceA || bakedFaceB) {
+          const matA = bakedFaceA || baseMat;
+          const matB = bakedFaceB || baseMat;
+          return { mats: [baseMat, baseMat, baseMat, baseMat, matA, matB], baseMat };
+        }
         return { mats: null, baseMat };
       }
       const { roomPosZ, roomNegZ } = findWallSideRoomsAt(floor, wall, t, 4);
@@ -2652,8 +3054,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const m = getMaterialForKey(rk);
         return m || baseMat;
       }
-      const matPosZ = faceMatForRoom(roomPosZ);
-      const matNegZ = faceMatForRoom(roomNegZ);
+      const roomMatPosZ = faceMatForRoom(roomPosZ);
+      const roomMatNegZ = faceMatForRoom(roomNegZ);
+      // 烘焙的墙面材质优先于房间墙面材质
+      const matPosZ = bakedFaceA || roomMatPosZ;
+      const matNegZ = bakedFaceB || roomMatNegZ;
       const mats = [baseMat, baseMat, baseMat, baseMat, matPosZ, matNegZ];
       return { mats, baseMat };
     }
@@ -4380,6 +4785,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       roomFloorOverridesByStyleKey = {};
       doorOverridesByStyleKey = {};
       windowOverridesByStyleKey = {};
+      wallFaceOverridesByStyleKey = {};
     }
     currentFloorplanEntry = entry;
     currentFloorIndex = normalizeFloorIndex(entry, options.floorIndex);
@@ -5183,9 +5589,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       const wid = o.userData?.floorplanWallId;
       if (wid && fid) {
+        // 根据射线命中的三角面材质索引识别正面(face_a=索引4)或反面(face_b=索引5)
+        const mi = h.face?.materialIndex;
+        let faceId = null;
+        if (mi === 4) faceId = "face_a";
+        else if (mi === 5) faceId = "face_b";
         return {
-          kind: "allWalls",
+          kind: "wallFace",
           floorLevelId: fid,
+          wallId: wid,
+          faceId,
         };
       }
     }
@@ -5204,6 +5617,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     clearRoomFloorSelection();
     clearDoorSelection();
     clearWindowSelection();
+    clearWallFaceSelection();
     if (propSurfaceFields) propSurfaceFields.hidden = true;
     if (propFurnitureFields) propFurnitureFields.hidden = false;
   }
@@ -5538,6 +5952,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const isFloor = sel.kind === "allFloors";
     const isDoor = sel.kind === "allDoors";
     const isWin = sel.kind === "allWindows";
+    const isWallFace = sel.kind === "wallFace";
     const scope = floorplanSurfaceScopeFromKind(sel.kind);
 
     // 多选房间地板处理
@@ -5547,6 +5962,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 多选门处理
     const hasMultiSelectDoor = selectedDoorIds.size > 0 && isDoor && sel.doorId;
     const selectedDoorIdsArr = hasMultiSelectDoor ? getSelectedDoorIds() : [];
+
+    // 多选墙面处理
+    const hasMultiSelectWallFace = isWallFace && selectedWallFaceIds.size > 0;
+    const selectedWallFacesArr = isWallFace ? getSelectedWallFaces() : [];
 
     // 多选窗户处理
     const hasMultiSelectWindow = selectedWindowIds.size > 0 && isWin && sel.windowId;
@@ -5609,31 +6028,53 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return null;
     }
 
+    // 获取墙体名称的辅助函数
+    function getWallName(wallId, floorLevelId) {
+      if (!wallId || !floorLevelId) return null;
+      const floors = getFloorsFromEntry(currentFloorplanEntry);
+      for (const fl of floors) {
+        if (String(fl?.id ?? "").trim() !== floorLevelId) continue;
+        for (const wall of fl?.walls || []) {
+          if (String(wall?.id ?? "").trim() === wallId) {
+            return wall?.name || wallId;
+          }
+        }
+      }
+      return null;
+    }
+
     const currentFloorName = getFloorName(sel.floorLevelId);
 
     if (propertiesName) {
       if (hasMultiSelectFloor) {
-        // 多选时显示房间名称列表
         const names = selectedRoomIds.map((rid) => getRoomName(rid, sel.floorLevelId) || rid).join("、");
         propertiesName.textContent = names || `${selectedRoomIds.length} 个房间地面`;
       } else if (hasMultiSelectDoor) {
-        // 多选门时显示门名称列表
         const names = selectedDoorIdsArr.map((did) => getDoorName(did, sel.floorLevelId) || did).join("、");
         propertiesName.textContent = names || `${selectedDoorIdsArr.length} 个门`;
       } else if (hasMultiSelectWindow) {
-        // 多选窗户时显示窗户名称列表
         const names = selectedWindowIdsArr.map((wid) => getWindowName(wid, sel.floorLevelId) || wid).join("、");
         propertiesName.textContent = names || `${selectedWindowIdsArr.length} 个窗户`;
+      } else if (isWallFace) {
+        if (hasMultiSelectWallFace) {
+          const names = selectedWallFacesArr.map(({ wallId, faceId }) => {
+            const wn = getWallName(wallId, sel.floorLevelId) || wallId;
+            const side = faceId === "face_a" ? "正面" : faceId === "face_b" ? "反面" : "";
+            return side ? `${wn}(${side})` : wn;
+          }).join("、");
+          propertiesName.textContent = names || `${selectedWallFacesArr.length} 个墙面`;
+        } else {
+          const wn = getWallName(sel.wallId, sel.floorLevelId) || sel.wallId || "墙体";
+          const side = sel.faceId === "face_a" ? "正面" : sel.faceId === "face_b" ? "反面" : "";
+          propertiesName.textContent = side ? `${wn}（${side}）` : wn;
+        }
       } else if (isFloor && sel.roomId) {
-        // 单选地板时显示具体房间名称
         const roomName = getRoomName(sel.roomId, sel.floorLevelId);
         propertiesName.textContent = roomName || "地面";
       } else if (isDoor && sel.doorId) {
-        // 单选门时显示门名称
         const doorName = getDoorName(sel.doorId, sel.floorLevelId);
         propertiesName.textContent = doorName || "门";
       } else if (isWin && sel.windowId) {
-        // 单选窗户时显示窗名称
         const windowName = getWindowName(sel.windowId, sel.floorLevelId);
         propertiesName.textContent = windowName || "窗";
       } else {
@@ -5648,6 +6089,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         propSurfaceTitle.textContent = `门属性（${selectedDoorIdsArr.length} 个门） · ${floorLabel}`;
       } else if (hasMultiSelectWindow) {
         propSurfaceTitle.textContent = `窗户属性（${selectedWindowIdsArr.length} 个窗户） · ${floorLabel}`;
+      } else if (isWallFace) {
+        if (hasMultiSelectWallFace) {
+          propSurfaceTitle.textContent = `墙面属性（${selectedWallFacesArr.length} 个面） · ${floorLabel}`;
+        } else {
+          const wn = getWallName(sel.wallId, sel.floorLevelId) || sel.wallId || "墙体";
+          const side = sel.faceId === "face_a" ? " 正面" : sel.faceId === "face_b" ? " 反面" : "";
+          propSurfaceTitle.textContent = `${wn}${side} 属性 · ${floorLabel}`;
+        }
       } else if (isFloor && sel.roomId) {
         const roomName = getRoomName(sel.roomId, sel.floorLevelId);
         propSurfaceTitle.textContent = roomName ? `${roomName} 地面属性 · ${floorLabel}` : `地面属性 · ${floorLabel}`;
@@ -5674,6 +6123,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         propSurfaceIdHint.textContent = `已选中 ${selectedDoorIdsArr.length} 个门 · 修改将应用于所有选中门`;
       } else if (hasMultiSelectWindow) {
         propSurfaceIdHint.textContent = `已选中 ${selectedWindowIdsArr.length} 个窗户 · 修改将应用于所有选中窗户`;
+      } else if (isWallFace) {
+        if (hasMultiSelectWallFace) {
+          propSurfaceIdHint.textContent = `已选中 ${selectedWallFacesArr.length} 个墙面 · 修改将应用于所有选中墙面`;
+        } else {
+          const wn = getWallName(sel.wallId, sel.floorLevelId) || sel.wallId || "该墙";
+          const side = sel.faceId === "face_a" ? "正面" : sel.faceId === "face_b" ? "反面" : "两面";
+          propSurfaceIdHint.textContent = `修改将应用于 ${wn} ${side}`;
+        }
       } else {
         propSurfaceIdHint.textContent = `修改将应用于该层全部${isFloor ? "地面" : isDoor ? "门" : isWin ? "窗洞玻璃" : "墙体"}`;
       }
@@ -5681,15 +6138,34 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     // 获取覆盖数据
     let ov = null;
-    if (hasMultiSelectFloor) {
-      // 多选时尝试合并多个房间的覆盖值，如果值不一致显示空
+    if (isWallFace) {
+      // 墙面覆盖：按 wallId + faceId 读取
+      if (hasMultiSelectWallFace) {
+        // 多选：合并一致的字段
+        const overrides = selectedWallFacesArr.map(({ wallId, faceId }) => getWallFaceOverride(sel.floorLevelId, wallId, faceId)).filter(Boolean);
+        if (overrides.length === 1) {
+          ov = overrides[0];
+        } else if (overrides.length > 1) {
+          ov = {};
+          const fields = ["color", "materialId", "roughness", "metalness", "uvScale", "textureRotation", "textureAlbedo"];
+          for (const field of fields) {
+            const vals = overrides.map((o) => JSON.stringify(o?.[field]));
+            const uniqueVals = [...new Set(vals)].filter((v) => v !== "undefined" && v !== "null");
+            if (uniqueVals.length === 1) {
+              ov[field] = JSON.parse(uniqueVals[0]);
+            }
+          }
+          if (!Object.keys(ov).length) ov = null;
+        }
+      } else {
+        ov = getWallFaceOverride(sel.floorLevelId, sel.wallId, sel.faceId);
+      }
+    } else if (hasMultiSelectFloor) {
       const overrides = selectedRoomIds.map((rid) => getRoomFloorOverride(sel.floorLevelId, rid)).filter(Boolean);
       if (overrides.length === 1) {
         ov = overrides[0];
       } else if (overrides.length > 1) {
-        // 合并：只保留一致的字段
         ov = {};
-        const first = overrides[0];
         const fields = ["color", "materialId", "roughness", "metalness", "uvScale", "textureRotation", "textureAlbedo"];
         for (const field of fields) {
           const vals = overrides.map((o) => JSON.stringify(o?.[field]));
@@ -5701,7 +6177,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (!Object.keys(ov).length) ov = null;
       }
     } else if (hasMultiSelectDoor) {
-      // 多选门时尝试合并多个门的覆盖值
       const overrides = selectedDoorIdsArr.map((did) => getDoorOverride(sel.floorLevelId, did)).filter(Boolean);
       if (overrides.length === 1) {
         ov = overrides[0];
@@ -5718,7 +6193,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (!Object.keys(ov).length) ov = null;
       }
     } else if (hasMultiSelectWindow) {
-      // 多选窗户时尝试合并多个窗户的覆盖值
       const overrides = selectedWindowIdsArr.map((wid) => getWindowOverride(sel.floorLevelId, wid)).filter(Boolean);
       if (overrides.length === 1) {
         ov = overrides[0];
@@ -5738,7 +6212,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       ov = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
     }
 
-    const sampleMesh = (hasMultiSelectFloor || hasMultiSelectDoor || hasMultiSelectWindow) ? null : findFirstFloorplanSurfaceMesh(sel.floorLevelId, scope);
+    const sampleMesh = (isWallFace || hasMultiSelectFloor || hasMultiSelectDoor || hasMultiSelectWindow) ? null : findFirstFloorplanSurfaceMesh(sel.floorLevelId, scope);
     const hex = ov?.color || (sampleMesh ? sampleMeshColorHex(sampleMesh) : "#e8dcc8");
     const normalizedHex = hex.length === 7 ? hex : `#${hex.replace(/^#/, "")}`;
     if (propSurfaceColor) propSurfaceColor.value = normalizedHex;
@@ -5746,7 +6220,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     const lib = await getFloorplanMaterialsLibraryBag();
 
-    const selectVal = await resolveBaseMaterialIdForSurfacePanel(sel, scope, ov, lib);
+    // wallFace 使用 "allWalls" scope 解析默认材质
+    const resolveScope = isWallFace ? "allWalls" : scope;
+    const selectVal = await resolveBaseMaterialIdForSurfacePanel(sel, resolveScope, ov, lib);
     const texAlbedoRaw = String(ov?.textureAlbedo ?? "").trim();
     if (propSurfaceMaterialSection) propSurfaceMaterialSection.hidden = isWin;
     if (propSurfaceUvTextureSection) propSurfaceUvTextureSection.hidden = isWin;
@@ -5796,12 +6272,24 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       );
     }
     selectedFloorplanSurface = sel;
-    // 多选房间地板时传递 roomIdFilter，多选门时传递 doorIdFilter，多选窗户时传递 windowIdFilter
+    // 多选房间地板时传递 roomIdFilter，多选门时传递 doorIdFilter，多选窗户时传递 windowIdFilter，多选墙面时传递 wallFaceFilter
     if (sel) {
       const roomFilter = sel.kind === "allFloors" && selectedRoomFloorIds.size > 0 ? selectedRoomFloorIds : null;
       const doorFilter = sel.kind === "allDoors" && selectedDoorIds.size > 0 ? selectedDoorIds : null;
       const windowFilter = sel.kind === "allWindows" && selectedWindowIds.size > 0 ? selectedWindowIds : null;
-      setFloorplanGlobalSurfaceHighlight(sel.floorLevelId, sel.kind, true, roomFilter, doorFilter, windowFilter);
+      // wallFaceFilter: Map<wallId, Set<faceId | null>>
+      let wallFaceFilter = null;
+      if (sel.kind === "wallFace") {
+        // 使用多选集合（至少包含当前选中面）
+        const faces = selectedWallFaceIds.size > 0 ? getSelectedWallFaces() : [{ wallId: sel.wallId, faceId: sel.faceId }];
+        wallFaceFilter = new Map();
+        for (const { wallId, faceId } of faces) {
+          if (!wallId) continue;
+          if (!wallFaceFilter.has(wallId)) wallFaceFilter.set(wallId, new Set());
+          wallFaceFilter.get(wallId).add(faceId);
+        }
+      }
+      setFloorplanGlobalSurfaceHighlight(sel.floorLevelId, sel.kind, true, roomFilter, doorFilter, windowFilter, wallFaceFilter);
     }
     if (propFurnitureFields) propFurnitureFields.hidden = true;
     if (propSurfaceFields) propSurfaceFields.hidden = false;
@@ -5829,6 +6317,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 多选窗户处理
     const hasMultiSelectWindow = selectedWindowIds.size > 0 && sel.kind === "allWindows" && sel.windowId;
     const selectedWindowIdsArr = hasMultiSelectWindow ? getSelectedWindowIds() : [];
+    // 墙面处理（单选或多选）
+    const isWallFaceEdit = sel.kind === "wallFace";
 
     /** 窗玻璃：不切换材质库预设，仅保存颜色与 PBR/玻璃参数（不写 materialId / textureAlbedo） */
     if (sel.kind === "allWindows") {
@@ -5977,9 +6467,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (hasMultiSelectWindow) {
       const windowIds = getSelectedWindowIds();
       setWindowOverridesForMultiple(fid, windowIds, hasScopeData ? next : null);
-      // 同步到 Design JSON
       syncWindowOverridesToDesignJson();
       await applyWindowOverridesForMultiple(fid, windowIds);
+      await selectFloorplanSurface(sel);
+      if (historyReady) schedulePushHistory();
+      emitLayoutChanged();
+      return;
+    }
+
+    // 墙面（单选或多选）：按 wallId + faceId 设置覆盖
+    if (isWallFaceEdit) {
+      const wallFacePairs = selectedWallFaceIds.size > 0
+        ? getSelectedWallFaces()
+        : [{ wallId: sel.wallId, faceId: sel.faceId }];
+      setWallFaceOverridesForMultiple(fid, wallFacePairs, hasScopeData ? next : null);
+      syncWallFaceOverridesToDesignJson();
+      await applyWallFaceOverridesToScene(fid, wallFacePairs);
       await selectFloorplanSurface(sel);
       if (historyReady) schedulePushHistory();
       emitLayoutChanged();
@@ -6301,49 +6804,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     const surf = rayPickFloorplanSurface(e.clientX, e.clientY);
     if (surf) {
-      // Ctrl+click 多选房间地板
-      if (surf.kind === "allFloors" && surf.roomId) {
-        if (e.ctrlKey || e.metaKey) {
-          // Ctrl+click: 切换选中状态，不清除旧选择
-          toggleRoomFloorSelection(surf.roomId);
-        } else {
-          // 普通点击: 清除旧选择，只选当前房间
-          clearRoomFloorSelection();
-          clearDoorSelection();
-          toggleRoomFloorSelection(surf.roomId);
-        }
-      }
-      // Ctrl+click 多选门
-      if (surf.kind === "allDoors" && surf.doorId) {
-        if (e.ctrlKey || e.metaKey) {
-          // Ctrl+click: 切换选中状态，不清除旧选择
-          toggleDoorSelection(surf.doorId);
-        } else {
-          // 普通点击: 清除旧选择，只选当前门
-          clearDoorSelection();
-          clearRoomFloorSelection();
-          clearWindowSelection();
-          toggleDoorSelection(surf.doorId);
-        }
-      }
-      // Ctrl+click 多选窗户
-      if (surf.kind === "allWindows" && surf.windowId) {
-        if (e.ctrlKey || e.metaKey) {
-          // Ctrl+click: 切换选中状态，不清除旧选择
-          toggleWindowSelection(surf.windowId);
-        } else {
-          // 普通点击: 清除旧选择，只选当前窗户
-          clearWindowSelection();
-          clearRoomFloorSelection();
-          clearDoorSelection();
-          toggleWindowSelection(surf.windowId);
-        }
-      }
+      // 多选状态的切换延迟到 pointerup（确认是短按后）再执行，避免长按旋转时误改选中集合
       pendingSurfacePick = {
         surf,
         pointerId: e.pointerId,
         startX: e.clientX,
         startY: e.clientY,
+        isCtrl: e.ctrlKey || e.metaKey,
         timerId: setTimeout(() => {
           pendingSurfacePick = null;
         }, FLOORPLAN_SURFACE_LONG_PRESS_MS),
@@ -6353,16 +6820,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return;
     }
     if (rayPickFloorplan(e.clientX, e.clientY)) {
-      clearFloorplanSurfaceSelection();
-      selectFurniture(null);
-      floorplanSelected = true;
-      propertiesPanel?.classList.remove("is-visible");
+      // 延迟清除选中状态到 pointerup，避免拖拽旋转时误清除
+      pendingClearSelection = {
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        floorplanSelected: true,
+      };
       return;
     }
-    clearFloorplanSurfaceSelection();
-    selectFurniture(null);
-    floorplanSelected = false;
-    propertiesPanel?.classList.remove("is-visible");
+    // 点击完全空白区域：同样延迟到 pointerup
+    pendingClearSelection = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      floorplanSelected: false,
+    };
   }
 
   function onPointerMove(e) {
@@ -6372,6 +6845,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (dx * dx + dy * dy > FLOORPLAN_SURFACE_MOVE_CANCEL_PX2) {
         clearTimeout(pendingSurfacePick.timerId);
         pendingSurfacePick = null;
+      }
+    }
+    if (pendingClearSelection && e.pointerId === pendingClearSelection.pointerId) {
+      const dx = e.clientX - pendingClearSelection.startX;
+      const dy = e.clientY - pendingClearSelection.startY;
+      if (dx * dx + dy * dy > FLOORPLAN_SURFACE_MOVE_CANCEL_PX2) {
+        pendingClearSelection = null;
       }
     }
     if (altDragState && e.pointerId === altDragState.pointerId) {
@@ -6406,10 +6886,71 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function onPointerUp(e) {
     if (pendingSurfacePick && e.pointerId === pendingSurfacePick.pointerId) {
       clearTimeout(pendingSurfacePick.timerId);
-      const surf = pendingSurfacePick.surf;
+      const { surf, isCtrl } = pendingSurfacePick;
       pendingSurfacePick = null;
       if (e.type !== "pointercancel") {
+        // 确认是短按后才执行多选切换，避免长按旋转时误改选中状态
+        if (surf.kind === "allFloors" && surf.roomId) {
+          if (isCtrl) {
+            toggleRoomFloorSelection(surf.roomId);
+          } else {
+            clearRoomFloorSelection();
+            clearDoorSelection();
+            clearWallFaceSelection();
+            toggleRoomFloorSelection(surf.roomId);
+          }
+        } else if (surf.kind === "allDoors" && surf.doorId) {
+          if (isCtrl) {
+            toggleDoorSelection(surf.doorId);
+          } else {
+            clearDoorSelection();
+            clearRoomFloorSelection();
+            clearWindowSelection();
+            clearWallFaceSelection();
+            toggleDoorSelection(surf.doorId);
+          }
+        } else if (surf.kind === "allWindows" && surf.windowId) {
+          if (isCtrl) {
+            toggleWindowSelection(surf.windowId);
+          } else {
+            clearWindowSelection();
+            clearRoomFloorSelection();
+            clearDoorSelection();
+            clearWallFaceSelection();
+            toggleWindowSelection(surf.windowId);
+          }
+        } else if (surf.kind === "wallFace" && surf.wallId) {
+          if (isCtrl) {
+            clearRoomFloorSelection();
+            clearDoorSelection();
+            clearWindowSelection();
+            toggleWallFaceSelection(surf.wallId, surf.faceId);
+          } else {
+            clearWallFaceSelection();
+            clearRoomFloorSelection();
+            clearDoorSelection();
+            clearWindowSelection();
+            toggleWallFaceSelection(surf.wallId, surf.faceId);
+          }
+        } else {
+          // allWalls 等无多选 id 的类型：清除所有多选集合
+          clearRoomFloorSelection();
+          clearDoorSelection();
+          clearWindowSelection();
+          clearWallFaceSelection();
+        }
         void selectFloorplanSurface(surf);
+      }
+    }
+    if (pendingClearSelection && e.pointerId === pendingClearSelection.pointerId) {
+      const { floorplanSelected: willSelectFloorplan } = pendingClearSelection;
+      pendingClearSelection = null;
+      if (e.type !== "pointercancel") {
+        clearFloorplanSurfaceSelection();
+        selectFurniture(null);
+        floorplanSelected = willSelectFloorplan;
+        if (!willSelectFloorplan) propertiesPanel?.classList.remove("is-visible");
+        else propertiesPanel?.classList.remove("is-visible");
       }
     }
     if (altDragState && e.pointerId === altDragState.pointerId) {
@@ -6989,7 +7530,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } else {
         windowOverridesByStyleKey[skForRoom] = {};
       }
-      
+      // 恢复墙面覆盖
+      const wallFaceDataLoaded = floorplanSurfaceOverridesByStyleKey[skForRoom]?.wallFaceOverrides;
+      if (wallFaceDataLoaded && typeof wallFaceDataLoaded === "object") {
+        wallFaceOverridesByStyleKey[skForRoom] = JSON.parse(JSON.stringify(wallFaceDataLoaded));
+      } else {
+        wallFaceOverridesByStyleKey[skForRoom] = {};
+      }
+
       // 应用恢复的材质覆盖到场景中
       if (fpId && floorplanRoot.children.length > 0) {
         await applyAllOverridesToScene();
@@ -7547,6 +8095,26 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
     }
 
+    // 处理墙面（按面）覆盖：烘焙为 wallId__face_a / wallId__face_b 材质键
+    // 注意：这些覆盖存在 wallFaceOverridesByStyleKey 中，格式为 {floorLevelId: {wallId: {face_a?, face_b?}}}
+    const wallFaceData = overridesBucket.__wallFaceOverrides;
+    if (wallFaceData && typeof wallFaceData === "object") {
+      for (const [fidRaw, wallsData] of Object.entries(wallFaceData)) {
+        if (!wallsData || typeof wallsData !== "object") continue;
+        for (const [wallId, faces] of Object.entries(wallsData)) {
+          if (!faces || typeof faces !== "object") continue;
+          const wid = String(wallId ?? "").trim();
+          if (!wid) continue;
+          if (faces.face_a && surfaceOverrideIsActive(faces.face_a)) {
+            bakeOneMaterialOverride(`${wid}__face_a`, faces.face_a, "allWalls");
+          }
+          if (faces.face_b && surfaceOverrideIsActive(faces.face_b)) {
+            bakeOneMaterialOverride(`${wid}__face_b`, faces.face_b, "allWalls");
+          }
+        }
+      }
+    }
+
     return next;
   }
 
@@ -7675,8 +8243,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         }
         const displayName = await resolveStyleDisplayName(fpId, sk);
         const surfaceOverridesBucket = getSurfaceOverridesBucketForStyle(sk, { create: false });
+        const skKey = normalizeStyleKeyForSurfaceOverrides(sk);
+        const wallFaceData = wallFaceOverridesByStyleKey[skKey];
+        const bucketWithWallFace = {
+          ...surfaceOverridesBucket,
+          ...(wallFaceData && Object.keys(wallFaceData).length ? { __wallFaceOverrides: wallFaceData } : {}),
+        };
         const libraryBag = await getFloorplanMaterialsLibraryBag();
-        const bakedStyle = bakeSurfaceOverridesIntoStyle(lastMergedFloorplanStyle, surfaceOverridesBucket, currentFloorplanEntry, libraryBag);
+        const bakedStyle = bakeSurfaceOverridesIntoStyle(lastMergedFloorplanStyle, bucketWithWallFace, currentFloorplanEntry, libraryBag);
         const block = buildStyleBlockFromSceneForPack(sk, displayName, bakedStyle);
         if (!pack.styles || typeof pack.styles !== "object") pack.styles = {};
         // 仅替换当前键；其它 styles.* 保持从文件读出时的快照
@@ -7762,8 +8336,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
         const baseStyleObj = await loadStyleConfig(fpId, defKey);
         const surfaceOverridesBucket = getCurrentSurfaceOverridesBucket();
+        const curSkKey = normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
+        const wallFaceDataNew = wallFaceOverridesByStyleKey[curSkKey];
+        const bucketWithWallFaceNew = {
+          ...surfaceOverridesBucket,
+          ...(wallFaceDataNew && Object.keys(wallFaceDataNew).length ? { __wallFaceOverrides: wallFaceDataNew } : {}),
+        };
         const libraryBag = await getFloorplanMaterialsLibraryBag();
-        const bakedStyle = bakeSurfaceOverridesIntoStyle(lastMergedFloorplanStyle, surfaceOverridesBucket, currentFloorplanEntry, libraryBag);
+        const bakedStyle = bakeSurfaceOverridesIntoStyle(lastMergedFloorplanStyle, bucketWithWallFaceNew, currentFloorplanEntry, libraryBag);
         const block = buildStyleBlockDiffFromBaseForPack(newKey, raw, bakedStyle, baseStyleObj, defKey);
         styles[newKey] = block;
         pack.styles = styles;
@@ -7916,7 +8496,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       roomFloorOverridesByStyleKey = {};
       doorOverridesByStyleKey = {};
       windowOverridesByStyleKey = {};
-      
+      wallFaceOverridesByStyleKey = {};
+
       clearFloorplanSurfaceSelection();
       selectFurniture(null);
       floorplanSelected = false;
@@ -8244,6 +8825,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       ...Object.keys(roomFloorOverridesByStyleKey),
       ...Object.keys(doorOverridesByStyleKey),
       ...Object.keys(windowOverridesByStyleKey),
+      ...Object.keys(wallFaceOverridesByStyleKey),
     ]);
     for (const key of allKeys) {
       result[key] = {
@@ -8251,6 +8833,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         roomFloors: JSON.parse(JSON.stringify(roomFloorOverridesByStyleKey[key] || {})),
         doorOverrides: JSON.parse(JSON.stringify(doorOverridesByStyleKey[key] || {})),
         windowOverrides: JSON.parse(JSON.stringify(windowOverridesByStyleKey[key] || {})),
+        wallFaceOverrides: JSON.parse(JSON.stringify(wallFaceOverridesByStyleKey[key] || {})),
       };
     }
     return result;
