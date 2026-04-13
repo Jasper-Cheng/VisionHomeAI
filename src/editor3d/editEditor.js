@@ -5132,6 +5132,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const hasMultiSelectDoor = selectedDoorIds.size > 0 && isDoor && sel.doorId;
     const selectedDoorIdsArr = hasMultiSelectDoor ? getSelectedDoorIds() : [];
 
+    // 多选窗户处理
+    const hasMultiSelectWindow = selectedWindowIds.size > 0 && isWin && sel.windowId;
+    const selectedWindowIdsArr = hasMultiSelectWindow ? getSelectedWindowIds() : [];
+
     // 获取房间名称的辅助函数
     function getRoomName(roomId, floorLevelId) {
       if (!roomId || !floorLevelId) return null;
