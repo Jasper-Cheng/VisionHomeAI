@@ -53,6 +53,14 @@ const MAX_HISTORY = 80;
 /** 户型墙/地/顶面：略偏灰，避免与 IBL 叠加后发白糊成一片 */
 const FLOORPLAN_SURFACE_COLOR = 0xc9c4be;
 
+// ============ 性能优化：全局缓存 ============
+/** 纹理缓存：key = 纹理URL，value = THREE.Texture */
+const globalTextureCache = new Map();
+/** 材质缓存：key = 材质定义的哈希，value = THREE.Material */
+const globalMaterialCache = new Map();
+/** 风格预加载状态：key = styleKey，value = Promise */
+const stylePreloadPromises = new Map();
+
 /**
  * 风格包未配置 sceneLighting 时的默认曝光与灯光（偏中性）。
  * 户型风格包 `assets/floorplans/style/<floorplanId>.json` 中 `styles.<key>.sceneLighting` 可覆盖全局光照。
@@ -68,6 +76,116 @@ const DEFAULT_SCENE_LIGHTING = {
 // 地面网格在 y=0.02（见 buildRoomMesh）；家具/装饰的 group.position.y 需要抬到地面之上，
 // 否则很多 glTF 会以 y=0 为底面导致“下陷”。
 const FLOOR_SURFACE_Y_M = 0.02;
+
+/**
+ * 生成材质定义的哈希key（用于材质缓存）
+ * @param {object} def 材质定义
+ * @param {number} opacity 透明度
+ * @param {object} options 选项
+ * @returns {string}
+ */
+function getMaterialCacheKey(def, opacity, options = {}) {
+  const parts = [
+    def.type || 'standard',
+    def.color || '#ffffff',
+    def.roughness ?? 0.55,
+    def.metalness ?? 0.05,
+    def.opacity ?? 1,
+    def.transmission ?? 0,
+    def.ior ?? 1.45,
+    opacity,
+    options.forGlass ? 'glass' : '',
+    options.floorUv ? 'floor' : '',
+    options.side || 'front',
+    JSON.stringify(def.uvScale || []),
+    def.textureRotation || 0,
+    JSON.stringify(def.texture || {}),
+  ];
+  return parts.join('|');
+}
+
+/**
+ * 从缓存获取或创建纹理
+ * @param {string} url 纹理URL
+ * @param {THREE.TextureLoader} loader 纹理加载器
+ * @param {boolean} isSRGB 是否为sRGB颜色空间
+ * @returns {Promise<THREE.Texture>}
+ */
+async function getCachedTexture(url, loader, isSRGB = false) {
+  const cacheKey = `${url}|${isSRGB ? 'srgb' : 'linear'}`;
+  if (globalTextureCache.has(cacheKey)) {
+    return globalTextureCache.get(cacheKey).clone();
+  }
+  
+  try {
+    const tex = await loader.loadAsync(url);
+    if (isSRGB) {
+      tex.colorSpace = THREE.SRGBColorSpace;
+    }
+    tex.flipY = false;
+    globalTextureCache.set(cacheKey, tex);
+    return tex.clone();
+  } catch (e) {
+    console.warn('[VisionHome] 纹理加载失败:', url, e);
+    return null;
+  }
+}
+
+/**
+ * 预加载风格的所有纹理
+ * @param {object} style 风格对象
+ * @returns {Promise<void>}
+ */
+async function preloadStyleTextures(style) {
+  if (!style?.materials) return;
+  
+  const loader = new THREE.TextureLoader();
+  const promises = [];
+  
+  for (const def of Object.values(style.materials)) {
+    if (!def?.texture || typeof def.texture !== 'object') continue;
+    
+    const t = def.texture;
+    if (t.albedo) {
+      const url = resolveStyleTextureUrl(String(t.albedo).trim());
+      promises.push(getCachedTexture(url, loader, true));
+    }
+    if (t.roughness) {
+      const url = resolveStyleTextureUrl(String(t.roughness).trim());
+      promises.push(getCachedTexture(url, loader, false));
+    }
+    if (t.normal) {
+      const url = resolveStyleTextureUrl(String(t.normal).trim());
+      promises.push(getCachedTexture(url, loader, false));
+    }
+    if (t.metalnessMap) {
+      const url = resolveStyleTextureUrl(String(t.metalnessMap).trim());
+      promises.push(getCachedTexture(url, loader, false));
+    }
+  }
+  
+  await Promise.allSettled(promises);
+}
+
+/**
+ * 清理缓存（在切换项目或需要释放内存时调用）
+ */
+function clearGlobalCaches() {
+  // 释放纹理
+  for (const tex of globalTextureCache.values()) {
+    tex.dispose();
+  }
+  globalTextureCache.clear();
+  
+  // 释放材质
+  for (const mat of globalMaterialCache.values()) {
+    mat.dispose();
+  }
+  globalMaterialCache.clear();
+  
+  stylePreloadPromises.clear();
+}
+
 
 /**
  * @param {object | null | undefined} over 风格 JSON 中的 sceneLighting
@@ -1676,44 +1794,26 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       let normalTex = null;
       let metalnessTex = null;
 
+      // 使用缓存的纹理加载
       if (albedo) {
-        try {
-          const au = resolveStyleTextureUrl(albedo);
-          diffTex = await loader.loadAsync(au);
-          diffTex.colorSpace = THREE.SRGBColorSpace;
-          diffTex.flipY = false;
-        } catch (e) {
-          console.warn("[VisionHome] style albedo 贴图加载失败:", e);
-        }
+        const au = resolveStyleTextureUrl(albedo);
+        diffTex = await getCachedTexture(au, loader, true);
       }
       if (rough) {
-        try {
-          const ru = resolveStyleTextureUrl(rough);
-          roughTex = await loader.loadAsync(ru);
-          roughTex.colorSpace = THREE.LinearSRGBColorSpace;
-          roughTex.flipY = false;
-        } catch (e) {
-          console.warn("[VisionHome] style roughness 贴图加载失败:", e);
-        }
+        const ru = resolveStyleTextureUrl(rough);
+        roughTex = await getCachedTexture(ru, loader, false);
+        if (roughTex) roughTex.colorSpace = THREE.LinearSRGBColorSpace;
       }
       if (normal) {
-        try {
-          const nu = resolveStyleTextureUrl(normal);
-          normalTex = await loader.loadAsync(nu);
-          normalTex.colorSpace = THREE.NoColorSpace;
-          normalTex.flipY = false;
-        } catch (e) {
-          console.warn("[VisionHome] style normal 贴图加载失败:", e);
-        }
+        const nu = resolveStyleTextureUrl(normal);
+        normalTex = await getCachedTexture(nu, loader, false);
+        if (normalTex) normalTex.colorSpace = THREE.NoColorSpace;
       }
       if (metalnessMapPath) {
-        try {
-          const mu = resolveStyleTextureUrl(metalnessMapPath);
-          metalnessTex = await loader.loadAsync(mu);
+        const mu = resolveStyleTextureUrl(metalnessMapPath);
+        metalnessTex = await getCachedTexture(mu, loader, false);
+        if (metalnessTex) {
           metalnessTex.colorSpace = THREE.LinearSRGBColorSpace;
-          metalnessTex.flipY = false;
-        } catch (e) {
-          console.warn("[VisionHome] style metalnessMap 贴图加载失败:", e);
         }
       }
 
@@ -2360,6 +2460,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     mesh.userData.floorplanPick = true;
     mesh.userData.floorplanRoomFloor = true;
     mesh.userData.floorplanRoomId = String(room?.id ?? "").trim();
+    mesh.userData.roomId = String(room?.id ?? "").trim(); // 用于快速切换
     mesh.userData.floorplanFloorLevelId = String(floorLevelId ?? "").trim();
     mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
 
@@ -2504,6 +2605,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       mesh.rotation.y = rotY;
       mesh.userData.floorplanPick = true;
       mesh.userData.floorplanWallFace = true;
+      mesh.userData.floorplanWall = true; // 用于快速切换
+      mesh.userData.wallId = wallIdStr; // 用于快速切换
       mesh.userData.floorplanWallId = wallIdStr;
       mesh.userData.floorplanFloorLevelId = floorIdStr;
       mesh.userData.floorplanSurfaceOpacity = op;
@@ -2522,6 +2625,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         mesh.rotation.y = rotY;
         mesh.userData.floorplanPick = true;
         mesh.userData.floorplanWallFace = true;
+        mesh.userData.floorplanWall = true; // 用于快速切换
+        mesh.userData.wallId = wallIdStr; // 用于快速切换
         mesh.userData.floorplanWallId = wallIdStr;
         mesh.userData.floorplanFloorLevelId = floorIdStr;
         mesh.userData.floorplanSurfaceOpacity = op;
@@ -2838,6 +2943,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     mesh.receiveShadow = true;
     mesh.userData.floorplanPick = true;
     mesh.userData.floorplanDoorFill = true;
+    mesh.userData.floorplanDoor = true; // 用于快速切换
+    mesh.userData.doorId = String(door?.id ?? "").trim(); // 用于快速切换
     mesh.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
     mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
     mesh.userData.floorplanDoorStyle = ns;
@@ -3012,6 +3119,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     mesh.receiveShadow = true;
     mesh.userData.floorplanPick = true;
     mesh.userData.floorplanWindowFill = true;
+    mesh.userData.floorplanWindow = true; // 用于快速切换
+    mesh.userData.windowId = String(win?.id ?? "").trim(); // 用于快速切换
     mesh.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
     mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
     mesh.userData.floorplanWindowStyle = ns;
@@ -3659,6 +3768,198 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return fromPack || "modern_minimal_v1";
   }
 
+
+  /**
+   * 安全释放材质（处理单个材质和材质数组）
+   * @param {THREE.Material | THREE.Material[]} material
+   */
+  function disposeMaterialSafely(material) {
+    if (!material) return;
+    if (Array.isArray(material)) {
+      material.forEach(m => {
+        if (m && typeof m.dispose === 'function') m.dispose();
+      });
+    } else if (typeof material.dispose === 'function') {
+      material.dispose();
+    }
+  }
+
+  /**
+   * 快速切换风格：只更新材质和光照，不重建几何体
+   * @param {string} newStyleKey 新风格key
+   * @returns {Promise<boolean>} 是否成功切换
+   */
+  async function fastStyleSwitch(newStyleKey) {
+    if (!currentFloorplanEntry) return false;
+    
+    const entry = currentFloorplanEntry;
+    const fpId = String(entry?.id ?? "").trim();
+    if (!fpId) return false;
+    
+    // 加载新风格配置
+    let newStyle = null;
+    try {
+      newStyle = await loadStyleConfig(fpId, newStyleKey);
+    } catch (e) {
+      console.warn("[VisionHome] 快速切换风格失败:", newStyleKey, e);
+      return false;
+    }
+    
+    if (!newStyle) return false;
+    
+    // 预加载纹理（后台进行）
+    preloadStyleTextures(newStyle).catch(e => console.warn('[VisionHome] 纹理预加载失败:', e));
+    
+    // 更新光照
+    const lightingMerged = mergeSceneLighting(newStyle?.sceneLighting ?? null);
+    applySceneLightingConfig(renderer, ambientLight, hemiLight, dirLight, lightingMerged);
+    sceneLightingEnvMapIntensity = lightingMerged.envMapIntensity;
+    
+    // 更新材质
+    const floorIndex = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
+    const opacity = floorIndex >= 0 ? activeLayerOpacity : 0.2;
+    
+    // 标记是否需要完全重建（遇到多材质墙体时）
+    let needFullRebuild = false;
+    
+    // 遍历场景中的所有 mesh，更新材质
+    floorplanRoot.traverse((obj) => {
+      if (!obj.isMesh) return;
+      
+      const userData = obj.userData;
+      
+      // 房间地板
+      if (userData.floorplanRoomFloor && userData.roomId) {
+        const room = { id: userData.roomId };
+        const fk = resolveRoomFloorMaterialKey(newStyle, room);
+        if (fk) {
+          const def = getMaterialDef(newStyle, fk);
+          if (def) {
+            const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
+              forGlass: false,
+              envMapIntensity: sceneLightingEnvMapIntensity,
+              side: THREE.DoubleSide,
+            });
+            newMat.userData.__floorplanRoomFloorDepthWrite = true;
+            applyFloorplanSurfaceAlpha(newMat, opacity);
+            queueStylePackTextures(newMat, def, { applyUvScale: true });
+            
+            disposeMaterialSafely(obj.material);
+            obj.material = newMat;
+          }
+        }
+      }
+      
+      // 墙体（跳过多材质墙体，因为需要房间信息才能正确更新）
+      else if (userData.floorplanWall && userData.wallId) {
+        // 如果是多材质数组，跳过快速更新（需要完全重建才能正确处理房间墙面）
+        if (Array.isArray(obj.material)) {
+          // 标记需要完全重建
+          needFullRebuild = true;
+        } else {
+          // 单材质墙体可以快速更新
+          const wall = { id: userData.wallId };
+          const wk = resolveWallMaterialKey(newStyle, wall);
+          if (wk) {
+            const def = getMaterialDef(newStyle, wk);
+            if (def) {
+              const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
+                forGlass: false,
+                envMapIntensity: sceneLightingEnvMapIntensity,
+                side: THREE.FrontSide,
+              });
+              queueStylePackTextures(newMat, def, { applyUvScale: false });
+              
+              disposeMaterialSafely(obj.material);
+              obj.material = newMat;
+            }
+          }
+        }
+      }
+      
+      // 门
+      else if (userData.floorplanDoor && userData.doorId) {
+        const door = { id: userData.doorId };
+        const dk = resolveDoorMaterialKey(newStyle, door);
+        if (dk) {
+          const def = getMaterialDef(newStyle, dk);
+          if (def) {
+            const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
+              forGlass: false,
+              envMapIntensity: sceneLightingEnvMapIntensity,
+              side: THREE.FrontSide,
+            });
+            queueStylePackTextures(newMat, def, { applyUvScale: false });
+            
+            disposeMaterialSafely(obj.material);
+            obj.material = newMat;
+          }
+        }
+      }
+      
+      // 窗户
+      else if (userData.floorplanWindow && userData.windowId) {
+        const win = { id: userData.windowId };
+        const wink = resolveWindowMaterialKey(newStyle, win);
+        if (wink) {
+          const def = getMaterialDef(newStyle, wink);
+          if (def) {
+            const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
+              forGlass: true,
+              envMapIntensity: 0.9,
+              side: THREE.FrontSide,
+            });
+            queueStylePackTextures(newMat, def, { applyUvScale: false });
+            
+            disposeMaterialSafely(obj.material);
+            obj.material = newMat;
+          }
+        }
+      }
+    });
+    
+    lastMergedFloorplanStyle = newStyle;
+    
+    // 加载风格包中的覆盖数据（需要深拷贝以避免污染缓存）
+    const sk = newStyleKey;
+    const skKey = normalizeStyleKeyForSurfaceOverrides(sk);
+    
+    const roomFloorMats = newStyle?.roomFloorMaterials;
+    if (roomFloorMats && typeof roomFloorMats === 'object') {
+      roomFloorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(roomFloorMats));
+    } else {
+      if (!roomFloorOverridesByStyleKey[skKey]) {
+        roomFloorOverridesByStyleKey[skKey] = {};
+      }
+    }
+    
+    const doorMats = newStyle?.doorOverrides;
+    if (doorMats && typeof doorMats === 'object') {
+      doorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(doorMats));
+    } else {
+      if (!doorOverridesByStyleKey[skKey]) {
+        doorOverridesByStyleKey[skKey] = {};
+      }
+    }
+    
+    const windowMats = newStyle?.windowOverrides;
+    if (windowMats && typeof windowMats === 'object') {
+      windowOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(windowMats));
+    } else {
+      if (!windowOverridesByStyleKey[skKey]) {
+        windowOverridesByStyleKey[skKey] = {};
+      }
+    }
+    
+    // 如果遇到多材质墙体，返回 false 触发完全重建
+    if (needFullRebuild) {
+      console.log('[VisionHome] 检测到多材质墙体，回退到完全重建');
+      return false;
+    }
+    
+    return true;
+  }
+
   /**
    * @param {{ applyDecorFromStyle?: boolean }} [opts]
    *        applyDecorFromStyle：用当前风格 JSON 中的装饰替换场景装饰（切换风格、首次加载户型时）；undo/设计恢复时不要开启。
@@ -3683,11 +3984,30 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     const entry = currentFloorplanEntry;
     const fpId = String(entry?.id ?? "").trim();
-    if (fpId) await loadStylePackIndex(fpId);
+    if (fpId) {
+      const packIndex = await loadStylePackIndex(fpId);
+      // 预加载前3个风格的纹理（后台进行）
+      if (packIndex?.styles?.length) {
+        const topStyles = packIndex.styles.slice(0, 3);
+        for (const styleInfo of topStyles) {
+          const preloadKey = `${fpId}::${styleInfo.key}`;
+          if (!stylePreloadPromises.has(preloadKey)) {
+            const promise = loadStyleConfig(fpId, styleInfo.key)
+              .then(s => preloadStyleTextures(s))
+              .catch(e => console.warn('[VisionHome] 风格预加载失败:', styleInfo.key, e));
+            stylePreloadPromises.set(preloadKey, promise);
+          }
+        }
+      }
+    }
     const skEffective = getEffectiveFloorplanStyleKey();
     let style = null;
     try {
       style = await loadStyleConfig(fpId, skEffective);
+      // 预加载纹理（后台进行，不阻塞）
+      if (style) {
+        preloadStyleTextures(style).catch(e => console.warn('[VisionHome] 纹理预加载失败:', e));
+      }
     } catch (e) {
       console.warn("[VisionHome] 风格包加载失败:", skEffective, e);
     }
@@ -7219,6 +7539,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
         if (historyReady) schedulePushHistory();
         syncOverwriteBtnLockState();
+        // 更新 baseline，避免切换风格时误报有未保存的更改
+        window.__designLayoutBaseline = serializeDesignBaseline();
       } catch (e) {
         console.error(e);
         alert(e?.message || String(e));
@@ -7306,6 +7628,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
         if (historyReady) schedulePushHistory();
         syncOverwriteBtnLockState();
+        // 更新 baseline，避免切换风格时误报有未保存的更改
+        window.__designLayoutBaseline = serializeDesignBaseline();
       } catch (e) {
         console.error(e);
         alert(e?.message || String(e));
@@ -7441,6 +7765,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       floorplanSelected = false;
       propertiesPanel?.classList.remove("is-visible");
 
+      // 清除风格配置缓存，确保加载最新的风格数据
+      clearStyleConfigCache();
+
       const picked = String(tag.textContent ?? "").trim();
       if (picked) {
         btn.textContent = picked;
@@ -7448,7 +7775,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         btn.title = tip;
         btn.setAttribute("aria-label", tip);
       }
-      await rebuildFloorplan3D({ applyDecorFromStyle: true });
+      
+      // 尝试快速切换（只更新材质，不重建几何体）
+      const fastSwitchSuccess = await fastStyleSwitch(key);
+      
+      if (fastSwitchSuccess) {
+        // 快速切换成功，延迟加载装饰物
+        setTimeout(async () => {
+          if (floorplanStyleKeyOverride === key && lastMergedFloorplanStyle) {
+            await mergeLayoutWithStyleDecorations(lastMergedFloorplanStyle);
+          }
+        }, 100);
+      } else {
+        // 快速切换失败，回退到完全重建
+        await rebuildFloorplan3D({ applyDecorFromStyle: true });
+      }
+      
       pushHistorySnapshot();
       // 更新 baseline，避免下次切换时再次提示
       window.__designLayoutBaseline = serializeDesignBaseline();

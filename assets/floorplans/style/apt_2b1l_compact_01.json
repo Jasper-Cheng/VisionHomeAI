@@ -579,7 +579,7 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
+            "albedo": "textures/wood_floor_diff.jpg",
             "normal": "textures/wood_floor_nor_gl.jpg",
             "roughness": "textures/wood_floor_rough.jpg"
           },
@@ -591,12 +591,12 @@
         },
         "r_bed1_wall": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -610,7 +610,7 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
+            "albedo": "textures/wood_floor_diff.jpg",
             "normal": "textures/wood_floor_nor_gl.jpg",
             "roughness": "textures/wood_floor_rough.jpg"
           },
@@ -622,12 +622,12 @@
         },
         "r_bed2_wall": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -641,7 +641,7 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
+            "albedo": "textures/wood_floor_diff.jpg",
             "normal": "textures/wood_floor_nor_gl.jpg",
             "roughness": "textures/wood_floor_rough.jpg"
           },
@@ -653,12 +653,12 @@
         },
         "r_living_wall": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -672,7 +672,7 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
+            "albedo": "textures/wood_floor_diff.jpg",
             "normal": "textures/wood_floor_nor_gl.jpg",
             "roughness": "textures/wood_floor_rough.jpg"
           },
@@ -684,12 +684,12 @@
         },
         "r_living_co_wall": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -703,7 +703,7 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
+            "albedo": "textures/wood_floor_diff.jpg",
             "normal": "textures/wood_floor_nor_gl.jpg",
             "roughness": "textures/wood_floor_rough.jpg"
           },
@@ -715,12 +715,12 @@
         },
         "r_kitchen_wall": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -734,7 +734,7 @@
           "roughness": 0.35,
           "metalness": 0,
           "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
+            "albedo": "textures/wood_floor_diff.jpg",
             "normal": "textures/wood_floor_nor_gl.jpg",
             "roughness": "textures/wood_floor_rough.jpg"
           },
@@ -746,12 +746,12 @@
         },
         "r_bath_wall": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -761,12 +761,12 @@
         },
         "w_ext_left_n": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -776,12 +776,12 @@
         },
         "w_ext_left_s": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -791,12 +791,12 @@
         },
         "w_ext_top_w": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -806,12 +806,12 @@
         },
         "w_ext_top_e": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -821,12 +821,12 @@
         },
         "w_ext_right_n": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -836,12 +836,12 @@
         },
         "w_ext_right_m": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -851,12 +851,12 @@
         },
         "w_ext_right_s": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -866,12 +866,12 @@
         },
         "w_ext_bot_w": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -881,12 +881,12 @@
         },
         "w_ext_bot_e": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -896,12 +896,12 @@
         },
         "w_int_v_mid_n_top": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -911,12 +911,12 @@
         },
         "w_int_v_mid_n_bot": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -926,12 +926,12 @@
         },
         "w_int_v_mid_s": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -941,12 +941,12 @@
         },
         "w_int_h_mid_w": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -956,12 +956,12 @@
         },
         "w_int_h_bed2_kitchen": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -971,12 +971,12 @@
         },
         "w_int_h_low_w": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -986,12 +986,12 @@
         },
         "w_int_h_low_e": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -1001,12 +1001,12 @@
         },
         "w_int_v_bath": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -1016,12 +1016,12 @@
         },
         "w_int_v_niche": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -1031,742 +1031,12 @@
         },
         "w_int_h_niche": {
           "type": "paint",
-          "color": "#ede7e0",
+          "color": "#845e30",
           "roughness": 0.9,
           "metalness": 0,
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "d_main": {
-          "type": "paint_wood",
-          "color": "#eed1a1",
-          "roughness": 0.8,
-          "metalness": 0.02,
-          "texture": {
-            "normal": "textures/dark_wood_nor_gl.jpg",
-            "roughness": "textures/dark_wood_rough.jpg"
-          },
-          "uvScale": [
-            1,
-            1
-          ],
-          "textureRotation": 0
-        },
-        "d_bath": {
-          "type": "paint_wood",
-          "color": "#eed1a1",
-          "roughness": 0.8,
-          "metalness": 0.02,
-          "texture": {
-            "normal": "textures/dark_wood_nor_gl.jpg",
-            "roughness": "textures/dark_wood_rough.jpg"
-          },
-          "uvScale": [
-            1,
-            1
-          ],
-          "textureRotation": 0
-        },
-        "d_kitchen": {
-          "type": "paint_wood",
-          "color": "#eed1a1",
-          "roughness": 0.8,
-          "metalness": 0.02,
-          "texture": {
-            "normal": "textures/dark_wood_nor_gl.jpg",
-            "roughness": "textures/dark_wood_rough.jpg"
-          },
-          "uvScale": [
-            1,
-            1
-          ],
-          "textureRotation": 0
-        },
-        "d_bed1": {
-          "type": "paint_wood",
-          "color": "#eed1a1",
-          "roughness": 0.8,
-          "metalness": 0.02,
-          "texture": {
-            "normal": "textures/dark_wood_nor_gl.jpg",
-            "roughness": "textures/dark_wood_rough.jpg"
-          },
-          "uvScale": [
-            1,
-            1
-          ],
-          "textureRotation": 0
-        },
-        "d_bed2": {
-          "type": "paint_wood",
-          "color": "#eed1a1",
-          "roughness": 0.8,
-          "metalness": 0.02,
-          "texture": {
-            "normal": "textures/dark_wood_nor_gl.jpg",
-            "roughness": "textures/dark_wood_rough.jpg"
-          },
-          "uvScale": [
-            1,
-            1
-          ],
-          "textureRotation": 0
-        },
-        "win_left_floor": {
-          "type": "glass",
-          "color": "#baac74",
-          "opacity": 0.22,
-          "roughness": 0.04,
-          "metalness": 0,
-          "transmission": 0.96,
-          "ior": 1.45
-        },
-        "win_left_small": {
-          "type": "glass",
-          "color": "#baac74",
-          "opacity": 0.22,
-          "roughness": 0.04,
-          "metalness": 0,
-          "transmission": 0.96,
-          "ior": 1.45
-        },
-        "win_right_small": {
-          "type": "glass",
-          "color": "#baac74",
-          "opacity": 0.22,
-          "roughness": 0.04,
-          "metalness": 0,
-          "transmission": 0.96,
-          "ior": 1.45
-        },
-        "win_kitchen_e": {
-          "type": "glass",
-          "color": "#baac74",
-          "opacity": 0.22,
-          "roughness": 0.04,
-          "metalness": 0,
-          "transmission": 0.96,
-          "ior": 1.45
-        },
-        "win_bath_e": {
-          "type": "glass",
-          "color": "#baac74",
-          "opacity": 0.22,
-          "roughness": 0.04,
-          "metalness": 0,
-          "transmission": 0.96,
-          "ior": 1.45
-        }
-      },
-      "decorations": {
-        "placements": [
-          {
-            "model": "Chandelier_03",
-            "x": -172,
-            "y": 252,
-            "rotation": 0,
-            "floorId": "floor1",
-            "decorationLiftCm": 176
-          }
-        ]
-      },
-      "roomFloorMaterials": {
-        "floor1": {
-          "r_kitchen": {
-            "color": "#e8dcc8",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "brick_crosswalk_diff.jpg"
-          },
-          "r_living": {
-            "color": "#f3e2c6",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "brick_wall_04_diff.jpg"
-          },
-          "r_bath": {
-            "color": "#e8dcc8",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "clean_asphalt_diff.jpg"
-          },
-          "r_living_co": {
-            "color": "#e8dcc8",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "beige_wall_001_diff.jpg"
-          },
-          "r_bed2": {
-            "color": "#e8dcc8",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "blue_metal_plate_diff.jpg"
-          },
-          "r_bed1": {
-            "color": "#e8dcc8",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "brick_wall_006_diff.jpg"
-          }
-        }
-      },
-      "doorOverrides": {
-        "floor1": {
-          "d_main": {
-            "color": "#decaab",
-            "materialId": "door_main",
-            "roughness": 0.8,
-            "metalness": 0.02,
-            "uvScale": [
-              1,
-              1
-            ],
-            "textureRotation": 0,
-            "textureAlbedo": "brick_crosswalk_diff.jpg"
-          },
-          "d_bath": {
-            "color": "#e8dcc8",
-            "materialId": "door_main",
-            "roughness": 0.8,
-            "metalness": 0.02,
-            "uvScale": [
-              1,
-              1
-            ],
-            "textureRotation": 0,
-            "textureAlbedo": "brick_wall_006_diff.jpg"
-          }
-        }
-      }
-    },
-    "s_2": {
-      "id": "s_2",
-      "name": "2",
-      "sceneLighting": {
-        "toneMappingExposure": 1,
-        "ambient": {
-          "color": "#ffffff",
-          "intensity": 0.26
-        },
-        "hemisphere": {
-          "sky": "#dbeafe",
-          "ground": "#0b1220",
-          "intensity": 0.36
-        },
-        "directional": {
-          "color": "#ffffff",
-          "intensity": 1
-        },
-        "envMapIntensity": 0.35
-      },
-      "materials": {
-        "r_bed1": {
-          "type": "wood_floor",
-          "color": "#cf4848",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/dark_wood_diff.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_bed1_wall": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "r_bed2": {
-          "type": "wood_floor",
-          "color": "#cf4848",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/dark_wood_diff.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_bed2_wall": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "r_living": {
-          "type": "wood_floor",
-          "color": "#cf4848",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/dark_wood_diff.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_living_wall": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "r_living_co": {
-          "type": "wood_floor",
-          "color": "#cf4848",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/dark_wood_diff.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_living_co_wall": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "r_kitchen": {
-          "type": "wood_floor",
-          "color": "#cf4848",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/dark_wood_diff.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_kitchen_wall": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "r_bath": {
-          "type": "wood_floor",
-          "color": "#cf4848",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/dark_wood_diff.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_bath_wall": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_left_n": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_left_s": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_top_w": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_top_e": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_right_n": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_right_m": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_right_s": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_bot_w": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_bot_e": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_v_mid_n_top": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_v_mid_n_bot": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_v_mid_s": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_h_mid_w": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_h_bed2_kitchen": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_h_low_w": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_h_low_e": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_v_bath": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_v_niche": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_h_niche": {
-          "type": "paint",
-          "color": "#795c37",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/painted_plaster_wall_diff.jpg"
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
@@ -1874,23 +1144,6 @@
         "placements": [
           {
             "model": "potted_plant_02",
-            "x": 293,
-            "y": -363,
-            "rotation": 0,
-            "floorId": "floor1",
-            "decorationLiftCm": 0
-          }
-        ]
-      }
-    },
-    "style_1776050582836": {
-      "id": "style_1776050582836",
-      "name": "啊啊啊啊啊啊啊",
-      "extends": "default",
-      "decorations": {
-        "placements": [
-          {
-            "model": "potted_plant_02",
             "x": -16,
             "y": 105,
             "rotation": 0,
@@ -1900,9 +1153,9 @@
       },
       "roomFloorMaterials": {
         "floor1": {
-          "r_living": {
+          "r_bed1": {
             "color": "#e8dcc8",
-            "materialId": "floor_bed1",
+            "materialId": "r_bed1",
             "roughness": 0.35,
             "metalness": 0,
             "uvScale": [
@@ -1913,816 +1166,11 @@
             "textureAlbedo": "brick_wall_04_diff.jpg"
           }
         }
-      },
-      "doorOverrides": {
-        "floor1": {
-          "d_kitchen": {
-            "color": "#2c1d04",
-            "materialId": "door_main",
-            "roughness": 0.8,
-            "metalness": 0.02,
-            "uvScale": [
-              1,
-              1
-            ],
-            "textureRotation": 0,
-            "textureAlbedo": "brick_crosswalk_diff.jpg"
-          },
-          "d_main": {
-            "color": "#e8dcc8",
-            "materialId": "door_main",
-            "roughness": 0.8,
-            "metalness": 0.02,
-            "uvScale": [
-              1,
-              1
-            ],
-            "textureRotation": 0,
-            "textureAlbedo": "brick_crosswalk_diff.jpg"
-          }
-        }
       }
     },
-    "sad": {
-      "id": "sad",
-      "name": "撒身上的大sad",
-      "extends": "default",
-      "decorations": {
-        "placements": [
-          {
-            "model": "potted_plant_02",
-            "x": -16,
-            "y": 105,
-            "rotation": 0,
-            "floorId": "floor1"
-          }
-        ]
-      },
-      "roomFloorMaterials": {
-        "floor1": {
-          "r_living": {
-            "color": "#e8dcc8",
-            "materialId": "floor_bed1",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "brick_crosswalk_diff.jpg"
-          }
-        }
-      }
-    },
-    "style_1776050773522": {
-      "id": "style_1776050773522",
-      "name": "大大说",
-      "materials": {
-        "r_bed1": {
-          "type": "wood_floor",
-          "color": "#ffffff",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_bed1_wall": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "r_bed2": {
-          "type": "wood_floor",
-          "color": "#ffffff",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_bed2_wall": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "r_living": {
-          "type": "wood_floor",
-          "color": "#ffffff",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_living_wall": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "r_living_co": {
-          "type": "wood_floor",
-          "color": "#ffffff",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_living_co_wall": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "r_kitchen": {
-          "type": "wood_floor",
-          "color": "#ffffff",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_kitchen_wall": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "r_bath": {
-          "type": "wood_floor",
-          "color": "#ffffff",
-          "roughness": 0.35,
-          "metalness": 0,
-          "texture": {
-            "albedo": "textures/wood_floor_rough.jpg",
-            "normal": "textures/wood_floor_nor_gl.jpg",
-            "roughness": "textures/wood_floor_rough.jpg"
-          },
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90
-        },
-        "r_bath_wall": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_left_n": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_left_s": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_top_w": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_top_e": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_right_n": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_right_m": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_right_s": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_bot_w": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_ext_bot_e": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_v_mid_n_top": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_v_mid_n_bot": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_v_mid_s": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_h_mid_w": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_h_bed2_kitchen": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_h_low_w": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_h_low_e": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_v_bath": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_v_niche": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "w_int_h_niche": {
-          "type": "paint",
-          "color": "#ede7e0",
-          "roughness": 0.9,
-          "metalness": 0,
-          "texture": {
-            "roughness": "textures/painted_plaster_wall_rough.jpg",
-            "albedo": "textures/dark_wood_diff.jpg"
-          },
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
-        },
-        "d_main": {
-          "type": "paint_wood",
-          "color": "#eed1a1",
-          "roughness": 0.8,
-          "metalness": 0.02,
-          "texture": {
-            "normal": "textures/dark_wood_nor_gl.jpg",
-            "roughness": "textures/dark_wood_rough.jpg"
-          },
-          "uvScale": [
-            1,
-            1
-          ],
-          "textureRotation": 0
-        },
-        "d_bath": {
-          "type": "paint_wood",
-          "color": "#eed1a1",
-          "roughness": 0.8,
-          "metalness": 0.02,
-          "texture": {
-            "normal": "textures/dark_wood_nor_gl.jpg",
-            "roughness": "textures/dark_wood_rough.jpg"
-          },
-          "uvScale": [
-            1,
-            1
-          ],
-          "textureRotation": 0
-        },
-        "d_kitchen": {
-          "type": "paint_wood",
-          "color": "#eed1a1",
-          "roughness": 0.8,
-          "metalness": 0.02,
-          "texture": {
-            "normal": "textures/dark_wood_nor_gl.jpg",
-            "roughness": "textures/dark_wood_rough.jpg"
-          },
-          "uvScale": [
-            1,
-            1
-          ],
-          "textureRotation": 0
-        },
-        "d_bed1": {
-          "type": "paint_wood",
-          "color": "#eed1a1",
-          "roughness": 0.8,
-          "metalness": 0.02,
-          "texture": {
-            "normal": "textures/dark_wood_nor_gl.jpg",
-            "roughness": "textures/dark_wood_rough.jpg"
-          },
-          "uvScale": [
-            1,
-            1
-          ],
-          "textureRotation": 0
-        },
-        "d_bed2": {
-          "type": "paint_wood",
-          "color": "#eed1a1",
-          "roughness": 0.8,
-          "metalness": 0.02,
-          "texture": {
-            "normal": "textures/dark_wood_nor_gl.jpg",
-            "roughness": "textures/dark_wood_rough.jpg"
-          },
-          "uvScale": [
-            1,
-            1
-          ],
-          "textureRotation": 0
-        },
-        "win_left_floor": {
-          "type": "glass",
-          "color": "#baac74",
-          "opacity": 0.22,
-          "roughness": 0.04,
-          "metalness": 0,
-          "transmission": 0.96,
-          "ior": 1.45
-        },
-        "win_left_small": {
-          "type": "glass",
-          "color": "#baac74",
-          "opacity": 0.22,
-          "roughness": 0.04,
-          "metalness": 0,
-          "transmission": 0.96,
-          "ior": 1.45
-        },
-        "win_right_small": {
-          "type": "glass",
-          "color": "#baac74",
-          "opacity": 0.22,
-          "roughness": 0.04,
-          "metalness": 0,
-          "transmission": 0.96,
-          "ior": 1.45
-        },
-        "win_kitchen_e": {
-          "type": "glass",
-          "color": "#baac74",
-          "opacity": 0.22,
-          "roughness": 0.04,
-          "metalness": 0,
-          "transmission": 0.96,
-          "ior": 1.45
-        },
-        "win_bath_e": {
-          "type": "glass",
-          "color": "#baac74",
-          "opacity": 0.22,
-          "roughness": 0.04,
-          "metalness": 0,
-          "transmission": 0.96,
-          "ior": 1.45
-        }
-      },
-      "decorations": {
-        "placements": [
-          {
-            "model": "Chandelier_03",
-            "x": -172,
-            "y": 253,
-            "rotation": 0,
-            "floorId": "floor1",
-            "decorationLiftCm": 176
-          }
-        ]
-      },
-      "roomFloorMaterials": {
-        "floor1": {
-          "r_kitchen": {
-            "color": "#e8dcc8",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "brick_crosswalk_diff.jpg"
-          },
-          "r_living": {
-            "color": "#f3e2c6",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "brick_crosswalk_diff.jpg"
-          },
-          "r_bath": {
-            "color": "#e8dcc8",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "clean_asphalt_diff.jpg"
-          },
-          "r_living_co": {
-            "color": "#e8dcc8",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "beige_wall_001_diff.jpg"
-          },
-          "r_bed2": {
-            "color": "#e8dcc8",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "blue_metal_plate_diff.jpg"
-          },
-          "r_bed1": {
-            "color": "#e8dcc8",
-            "materialId": "baked_floor1_allFloors",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "brick_wall_006_diff.jpg"
-          }
-        }
-      },
-      "doorOverrides": {
-        "floor1": {
-          "d_main": {
-            "color": "#decaab",
-            "materialId": "door_main",
-            "roughness": 0.8,
-            "metalness": 0.02,
-            "uvScale": [
-              1,
-              1
-            ],
-            "textureRotation": 0,
-            "textureAlbedo": "brick_crosswalk_diff.jpg"
-          },
-          "d_bath": {
-            "color": "#e8dcc8",
-            "materialId": "door_main",
-            "roughness": 0.8,
-            "metalness": 0.02,
-            "uvScale": [
-              1,
-              1
-            ],
-            "textureRotation": 0,
-            "textureAlbedo": "brick_wall_006_diff.jpg"
-          }
-        }
-      }
-    },
-    "s_1221": {
-      "id": "s_1221",
-      "name": "1221",
-      "extends": "default",
-      "decorations": {
-        "placements": [
-          {
-            "model": "potted_plant_02",
-            "x": -16,
-            "y": 105,
-            "rotation": 0,
-            "floorId": "floor1"
-          }
-        ]
-      },
-      "roomFloorMaterials": {
-        "floor1": {
-          "r_living": {
-            "color": "#e8dcc8",
-            "materialId": "floor_bed1",
-            "roughness": 0.35,
-            "metalness": 0,
-            "uvScale": [
-              0.15,
-              0.15
-            ],
-            "textureRotation": 90,
-            "textureAlbedo": "blue_metal_plate_diff.jpg"
-          }
-        }
-      }
-    },
-    "s_1_1": {
-      "id": "s_1_1",
-      "name": "1",
+    "s_2": {
+      "id": "s_2",
+      "name": "2",
       "sceneLighting": {
         "toneMappingExposure": 1,
         "ambient": {
@@ -3205,6 +1653,1197 @@
           "texture": {
             "roughness": "textures/painted_plaster_wall_rough.jpg",
             "albedo": "textures/blue_metal_plate_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "d_main": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_bath": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_kitchen": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_bed1": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_bed2": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "win_left_floor": {
+          "type": "glass",
+          "color": "#E4E2DA",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
+        },
+        "win_left_small": {
+          "type": "glass",
+          "color": "#E4E2DA",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
+        },
+        "win_right_small": {
+          "type": "glass",
+          "color": "#E4E2DA",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
+        },
+        "win_kitchen_e": {
+          "type": "glass",
+          "color": "#C4C2B8",
+          "opacity": 0.38,
+          "roughness": 0.22,
+          "metalness": 0,
+          "transmission": 0.68,
+          "ior": 1.45
+        },
+        "win_bath_e": {
+          "type": "glass",
+          "color": "#DCD8D0",
+          "opacity": 0.55,
+          "roughness": 0.82,
+          "metalness": 0,
+          "transmission": 0.42,
+          "ior": 1.45
+        }
+      },
+      "decorations": {
+        "placements": [
+          {
+            "model": "potted_plant_02",
+            "x": -16,
+            "y": 105,
+            "rotation": 0,
+            "floorId": "floor1"
+          }
+        ]
+      },
+      "roomFloorMaterials": {
+        "floor1": {
+          "r_living": {
+            "color": "#e8dcc8",
+            "materialId": "r_bed1",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90,
+            "textureAlbedo": "dark_wood_diff.jpg"
+          }
+        }
+      }
+    },
+    "s_3": {
+      "id": "s_3",
+      "name": "3",
+      "sceneLighting": {
+        "toneMappingExposure": 1,
+        "ambient": {
+          "color": "#ffffff",
+          "intensity": 0.26
+        },
+        "hemisphere": {
+          "sky": "#dbeafe",
+          "ground": "#0b1220",
+          "intensity": 0.36
+        },
+        "directional": {
+          "color": "#ffffff",
+          "intensity": 1
+        },
+        "envMapIntensity": 0.35
+      },
+      "materials": {
+        "r_bed1": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_bed1_wall": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "r_bed2": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_bed2_wall": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "r_living": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_living_wall": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "r_living_co": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_living_co_wall": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "r_kitchen": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_kitchen_wall": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "r_bath": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_bath_wall": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_left_n": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_left_s": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_top_w": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_top_e": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_right_n": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_right_m": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_right_s": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_bot_w": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_bot_e": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_v_mid_n_top": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_v_mid_n_bot": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_v_mid_s": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_h_mid_w": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_h_bed2_kitchen": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_h_low_w": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_h_low_e": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_v_bath": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_v_niche": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_h_niche": {
+          "type": "paint",
+          "color": "#4b3820",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "d_main": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_bath": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_kitchen": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_bed1": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_bed2": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "win_left_floor": {
+          "type": "glass",
+          "color": "#E4E2DA",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
+        },
+        "win_left_small": {
+          "type": "glass",
+          "color": "#E4E2DA",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
+        },
+        "win_right_small": {
+          "type": "glass",
+          "color": "#E4E2DA",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
+        },
+        "win_kitchen_e": {
+          "type": "glass",
+          "color": "#C4C2B8",
+          "opacity": 0.38,
+          "roughness": 0.22,
+          "metalness": 0,
+          "transmission": 0.68,
+          "ior": 1.45
+        },
+        "win_bath_e": {
+          "type": "glass",
+          "color": "#DCD8D0",
+          "opacity": 0.55,
+          "roughness": 0.82,
+          "metalness": 0,
+          "transmission": 0.42,
+          "ior": 1.45
+        }
+      },
+      "decorations": {
+        "placements": [
+          {
+            "model": "potted_plant_02",
+            "x": -16,
+            "y": 105,
+            "rotation": 0,
+            "floorId": "floor1"
+          }
+        ]
+      }
+    },
+    "s_4": {
+      "id": "s_4",
+      "name": "4",
+      "sceneLighting": {
+        "toneMappingExposure": 1,
+        "ambient": {
+          "color": "#ffffff",
+          "intensity": 0.26
+        },
+        "hemisphere": {
+          "sky": "#dbeafe",
+          "ground": "#0b1220",
+          "intensity": 0.36
+        },
+        "directional": {
+          "color": "#ffffff",
+          "intensity": 1
+        },
+        "envMapIntensity": 0.35
+      },
+      "materials": {
+        "r_bed1": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_bed1_wall": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "r_bed2": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_bed2_wall": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "r_living": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_living_wall": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "r_living_co": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_living_co_wall": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "r_kitchen": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_kitchen_wall": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "r_bath": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_diff.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        },
+        "r_bath_wall": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_left_n": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_left_s": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_top_w": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_top_e": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_right_n": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_right_m": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_right_s": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_bot_w": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_ext_bot_e": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_v_mid_n_top": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_v_mid_n_bot": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_v_mid_s": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_h_mid_w": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_h_bed2_kitchen": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_h_low_w": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_h_low_e": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_v_bath": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_v_niche": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "w_int_h_niche": {
+          "type": "paint",
+          "color": "#e6dacb",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/brick_crosswalk_diff.jpg"
           },
           "uvScale": [
             2,
