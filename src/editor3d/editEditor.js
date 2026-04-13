@@ -5276,9 +5276,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const first = overrides[0];
         const fields = ["color", "materialId", "roughness", "metalness", "uvScale", "textureRotation", "textureAlbedo"];
         for (const field of fields) {
-          const vals = overrides.map((o) => JSON.stringify(o?.[field])).filter(Boolean);
-          if (vals.length === 1 && vals[0] !== "undefined") {
-            ov[field] = JSON.parse(vals[0]);
+          const vals = overrides.map((o) => JSON.stringify(o?.[field]));
+          const uniqueVals = [...new Set(vals)].filter((v) => v !== "undefined" && v !== "null");
+          if (uniqueVals.length === 1) {
+            ov[field] = JSON.parse(uniqueVals[0]);
           }
         }
         if (!Object.keys(ov).length) ov = null;
@@ -5292,9 +5293,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         ov = {};
         const fields = ["color", "materialId", "roughness", "metalness", "opacity", "transmission", "ior"];
         for (const field of fields) {
-          const vals = overrides.map((o) => JSON.stringify(o?.[field])).filter(Boolean);
-          if (vals.length === 1 && vals[0] !== "undefined") {
-            ov[field] = JSON.parse(vals[0]);
+          const vals = overrides.map((o) => JSON.stringify(o?.[field]));
+          const uniqueVals = [...new Set(vals)].filter((v) => v !== "undefined" && v !== "null");
+          if (uniqueVals.length === 1) {
+            ov[field] = JSON.parse(uniqueVals[0]);
           }
         }
         if (!Object.keys(ov).length) ov = null;
@@ -5308,9 +5310,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         ov = {};
         const fields = ["color", "roughness", "metalness", "opacity", "transmission", "ior"];
         for (const field of fields) {
-          const vals = overrides.map((o) => JSON.stringify(o?.[field])).filter(Boolean);
-          if (vals.length === 1 && vals[0] !== "undefined") {
-            ov[field] = JSON.parse(vals[0]);
+          const vals = overrides.map((o) => JSON.stringify(o?.[field]));
+          const uniqueVals = [...new Set(vals)].filter((v) => v !== "undefined" && v !== "null");
+          if (uniqueVals.length === 1) {
+            ov[field] = JSON.parse(uniqueVals[0]);
           }
         }
         if (!Object.keys(ov).length) ov = null;
@@ -5442,6 +5445,31 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           : NaN;
       if (Number.isFinite(pior)) next.ior = Math.min(2.5, Math.max(1, pior));
       const hasScopeData = Object.keys(next).length > 0;
+      
+      // 多选窗户：批量设置覆盖
+      if (hasMultiSelectWindow) {
+        const windowIds = getSelectedWindowIds();
+        setWindowOverridesForMultiple(fid, windowIds, hasScopeData ? next : null);
+        // 同步到 Design JSON
+        syncWindowOverridesToDesignJson();
+        await applyWindowOverridesForMultiple(fid, windowIds);
+        await selectFloorplanSurface(sel);
+        if (historyReady) schedulePushHistory();
+        return;
+      }
+      
+      // 单选窗户：设置单个窗户覆盖
+      if (sel.windowId) {
+        setWindowOverride(fid, sel.windowId, hasScopeData ? next : null);
+        // 同步到 Design JSON
+        syncWindowOverridesToDesignJson();
+        await applyWindowOverridesForMultiple(fid, [sel.windowId]);
+        await selectFloorplanSurface(sel);
+        if (historyReady) schedulePushHistory();
+        return;
+      }
+      
+      // 全部窗户：设置全局覆盖
       setFloorplanSurfaceGlobalOverride(fid, scope, hasScopeData ? next : null);
       if (!hasScopeData) {
         await rebuildFloorplan3D();
