@@ -2440,7 +2440,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 墙盒：基底为 walls[].style；+Z/−Z 大面按「沿墙位置」取两侧房间，叠加 mapping.rooms 的墙面材质（分段采样，避免整墙只用中点导致卫生间瓷砖铺满相邻房间）。
+   * 墙盒：使用墙体 ID 作为材质 key；+Z/−Z 大面按「沿墙位置」取两侧房间，叠加房间墙面材质（roomId_wall）（分段采样，避免整墙只用中点导致卫生间瓷砖铺满相邻房间）。
    */
   function buildWallMesh(wall, floor, cx, cy, s, defaultHeightCm, floorOpacity, wallStyleMat, style, getMaterialForKey, floorLevelId) {
     if (!Array.isArray(wall?.start) || wall.start.length < 2 || !Array.isArray(wall?.end) || wall.end.length < 2) return null;
@@ -6890,84 +6890,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function buildStyleBlockDiffFromBaseForPack(styleKey, displayName, styleObj, baseStyleObj, baseKey) {
-    const layout = getLayout();
-    const placements = [];
-    for (const row of layout) {
-      if (!modelIdIsDecoration(row.model)) continue;
-      const p = { model: row.model, x: row.x, y: row.y, rotation: row.rotation ?? 0 };
-      if (row.floorId) p.floorId = row.floorId;
-      if (row.decorationLiftCm != null) p.decorationLiftCm = row.decorationLiftCm;
-      placements.push(p);
-    }
-
-    const baseLighting = baseStyleObj?.sceneLighting;
-    const nextLighting = getSceneLightingForStylePack();
-    const mappingDiff = diffMappingAgainstBase(styleObj?.mapping, baseStyleObj?.mapping);
-    const materialsDiff = mappingDiff
-      ? diffMaterialsForMapping(styleObj?.materials, baseStyleObj?.materials, mappingDiff)
-      : null;
-
-    // 获取房间地板覆盖
-    const roomFloorMaterials = {};
-    const roomFloorBucket = roomFloorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
-    if (roomFloorBucket && typeof roomFloorBucket === "object") {
-      for (const [floorId, rooms] of Object.entries(roomFloorBucket)) {
-        if (!rooms || typeof rooms !== "object") continue;
-        for (const [roomId, override] of Object.entries(rooms)) {
-          if (!override || typeof override !== "object" || !Object.keys(override).length) continue;
-          if (!roomFloorMaterials[floorId]) roomFloorMaterials[floorId] = {};
-          roomFloorMaterials[floorId][roomId] = JSON.parse(JSON.stringify(override));
-        }
-      }
-    }
-
-    // 获取门覆盖
-    const doorOverridesData = {};
-    const doorBucket = doorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
-    if (doorBucket && typeof doorBucket === "object") {
-      for (const [floorId, doors] of Object.entries(doorBucket)) {
-        if (!doors || typeof doors !== "object") continue;
-        for (const [doorId, override] of Object.entries(doors)) {
-          if (!override || typeof override !== "object" || !Object.keys(override).length) continue;
-          if (!doorOverridesData[floorId]) doorOverridesData[floorId] = {};
-          doorOverridesData[floorId][doorId] = JSON.parse(JSON.stringify(override));
-        }
-      }
-    }
-
-    // 获取窗户覆盖
-    const windowOverridesData = {};
-    const windowBucket = windowOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
-    if (windowBucket && typeof windowBucket === "object") {
-      for (const [floorId, windows] of Object.entries(windowBucket)) {
-        if (!windows || typeof windows !== "object") continue;
-        for (const [windowId, override] of Object.entries(windows)) {
-          if (!override || typeof override !== "object" || !Object.keys(override).length) continue;
-          if (!windowOverridesData[floorId]) windowOverridesData[floorId] = {};
-          windowOverridesData[floorId][windowId] = JSON.parse(JSON.stringify(override));
-        }
-      }
-    }
-
-    const block = {
-      id: styleKey,
-      name: displayName,
-      extends: baseKey,
-      decorations: { placements },
-    };
-    if (!jsonEqual(nextLighting, baseLighting)) block.sceneLighting = nextLighting;
-    if (mappingDiff) block.mapping = mappingDiff;
-    if (materialsDiff) block.materials = materialsDiff;
-    if (Object.keys(roomFloorMaterials).length) block.roomFloorMaterials = roomFloorMaterials;
-    if (Object.keys(doorOverridesData).length) block.doorOverrides = doorOverridesData;
-    if (Object.keys(windowOverridesData).length) block.windowOverrides = windowOverridesData;
-    return block;
+    // 新格式：不再使用 extends 和 mapping，直接复制完整的材质定义
+    return buildStyleBlockFromSceneForPack(styleKey, displayName, styleObj);
   }
 
   function buildStyleBlockFromSceneForPack(styleKey, displayName, styleObj) {
     const materials = stripLibraryMetaFromMaterials(styleObj?.materials);
-    const mapping =
-      styleObj?.mapping && typeof styleObj.mapping === "object" && !Array.isArray(styleObj.mapping) ? styleObj.mapping : null;
     const layout = getLayout();
     const placements = [];
     for (const row of layout) {
@@ -7035,15 +6963,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (Object.keys(roomFloorMaterials).length) block.roomFloorMaterials = roomFloorMaterials;
     if (Object.keys(doorOverridesData).length) block.doorOverrides = doorOverridesData;
     if (Object.keys(windowOverridesData).length) block.windowOverrides = windowOverridesData;
-    if (mapping) block.mapping = mapping;
-    if (styleObj?.extends && typeof styleObj.extends === "string" && styleObj.extends.trim()) {
-      block.extends = styleObj.extends.trim();
-    }
     return block;
   }
 
   /**
-   * 将「面板覆盖」烘焙进风格包：生成/覆盖 style.materials 并写入 style.mapping（按房间/墙/门/窗 id）。
+   * 将「面板覆盖」烘焙进风格包：直接更新 style.materials 中对应的材质定义（新格式，不再使用 mapping）。
    * 不在风格包中存 surfaceOverrides 字段，避免与 style 本体重复表达。
    * @param {object | null} styleObj loadStyleConfig 返回的单套风格
    * @param {Record<string, any> | null | undefined} overridesBucket 当前风格下的 surfaceOverrides bucket（按楼层 id）
@@ -7067,74 +6991,39 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!next.materials || typeof next.materials !== "object" || Array.isArray(next.materials)) {
       next.materials = {};
     }
-    if (!next.mapping || typeof next.mapping !== "object" || Array.isArray(next.mapping)) {
-      next.mapping = {};
-    }
-    if (!next.mapping.rooms || typeof next.mapping.rooms !== "object" || Array.isArray(next.mapping.rooms)) {
-      next.mapping.rooms = {};
-    }
-    if (!next.mapping.walls || typeof next.mapping.walls !== "object" || Array.isArray(next.mapping.walls)) {
-      next.mapping.walls = {};
-    }
-    if (!next.mapping.doors || typeof next.mapping.doors !== "object" || Array.isArray(next.mapping.doors)) {
-      next.mapping.doors = {};
-    }
-    if (!next.mapping.windows || typeof next.mapping.windows !== "object" || Array.isArray(next.mapping.windows)) {
-      next.mapping.windows = {};
-    }
-
-    function safeBakeKey(s) {
-      return String(s ?? "")
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9_-]/g, "_")
-        .slice(0, 64);
-    }
 
     /**
-     * @param {string} floorLevelId
-     * @param {"allWalls"|"allFloors"|"allDoors"|"allWindows"} scope
-     * @param {SurfaceScopeOverride} ovRaw
-     * @returns {string | null} baked material key
+     * 烘焙单个元素的覆盖到材质定义
+     * @param {string} materialKey 材质 key（元素 ID）
+     * @param {SurfaceScopeOverride} ovRaw 覆盖数据
+     * @param {string} scope 作用域类型
      */
-    function bakeOneScopeMaterialKey(floorLevelId, scope, ovRaw) {
-      if (!surfaceOverrideIsActive(ovRaw)) return null;
+    function bakeOneMaterialOverride(materialKey, ovRaw, scope) {
+      if (!surfaceOverrideIsActive(ovRaw)) return;
       const ov = scope === "allWindows" ? windowSurfaceOverrideForApply(ovRaw) : ovRaw;
-      if (!ov || !surfaceOverrideIsActive(ov)) return null;
+      if (!ov || !surfaceOverrideIsActive(ov)) return;
 
       let baseDef = null;
       if (ov.materialId) {
         baseDef = resolveMaterialDefFromLibrary(libraryBag, ov.materialId);
       } else {
-        // 沿风格包解析当前 scope 的基准材质（取本层第一个元素）
-        const sel = { floorLevelId };
-        let k = "";
-        if (scope === "allFloors" || scope === "allWalls") {
-          k = resolveStyleMaterialKeyForSurfaceScope(sel, scope === "allFloors" ? "allFloors" : "allWalls", next);
-        } else if (scope === "allDoors") {
-          k = resolveStyleMaterialKeyForDoorScope(sel, next);
-        } else if (scope === "allWindows") {
-          k = resolveStyleMaterialKeyForWindowScope(sel, next);
-        }
-        if (k) {
-          const def = getMaterialDef(next, k);
-          if (def) {
-            try {
-              baseDef = JSON.parse(JSON.stringify(def));
-            } catch {
-              baseDef = { ...def };
-            }
+        // 使用当前材质定义作为基准
+        const def = next.materials[materialKey];
+        if (def) {
+          try {
+            baseDef = JSON.parse(JSON.stringify(def));
+          } catch {
+            baseDef = { ...def };
           }
         }
       }
-      if (!baseDef) return null;
+      if (!baseDef) return;
 
       const mergedDef = mergeMaterialOverrideIntoDef(baseDef, ov);
-      const bakedKey = `baked_${safeBakeKey(floorLevelId)}_${scope}`;
-      next.materials[bakedKey] = mergedDef;
-      return bakedKey;
+      next.materials[materialKey] = mergedDef;
     }
 
+    // 处理全局覆盖（allFloors, allWalls, allDoors, allWindows）
     for (const [fidRaw, bag] of Object.entries(overridesBucket)) {
       if (!bag || typeof bag !== "object") continue;
       const fid = String(fidRaw ?? "").trim();
@@ -7143,55 +7032,44 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const fl = floors.find((f) => normalizeFloorKey(f?.id ?? "") === want) ?? null;
       if (!fl) continue;
 
+      // 全局地板覆盖：应用到所有房间地板
       if (bag.allFloors) {
-        const key = bakeOneScopeMaterialKey(fid, "allFloors", bag.allFloors);
-        if (key) {
-          for (const room of fl.rooms || []) {
-            const rid = String(room?.id ?? "").trim();
-            if (!rid) continue;
-            const prev = next.mapping.rooms[rid];
-            const obj = prev && typeof prev === "object" && !Array.isArray(prev) ? { ...prev } : {};
-            obj.floor = key;
-            next.mapping.rooms[rid] = obj;
-          }
+        for (const room of fl.rooms || []) {
+          const rid = String(room?.id ?? "").trim();
+          if (!rid) continue;
+          bakeOneMaterialOverride(rid, bag.allFloors, "allFloors");
         }
       }
+
+      // 全局墙体覆盖：应用到所有墙体和房间墙体
       if (bag.allWalls) {
-        const key = bakeOneScopeMaterialKey(fid, "allWalls", bag.allWalls);
-        if (key) {
-          for (const w of fl.walls || []) {
-            const wid = String(w?.id ?? "").trim();
-            if (!wid) continue;
-            next.mapping.walls[wid] = key;
-          }
-          for (const room of fl.rooms || []) {
-            const rid = String(room?.id ?? "").trim();
-            if (!rid) continue;
-            const prev = next.mapping.rooms[rid];
-            const obj = prev && typeof prev === "object" && !Array.isArray(prev) ? { ...prev } : {};
-            obj.wall = key;
-            next.mapping.rooms[rid] = obj;
-          }
+        for (const w of fl.walls || []) {
+          const wid = String(w?.id ?? "").trim();
+          if (!wid) continue;
+          bakeOneMaterialOverride(wid, bag.allWalls, "allWalls");
+        }
+        for (const room of fl.rooms || []) {
+          const rid = String(room?.id ?? "").trim();
+          if (!rid) continue;
+          bakeOneMaterialOverride(`${rid}_wall`, bag.allWalls, "allWalls");
         }
       }
+
+      // 全局门覆盖：应用到所有门
       if (bag.allDoors) {
-        const key = bakeOneScopeMaterialKey(fid, "allDoors", bag.allDoors);
-        if (key) {
-          for (const d of fl.doors || []) {
-            const did = String(d?.id ?? "").trim();
-            if (!did) continue;
-            next.mapping.doors[did] = key;
-          }
+        for (const d of fl.doors || []) {
+          const did = String(d?.id ?? "").trim();
+          if (!did) continue;
+          bakeOneMaterialOverride(did, bag.allDoors, "allDoors");
         }
       }
+
+      // 全局窗户覆盖：应用到所有窗户
       if (bag.allWindows) {
-        const key = bakeOneScopeMaterialKey(fid, "allWindows", bag.allWindows);
-        if (key) {
-          for (const win of fl.windows || []) {
-            const wid = String(win?.id ?? "").trim();
-            if (!wid) continue;
-            next.mapping.windows[wid] = key;
-          }
+        for (const win of fl.windows || []) {
+          const wid = String(win?.id ?? "").trim();
+          if (!wid) continue;
+          bakeOneMaterialOverride(wid, bag.allWindows, "allWindows");
         }
       }
     }
@@ -7221,7 +7099,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 写回前保证根级 floorplanId 与 JSON 文件名一致；保留 mapping、defaultStyleKey、styles 中其它条目。
+   * 写回前保证根级 floorplanId 与 JSON 文件名一致；保留 styles 中其它条目。
    * @param {string} fpId
    * @param {object} pack
    */
@@ -7234,7 +7112,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /**
    * POST 整文件写入 `assets/floorplans/style/{floorplanId}.json`（需 dev_server）。
    * @param {string} fpId
-   * @param {object} pack 完整装饰包（含 mapping、defaultStyleKey、styles 等）
+   * @param {object} pack 完整装饰包（含 styles 等）
    */
   async function postFloorplanStylePackSave(fpId, pack) {
     normalizeStylePackRootForDisk(fpId, pack);

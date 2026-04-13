@@ -1,12 +1,15 @@
 /**
- * 户型装饰 JSON（assets/floorplans/style/<floorplanId>.json）：根级 defaultStyleKey 为默认风格键；缺省时用 styles 中第一个风格。loadStyleConfig 未传 styleKey 时用该默认。
- * 可选根级 mapping：与户型元素 id 对应；各风格未写 mapping 时沿用根级，避免重复。
- * 各风格可选 sceneLighting：曝光、环境光/半球光/主光强度与色温、户型 PBR envMapIntensity（见 apt 风格 JSON）。
- * loadStyleConfig(floorplanId, styleKey) 返回合并后的单套风格，供 getMaterialDef。
- * styles.{styleKey}.decorations：写在具体风格内；loadStyleConfig 合并后挂在返回对象 decorations（无根级 decorations）。
- *   placements：装饰实例列表，每项含 model（装饰库 id）、floorId、平面坐标 x/y（cm，编辑区中心原点）、rotation（度）；可选 decorationLiftCm、furnitureSelection。
- * floors[].walls|doors|windows：优先用风格包 mapping.walls|doors|windows 中以元素 id 为键的条目；若无则回退到 style 短键或直连材质 id。
- * floors[].rooms：优先 mapping.rooms[room.id]（{ floor, wall }）；否则 rooms[].style → mapping.rooms 短键。
+ * 户型装饰 JSON（assets/floorplans/style/<floorplanId>.json）：
+ * - 每个风格独立定义，不再使用 mapping 或 extends 继承
+ * - 材质 key 直接使用元素 ID：
+ *   - 房间地板：roomId（如 r_bed1）
+ *   - 房间墙体：roomId_wall（如 r_bed1_wall）
+ *   - 墙体：wallId（如 w_ext_left_n）
+ *   - 门：doorId（如 d_main）
+ *   - 窗户：windowId（如 win_left_floor）
+ * - loadStyleConfig(floorplanId, styleKey) 返回单套风格，供 getMaterialDef
+ * - styles.{styleKey}.decorations：装饰实例列表，每项含 model、floorId、x/y、rotation 等
+ * - styles.{styleKey}.sceneLighting：可选的场景光照配置
  */
 import { DATA_PATHS } from "../core/schema.js";
 
@@ -264,57 +267,11 @@ export async function loadStyleConfig(floorplanId, styleKey) {
   const cacheKey = `${fp}::${sk}::libMatId1`;
   if (styleCache.has(cacheKey)) return styleCache.get(cacheKey);
 
-  function mergePlainDeep(base, child) {
-    const b = isPlainObject(base) ? base : {};
-    const c = isPlainObject(child) ? child : {};
-    /** @type {Record<string, any>} */
-    const out = { ...b, ...c };
-    for (const k of Object.keys(out)) {
-      const bv = b[k];
-      const cv = c[k];
-      if (isPlainObject(bv) && isPlainObject(cv)) {
-        out[k] = mergePlainDeep(bv, cv);
-      }
-    }
-    return out;
-  }
-
-  function mergeStyleBlocks(baseStyle, childStyle) {
-    const base = isPlainObject(baseStyle) ? baseStyle : {};
-    const child = isPlainObject(childStyle) ? childStyle : {};
-    const merged = { ...base, ...child };
-    if (base.materials || child.materials) merged.materials = mergePlainDeep(base.materials, child.materials);
-    if (base.mapping || child.mapping) merged.mapping = mergePlainDeep(base.mapping, child.mapping);
-    if (child.decorations !== undefined) merged.decorations = child.decorations;
-    if (child.sceneLighting !== undefined) merged.sceneLighting = child.sceneLighting;
-    return merged;
-  }
-
-  function resolveStyleWithExtends(styleKey0) {
-    const curKey = safeStyleKey(styleKey0) || styleKey0;
-    const cur = styles[curKey];
-    if (!isPlainObject(cur)) return null;
-    let out = { ...cur };
-    const seen = new Set();
-    let ext = safeStyleKey(cur.extends);
-    while (ext) {
-      if (seen.has(ext)) throw new Error(`Circular style extends: ${Array.from(seen).join(" -> ")} -> ${ext}`);
-      seen.add(ext);
-      const parent = styles[ext];
-      if (!isPlainObject(parent)) break;
-      out = mergeStyleBlocks(parent, out);
-      ext = safeStyleKey(parent.extends);
-    }
-    return out;
-  }
-
-  const inner = resolveStyleWithExtends(sk) || styles[sk];
+  // 新格式：直接获取风格，不再处理 extends 和 mapping 继承
+  const inner = styles[sk];
   if (!inner || typeof inner !== "object") throw new Error(`Unknown styleKey: ${sk}`);
   const materialsLibrary = await loadMaterialsLibrary();
   const merged = resolveStyleMaterialRefs({ ...inner }, materialsLibrary, fp, sk);
-  if (merged.mapping === undefined && data.mapping != null && typeof data.mapping === "object") {
-    merged.mapping = data.mapping;
-  }
   styleCache.set(cacheKey, merged);
   return merged;
 }
@@ -361,11 +318,13 @@ export async function loadStylePackIndex(floorplanId) {
 const STYLE_ROOT_RESERVED = new Set([
   "id",
   "name",
-  "mapping",
   "decorations",
   "furniturePreset",
   "materials",
   "sceneLighting",
+  "roomFloorMaterials",
+  "doorOverrides",
+  "windowOverrides",
 ]);
 
 /**
@@ -507,77 +466,33 @@ export function findWallSideRooms(floor, wall, epsCm = 4) {
 }
 
 /**
- * 风格包 `mapping.walls|doors|windows`：户型元素的 `style` 短键 → 根级材质 id（无 id 映射时）。
- * @param {object | null | undefined} style loadStyleConfig 返回的单套风格对象
- * @param {"walls"|"doors"|"windows"} category
- * @param {unknown} raw 元素上的 style 字段
- * @returns {string | null}
- */
-export function resolveStyleSurfaceStyleId(style, category, raw) {
-  if (raw == null) return null;
-  const k = String(raw).trim();
-  if (!k) return null;
-  const mapRoot = style?.mapping;
-  const table = mapRoot && typeof mapRoot === "object" && !Array.isArray(mapRoot) ? mapRoot[category] : null;
-  if (table && typeof table === "object" && !Array.isArray(table) && Object.prototype.hasOwnProperty.call(table, k)) {
-    const v = table[k];
-    if (v == null) return null;
-    const id = String(v).trim();
-    return id || null;
-  }
-  return k;
-}
-
-/**
- * 优先 mapping.{category}[element.id]（材质 id 字符串），否则 {@link resolveStyleSurfaceStyleId}。
+ * 新格式：直接使用元素 ID 作为材质 key
  * @param {object | null | undefined} style
- * @param {"walls"|"doors"|"windows"} category
  * @param {object | null | undefined} element
- * @param {unknown} legacyRaw 元素 style 字段（旧短键）
  * @returns {string | null}
  */
-function resolveMappingSurfaceMaterialKey(style, category, element, legacyRaw) {
-  const mapRoot = style?.mapping;
-  const table = mapRoot && typeof mapRoot === "object" && !Array.isArray(mapRoot) ? mapRoot[category] : null;
-  if (table && typeof table === "object" && !Array.isArray(table)) {
-    const eid = element && String(element.id ?? "").trim();
-    if (eid && Object.prototype.hasOwnProperty.call(table, eid)) {
-      const v = table[eid];
-      if (v == null) return null;
-      const id = String(v).trim();
-      return id || null;
-    }
-  }
-  return resolveStyleSurfaceStyleId(style, category, legacyRaw);
+function resolveElementMaterialKey(style, element) {
+  if (!element) return null;
+  const eid = String(element.id ?? "").trim();
+  if (!eid) return null;
+  // 直接使用元素 ID 作为材质 key
+  return eid;
 }
 
 /**
  * @param {object | null} style
  * @param {object} room
- * @returns {{ floor?: unknown, wall?: unknown } | null}
+ * @returns {{ floor?: string, wall?: string } | null}
  */
 function resolveRoomStyleSurface(style, room) {
   if (!room) return null;
-  const map = style?.mapping?.rooms;
   const rid = String(room.id ?? "").trim();
-  if (rid && map && typeof map === "object" && !Array.isArray(map) && Object.prototype.hasOwnProperty.call(map, rid)) {
-    const entry = map[rid];
-    if (entry && typeof entry === "object" && !Array.isArray(entry)) return entry;
-  }
-  const raw = room?.style;
-  if (raw == null) return null;
-  if (typeof raw === "object" && !Array.isArray(raw)) {
-    return raw;
-  }
-  if (typeof raw === "string") {
-    const k = raw.trim();
-    if (!k) return null;
-    const entry = map && typeof map === "object" && !Array.isArray(map) ? map[k] : null;
-    if (entry && typeof entry === "object" && !Array.isArray(entry)) {
-      return entry;
-    }
-  }
-  return null;
+  if (!rid) return null;
+  // 新格式：房间地板使用 roomId，房间墙体使用 roomId_wall
+  return {
+    floor: rid,
+    wall: `${rid}_wall`
+  };
 }
 
 /**
@@ -586,7 +501,7 @@ function resolveRoomStyleSurface(style, room) {
  * @returns {string | null}
  */
 export function resolveWallMaterialKey(style, wall) {
-  const id = resolveMappingSurfaceMaterialKey(style, "walls", wall, wall?.style);
+  const id = resolveElementMaterialKey(style, wall);
   return materialKeyIfDefined(style, id);
 }
 
@@ -598,7 +513,7 @@ export function resolveWallMaterialKey(style, wall) {
 export function resolveRoomFloorMaterialKey(style, room) {
   const surf = resolveRoomStyleSurface(style, room);
   if (surf) return materialKeyIfDefined(style, surf.floor);
-  return materialKeyIfDefined(style, room?.style);
+  return null;
 }
 
 /**
@@ -619,7 +534,7 @@ export function resolveRoomWallMaterialKey(style, room) {
  * @returns {string | null}
  */
 export function resolveDoorMaterialKey(style, door) {
-  const id = resolveMappingSurfaceMaterialKey(style, "doors", door, door?.style);
+  const id = resolveElementMaterialKey(style, door);
   return materialKeyIfDefined(style, id);
 }
 
@@ -629,6 +544,6 @@ export function resolveDoorMaterialKey(style, door) {
  * @returns {string | null}
  */
 export function resolveWindowMaterialKey(style, win) {
-  const id = resolveMappingSurfaceMaterialKey(style, "windows", win, win?.style);
+  const id = resolveElementMaterialKey(style, win);
   return materialKeyIfDefined(style, id);
 }
