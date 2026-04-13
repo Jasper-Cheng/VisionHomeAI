@@ -4,7 +4,7 @@
   "name": "11111",
   "description": "",
   "createdAt": "2026-04-13T02:37:41.641Z",
-  "updatedAt": "2026-04-13T02:38:31.789Z",
+  "updatedAt": "2026-04-13T02:42:27.984Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -24,7 +24,7 @@
       "furnitureId": "GothicBed_01",
       "floorId": "floor1",
       "positionCm": [
-        -281,
+        -235,
         -402
       ],
       "rotationDeg": 0
@@ -85,7 +85,7 @@
       "floorId": "floor1",
       "positionCm": [
         -478,
-        389
+        395
       ],
       "rotationDeg": 270
     },
@@ -118,13 +118,23 @@
         105
       ],
       "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_12",
+      "furnitureId": "potted_plant_02",
+      "floorId": "floor1",
+      "positionCm": [
+        -16,
+        105
+      ],
+      "rotationDeg": 0
     }
   ],
   "svgEditor": {
     "version": 1,
     "floorPlanId": "apt_2b1l_compact_01",
     "floorLevelIndex": 0,
-    "floorplanStyleKey": "default",
+    "floorplanStyleKey": "s_1",
     "furniture": [
       {
         "model": "wooden_stool_02",
@@ -136,7 +146,7 @@
       {
         "model": "GothicBed_01",
         "floorId": "floor1",
-        "x": -281,
+        "x": -235,
         "y": -402,
         "rotation": 0
       },
@@ -179,7 +189,7 @@
         "model": "BarberShopChair_01",
         "floorId": "floor1",
         "x": -478,
-        "y": 389,
+        "y": 395,
         "rotation": 270
       },
       {
@@ -202,10 +212,17 @@
         "x": -16,
         "y": 105,
         "rotation": 0
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -16,
+        "y": 105,
+        "rotation": 0
       }
     ],
     "surfaceOverrides": {
-      "default": {}
+      "s_1": {}
     },
     "lightingConfig": {
       "toneMappingExposure": 1,

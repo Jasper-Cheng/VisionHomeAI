@@ -4,68 +4,28 @@
   "name": "中",
   "description": "",
   "createdAt": "2026-04-09T08:44:40.185Z",
-  "updatedAt": "2026-04-09T08:44:40.185Z",
+  "updatedAt": "2026-04-13T02:43:24.491Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
   "furnitureInstances": [
     {
       "instanceId": "fi_1",
-      "furnitureId": "potted_plant_02",
-      "floorId": "floor1",
-      "positionCm": [
-        -16,
-        105
-      ],
-      "rotationDeg": 0
-    },
-    {
-      "instanceId": "fi_2",
-      "furnitureId": "sofa_01",
-      "floorId": "floor1",
-      "positionCm": [
-        -319,
-        48
-      ],
-      "rotationDeg": 0
-    },
-    {
-      "instanceId": "fi_3",
       "furnitureId": "sofa_03",
       "floorId": "floor1",
       "positionCm": [
-        -202,
+        -195,
         30
       ],
       "rotationDeg": 0
     },
     {
-      "instanceId": "fi_4",
-      "furnitureId": "table_02",
+      "instanceId": "fi_2",
+      "furnitureId": "potted_plant_02",
       "floorId": "floor1",
       "positionCm": [
-        -313,
-        111
-      ],
-      "rotationDeg": 0
-    },
-    {
-      "instanceId": "fi_5",
-      "furnitureId": "table_03",
-      "floorId": "floor1",
-      "positionCm": [
-        -173,
-        93
-      ],
-      "rotationDeg": 0
-    },
-    {
-      "instanceId": "fi_6",
-      "furnitureId": "chair_01",
-      "floorId": "floor1",
-      "positionCm": [
-        -227,
-        137
+        -16,
+        105
       ],
       "rotationDeg": 0
     }
@@ -77,45 +37,17 @@
     "floorplanStyleKey": "default",
     "furniture": [
       {
-        "model": "potted_plant_02",
-        "floorId": "floor1",
-        "x": -16,
-        "y": 105,
-        "rotation": 0
-      },
-      {
-        "model": "sofa_01",
-        "floorId": "floor1",
-        "x": -319,
-        "y": 48,
-        "rotation": 0
-      },
-      {
         "model": "sofa_03",
         "floorId": "floor1",
-        "x": -202,
+        "x": -195,
         "y": 30,
         "rotation": 0
       },
       {
-        "model": "table_02",
+        "model": "potted_plant_02",
         "floorId": "floor1",
-        "x": -313,
-        "y": 111,
-        "rotation": 0
-      },
-      {
-        "model": "table_03",
-        "floorId": "floor1",
-        "x": -173,
-        "y": 93,
-        "rotation": 0
-      },
-      {
-        "model": "chair_01",
-        "floorId": "floor1",
-        "x": -227,
-        "y": 137,
+        "x": -16,
+        "y": 105,
         "rotation": 0
       }
     ],
@@ -123,17 +55,17 @@
       "default": {}
     },
     "lightingConfig": {
-      "toneMappingExposure": 1.57,
+      "toneMappingExposure": 1,
       "ambient": {
-        "intensity": 0.22
+        "intensity": 0.26
       },
       "hemisphere": {
-        "intensity": 0.34
+        "intensity": 0.36
       },
       "directional": {
-        "intensity": 0.72
+        "intensity": 1
       },
-      "envMapIntensity": 0.28
+      "envMapIntensity": 0.35
     }
   }
 }

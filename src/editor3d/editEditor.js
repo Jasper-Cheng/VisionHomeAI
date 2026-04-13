@@ -1602,6 +1602,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       if (next.allWalls || next.allFloors) out[fid] = next;
     }
+    // 保留 roomFloors（按房间的地板覆盖）
+    if (raw.roomFloors && typeof raw.roomFloors === "object") {
+      out.roomFloors = JSON.parse(JSON.stringify(raw.roomFloors));
+    }
     return out;
   }
 
@@ -3367,6 +3371,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (gen !== floorplanRebuildGen) return;
 
     // 从风格包加载房间地板覆盖到内存
+    // 注意：不清空所有风格键，切换项目时 applyFromDesignProject 会覆盖特定键
     const sk = skEffective;
     const skKey = normalizeStyleKeyForSurfaceOverrides(sk);
     const roomFloorMats = style?.roomFloorMaterials;
@@ -5934,6 +5939,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           });
         } else clearFloorplan();
       } else clearFloorplan();
+      // 风格加载完成后再从项目的 surfaceOverrides 恢复 roomFloorOverrides
+      const skForRoom = normalizeStyleKeyForSurfaceOverrides(floorplanStyleKeyOverride);
+      const roomFloorsData = floorplanSurfaceOverridesByStyleKey[skForRoom]?.roomFloors;
+      if (roomFloorsData && typeof roomFloorsData === "object") {
+        roomFloorOverridesByStyleKey[skForRoom] = JSON.parse(JSON.stringify(roomFloorsData));
+      } else {
+        roomFloorOverridesByStyleKey[skForRoom] = {};
+      }
       await rebuildFromLayout(layout);
       resetCameraView();
       setGridVisible(gridWasVisible);

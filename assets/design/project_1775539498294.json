@@ -4,18 +4,18 @@
   "name": "123",
   "description": "",
   "createdAt": "2026-04-07T05:24:58.294Z",
-  "updatedAt": "2026-04-07T05:31:09.122Z",
+  "updatedAt": "2026-04-13T02:39:10.500Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
   "furnitureInstances": [
     {
       "instanceId": "fi_1",
-      "furnitureId": "sofa_01",
+      "furnitureId": "ArmChair_01",
       "floorId": "floor1",
       "positionCm": [
-        -368,
-        124
+        -299,
+        -430
       ],
       "rotationDeg": 0
     }
@@ -24,41 +24,58 @@
     "version": 1,
     "floorPlanId": "apt_2b1l_compact_01",
     "floorLevelIndex": 0,
+    "floorplanStyleKey": "default",
     "furniture": [
       {
-        "model": "sofa_01",
+        "model": "ArmChair_01",
         "floorId": "floor1",
-        "x": -368,
-        "y": 124,
+        "x": -299,
+        "y": -430,
         "rotation": 0
       }
     ],
     "surfaceOverrides": {
-      "floor1": {
-        "allFloors": {
-          "color": "#ffffff",
-          "materialId": "floor_WoodFloor040",
-          "roughness": 0.35,
-          "metalness": 0,
-          "uvScale": [
-            0.15,
-            0.15
-          ],
-          "textureRotation": 90,
-          "textureAlbedo": "pavement_03_diff.jpg"
-        },
-        "allWalls": {
-          "color": "#976e3b",
-          "materialId": "wall_Ivory001A",
-          "roughness": 0.9,
-          "metalness": 0,
-          "uvScale": [
-            2,
-            2
-          ],
-          "textureRotation": 0
+      "__default__": {
+        "floor1": {
+          "allFloors": {
+            "color": "#ffffff",
+            "materialId": "floor_WoodFloor040",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90,
+            "textureAlbedo": "pavement_03_diff.jpg"
+          },
+          "allWalls": {
+            "color": "#976e3b",
+            "materialId": "wall_Ivory001A",
+            "roughness": 0.9,
+            "metalness": 0,
+            "uvScale": [
+              2,
+              2
+            ],
+            "textureRotation": 0
+          }
         }
-      }
+      },
+      "default": {}
+    },
+    "lightingConfig": {
+      "toneMappingExposure": 1,
+      "ambient": {
+        "intensity": 0.26
+      },
+      "hemisphere": {
+        "intensity": 0.36
+      },
+      "directional": {
+        "intensity": 1
+      },
+      "envMapIntensity": 0.35
     }
   }
 }
