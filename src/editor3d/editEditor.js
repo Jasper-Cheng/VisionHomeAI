@@ -1878,6 +1878,19 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         applySurfaceOverrideToMesh(mesh, ov, libraryBag);
       }
     }
+
+    // 应用每个房间地板的单独覆盖
+    gWorld.traverse((o) => {
+      if (!o.isMesh) return;
+      if (!o.userData.floorplanRoomFloor) return;
+      const fid = String(o.userData.floorplanFloorLevelId ?? "").trim();
+      const rid = String(o.userData.floorplanRoomId ?? "").trim();
+      if (!fid || !rid) return;
+      const roomOv = getRoomFloorOverride(fid, rid);
+      if (roomOv && surfaceOverrideIsActive(roomOv)) {
+        applySurfaceOverrideToMesh(o, roomOv, libraryBag);
+      }
+    });
   }
 
   /**
