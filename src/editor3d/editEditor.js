@@ -5174,6 +5174,21 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return null;
     }
 
+    // 获取窗户名称的辅助函数
+    function getWindowName(windowId, floorLevelId) {
+      if (!windowId || !floorLevelId) return null;
+      const floors = getFloorsFromEntry(currentFloorplanEntry);
+      for (const fl of floors) {
+        if (String(fl?.id ?? "").trim() !== floorLevelId) continue;
+        for (const win of fl?.windows || []) {
+          if (String(win?.id ?? "").trim() === windowId) {
+            return win?.name || windowId;
+          }
+        }
+      }
+      return null;
+    }
+
     const currentFloorName = getFloorName(sel.floorLevelId);
 
     if (propertiesName) {
@@ -5186,8 +5201,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const names = selectedDoorIdsArr.map((did) => getDoorName(did, sel.floorLevelId) || did).join("、");
         propertiesName.textContent = names || `${selectedDoorIdsArr.length} 个门`;
       } else if (hasMultiSelectWindow) {
-        // 多选窗户时显示窗户数量
-        propertiesName.textContent = `${selectedWindowIdsArr.length} 个窗户`;
+        // 多选窗户时显示窗户名称列表
+        const names = selectedWindowIdsArr.map((wid) => getWindowName(wid, sel.floorLevelId) || wid).join("、");
+        propertiesName.textContent = names || `${selectedWindowIdsArr.length} 个窗户`;
       } else if (isFloor && sel.roomId) {
         // 单选地板时显示具体房间名称
         const roomName = getRoomName(sel.roomId, sel.floorLevelId);
@@ -5197,8 +5213,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const doorName = getDoorName(sel.doorId, sel.floorLevelId);
         propertiesName.textContent = doorName || "门";
       } else if (isWin && sel.windowId) {
-        // 单选窗户时显示窗
-        propertiesName.textContent = "窗洞玻璃";
+        // 单选窗户时显示窗名称
+        const windowName = getWindowName(sel.windowId, sel.floorLevelId);
+        propertiesName.textContent = windowName || "窗";
       } else {
         propertiesName.textContent = isFloor ? "全部地面" : isDoor ? "全部门" : isWin ? "全部窗" : "全部墙体";
       }
@@ -5218,7 +5235,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const doorName = getDoorName(sel.doorId, sel.floorLevelId);
         propSurfaceTitle.textContent = doorName ? `${doorName} 属性 · ${floorLabel}` : `门属性 · ${floorLabel}`;
       } else if (isWin && sel.windowId) {
-        propSurfaceTitle.textContent = `窗户属性 · ${floorLabel}`;
+        const windowName = getWindowName(sel.windowId, sel.floorLevelId);
+        propSurfaceTitle.textContent = windowName ? `${windowName} 属性 · ${floorLabel}` : `窗户属性 · ${floorLabel}`;
       } else {
         propSurfaceTitle.textContent = isFloor
           ? `地面属性（本层所有房间） · ${floorLabel}`
