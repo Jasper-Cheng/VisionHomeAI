@@ -3162,6 +3162,13 @@ a.avatar:hover {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* 隐藏滚动条但保留滚动功能 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.file-list::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .file-item {

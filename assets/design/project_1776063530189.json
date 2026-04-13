@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1776063530189",
+  "name": "12111",
+  "description": "",
+  "createdAt": "2026-04-13T06:58:50.189Z",
+  "updatedAt": "2026-04-13T07:05:09.767Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "ArmChair_01",
+      "floorId": "floor1",
+      "positionCm": [
+        -173,
+        128
+      ],
+      "rotationDeg": 0
+    },
+    {
+      "instanceId": "fi_2",
+      "furnitureId": "potted_plant_02",
+      "floorId": "floor1",
+      "positionCm": [
+        -16,
+        105
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "floorplanStyleKey": "s_1",
+    "furniture": [
+      {
+        "model": "ArmChair_01",
+        "floorId": "floor1",
+        "x": -173,
+        "y": 128,
+        "rotation": 0
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -16,
+        "y": 105,
+        "rotation": 0
+      }
+    ],
+    "surfaceOverrides": {
+      "s_1": {
+        "roomFloors": {
+          "floor1": {
+            "r_living": {
+              "color": "#201707",
+              "materialId": "r_bed1",
+              "roughness": 0.35,
+              "metalness": 0,
+              "uvScale": [
+                0.15,
+                0.15
+              ],
+              "textureRotation": 90
+            }
+          }
+        },
+        "doorOverrides": {},
+        "windowOverrides": {}
+      }
+    },
+    "lightingConfig": {
+      "toneMappingExposure": 1,
+      "ambient": {
+        "intensity": 0.26
+      },
+      "hemisphere": {
+        "intensity": 0.36
+      },
+      "directional": {
+        "intensity": 1
+      },
+      "envMapIntensity": 0.35
+    }
+  }
+}

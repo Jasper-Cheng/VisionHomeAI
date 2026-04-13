@@ -4,7 +4,7 @@
   "name": "1231233123",
   "description": "",
   "createdAt": "2026-04-13T03:23:30.872Z",
-  "updatedAt": "2026-04-13T03:23:30.872Z",
+  "updatedAt": "2026-04-13T07:02:26.840Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -24,7 +24,7 @@
     "version": 1,
     "floorPlanId": "apt_2b1l_compact_01",
     "floorLevelIndex": 0,
-    "floorplanStyleKey": "style_1776050582836",
+    "floorplanStyleKey": "default",
     "furniture": [
       {
         "model": "potted_plant_02",
@@ -35,7 +35,37 @@
       }
     ],
     "surfaceOverrides": {
-      "style_1776050582836": {}
+      "default": {
+        "roomFloors": {},
+        "doorOverrides": {},
+        "windowOverrides": {
+          "floor1": {
+            "win_left_small": {
+              "color": "#0a0600",
+              "roughness": 0.04,
+              "metalness": 0,
+              "opacity": 0.22,
+              "transmission": 0.96,
+              "ior": 1.45
+            }
+          }
+        }
+      },
+      "s_3": {
+        "roomFloors": {},
+        "doorOverrides": {},
+        "windowOverrides": {}
+      },
+      "style_1776050582836": {
+        "roomFloors": {},
+        "doorOverrides": {},
+        "windowOverrides": {}
+      },
+      "__default__": {
+        "roomFloors": {},
+        "doorOverrides": {},
+        "windowOverrides": {}
+      }
     },
     "lightingConfig": {
       "toneMappingExposure": 1,

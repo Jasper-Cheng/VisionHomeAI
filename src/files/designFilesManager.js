@@ -282,7 +282,8 @@ export function canSaveCurrentDesign() {
   const layout = typeof getLayout === "function" ? getLayout() : [];
   const hasItems = Array.isArray(layout) && layout.length > 0;
   const cur = currentDesignBaselineFingerprint();
-  const baseline = window.__designLayoutBaseline;
+  // 使用专门的保存 baseline（包含家具）
+  const baseline = window.__designSaveBaseline;
   const dirty = baseline === undefined || cur !== baseline;
   return hasItems && dirty;
 }
@@ -552,6 +553,11 @@ export async function executeSaveWithName(name) {
   }
   newSceneAfterSavePending = false;
   window.dispatchEvent(new CustomEvent("visionhome:design-metadata-updated"));
+  
+  // 触发保存完成事件（用于风格切换等待保存完成的场景）
+  if (saved.ok) {
+    window.dispatchEvent(new CustomEvent("visionhome:design-saved"));
+  }
 
   if (runNewSceneAfterSave && saved.ok) {
     pendingDesignFileSwitch = null;
@@ -694,11 +700,15 @@ export function mountSaveDesignFlow() {
     newSceneAfterSavePending = false;
     pendingDesignFileSwitch = null;
     closeDialog();
+    // 触发保存取消事件
+    window.dispatchEvent(new CustomEvent("visionhome:save-design-cancelled"));
   });
 
   dialog.addEventListener("cancel", () => {
     newSceneAfterSavePending = false;
     pendingDesignFileSwitch = null;
+    // 触发保存取消事件
+    window.dispatchEvent(new CustomEvent("visionhome:save-design-cancelled"));
   });
 
   input.addEventListener("keydown", (e) => {

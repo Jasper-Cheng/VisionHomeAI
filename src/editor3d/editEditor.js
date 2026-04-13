@@ -5904,9 +5904,34 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (historyReady) schedulePushHistory();
   }
 
+  /**
+   * 序列化设计基线（用于风格切换提示）
+   * 只包含装饰物和材质覆盖，不包含家具
+   */
   function serializeDesignBaseline() {
     const getSurf = window.svgEditorGetSurfaceOverrides;
     const surfaceOverrides = typeof getSurf === "function" ? getSurf() : null;
+    
+    // 只包含装饰物，不包含家具（家具的变化不影响风格切换提示）
+    const layout = getLayout();
+    const decorationsOnly = layout.filter((row) => modelIdIsDecoration(row.model));
+    
+    return JSON.stringify({
+      decorations: decorationsOnly,
+      floorPlanId: getCurrentFloorplanId(),
+      floorLevelIndex: getCurrentFloorLevelIndex(),
+      surfaceOverrides: surfaceOverrides,
+    });
+  }
+
+  /**
+   * 序列化完整设计（用于保存按钮状态检测）
+   * 包含家具、装饰物和材质覆盖
+   */
+  function serializeDesignForSave() {
+    const getSurf = window.svgEditorGetSurfaceOverrides;
+    const surfaceOverrides = typeof getSurf === "function" ? getSurf() : null;
+    
     return JSON.stringify({
       furniture: getLayout(),
       floorPlanId: getCurrentFloorplanId(),
@@ -6858,6 +6883,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     initHistory();
     historyReady = true;
     window.__designLayoutBaseline = serializeDesignBaseline();
+    window.__designSaveBaseline = serializeDesignForSave();
     emitLayoutChanged();
     window.__selectFloorplanLibraryCardById?.(fpId || "");
   }
@@ -6874,6 +6900,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     historyReady = true;
     window.__designLayoutBaseline =
       typeof options.designLayoutBaseline === "string" ? options.designLayoutBaseline : serializeDesignBaseline();
+    window.__designSaveBaseline = serializeDesignForSave();
     emitLayoutChanged();
   }
 
@@ -6970,6 +6997,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       historyReady = true;
       window.__designLayoutBaseline =
         typeof payload.designLayoutBaseline === "string" ? payload.designLayoutBaseline : serializeDesignBaseline();
+      window.__designSaveBaseline = serializeDesignForSave();
       if (undoBtn) undoBtn.disabled = historyIndex <= 0;
       if (redoBtn) redoBtn.disabled = historyIndex >= history.length - 1;
       if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
@@ -7541,6 +7569,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         syncOverwriteBtnLockState();
         // 更新 baseline，避免切换风格时误报有未保存的更改
         window.__designLayoutBaseline = serializeDesignBaseline();
+        window.__designSaveBaseline = serializeDesignForSave();
       } catch (e) {
         console.error(e);
         alert(e?.message || String(e));
@@ -7630,6 +7659,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         syncOverwriteBtnLockState();
         // 更新 baseline，避免切换风格时误报有未保存的更改
         window.__designLayoutBaseline = serializeDesignBaseline();
+        window.__designSaveBaseline = serializeDesignForSave();
       } catch (e) {
         console.error(e);
         alert(e?.message || String(e));
@@ -7794,6 +7824,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       pushHistorySnapshot();
       // 更新 baseline，避免下次切换时再次提示
       window.__designLayoutBaseline = serializeDesignBaseline();
+      window.__designSaveBaseline = serializeDesignForSave();
     }
 
     dropdown.addEventListener("click", (e) => {
@@ -7879,23 +7910,34 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (typeof executeSave === "function") {
           await executeSave(String(window.__activeDesignProject?.name ?? "").trim());
         }
+        // 保存完成后切换风格
+        await executeStyleSwitch(pending.key, pending.tag);
+        window.__pendingStyleSwitch = null;
       } else {
-        window.dispatchEvent(new CustomEvent("visionhome:open-save-design"));
-        // 等待保存完成后再切换风格
-        const checkSaved = setInterval(() => {
-          const canSave = typeof window.canSaveCurrentDesign === "function" ? window.canSaveCurrentDesign() : false;
-          if (!canSave) {
-            clearInterval(checkSaved);
-            void executeStyleSwitch(pending.key, pending.tag);
+        // 没有文件名，需要用户输入
+        // 监听保存完成事件
+        const handleSaveComplete = async () => {
+          window.removeEventListener("visionhome:design-saved", handleSaveComplete);
+          if (window.__pendingStyleSwitch) {
+            const p = window.__pendingStyleSwitch;
             window.__pendingStyleSwitch = null;
+            await executeStyleSwitch(p.key, p.tag);
           }
-        }, 500);
-        return;
+        };
+        
+        // 监听保存取消事件
+        const handleSaveCancel = () => {
+          window.removeEventListener("visionhome:design-saved", handleSaveComplete);
+          window.removeEventListener("visionhome:save-design-cancelled", handleSaveCancel);
+          window.__pendingStyleSwitch = null;
+        };
+        
+        window.addEventListener("visionhome:design-saved", handleSaveComplete, { once: true });
+        window.addEventListener("visionhome:save-design-cancelled", handleSaveCancel, { once: true });
+        
+        // 打开保存对话框
+        window.dispatchEvent(new CustomEvent("visionhome:open-save-design"));
       }
-      
-      // 保存完成后切换风格
-      await executeStyleSwitch(pending.key, pending.tag);
-      window.__pendingStyleSwitch = null;
     });
   }
 
@@ -8001,9 +8043,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorClearFloorplan = clearFloorplan;
   window.svgEditorCommitSavedBaseline = () => {
     window.__designLayoutBaseline = serializeDesignBaseline();
+    window.__designSaveBaseline = serializeDesignForSave();
     emitLayoutChanged();
   };
-  window.svgEditorGetDesignBaselineFingerprint = serializeDesignBaseline;
+  // 保存按钮状态检测使用包含家具的完整序列化
+  window.svgEditorGetDesignBaselineFingerprint = serializeDesignForSave;
   window.svgEditorGetViewSize = () => ({ width: VIEW_W, height: VIEW_H });
   window.svgEditorResetView = resetCameraView;
   window.svgEditorGetViewTransform = getViewTransform;
@@ -8078,6 +8122,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   initHistory();
   historyReady = true;
   window.__designLayoutBaseline = serializeDesignBaseline();
+  window.__designSaveBaseline = serializeDesignForSave();
   emitLayoutChanged();
   animate();
 
