@@ -1338,6 +1338,311 @@
           }
         }
       }
+    },
+    "sad": {
+      "id": "sad",
+      "name": "撒身上的大sad",
+      "extends": "default",
+      "decorations": {
+        "placements": [
+          {
+            "model": "potted_plant_02",
+            "x": -16,
+            "y": 105,
+            "rotation": 0,
+            "floorId": "floor1"
+          }
+        ]
+      },
+      "roomFloorMaterials": {
+        "floor1": {
+          "r_living": {
+            "color": "#e8dcc8",
+            "materialId": "floor_bed1",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90,
+            "textureAlbedo": "brick_crosswalk_diff.jpg"
+          }
+        }
+      }
+    },
+    "style_1776050773522": {
+      "id": "style_1776050773522",
+      "name": "大大说",
+      "extends": "default",
+      "decorations": {
+        "placements": [
+          {
+            "model": "Chandelier_03",
+            "x": -172,
+            "y": 253,
+            "rotation": 0,
+            "floorId": "floor1",
+            "decorationLiftCm": 176
+          }
+        ]
+      },
+      "mapping": {
+        "rooms": {
+          "r_bed1": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_bed2": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_living": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_living_co": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_kitchen": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          },
+          "r_bath": {
+            "floor": "baked_floor1_allFloors",
+            "wall": "baked_floor1_allWalls"
+          }
+        },
+        "walls": {
+          "w_ext_left_n": "baked_floor1_allWalls",
+          "w_ext_left_s": "baked_floor1_allWalls",
+          "w_ext_top_w": "baked_floor1_allWalls",
+          "w_ext_top_e": "baked_floor1_allWalls",
+          "w_ext_right_n": "baked_floor1_allWalls",
+          "w_ext_right_m": "baked_floor1_allWalls",
+          "w_ext_right_s": "baked_floor1_allWalls",
+          "w_ext_bot_w": "baked_floor1_allWalls",
+          "w_ext_bot_e": "baked_floor1_allWalls",
+          "w_int_v_mid_n_top": "baked_floor1_allWalls",
+          "w_int_v_mid_n_bot": "baked_floor1_allWalls",
+          "w_int_v_mid_s": "baked_floor1_allWalls",
+          "w_int_h_mid_w": "baked_floor1_allWalls",
+          "w_int_h_bed2_kitchen": "baked_floor1_allWalls",
+          "w_int_h_low_w": "baked_floor1_allWalls",
+          "w_int_h_low_e": "baked_floor1_allWalls",
+          "w_int_v_bath": "baked_floor1_allWalls",
+          "w_int_v_niche": "baked_floor1_allWalls",
+          "w_int_h_niche": "baked_floor1_allWalls"
+        },
+        "doors": {
+          "d_main": "baked_floor1_allDoors",
+          "d_bath": "baked_floor1_allDoors",
+          "d_kitchen": "baked_floor1_allDoors",
+          "d_bed1": "baked_floor1_allDoors",
+          "d_bed2": "baked_floor1_allDoors"
+        },
+        "windows": {
+          "win_left_floor": "baked_floor1_allWindows",
+          "win_left_small": "baked_floor1_allWindows",
+          "win_right_small": "baked_floor1_allWindows",
+          "win_kitchen_e": "baked_floor1_allWindows",
+          "win_bath_e": "baked_floor1_allWindows"
+        }
+      },
+      "materials": {
+        "baked_floor1_allWalls": {
+          "type": "paint",
+          "color": "#ede7e0",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg",
+            "albedo": "textures/dark_wood_diff.jpg"
+          },
+          "uvScale": [
+            2,
+            2
+          ],
+          "textureRotation": 0
+        },
+        "baked_floor1_allDoors": {
+          "type": "paint_wood",
+          "color": "#eed1a1",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          },
+          "uvScale": [
+            1,
+            1
+          ],
+          "textureRotation": 0
+        },
+        "baked_floor1_allWindows": {
+          "type": "glass",
+          "color": "#baac74",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
+        },
+        "baked_floor1_allFloors": {
+          "type": "wood_floor",
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "texture": {
+            "albedo": "textures/wood_floor_rough.jpg",
+            "normal": "textures/wood_floor_nor_gl.jpg",
+            "roughness": "textures/wood_floor_rough.jpg"
+          },
+          "uvScale": [
+            0.15,
+            0.15
+          ],
+          "textureRotation": 90
+        }
+      },
+      "roomFloorMaterials": {
+        "floor1": {
+          "r_kitchen": {
+            "color": "#e8dcc8",
+            "materialId": "baked_floor1_allFloors",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90,
+            "textureAlbedo": "brick_crosswalk_diff.jpg"
+          },
+          "r_living": {
+            "color": "#f3e2c6",
+            "materialId": "baked_floor1_allFloors",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90,
+            "textureAlbedo": "brick_crosswalk_diff.jpg"
+          },
+          "r_bath": {
+            "color": "#e8dcc8",
+            "materialId": "baked_floor1_allFloors",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90,
+            "textureAlbedo": "clean_asphalt_diff.jpg"
+          },
+          "r_living_co": {
+            "color": "#e8dcc8",
+            "materialId": "baked_floor1_allFloors",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90,
+            "textureAlbedo": "beige_wall_001_diff.jpg"
+          },
+          "r_bed2": {
+            "color": "#e8dcc8",
+            "materialId": "baked_floor1_allFloors",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90,
+            "textureAlbedo": "blue_metal_plate_diff.jpg"
+          },
+          "r_bed1": {
+            "color": "#e8dcc8",
+            "materialId": "baked_floor1_allFloors",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90,
+            "textureAlbedo": "brick_wall_006_diff.jpg"
+          }
+        }
+      },
+      "doorOverrides": {
+        "floor1": {
+          "d_main": {
+            "color": "#decaab",
+            "materialId": "door_main",
+            "roughness": 0.8,
+            "metalness": 0.02,
+            "uvScale": [
+              1,
+              1
+            ],
+            "textureRotation": 0,
+            "textureAlbedo": "brick_crosswalk_diff.jpg"
+          },
+          "d_bath": {
+            "color": "#e8dcc8",
+            "materialId": "door_main",
+            "roughness": 0.8,
+            "metalness": 0.02,
+            "uvScale": [
+              1,
+              1
+            ],
+            "textureRotation": 0,
+            "textureAlbedo": "brick_wall_006_diff.jpg"
+          }
+        }
+      }
+    },
+    "s_1221": {
+      "id": "s_1221",
+      "name": "1221",
+      "extends": "default",
+      "decorations": {
+        "placements": [
+          {
+            "model": "potted_plant_02",
+            "x": -16,
+            "y": 105,
+            "rotation": 0,
+            "floorId": "floor1"
+          }
+        ]
+      },
+      "roomFloorMaterials": {
+        "floor1": {
+          "r_living": {
+            "color": "#e8dcc8",
+            "materialId": "floor_bed1",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90,
+            "textureAlbedo": "blue_metal_plate_diff.jpg"
+          }
+        }
+      }
     }
   }
 }

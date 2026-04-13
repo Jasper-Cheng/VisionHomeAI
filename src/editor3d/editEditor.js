@@ -7194,6 +7194,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       // 切换风格：未保存的墙/地/门窗“面板覆盖”不应保留，也不应在切回时复现。
       // 这里直接清空所有风格的 overrides，保证任何风格切换都会回到该风格 JSON 的默认状态。
       floorplanSurfaceOverridesByStyleKey = {};
+      roomFloorOverridesByStyleKey = {};
+      doorOverridesByStyleKey = {};
       clearFloorplanSurfaceSelection();
       selectFurniture(null);
       floorplanSelected = false;
