@@ -5263,8 +5263,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     furnitureRoot.remove(selectedGroup);
     disposeObject3D(selectedGroup);
     shadowCacheDirty = true;
-    selectedGroup = null;
-    syncPropertiesPanelForSelection(null);
+    selectFurniture(null); // 同时清除选中框和属性面板
     updateBottomUI();
     if (historyReady) pushHistorySnapshot();
   }
