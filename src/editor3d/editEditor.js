@@ -617,6 +617,159 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       delete floorplanSurfaceOverridesByStyleKey[key];
     }
   }
+
+  // --- 多选房间地板 ---
+  /** @type {Set<string>} 当前选中的房间地板 ID 集合 */
+  let selectedRoomFloorIds = new Set();
+
+  function toggleRoomFloorSelection(roomId) {
+    if (!roomId) return;
+    const id = String(roomId).trim();
+    if (selectedRoomFloorIds.has(id)) {
+      selectedRoomFloorIds.delete(id);
+    } else {
+      selectedRoomFloorIds.add(id);
+    }
+  }
+
+  function clearRoomFloorSelection() {
+    selectedRoomFloorIds.clear();
+  }
+
+  function isRoomFloorSelected(roomId) {
+    return selectedRoomFloorIds.has(String(roomId).trim());
+  }
+
+  function getSelectedRoomFloorIds() {
+    return [...selectedRoomFloorIds];
+  }
+
+  // --- 按房间地板覆盖（内存） ---
+  // 格式: { [styleKey]: { [floorLevelId]: { [roomId]: { color, materialId, roughness, metalness, uvScale, textureRotation, textureAlbedo } } } }
+  let roomFloorOverridesByStyleKey = {};
+
+  function getRoomFloorOverridesBucket(styleKey, opts = {}) {
+    const key = normalizeStyleKeyForSurfaceOverrides(styleKey);
+    const create = Boolean(opts.create);
+    const hit = roomFloorOverridesByStyleKey[key];
+    if (hit && typeof hit === "object") return hit;
+    if (!create) return {};
+    const next = {};
+    roomFloorOverridesByStyleKey[key] = next;
+    return next;
+  }
+
+  function getCurrentRoomFloorOverridesBucket() {
+    return getRoomFloorOverridesBucket(getEffectiveFloorplanStyleKey(), { create: true });
+  }
+
+  /**
+   * @param {string} floorLevelId
+   * @param {string} roomId
+   * @returns {object | null}
+   */
+  function getRoomFloorOverride(floorLevelId, roomId) {
+    const fid = String(floorLevelId ?? "").trim();
+    const rid = String(roomId ?? "").trim();
+    if (!fid || !rid) return null;
+    const bucket = getCurrentRoomFloorOverridesBucket();
+    const floorBag = bucket[fid];
+    if (!floorBag) return null;
+    return floorBag[rid] ?? null;
+  }
+
+  /**
+   * @param {string} floorLevelId
+   * @param {string} roomId
+   * @param {object | null} override
+   */
+  function setRoomFloorOverride(floorLevelId, roomId, override) {
+    const fid = String(floorLevelId ?? "").trim();
+    const rid = String(roomId ?? "").trim();
+    if (!fid || !rid) return;
+    const bucket = getCurrentRoomFloorOverridesBucket();
+    if (!bucket[fid]) bucket[fid] = {};
+    if (override && typeof override === "object" && Object.keys(override).length > 0) {
+      bucket[fid][rid] = { ...override };
+    } else {
+      delete bucket[fid][rid];
+    }
+  }
+
+  /**
+   * 批量设置多个房间的地板覆盖
+   * @param {string} floorLevelId
+   * @param {string[]} roomIds
+   * @param {object} override
+   */
+  function setRoomFloorOverridesForMultiple(floorLevelId, roomIds, override) {
+    if (!Array.isArray(roomIds)) return;
+    for (const rid of roomIds) {
+      setRoomFloorOverride(floorLevelId, rid, override);
+    }
+  }
+
+  /**
+   * 同步房间地板覆盖到 Design JSON（修改地板时调用）
+   * 将 roomFloorOverridesByStyleKey 写入 window.__currentDesignProject.svgEditor.surfaceOverrides
+   */
+  function syncRoomFloorOverridesToDesignJson() {
+    const proj = window.__currentDesignProject;
+    if (!proj || !proj.svgEditor) return;
+    const sk = getEffectiveFloorplanStyleKey();
+    const key = normalizeStyleKeyForSurfaceOverrides(sk);
+    if (!proj.svgEditor.surfaceOverrides) proj.svgEditor.surfaceOverrides = {};
+    if (!proj.svgEditor.surfaceOverrides[key]) proj.svgEditor.surfaceOverrides[key] = {};
+    proj.svgEditor.surfaceOverrides[key].roomFloors = JSON.parse(JSON.stringify(roomFloorOverridesByStyleKey[key] || {}));
+  }
+
+  /**
+   * 对多个房间地板应用覆盖（不重建几何体）
+   * @param {string} floorLevelId
+   * @param {string[]} roomIds
+   */
+  async function applyRoomFloorOverridesForMultiple(floorLevelId, roomIds) {
+    if (!floorplanRoot.children.length) return;
+    if (!Array.isArray(roomIds) || !roomIds.length) return;
+    const fid = String(floorLevelId ?? "").trim();
+    if (!fid) return;
+    const libraryBag = await getFloorplanMaterialsLibraryBag();
+    const roomIdSet = new Set(roomIds.map((r) => String(r).trim()));
+    const meshes = [];
+    floorplanRoot.traverse((o) => {
+      if (!o.isMesh) return;
+      if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
+      if (!o.userData.floorplanRoomFloor) return;
+      const rid = String(o.userData.floorplanRoomId ?? "").trim();
+      if (!rid || !roomIdSet.has(rid)) return;
+      meshes.push(o);
+    });
+    if (!meshes.length) return;
+    for (const mesh of meshes) {
+      const rid = String(mesh.userData.floorplanRoomId ?? "").trim();
+      const ov = getRoomFloorOverride(fid, rid);
+      if (ov && surfaceOverrideIsActive(ov)) {
+        applySurfaceOverrideToMesh(mesh, ov, libraryBag);
+      }
+    }
+  }
+
+  /**
+   * 从 Design JSON 加载房间地板覆盖（加载项目时调用）
+   * @param {object} designSurfaceOverrides - svgEditor.surfaceOverrides
+   */
+  function loadRoomFloorOverridesFromDesignJson(designSurfaceOverrides) {
+    if (!designSurfaceOverrides || typeof designSurfaceOverrides !== "object") return;
+    const sk = getEffectiveFloorplanStyleKey();
+    const key = normalizeStyleKeyForSurfaceOverrides(sk);
+    const styleBag = designSurfaceOverrides[key];
+    if (!styleBag || typeof styleBag !== "object") return;
+    const roomFloors = styleBag.roomFloors;
+    if (!roomFloors || typeof roomFloors !== "object") return;
+    // roomFloors 格式: { [floorLevelId]: { [roomId]: override } }
+    roomFloorOverridesByStyleKey[key] = JSON.parse(JSON.stringify(roomFloors));
+  }
+
   let dragState = null;
   /** Alt+左键调节装饰模型高度：{ pointerId, group, startClientY, startLiftM } */
   let altDragState = null;
@@ -1364,8 +1517,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {string} floorLevelId
    * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
    * @param {boolean} on
+   * @param {Set<string>} [roomIdFilter] 可选的房间 ID 过滤器，用于多选时只高亮选中的房间
    */
-  function setFloorplanGlobalSurfaceHighlight(floorLevelId, scope, on) {
+  function setFloorplanGlobalSurfaceHighlight(floorLevelId, scope, on, roomIdFilter) {
     // 移除旧的选中框
     floorplanSurfaceBoxHelpers.forEach((helper) => {
       if (helper.parent) {
@@ -1390,6 +1544,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (scope === "allDoors" && !o.userData.floorplanDoorFill) return;
       if (scope === "allWindows" && !o.userData.floorplanWindowFill) return;
 
+      // 多选房间地板时，检查是否在选中列表中
+      if (scope === "allFloors" && roomIdFilter && roomIdFilter.size > 0) {
+        const meshRoomId = String(o.userData.floorplanRoomId ?? "").trim();
+        if (!meshRoomId || !roomIdFilter.has(meshRoomId)) return;
+      }
+
       // 为每个匹配的网格创建边框
       const box = new THREE.BoxHelper(o, 0x00aaff); // 青蓝色
       box.material.linewidth = 2;
@@ -1397,7 +1557,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       box.material.opacity = 0.8;
       box.material.depthTest = true;
       box.material.depthWrite = false;
-      
+
       scene.add(box);
       floorplanSurfaceBoxHelpers.push(box);
     });
@@ -1839,6 +1999,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     mesh.userData.floorplanRoomId = String(room?.id ?? "").trim();
     mesh.userData.floorplanFloorLevelId = String(floorLevelId ?? "").trim();
     mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
+
+    // 应用房间地板覆盖
+    const roomId = mesh.userData.floorplanRoomId;
+    if (roomId) {
+      const roomOv = getRoomFloorOverride(floorLevelId, roomId);
+      if (roomOv && surfaceOverrideIsActive(roomOv)) {
+        mesh.userData.floorplanRoomFloorOverride = roomOv;
+      }
+    }
+
     return mesh;
   }
 
@@ -3183,6 +3353,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     lastMergedFloorplanStyle = style;
     if (gen !== floorplanRebuildGen) return;
 
+    // 从风格包加载房间地板覆盖到内存
+    const sk = skEffective;
+    const skKey = normalizeStyleKeyForSurfaceOverrides(sk);
+    const roomFloorMats = style?.roomFloorMaterials;
+    if (roomFloorMats && typeof roomFloorMats === "object") {
+      roomFloorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(roomFloorMats));
+    } else {
+      if (!roomFloorOverridesByStyleKey[skKey]) {
+        roomFloorOverridesByStyleKey[skKey] = {};
+      }
+    }
+
     const lightingMerged = mergeSceneLighting(style?.sceneLighting ?? null);
     applySceneLightingConfig(renderer, ambientLight, hemiLight, dirLight, lightingMerged);
     sceneLightingEnvMapIntensity = lightingMerged.envMapIntensity;
@@ -4178,6 +4360,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         return {
           kind: "allFloors",
           floorLevelId: fid,
+          roomId: rid,
         };
       }
       if (o.userData?.floorplanWindowFill && fid) {
@@ -4547,24 +4730,89 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const isDoor = sel.kind === "allDoors";
     const isWin = sel.kind === "allWindows";
     const scope = floorplanSurfaceScopeFromKind(sel.kind);
+
+    // 多选房间地板处理
+    const hasMultiSelect = selectedRoomFloorIds.size > 0 && isFloor && sel.roomId;
+    const selectedRoomIds = hasMultiSelect ? getSelectedRoomFloorIds() : [];
+
+    // 获取房间名称的辅助函数
+    function getRoomName(roomId, floorLevelId) {
+      if (!roomId || !floorLevelId) return null;
+      const floors = getFloorsFromEntry(currentFloorplanEntry);
+      for (const fl of floors) {
+        if (String(fl?.id ?? "").trim() !== floorLevelId) continue;
+        for (const room of fl?.rooms || []) {
+          if (String(room?.id ?? "").trim() === roomId) {
+            return room?.name || roomId;
+          }
+        }
+      }
+      return null;
+    }
+
     if (propertiesName) {
-      propertiesName.textContent = isFloor ? "全部地面" : isDoor ? "全部门" : isWin ? "全部窗" : "全部墙体";
+      if (hasMultiSelect) {
+        // 多选时显示房间名称列表
+        const names = selectedRoomIds.map((rid) => getRoomName(rid, sel.floorLevelId) || rid).join("、");
+        propertiesName.textContent = names || `${selectedRoomIds.length} 个房间地面`;
+      } else if (isFloor && sel.roomId) {
+        // 单选地板时显示具体房间名称
+        const roomName = getRoomName(sel.roomId, sel.floorLevelId);
+        propertiesName.textContent = roomName || "地面";
+      } else {
+        propertiesName.textContent = isFloor ? "全部地面" : isDoor ? "全部门" : isWin ? "全部窗" : "全部墙体";
+      }
     }
     if (propSurfaceTitle) {
-      propSurfaceTitle.textContent = isFloor
-        ? "地面属性（本层所有房间）"
-        : isDoor
-          ? "门属性（本层全部门洞）"
-          : isWin
-            ? "窗户属性（本层全部窗洞玻璃）"
-            : "墙体属性（本层全部墙）";
+      if (hasMultiSelect) {
+        propSurfaceTitle.textContent = `地面属性（${selectedRoomIds.length} 个房间）`;
+      } else if (isFloor && sel.roomId) {
+        const roomName = getRoomName(sel.roomId, sel.floorLevelId);
+        propSurfaceTitle.textContent = roomName ? `${roomName} 地面属性` : "地面属性";
+      } else {
+        propSurfaceTitle.textContent = isFloor
+          ? "地面属性（本层所有房间）"
+          : isDoor
+            ? "门属性（本层全部门洞）"
+            : isWin
+              ? "窗户属性（本层全部窗洞玻璃）"
+              : "墙体属性（本层全部墙）";
+      }
     }
     if (propSurfaceIdHint) {
-      propSurfaceIdHint.textContent = `本层楼层 id：${sel.floorLevelId || "—"} · 修改将应用于该层全部${isFloor ? "地面" : isDoor ? "门洞填充" : isWin ? "窗洞玻璃" : "墙体"}`;
+      if (hasMultiSelect) {
+        propSurfaceIdHint.textContent = `已选中 ${selectedRoomIds.length} 个房间地板 · 修改将应用于所有选中房间`;
+      } else {
+        propSurfaceIdHint.textContent = `本层楼层 id：${sel.floorLevelId || "—"} · 修改将应用于该层全部${isFloor ? "地面" : isDoor ? "门洞填充" : isWin ? "窗洞玻璃" : "墙体"}`;
+      }
     }
-    const ov = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
-    const sampleMesh = findFirstFloorplanSurfaceMesh(sel.floorLevelId, scope);
-    const hex = ov?.color || sampleMeshColorHex(sampleMesh);
+
+    // 获取覆盖数据
+    let ov = null;
+    if (hasMultiSelect) {
+      // 多选时尝试合并多个房间的覆盖值，如果值不一致显示空
+      const overrides = selectedRoomIds.map((rid) => getRoomFloorOverride(sel.floorLevelId, rid)).filter(Boolean);
+      if (overrides.length === 1) {
+        ov = overrides[0];
+      } else if (overrides.length > 1) {
+        // 合并：只保留一致的字段
+        ov = {};
+        const first = overrides[0];
+        const fields = ["color", "materialId", "roughness", "metalness", "uvScale", "textureRotation", "textureAlbedo"];
+        for (const field of fields) {
+          const vals = overrides.map((o) => JSON.stringify(o?.[field])).filter(Boolean);
+          if (vals.length === 1 && vals[0] !== "undefined") {
+            ov[field] = JSON.parse(vals[0]);
+          }
+        }
+        if (!Object.keys(ov).length) ov = null;
+      }
+    } else {
+      ov = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
+    }
+
+    const sampleMesh = hasMultiSelect ? null : findFirstFloorplanSurfaceMesh(sel.floorLevelId, scope);
+    const hex = ov?.color || (sampleMesh ? sampleMeshColorHex(sampleMesh) : "#e8dcc8");
     const normalizedHex = hex.length === 7 ? hex : `#${hex.replace(/^#/, "")}`;
     if (propSurfaceColor) propSurfaceColor.value = normalizedHex;
     surfaceColorPicker?.setHex(normalizedHex, true);
@@ -4576,7 +4824,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (propSurfaceMaterialSection) propSurfaceMaterialSection.hidden = isWin;
     if (propSurfaceUvTextureSection) propSurfaceUvTextureSection.hidden = isWin;
     if (!isWin) {
-      if (propSurfaceMaterial) propSurfaceMaterial.value = selectVal;
+      if (propSurfaceMaterial) propSurfaceMaterial.value = selectVal || "";
       if (propSurfaceTextureAlbedo) propSurfaceTextureAlbedo.value = texAlbedoRaw;
       updateSurfaceMaterialNameLabel(selectVal, lib, texAlbedoRaw);
     }
@@ -4621,7 +4869,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       );
     }
     selectedFloorplanSurface = sel;
-    if (sel) setFloorplanGlobalSurfaceHighlight(sel.floorLevelId, sel.kind, true);
+    // 多选房间地板时传递 roomIdFilter
+    if (sel) {
+      const roomFilter = sel.kind === "allFloors" && selectedRoomFloorIds.size > 0 ? selectedRoomFloorIds : null;
+      setFloorplanGlobalSurfaceHighlight(sel.floorLevelId, sel.kind, true, roomFilter);
+    }
     if (propFurnitureFields) propFurnitureFields.hidden = true;
     if (propSurfaceFields) propSurfaceFields.hidden = false;
     propertiesPanel?.classList.add("is-visible");
@@ -4640,6 +4892,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const lib = await getFloorplanMaterialsLibraryBag();
     const fid = sel.floorLevelId;
     const prevOv = getFloorplanSurfaceGlobalOverride(fid, scope);
+
+    // 多选房间地板处理
+    const hasMultiSelect = selectedRoomFloorIds.size > 0 && sel.kind === "allFloors" && sel.roomId;
 
     /** 窗玻璃：不切换材质库预设，仅保存颜色与 PBR/玻璃参数（不写 materialId / textureAlbedo） */
     if (sel.kind === "allWindows") {
@@ -4729,6 +4984,19 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const texAlbedo = String(propSurfaceTextureAlbedo?.value ?? "").trim();
     if (texAlbedo) next.textureAlbedo = texAlbedo;
     const hasScopeData = Object.keys(next).length > 0;
+
+    // 多选房间地板：批量设置覆盖
+    if (hasMultiSelect) {
+      const roomIds = getSelectedRoomFloorIds();
+      setRoomFloorOverridesForMultiple(fid, roomIds, hasScopeData ? next : null);
+      // 同步到 Design JSON
+      syncRoomFloorOverridesToDesignJson();
+      await applyRoomFloorOverridesForMultiple(fid, roomIds);
+      await selectFloorplanSurface(sel);
+      if (historyReady) schedulePushHistory();
+      return;
+    }
+
     setFloorplanSurfaceGlobalOverride(fid, scope, hasScopeData ? next : null);
     if (!hasScopeData) {
       await rebuildFloorplan3D();
@@ -5016,6 +5284,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     const surf = rayPickFloorplanSurface(e.clientX, e.clientY);
     if (surf) {
+      // Ctrl+click 多选房间地板
+      if (surf.kind === "allFloors" && surf.roomId) {
+        if (e.ctrlKey || e.metaKey) {
+          // Ctrl+click: 切换选中状态，不清除旧选择
+          toggleRoomFloorSelection(surf.roomId);
+        } else {
+          // 普通点击: 清除旧选择，只选当前房间
+          clearRoomFloorSelection();
+          toggleRoomFloorSelection(surf.roomId);
+        }
+      }
       pendingSurfacePick = {
         surf,
         pointerId: e.pointerId,
@@ -6039,6 +6318,21 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (row.decorationLiftCm != null) p.decorationLiftCm = row.decorationLiftCm;
       placements.push(p);
     }
+
+    // 获取房间地板覆盖并写入 roomFloorMaterials
+    const roomFloorMaterials = {};
+    const roomFloorBucket = roomFloorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
+    if (roomFloorBucket && typeof roomFloorBucket === "object") {
+      for (const [floorId, rooms] of Object.entries(roomFloorBucket)) {
+        if (!rooms || typeof rooms !== "object") continue;
+        for (const [roomId, override] of Object.entries(rooms)) {
+          if (!override || typeof override !== "object" || !Object.keys(override).length) continue;
+          if (!roomFloorMaterials[floorId]) roomFloorMaterials[floorId] = {};
+          roomFloorMaterials[floorId][roomId] = JSON.parse(JSON.stringify(override));
+        }
+      }
+    }
+
     const block = {
       id: styleKey,
       name: displayName,
@@ -6046,6 +6340,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       materials,
       decorations: { placements },
     };
+    if (Object.keys(roomFloorMaterials).length) block.roomFloorMaterials = roomFloorMaterials;
     if (mapping) block.mapping = mapping;
     if (styleObj?.extends && typeof styleObj.extends === "string" && styleObj.extends.trim()) {
       block.extends = styleObj.extends.trim();
