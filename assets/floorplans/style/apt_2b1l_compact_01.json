@@ -1232,22 +1232,6 @@
         }
       },
       "extends": "default"
-    },
-    "style_1776048607676": {
-      "id": "style_1776048607676",
-      "name": "阿萨说",
-      "extends": "default",
-      "decorations": {
-        "placements": [
-          {
-            "model": "potted_plant_02",
-            "x": -16,
-            "y": 105,
-            "rotation": 0,
-            "floorId": "floor1"
-          }
-        ]
-      }
     }
   }
 }

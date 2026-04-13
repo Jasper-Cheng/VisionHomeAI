@@ -6329,6 +6329,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       ? diffMaterialsForMapping(styleObj?.materials, baseStyleObj?.materials, mappingDiff)
       : null;
 
+    // 获取房间地板覆盖
+    const roomFloorMaterials = {};
+    const roomFloorBucket = roomFloorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
+    if (roomFloorBucket && typeof roomFloorBucket === "object") {
+      for (const [floorId, rooms] of Object.entries(roomFloorBucket)) {
+        if (!rooms || typeof rooms !== "object") continue;
+        for (const [roomId, override] of Object.entries(rooms)) {
+          if (!override || typeof override !== "object" || !Object.keys(override).length) continue;
+          if (!roomFloorMaterials[floorId]) roomFloorMaterials[floorId] = {};
+          roomFloorMaterials[floorId][roomId] = JSON.parse(JSON.stringify(override));
+        }
+      }
+    }
+
     const block = {
       id: styleKey,
       name: displayName,
@@ -6338,6 +6352,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!jsonEqual(nextLighting, baseLighting)) block.sceneLighting = nextLighting;
     if (mappingDiff) block.mapping = mappingDiff;
     if (materialsDiff) block.materials = materialsDiff;
+    if (Object.keys(roomFloorMaterials).length) block.roomFloorMaterials = roomFloorMaterials;
     return block;
   }
 
@@ -6734,6 +6749,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const base = slugStyleKeyFromName(raw);
         const newKey = ensureUniqueStyleKeyInPack(base, styles);
         const defKey = resolveDefaultStyleKeyFromPack(pack) || (fpId ? getDefaultStyleKeyForFloorplan(fpId) : "") || "default";
+
+        // 将当前的 roomFloorOverridesByStyleKey 复制到新风格键下
+        const sourceRoomFloorBucket = roomFloorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(sourceStyleKey)];
+        if (sourceRoomFloorBucket && typeof sourceRoomFloorBucket === "object") {
+          roomFloorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(newKey)] = JSON.parse(JSON.stringify(sourceRoomFloorBucket));
+        }
+
         const baseStyleObj = await loadStyleConfig(fpId, defKey);
         const surfaceOverridesBucket = getCurrentSurfaceOverridesBucket();
         const libraryBag = await getFloorplanMaterialsLibraryBag();
