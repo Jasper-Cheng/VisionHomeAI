@@ -4353,6 +4353,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     /** 从户型库拖入/替换户型时清空；从设计文件或 undo 恢复时已先写入 overrides 时需传 preserveSurfaceOverrides: true */
     if (!options.preserveSurfaceOverrides) {
       floorplanSurfaceOverridesByStyleKey = {};
+      roomFloorOverridesByStyleKey = {};
+      doorOverridesByStyleKey = {};
+      windowOverridesByStyleKey = {};
     }
     currentFloorplanEntry = entry;
     currentFloorIndex = normalizeFloorIndex(entry, options.floorIndex);
@@ -4362,7 +4365,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     await rebuildFloorplan3D({ applyDecorFromStyle: !options.skipDecorFromStyleMerge });
     setFloorLevelsVisible();
     updateFurnitureFloorVisibility();
-    if (historyReady && !isRestoring) pushHistorySnapshot();
+    if (historyReady && !isRestoring) {
+      pushHistorySnapshot();
+      // 更新 baseline，避免切换风格时误报有未保存的更改
+      window.__designLayoutBaseline = serializeDesignBaseline();
+      window.__designSaveBaseline = serializeDesignForSave();
+    }
   }
 
   async function createFurnitureMesh(furnitureId) {
@@ -6890,8 +6898,24 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } else {
         floorplanStyleKeyOverride = null;
       }
-      if (hasSvgEditor && se.surfaceOverridesByStyleKey && typeof se.surfaceOverridesByStyleKey === "object") {
-        const raw = JSON.parse(JSON.stringify(se.surfaceOverridesByStyleKey));
+      // 判断是否为按风格键分组的格式（新格式）：值为对象且包含 roomFloors/doorOverrides/windowOverrides 字段
+      function isStyleKeyedFormat(obj) {
+        if (!obj || typeof obj !== "object") return false;
+        const vals = Object.values(obj);
+        if (!vals.length) return false;
+        return vals.every((v) => v && typeof v === "object" && (
+          "roomFloors" in v || "doorOverrides" in v || "windowOverrides" in v
+        ));
+      }
+
+      const rawByStyleKey = hasSvgEditor && se.surfaceOverridesByStyleKey && typeof se.surfaceOverridesByStyleKey === "object"
+        ? se.surfaceOverridesByStyleKey
+        : (hasSvgEditor && se.surfaceOverrides && isStyleKeyedFormat(se.surfaceOverrides))
+          ? se.surfaceOverrides
+          : null;
+
+      if (rawByStyleKey) {
+        const raw = JSON.parse(JSON.stringify(rawByStyleKey));
         const next = {};
         for (const [sk, bucket] of Object.entries(raw)) {
           if (!bucket || typeof bucket !== "object") continue;
@@ -7861,12 +7885,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     async function executeStyleSwitch(key, tag) {
       floorplanStyleKeyOverride = key;
 
-      // 切换风格：未保存的墙/地/门窗"面板覆盖"不应保留，也不应在切回时复现。
-      // 这里直接清空所有风格的 overrides，保证任何风格切换都会回到该风格 JSON 的默认状态。
+      // 切换风格时清空所有内存覆盖，显示目标风格的默认材质
+      // 注意：设计文件中保存的覆盖数据不会在切换风格时自动应用
+      // 只有在加载设计文件时才会恢复覆盖数据
       floorplanSurfaceOverridesByStyleKey = {};
       roomFloorOverridesByStyleKey = {};
       doorOverridesByStyleKey = {};
       windowOverridesByStyleKey = {};
+      
       clearFloorplanSurfaceSelection();
       selectFurniture(null);
       floorplanSelected = false;
@@ -7875,17 +7901,39 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       // 清除风格配置缓存，确保加载最新的风格数据
       clearStyleConfigCache();
 
-      const picked = String(tag.textContent ?? "").trim();
+      // 更新下拉菜单中的选中状态
+      dropdown.querySelectorAll(".svg-style-tag").forEach((t) => {
+        if (String(t.dataset.styleKey ?? "").trim() === key) {
+          t.classList.add("is-active");
+        } else {
+          t.classList.remove("is-active");
+        }
+      });
+
+      // 更新按钮文本
+      const picked = String(tag?.textContent ?? "").trim();
       if (picked) {
         btn.textContent = picked;
         const tip = `装饰风格：${picked}`;
         btn.title = tip;
         btn.setAttribute("aria-label", tip);
+      } else {
+        // 如果没有 tag（异步调用时），从下拉菜单中查找对应的风格名称
+        const targetTag = dropdown.querySelector(`.svg-style-tag[data-style-key="${key}"]`);
+        if (targetTag) {
+          const name = String(targetTag.textContent ?? "").trim();
+          if (name) {
+            btn.textContent = name;
+            const tip = `装饰风格：${name}`;
+            btn.title = tip;
+            btn.setAttribute("aria-label", tip);
+          }
+        }
       }
-      
+
       // 尝试快速切换（只更新材质，不重建几何体）
       const fastSwitchSuccess = await fastStyleSwitch(key);
-      
+
       if (fastSwitchSuccess) {
         // 快速切换成功，延迟加载装饰物
         setTimeout(async () => {
@@ -7897,7 +7945,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         // 快速切换失败，回退到完全重建
         await rebuildFloorplan3D({ applyDecorFromStyle: true });
       }
-      
+
       pushHistorySnapshot();
       // 更新 baseline，避免下次切换时再次提示
       window.__designLayoutBaseline = serializeDesignBaseline();
@@ -7979,28 +8027,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const pending = window.__pendingStyleSwitch;
       if (!pending) return;
       closeSwitchStyleDialog();
-
-      // 监听保存完成事件
-      const handleSaveComplete = async () => {
-        window.removeEventListener("visionhome:design-saved", handleSaveComplete);
-        window.removeEventListener("visionhome:save-design-cancelled", handleSaveCancel);
-        if (window.__pendingStyleSwitch) {
-          const p = window.__pendingStyleSwitch;
-          window.__pendingStyleSwitch = null;
-          await executeStyleSwitch(p.key, p.tag);
-        }
-      };
-
-      // 监听保存取消事件
-      const handleSaveCancel = () => {
-        window.removeEventListener("visionhome:design-saved", handleSaveComplete);
-        window.removeEventListener("visionhome:save-design-cancelled", handleSaveCancel);
-        window.__pendingStyleSwitch = null;
-      };
-
-      window.addEventListener("visionhome:design-saved", handleSaveComplete, { once: true });
-      window.addEventListener("visionhome:save-design-cancelled", handleSaveCancel, { once: true });
-
+      
       // 先保存
       const hasResolvedName = Boolean(String(window.__activeDesignProject?.name ?? "").trim());
       if (hasResolvedName) {
@@ -8008,8 +8035,33 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (typeof executeSave === "function") {
           await executeSave(String(window.__activeDesignProject?.name ?? "").trim());
         }
+        // 保存完成后切换风格
+        await executeStyleSwitch(pending.key, pending.tag);
+        window.__pendingStyleSwitch = null;
       } else {
-        // 没有文件名，需要用户输入，打开保存对话框
+        // 没有文件名，需要用户输入
+        // 监听保存完成事件
+        const handleSaveComplete = async () => {
+          window.removeEventListener("visionhome:design-saved", handleSaveComplete);
+          if (window.__pendingStyleSwitch) {
+            const p = window.__pendingStyleSwitch;
+            window.__pendingStyleSwitch = null;
+            // 保存完成后切换风格
+            await executeStyleSwitch(p.key, p.tag);
+          }
+        };
+        
+        // 监听保存取消事件
+        const handleSaveCancel = () => {
+          window.removeEventListener("visionhome:design-saved", handleSaveComplete);
+          window.removeEventListener("visionhome:save-design-cancelled", handleSaveCancel);
+          window.__pendingStyleSwitch = null;
+        };
+        
+        window.addEventListener("visionhome:design-saved", handleSaveComplete, { once: true });
+        window.addEventListener("visionhome:save-design-cancelled", handleSaveCancel, { once: true });
+        
+        // 打开保存对话框
         window.dispatchEvent(new CustomEvent("visionhome:open-save-design"));
       }
     });

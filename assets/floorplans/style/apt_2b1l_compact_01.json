@@ -1125,6 +1125,21 @@
             "floorId": "floor1"
           }
         ]
+      },
+      "roomFloorMaterials": {
+        "floor1": {
+          "r_living": {
+            "color": "#93661c",
+            "materialId": "r_bed1",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90
+          }
+        }
       }
     }
   }

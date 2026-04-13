@@ -405,7 +405,7 @@ function collectSvgEditorState(layout) {
     furniture,
   };
   if (surfaceOverrides && typeof surfaceOverrides === "object" && Object.keys(surfaceOverrides).length > 0) {
-    out.surfaceOverrides = surfaceOverrides;
+    out.surfaceOverridesByStyleKey = surfaceOverrides;
   }
   if (lightingConfig && typeof lightingConfig === "object") {
     out.lightingConfig = lightingConfig;
@@ -647,6 +647,9 @@ export function mountSaveDesignFlow() {
   const confirmBtn = document.getElementById("saveDesignConfirmBtn");
   if (!btn || !dialog || !input || !confirmBtn) return;
   saveDesignFlowMounted = true;
+
+  // 导出到全局，供风格切换等功能使用
+  window.executeSaveWithName = executeSaveWithName;
 
   window.addEventListener("visionhome:open-save-design", () => {
     openSaveDialog();
