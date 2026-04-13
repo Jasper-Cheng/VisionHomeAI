@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1776066159612",
+  "name": "中",
+  "description": "",
+  "createdAt": "2026-04-13T07:42:39.612Z",
+  "updatedAt": "2026-04-13T07:44:53.053Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "potted_plant_02",
+      "floorId": "floor1",
+      "positionCm": [
+        -16,
+        105
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "floorplanStyleKey": "s_1",
+    "furniture": [
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -16,
+        "y": 105,
+        "rotation": 0
+      }
+    ],
+    "surfaceOverridesByStyleKey": {
+      "s_1": {
+        "roomFloors": {
+          "floor1": {
+            "r_living": {
+              "color": "#93661c",
+              "materialId": "r_bed1",
+              "roughness": 0.35,
+              "metalness": 0,
+              "uvScale": [
+                0.15,
+                0.15
+              ],
+              "textureRotation": 90
+            }
+          }
+        },
+        "doorOverrides": {},
+        "windowOverrides": {}
+      }
+    },
+    "lightingConfig": {
+      "toneMappingExposure": 1,
+      "ambient": {
+        "intensity": 0.26
+      },
+      "hemisphere": {
+        "intensity": 0.36
+      },
+      "directional": {
+        "intensity": 1
+      },
+      "envMapIntensity": 0.35
+    }
+  }
+}

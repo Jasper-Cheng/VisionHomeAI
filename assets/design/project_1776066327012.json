@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1776066327012",
+  "name": "大",
+  "description": "",
+  "createdAt": "2026-04-13T07:45:27.012Z",
+  "updatedAt": "2026-04-13T08:06:36.940Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "furnitureInstances": [
+    {
+      "instanceId": "fi_1",
+      "furnitureId": "potted_plant_02",
+      "floorId": "floor1",
+      "positionCm": [
+        -16,
+        105
+      ],
+      "rotationDeg": 0
+    }
+  ],
+  "svgEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "floorplanStyleKey": "default",
+    "furniture": [
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -16,
+        "y": 105,
+        "rotation": 0
+      }
+    ],
+    "surfaceOverridesByStyleKey": {
+      "default": {
+        "roomFloors": {
+          "floor1": {
+            "r_living": {
+              "color": "#e8dcc8",
+              "materialId": "r_bed1",
+              "roughness": 0.35,
+              "metalness": 0,
+              "uvScale": [
+                0.15,
+                0.15
+              ],
+              "textureRotation": 90,
+              "textureAlbedo": "brick_wall_04_diff.jpg"
+            }
+          }
+        },
+        "doorOverrides": {
+          "floor1": {
+            "d_main": {
+              "color": "#e8dcc8",
+              "materialId": "d_main",
+              "roughness": 0.8,
+              "metalness": 0.02,
+              "uvScale": [
+                1,
+                1
+              ],
+              "textureRotation": 0,
+              "textureAlbedo": "brick_crosswalk_diff.jpg"
+            }
+          }
+        },
+        "windowOverrides": {
+          "floor1": {
+            "win_left_floor": {
+              "color": "#0a0600",
+              "roughness": 0.04,
+              "metalness": 0,
+              "opacity": 0.22,
+              "transmission": 0.96,
+              "ior": 1.45
+            },
+            "win_left_small": {
+              "color": "#c50ec5",
+              "roughness": 0.04,
+              "metalness": 0,
+              "opacity": 0.22,
+              "transmission": 0.96,
+              "ior": 1.45
+            }
+          }
+        },
+        "floor1": {
+          "allWalls": {
+            "color": "#140b00",
+            "materialId": "w_ext_left_n",
+            "roughness": 0.9,
+            "metalness": 0,
+            "uvScale": [
+              2,
+              2
+            ],
+            "textureRotation": 0
+          }
+        }
+      }
+    },
+    "lightingConfig": {
+      "toneMappingExposure": 1,
+      "ambient": {
+        "intensity": 0.26
+      },
+      "hemisphere": {
+        "intensity": 0.36
+      },
+      "directional": {
+        "intensity": 1
+      },
+      "envMapIntensity": 0.35
+    }
+  }
+}

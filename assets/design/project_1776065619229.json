@@ -4,7 +4,7 @@
   "name": "12",
   "description": "",
   "createdAt": "2026-04-13T07:33:39.229Z",
-  "updatedAt": "2026-04-13T07:38:43.956Z",
+  "updatedAt": "2026-04-13T07:42:17.519Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -14,8 +14,8 @@
       "furnitureId": "ArmChair_01",
       "floorId": "floor1",
       "positionCm": [
-        -322,
-        33
+        341,
+        -190
       ],
       "rotationDeg": 0
     },
@@ -39,8 +39,8 @@
       {
         "model": "ArmChair_01",
         "floorId": "floor1",
-        "x": -322,
-        "y": 33,
+        "x": 341,
+        "y": -190,
         "rotation": 0
       },
       {
@@ -55,39 +55,18 @@
       "default": {
         "roomFloors": {},
         "doorOverrides": {},
-        "windowOverrides": {},
-        "floor1": {
-          "allWalls": {
-            "color": "#a46d28",
-            "materialId": "w_ext_left_n",
-            "roughness": 0.9,
-            "metalness": 0,
-            "uvScale": [
-              2,
-              2
-            ],
-            "textureRotation": 0
-          }
-        }
-      },
-      "s_1": {
-        "roomFloors": {},
-        "doorOverrides": {
+        "windowOverrides": {
           "floor1": {
-            "d_main": {
-              "color": "#42351e",
-              "materialId": "d_main",
-              "roughness": 0.8,
-              "metalness": 0.02,
-              "uvScale": [
-                1,
-                1
-              ],
-              "textureRotation": 0
+            "win_left_small": {
+              "color": "#39280c",
+              "roughness": 0.04,
+              "metalness": 0,
+              "opacity": 0.22,
+              "transmission": 0.96,
+              "ior": 1.45
             }
           }
-        },
-        "windowOverrides": {}
+        }
       }
     },
     "lightingConfig": {

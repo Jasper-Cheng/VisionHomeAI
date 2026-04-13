@@ -3885,6 +3885,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     
     // 标记是否需要完全重建（遇到多材质墙体时）
     let needFullRebuild = false;
+
+    // 检查新风格是否包含房间专属墙面材质（key 以 _wall 结尾）
+    // 若是，则单材质墙体（被全局覆盖替换过数组材质）也需要完全重建
+    const newStyleHasRoomWalls = Object.keys(newStyle?.materials || {}).some((k) => k.endsWith("_wall"));
     
     // 遍历场景中的所有 mesh，更新材质
     floorplanRoot.traverse((obj) => {
@@ -3896,47 +3900,59 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (userData.floorplanRoomFloor && userData.roomId) {
         const room = { id: userData.roomId };
         const fk = resolveRoomFloorMaterialKey(newStyle, room);
-        if (fk) {
-          const def = getMaterialDef(newStyle, fk);
-          if (def) {
-            const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
-              forGlass: false,
-              envMapIntensity: sceneLightingEnvMapIntensity,
-              side: THREE.DoubleSide,
-            });
-            newMat.userData.__floorplanRoomFloorDepthWrite = true;
-            applyFloorplanSurfaceAlpha(newMat, opacity);
-            queueStylePackTextures(newMat, def, { applyUvScale: true });
-            
-            disposeMaterialSafely(obj.material);
-            obj.material = newMat;
-          }
+        const def = fk ? getMaterialDef(newStyle, fk) : null;
+        if (def) {
+          const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
+            forGlass: false,
+            envMapIntensity: sceneLightingEnvMapIntensity,
+            side: THREE.DoubleSide,
+          });
+          newMat.userData.__floorplanRoomFloorDepthWrite = true;
+          applyFloorplanSurfaceAlpha(newMat, opacity);
+          queueStylePackTextures(newMat, def, { applyUvScale: true });
+          disposeMaterialSafely(obj.material);
+          obj.material = newMat;
+        } else {
+          // 新风格未为该房间定义地板材质 → 重置为默认地板材质
+          disposeMaterialSafely(obj.material);
+          const defaultMat = floorplanStdMat();
+          defaultMat.userData.__floorplanRoomFloorDepthWrite = true;
+          defaultMat.side = THREE.DoubleSide;
+          applyFloorplanSurfaceAlpha(defaultMat, opacity);
+          obj.material = defaultMat;
         }
       }
       
       // 墙体（跳过多材质墙体，因为需要房间信息才能正确更新）
       else if (userData.floorplanWall && userData.wallId) {
-        // 如果是多材质数组，跳过快速更新（需要完全重建才能正确处理房间墙面）
         if (Array.isArray(obj.material)) {
-          // 标记需要完全重建
+          // 多材质数组 → 需要完全重建才能正确处理房间墙面
+          needFullRebuild = true;
+        } else if (newStyleHasRoomWalls) {
+          // 单材质墙体（被全局覆盖替换过），但新风格需要房间专属墙面 → 需要完全重建
           needFullRebuild = true;
         } else {
-          // 单材质墙体可以快速更新
+          // 单材质墙体，新风格使用单一墙体材质 → 快速更新
           const wall = { id: userData.wallId };
           const wk = resolveWallMaterialKey(newStyle, wall);
-          if (wk) {
-            const def = getMaterialDef(newStyle, wk);
-            if (def) {
-              const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
-                forGlass: false,
-                envMapIntensity: sceneLightingEnvMapIntensity,
-                side: THREE.FrontSide,
-              });
-              queueStylePackTextures(newMat, def, { applyUvScale: false });
-              
-              disposeMaterialSafely(obj.material);
-              obj.material = newMat;
-            }
+          const def = wk ? getMaterialDef(newStyle, wk) : null;
+          if (def) {
+            const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
+              forGlass: false,
+              envMapIntensity: sceneLightingEnvMapIntensity,
+              side: THREE.FrontSide,
+            });
+            queueStylePackTextures(newMat, def, { applyUvScale: false });
+            disposeMaterialSafely(obj.material);
+            obj.material = newMat;
+          } else {
+            // 新风格未为该墙体定义材质 → 重置为默认墙体材质
+            disposeMaterialSafely(obj.material);
+            const defaultMat = floorplanStdMat();
+            applyFloorplanSurfaceAlpha(defaultMat, opacity);
+            defaultMat.side = THREE.FrontSide;
+            tagFloorplanLayerOpacity(defaultMat, opacity);
+            obj.material = defaultMat;
           }
         }
       }
@@ -3945,18 +3961,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       else if (userData.floorplanDoor && userData.doorId) {
         const door = { id: userData.doorId };
         const dk = resolveDoorMaterialKey(newStyle, door);
-        if (dk) {
-          const def = getMaterialDef(newStyle, dk);
-          if (def) {
-            const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
-              forGlass: false,
-              envMapIntensity: sceneLightingEnvMapIntensity,
-              side: THREE.FrontSide,
-            });
-            queueStylePackTextures(newMat, def, { applyUvScale: false });
-            
+        const def = dk ? getMaterialDef(newStyle, dk) : null;
+        if (def) {
+          const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
+            forGlass: false,
+            envMapIntensity: sceneLightingEnvMapIntensity,
+            side: THREE.FrontSide,
+          });
+          queueStylePackTextures(newMat, def, { applyUvScale: false });
+          disposeMaterialSafely(obj.material);
+          obj.material = newMat;
+        } else {
+          // 新风格未为该门定义材质 → 重置为门的自身风格材质
+          const ns = userData.floorplanDoorStyle;
+          if (ns) {
             disposeMaterialSafely(obj.material);
-            obj.material = newMat;
+            obj.material = doorFillMaterialFromNs(ns, opacity);
           }
         }
       }
@@ -3965,18 +3985,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       else if (userData.floorplanWindow && userData.windowId) {
         const win = { id: userData.windowId };
         const wink = resolveWindowMaterialKey(newStyle, win);
-        if (wink) {
-          const def = getMaterialDef(newStyle, wink);
-          if (def) {
-            const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
-              forGlass: true,
-              envMapIntensity: 0.9,
-              side: THREE.FrontSide,
-            });
-            queueStylePackTextures(newMat, def, { applyUvScale: false });
-            
+        const def = wink ? getMaterialDef(newStyle, wink) : null;
+        if (def) {
+          const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
+            forGlass: true,
+            envMapIntensity: 0.9,
+            side: THREE.FrontSide,
+          });
+          queueStylePackTextures(newMat, def, { applyUvScale: false });
+          disposeMaterialSafely(obj.material);
+          obj.material = newMat;
+        } else {
+          // 新风格未为该窗户定义材质 → 重置为窗户的自身风格玻璃材质
+          const ns = userData.floorplanWindowStyle;
+          if (ns) {
             disposeMaterialSafely(obj.material);
-            obj.material = newMat;
+            obj.material = windowGlassMaterialFromNs(ns, opacity);
           }
         }
       }
@@ -4015,9 +4039,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
     }
     
-    // 如果遇到多材质墙体，返回 false 触发完全重建
+    // 需要完全重建（多材质墙体 / 风格含房间专属墙面材质），返回 false 触发重建
     if (needFullRebuild) {
-      console.log('[VisionHome] 检测到多材质墙体，回退到完全重建');
+      console.log('[VisionHome] 快速切换需要完全重建（多材质墙体或房间专属墙面材质）');
       return false;
     }
     
