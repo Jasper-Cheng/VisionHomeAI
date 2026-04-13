@@ -644,6 +644,32 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return [...selectedRoomFloorIds];
   }
 
+  // --- 多选门 ---
+  /** @type {Set<string>} 当前选中的门 ID 集合 */
+  let selectedDoorIds = new Set();
+
+  function toggleDoorSelection(doorId) {
+    if (!doorId) return;
+    const id = String(doorId).trim();
+    if (selectedDoorIds.has(id)) {
+      selectedDoorIds.delete(id);
+    } else {
+      selectedDoorIds.add(id);
+    }
+  }
+
+  function clearDoorSelection() {
+    selectedDoorIds.clear();
+  }
+
+  function isDoorSelected(doorId) {
+    return selectedDoorIds.has(String(doorId).trim());
+  }
+
+  function getSelectedDoorIds() {
+    return [...selectedDoorIds];
+  }
+
   // --- 按房间地板覆盖（内存） ---
   // 格式: { [styleKey]: { [floorLevelId]: { [roomId]: { color, materialId, roughness, metalness, uvScale, textureRotation, textureAlbedo } } } }
   let roomFloorOverridesByStyleKey = {};
@@ -755,6 +781,37 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
+   * 对多个门应用覆盖（不重建几何体）
+   * @param {string} floorLevelId
+   * @param {string[]} doorIds
+   */
+  async function applyDoorOverridesForMultiple(floorLevelId, doorIds) {
+    if (!floorplanRoot.children.length) return;
+    if (!Array.isArray(doorIds) || !doorIds.length) return;
+    const fid = String(floorLevelId ?? "").trim();
+    if (!fid) return;
+    const libraryBag = await getFloorplanMaterialsLibraryBag();
+    const doorIdSet = new Set(doorIds.map((d) => String(d).trim()));
+    const meshes = [];
+    floorplanRoot.traverse((o) => {
+      if (!o.isMesh) return;
+      if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
+      if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle) return;
+      const did = String(o.userData.floorplanDoorId ?? "").trim();
+      if (!did || !doorIdSet.has(did)) return;
+      meshes.push(o);
+    });
+    if (!meshes.length) return;
+    for (const mesh of meshes) {
+      const did = String(mesh.userData.floorplanDoorId ?? "").trim();
+      const ov = getDoorOverride(fid, did);
+      if (ov && surfaceOverrideIsActive(ov)) {
+        applySurfaceOverrideToMesh(mesh, ov, libraryBag);
+      }
+    }
+  }
+
+  /**
    * 从 Design JSON 加载房间地板覆盖（加载项目时调用）
    * @param {object} designSurfaceOverrides - svgEditor.surfaceOverrides
    */
@@ -768,6 +825,99 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!roomFloors || typeof roomFloors !== "object") return;
     // roomFloors 格式: { [floorLevelId]: { [roomId]: override } }
     roomFloorOverridesByStyleKey[key] = JSON.parse(JSON.stringify(roomFloors));
+  }
+
+  // --- 按门覆盖（内存） ---
+  // 格式: { [styleKey]: { [floorLevelId]: { [doorId]: { color, materialId, roughness, metalness, opacity, transmission, ior } } } }
+  let doorOverridesByStyleKey = {};
+
+  function getDoorOverridesBucket(styleKey, opts = {}) {
+    const key = normalizeStyleKeyForSurfaceOverrides(styleKey);
+    const create = Boolean(opts.create);
+    const hit = doorOverridesByStyleKey[key];
+    if (hit && typeof hit === "object") return hit;
+    if (!create) return {};
+    const next = {};
+    doorOverridesByStyleKey[key] = next;
+    return next;
+  }
+
+  function getCurrentDoorOverridesBucket() {
+    return getDoorOverridesBucket(getEffectiveFloorplanStyleKey(), { create: true });
+  }
+
+  /**
+   * @param {string} floorLevelId
+   * @param {string} doorId
+   * @returns {object | null}
+   */
+  function getDoorOverride(floorLevelId, doorId) {
+    const fid = String(floorLevelId ?? "").trim();
+    const did = String(doorId ?? "").trim();
+    if (!fid || !did) return null;
+    const bucket = getCurrentDoorOverridesBucket();
+    const floorBag = bucket[fid];
+    if (!floorBag) return null;
+    return floorBag[did] ?? null;
+  }
+
+  /**
+   * @param {string} floorLevelId
+   * @param {string} doorId
+   * @param {object | null} override
+   */
+  function setDoorOverride(floorLevelId, doorId, override) {
+    const fid = String(floorLevelId ?? "").trim();
+    const did = String(doorId ?? "").trim();
+    if (!fid || !did) return;
+    const bucket = getCurrentDoorOverridesBucket();
+    if (!bucket[fid]) bucket[fid] = {};
+    if (!override || (typeof override === "object" && Object.keys(override).length === 0)) {
+      delete bucket[fid][did];
+      if (Object.keys(bucket[fid]).length === 0) delete bucket[fid];
+    } else {
+      bucket[fid][did] = JSON.parse(JSON.stringify(override));
+    }
+  }
+
+  /**
+   * 对多个门应用覆盖（不重建几何体）
+   * @param {string} floorLevelId
+   * @param {string[]} doorIds
+   * @param {object} override
+   */
+  function setDoorOverridesForMultiple(floorLevelId, doorIds, override) {
+    if (!Array.isArray(doorIds)) return;
+    for (const did of doorIds) {
+      setDoorOverride(floorLevelId, did, override);
+    }
+  }
+
+  /**
+   * 同步门覆盖到 Design JSON（修改门时调用）
+   */
+  function syncDoorOverridesToDesignJson() {
+    const proj = window.__currentDesignProject;
+    if (!proj || !proj.svgEditor) return;
+    const sk = getEffectiveFloorplanStyleKey();
+    const key = normalizeStyleKeyForSurfaceOverrides(sk);
+    if (!proj.svgEditor.surfaceOverrides) proj.svgEditor.surfaceOverrides = {};
+    if (!proj.svgEditor.surfaceOverrides[key]) proj.svgEditor.surfaceOverrides[key] = {};
+    proj.svgEditor.surfaceOverrides[key].doorOverrides = JSON.parse(JSON.stringify(doorOverridesByStyleKey[key] || {}));
+  }
+
+  /**
+   * 从 Design JSON 加载门覆盖（加载项目时调用）
+   */
+  function loadDoorOverridesFromDesignJson(designSurfaceOverrides) {
+    if (!designSurfaceOverrides || typeof designSurfaceOverrides !== "object") return;
+    const sk = getEffectiveFloorplanStyleKey();
+    const key = normalizeStyleKeyForSurfaceOverrides(sk);
+    const styleBag = designSurfaceOverrides[key];
+    if (!styleBag || typeof styleBag !== "object") return;
+    const doorOverrides = styleBag.doorOverrides;
+    if (!doorOverrides || typeof doorOverrides !== "object") return;
+    doorOverridesByStyleKey[key] = JSON.parse(JSON.stringify(doorOverrides));
   }
 
   let dragState = null;
@@ -1519,7 +1669,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {boolean} on
    * @param {Set<string>} [roomIdFilter] 可选的房间 ID 过滤器，用于多选时只高亮选中的房间
    */
-  function setFloorplanGlobalSurfaceHighlight(floorLevelId, scope, on, roomIdFilter) {
+  function setFloorplanGlobalSurfaceHighlight(floorLevelId, scope, on, roomIdFilter, doorIdFilter) {
     // 移除旧的选中框
     floorplanSurfaceBoxHelpers.forEach((helper) => {
       if (helper.parent) {
@@ -1548,6 +1698,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (scope === "allFloors" && roomIdFilter && roomIdFilter.size > 0) {
         const meshRoomId = String(o.userData.floorplanRoomId ?? "").trim();
         if (!meshRoomId || !roomIdFilter.has(meshRoomId)) return;
+      }
+
+      // 多选门时，检查是否在选中列表中
+      if (scope === "allDoors" && doorIdFilter && doorIdFilter.size > 0) {
+        const meshDoorId = String(o.userData.floorplanDoorId ?? "").trim();
+        if (!meshDoorId || !doorIdFilter.has(meshDoorId)) return;
       }
 
       // 为每个匹配的网格创建边框
@@ -1605,6 +1761,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 保留 roomFloors（按房间的地板覆盖）
     if (raw.roomFloors && typeof raw.roomFloors === "object") {
       out.roomFloors = JSON.parse(JSON.stringify(raw.roomFloors));
+    }
+    // 保留 doorOverrides（按门的覆盖）
+    if (raw.doorOverrides && typeof raw.doorOverrides === "object") {
+      out.doorOverrides = JSON.parse(JSON.stringify(raw.doorOverrides));
     }
     return out;
   }
@@ -1893,6 +2053,19 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const roomOv = getRoomFloorOverride(fid, rid);
       if (roomOv && surfaceOverrideIsActive(roomOv)) {
         applySurfaceOverrideToMesh(o, roomOv, libraryBag);
+      }
+    });
+
+    // 应用每个门的单独覆盖
+    gWorld.traverse((o) => {
+      if (!o.isMesh) return;
+      if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle) return;
+      const fid = String(o.userData.floorplanFloorLevelId ?? "").trim();
+      const did = String(o.userData.floorplanDoorId ?? "").trim();
+      if (!fid || !did) return;
+      const doorOv = getDoorOverride(fid, did);
+      if (doorOv && surfaceOverrideIsActive(doorOv)) {
+        applySurfaceOverrideToMesh(o, doorOv, libraryBag);
       }
     });
   }
@@ -2495,6 +2668,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     mesh.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
     mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
     mesh.userData.floorplanDoorStyle = ns;
+    mesh.userData.floorplanDoorId = String(door?.id ?? "").trim();
     if (!styleDoorMat) queueDoorFillTextures(mesh, ns);
     group.add(mesh);
     const doorDepth = thickM * 0.22;
@@ -3380,6 +3554,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     } else {
       if (!roomFloorOverridesByStyleKey[skKey]) {
         roomFloorOverridesByStyleKey[skKey] = {};
+      }
+    }
+
+    // 从风格包加载门覆盖到内存
+    const doorMats = style?.doorOverrides;
+    if (doorMats && typeof doorMats === "object") {
+      doorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(doorMats));
+    } else {
+      if (!doorOverridesByStyleKey[skKey]) {
+        doorOverridesByStyleKey[skKey] = {};
       }
     }
 
@@ -4388,9 +4572,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         };
       }
       if (o.userData?.floorplanDoorFill && fid) {
+        const did = o.userData?.floorplanDoorId;
         return {
           kind: "allDoors",
           floorLevelId: fid,
+          doorId: did || null,
         };
       }
       const wid = o.userData?.floorplanWallId;
@@ -4413,6 +4599,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       );
     }
     selectedFloorplanSurface = null;
+    clearRoomFloorSelection();
+    clearDoorSelection();
     if (propSurfaceFields) propSurfaceFields.hidden = true;
     if (propFurnitureFields) propFurnitureFields.hidden = false;
   }
@@ -4750,8 +4938,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const scope = floorplanSurfaceScopeFromKind(sel.kind);
 
     // 多选房间地板处理
-    const hasMultiSelect = selectedRoomFloorIds.size > 0 && isFloor && sel.roomId;
-    const selectedRoomIds = hasMultiSelect ? getSelectedRoomFloorIds() : [];
+    const hasMultiSelectFloor = selectedRoomFloorIds.size > 0 && isFloor && sel.roomId;
+    const selectedRoomIds = hasMultiSelectFloor ? getSelectedRoomFloorIds() : [];
+
+    // 多选门处理
+    const hasMultiSelectDoor = selectedDoorIds.size > 0 && isDoor && sel.doorId;
+    const selectedDoorIdsArr = hasMultiSelectDoor ? getSelectedDoorIds() : [];
 
     // 获取房间名称的辅助函数
     function getRoomName(roomId, floorLevelId) {
@@ -4783,25 +4975,35 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const currentFloorName = getFloorName(sel.floorLevelId);
 
     if (propertiesName) {
-      if (hasMultiSelect) {
+      if (hasMultiSelectFloor) {
         // 多选时显示房间名称列表
         const names = selectedRoomIds.map((rid) => getRoomName(rid, sel.floorLevelId) || rid).join("、");
         propertiesName.textContent = names || `${selectedRoomIds.length} 个房间地面`;
+      } else if (hasMultiSelectDoor) {
+        // 多选门时显示门数量
+        propertiesName.textContent = `${selectedDoorIdsArr.length} 个门洞`;
       } else if (isFloor && sel.roomId) {
         // 单选地板时显示具体房间名称
         const roomName = getRoomName(sel.roomId, sel.floorLevelId);
         propertiesName.textContent = roomName || "地面";
+      } else if (isDoor && sel.doorId) {
+        // 单选门时显示门
+        propertiesName.textContent = "门洞填充";
       } else {
         propertiesName.textContent = isFloor ? "全部地面" : isDoor ? "全部门" : isWin ? "全部窗" : "全部墙体";
       }
     }
     if (propSurfaceTitle) {
       const floorLabel = currentFloorName || sel.floorLevelId;
-      if (hasMultiSelect) {
+      if (hasMultiSelectFloor) {
         propSurfaceTitle.textContent = `地面属性（${selectedRoomIds.length} 个房间） · ${floorLabel}`;
+      } else if (hasMultiSelectDoor) {
+        propSurfaceTitle.textContent = `门属性（${selectedDoorIdsArr.length} 个门洞） · ${floorLabel}`;
       } else if (isFloor && sel.roomId) {
         const roomName = getRoomName(sel.roomId, sel.floorLevelId);
         propSurfaceTitle.textContent = roomName ? `${roomName} 地面属性 · ${floorLabel}` : `地面属性 · ${floorLabel}`;
+      } else if (isDoor && sel.doorId) {
+        propSurfaceTitle.textContent = `门属性 · ${floorLabel}`;
       } else {
         propSurfaceTitle.textContent = isFloor
           ? `地面属性（本层所有房间） · ${floorLabel}`
@@ -4813,8 +5015,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
     }
     if (propSurfaceIdHint) {
-      if (hasMultiSelect) {
+      if (hasMultiSelectFloor) {
         propSurfaceIdHint.textContent = `已选中 ${selectedRoomIds.length} 个房间地板 · 修改将应用于所有选中房间`;
+      } else if (hasMultiSelectDoor) {
+        propSurfaceIdHint.textContent = `已选中 ${selectedDoorIdsArr.length} 个门洞 · 修改将应用于所有选中门`;
       } else {
         propSurfaceIdHint.textContent = `修改将应用于该层全部${isFloor ? "地面" : isDoor ? "门洞填充" : isWin ? "窗洞玻璃" : "墙体"}`;
       }
@@ -4822,7 +5026,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     // 获取覆盖数据
     let ov = null;
-    if (hasMultiSelect) {
+    if (hasMultiSelectFloor) {
       // 多选时尝试合并多个房间的覆盖值，如果值不一致显示空
       const overrides = selectedRoomIds.map((rid) => getRoomFloorOverride(sel.floorLevelId, rid)).filter(Boolean);
       if (overrides.length === 1) {
@@ -4840,11 +5044,27 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         }
         if (!Object.keys(ov).length) ov = null;
       }
+    } else if (hasMultiSelectDoor) {
+      // 多选门时尝试合并多个门的覆盖值
+      const overrides = selectedDoorIdsArr.map((did) => getDoorOverride(sel.floorLevelId, did)).filter(Boolean);
+      if (overrides.length === 1) {
+        ov = overrides[0];
+      } else if (overrides.length > 1) {
+        ov = {};
+        const fields = ["color", "materialId", "roughness", "metalness", "opacity", "transmission", "ior"];
+        for (const field of fields) {
+          const vals = overrides.map((o) => JSON.stringify(o?.[field])).filter(Boolean);
+          if (vals.length === 1 && vals[0] !== "undefined") {
+            ov[field] = JSON.parse(vals[0]);
+          }
+        }
+        if (!Object.keys(ov).length) ov = null;
+      }
     } else {
       ov = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
     }
 
-    const sampleMesh = hasMultiSelect ? null : findFirstFloorplanSurfaceMesh(sel.floorLevelId, scope);
+    const sampleMesh = (hasMultiSelectFloor || hasMultiSelectDoor) ? null : findFirstFloorplanSurfaceMesh(sel.floorLevelId, scope);
     const hex = ov?.color || (sampleMesh ? sampleMeshColorHex(sampleMesh) : "#e8dcc8");
     const normalizedHex = hex.length === 7 ? hex : `#${hex.replace(/^#/, "")}`;
     if (propSurfaceColor) propSurfaceColor.value = normalizedHex;
@@ -4902,10 +5122,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       );
     }
     selectedFloorplanSurface = sel;
-    // 多选房间地板时传递 roomIdFilter
+    // 多选房间地板时传递 roomIdFilter，多选门时传递 doorIdFilter
     if (sel) {
       const roomFilter = sel.kind === "allFloors" && selectedRoomFloorIds.size > 0 ? selectedRoomFloorIds : null;
-      setFloorplanGlobalSurfaceHighlight(sel.floorLevelId, sel.kind, true, roomFilter);
+      const doorFilter = sel.kind === "allDoors" && selectedDoorIds.size > 0 ? selectedDoorIds : null;
+      setFloorplanGlobalSurfaceHighlight(sel.floorLevelId, sel.kind, true, roomFilter, doorFilter);
     }
     if (propFurnitureFields) propFurnitureFields.hidden = true;
     if (propSurfaceFields) propSurfaceFields.hidden = false;
@@ -4927,7 +5148,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const prevOv = getFloorplanSurfaceGlobalOverride(fid, scope);
 
     // 多选房间地板处理
-    const hasMultiSelect = selectedRoomFloorIds.size > 0 && sel.kind === "allFloors" && sel.roomId;
+    const hasMultiSelectFloor = selectedRoomFloorIds.size > 0 && sel.kind === "allFloors" && sel.roomId;
+    // 多选门处理
+    const hasMultiSelectDoor = selectedDoorIds.size > 0 && sel.kind === "allDoors" && sel.doorId;
 
     /** 窗玻璃：不切换材质库预设，仅保存颜色与 PBR/玻璃参数（不写 materialId / textureAlbedo） */
     if (sel.kind === "allWindows") {
@@ -5019,12 +5242,24 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const hasScopeData = Object.keys(next).length > 0;
 
     // 多选房间地板：批量设置覆盖
-    if (hasMultiSelect) {
+    if (hasMultiSelectFloor) {
       const roomIds = getSelectedRoomFloorIds();
       setRoomFloorOverridesForMultiple(fid, roomIds, hasScopeData ? next : null);
       // 同步到 Design JSON
       syncRoomFloorOverridesToDesignJson();
       await applyRoomFloorOverridesForMultiple(fid, roomIds);
+      await selectFloorplanSurface(sel);
+      if (historyReady) schedulePushHistory();
+      return;
+    }
+
+    // 多选门：批量设置覆盖
+    if (hasMultiSelectDoor) {
+      const doorIds = getSelectedDoorIds();
+      setDoorOverridesForMultiple(fid, doorIds, hasScopeData ? next : null);
+      // 同步到 Design JSON
+      syncDoorOverridesToDesignJson();
+      await applyDoorOverridesForMultiple(fid, doorIds);
       await selectFloorplanSurface(sel);
       if (historyReady) schedulePushHistory();
       return;
@@ -5324,7 +5559,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         } else {
           // 普通点击: 清除旧选择，只选当前房间
           clearRoomFloorSelection();
+          clearDoorSelection();
           toggleRoomFloorSelection(surf.roomId);
+        }
+      }
+      // Ctrl+click 多选门
+      if (surf.kind === "allDoors" && surf.doorId) {
+        if (e.ctrlKey || e.metaKey) {
+          // Ctrl+click: 切换选中状态，不清除旧选择
+          toggleDoorSelection(surf.doorId);
+        } else {
+          // 普通点击: 清除旧选择，只选当前门
+          clearDoorSelection();
+          clearRoomFloorSelection();
+          toggleDoorSelection(surf.doorId);
         }
       }
       pendingSurfacePick = {
@@ -5947,6 +6195,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } else {
         roomFloorOverridesByStyleKey[skForRoom] = {};
       }
+      // 恢复门覆盖
+      const doorData = floorplanSurfaceOverridesByStyleKey[skForRoom]?.doorOverrides;
+      if (doorData && typeof doorData === "object") {
+        doorOverridesByStyleKey[skForRoom] = JSON.parse(JSON.stringify(doorData));
+      } else {
+        doorOverridesByStyleKey[skForRoom] = {};
+      }
       await rebuildFromLayout(layout);
       resetCameraView();
       setGridVisible(gridWasVisible);
@@ -6343,6 +6598,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
     }
 
+    // 获取门覆盖
+    const doorOverridesData = {};
+    const doorBucket = doorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
+    if (doorBucket && typeof doorBucket === "object") {
+      for (const [floorId, doors] of Object.entries(doorBucket)) {
+        if (!doors || typeof doors !== "object") continue;
+        for (const [doorId, override] of Object.entries(doors)) {
+          if (!override || typeof override !== "object" || !Object.keys(override).length) continue;
+          if (!doorOverridesData[floorId]) doorOverridesData[floorId] = {};
+          doorOverridesData[floorId][doorId] = JSON.parse(JSON.stringify(override));
+        }
+      }
+    }
+
     const block = {
       id: styleKey,
       name: displayName,
@@ -6353,6 +6622,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (mappingDiff) block.mapping = mappingDiff;
     if (materialsDiff) block.materials = materialsDiff;
     if (Object.keys(roomFloorMaterials).length) block.roomFloorMaterials = roomFloorMaterials;
+    if (Object.keys(doorOverridesData).length) block.doorOverrides = doorOverridesData;
     return block;
   }
 
@@ -6389,6 +6659,20 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
     }
 
+    // 获取门覆盖并写入 doorOverrides
+    const doorOverridesData = {};
+    const doorBucket = doorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
+    if (doorBucket && typeof doorBucket === "object") {
+      for (const [floorId, doors] of Object.entries(doorBucket)) {
+        if (!doors || typeof doors !== "object") continue;
+        for (const [doorId, override] of Object.entries(doors)) {
+          if (!override || typeof override !== "object" || !Object.keys(override).length) continue;
+          if (!doorOverridesData[floorId]) doorOverridesData[floorId] = {};
+          doorOverridesData[floorId][doorId] = JSON.parse(JSON.stringify(override));
+        }
+      }
+    }
+
     const block = {
       id: styleKey,
       name: displayName,
@@ -6397,6 +6681,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       decorations: { placements },
     };
     if (Object.keys(roomFloorMaterials).length) block.roomFloorMaterials = roomFloorMaterials;
+    if (Object.keys(doorOverridesData).length) block.doorOverrides = doorOverridesData;
     if (mapping) block.mapping = mapping;
     if (styleObj?.extends && typeof styleObj.extends === "string" && styleObj.extends.trim()) {
       block.extends = styleObj.extends.trim();
@@ -6754,6 +7039,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const sourceRoomFloorBucket = roomFloorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(sourceStyleKey)];
         if (sourceRoomFloorBucket && typeof sourceRoomFloorBucket === "object") {
           roomFloorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(newKey)] = JSON.parse(JSON.stringify(sourceRoomFloorBucket));
+        }
+
+        // 将当前的 doorOverridesByStyleKey 复制到新风格键下
+        const sourceDoorBucket = doorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(sourceStyleKey)];
+        if (sourceDoorBucket && typeof sourceDoorBucket === "object") {
+          doorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(newKey)] = JSON.parse(JSON.stringify(sourceDoorBucket));
         }
 
         const baseStyleObj = await loadStyleConfig(fpId, defKey);

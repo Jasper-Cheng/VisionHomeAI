@@ -678,23 +678,41 @@
             0.15
           ],
           "textureRotation": 90
+        },
+        "baked_floor1_allDoors": {
+          "type": "paint_wood",
+          "color": "#eed1a1",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          },
+          "uvScale": [
+            1,
+            1
+          ],
+          "textureRotation": 0
+        },
+        "baked_floor1_allWindows": {
+          "type": "glass",
+          "color": "#baac74",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
         }
       },
       "decorations": {
         "placements": [
           {
-            "model": "potted_plant_02",
-            "x": -16,
-            "y": 105,
+            "model": "Chandelier_03",
+            "x": -172,
+            "y": 252,
             "rotation": 0,
-            "floorId": "floor1"
-          },
-          {
-            "model": "potted_plant_02",
-            "x": -16,
-            "y": 105,
-            "rotation": 0,
-            "floorId": "floor1"
+            "floorId": "floor1",
+            "decorationLiftCm": 176
           }
         ]
       },
@@ -774,6 +792,34 @@
           }
         }
       },
+      "doorOverrides": {
+        "floor1": {
+          "d_main": {
+            "color": "#decaab",
+            "materialId": "door_main",
+            "roughness": 0.8,
+            "metalness": 0.02,
+            "uvScale": [
+              1,
+              1
+            ],
+            "textureRotation": 0,
+            "textureAlbedo": "brick_crosswalk_diff.jpg"
+          },
+          "d_bath": {
+            "color": "#e8dcc8",
+            "materialId": "door_main",
+            "roughness": 0.8,
+            "metalness": 0.02,
+            "uvScale": [
+              1,
+              1
+            ],
+            "textureRotation": 0,
+            "textureAlbedo": "brick_wall_006_diff.jpg"
+          }
+        }
+      },
       "mapping": {
         "rooms": {
           "r_bed1": {
@@ -823,18 +869,18 @@
           "w_int_h_niche": "baked_floor1_allWalls"
         },
         "doors": {
-          "d_main": "door_main",
-          "d_bath": "door_bath",
-          "d_kitchen": "door_kitchen",
-          "d_bed1": "door_bed1",
-          "d_bed2": "door_bed2"
+          "d_main": "baked_floor1_allDoors",
+          "d_bath": "baked_floor1_allDoors",
+          "d_kitchen": "baked_floor1_allDoors",
+          "d_bed1": "baked_floor1_allDoors",
+          "d_bed2": "baked_floor1_allDoors"
         },
         "windows": {
-          "win_left_floor": "window_Clear",
-          "win_left_small": "window_Clear",
-          "win_right_small": "window_Clear",
-          "win_kitchen_e": "window_Tinted",
-          "win_bath_e": "window_Frosted"
+          "win_left_floor": "baked_floor1_allWindows",
+          "win_left_small": "baked_floor1_allWindows",
+          "win_right_small": "baked_floor1_allWindows",
+          "win_kitchen_e": "baked_floor1_allWindows",
+          "win_bath_e": "baked_floor1_allWindows"
         }
       },
       "extends": "default"
@@ -1232,6 +1278,66 @@
         }
       },
       "extends": "default"
+    },
+    "style_1776050582836": {
+      "id": "style_1776050582836",
+      "name": "啊啊啊啊啊啊啊",
+      "extends": "default",
+      "decorations": {
+        "placements": [
+          {
+            "model": "potted_plant_02",
+            "x": -16,
+            "y": 105,
+            "rotation": 0,
+            "floorId": "floor1"
+          }
+        ]
+      },
+      "roomFloorMaterials": {
+        "floor1": {
+          "r_living": {
+            "color": "#e8dcc8",
+            "materialId": "floor_bed1",
+            "roughness": 0.35,
+            "metalness": 0,
+            "uvScale": [
+              0.15,
+              0.15
+            ],
+            "textureRotation": 90,
+            "textureAlbedo": "brick_wall_04_diff.jpg"
+          }
+        }
+      },
+      "doorOverrides": {
+        "floor1": {
+          "d_kitchen": {
+            "color": "#2c1d04",
+            "materialId": "door_main",
+            "roughness": 0.8,
+            "metalness": 0.02,
+            "uvScale": [
+              1,
+              1
+            ],
+            "textureRotation": 0,
+            "textureAlbedo": "brick_crosswalk_diff.jpg"
+          },
+          "d_main": {
+            "color": "#e8dcc8",
+            "materialId": "door_main",
+            "roughness": 0.8,
+            "metalness": 0.02,
+            "uvScale": [
+              1,
+              1
+            ],
+            "textureRotation": 0,
+            "textureAlbedo": "brick_crosswalk_diff.jpg"
+          }
+        }
+      }
     }
   }
 }
