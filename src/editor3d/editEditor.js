@@ -5371,6 +5371,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const newLift = altDragState.startLiftM - dy * sensitivity;
         g.userData.decorationLiftM = clampDecorationLiftMForGroup(g, newLift);
         updateFurnitureFloorVisibility();
+        selectionBoxHelper?.update();
       }
       return;
     }
