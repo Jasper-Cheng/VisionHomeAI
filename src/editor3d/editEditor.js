@@ -6785,6 +6785,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return;
     }
     if (fur) {
+      const wasSelected = fur === selectedGroup;
       selectFurniture(fur);
       // 拖拽锚点：记录按下时鼠标射线与“家具所在楼层平面”的交点相对家具(x/z)的偏移
       // 避免切换楼层后，因为射线与不同高度平面求交导致的落点偏移
@@ -6797,6 +6798,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         pointerId: e.pointerId,
         group: fur,
         offsetCm: { x: offsetX, y: offsetY },
+        startX: e.clientX,
+        startY: e.clientY,
+        wasSelected,
       };
       controls.enabled = false;
       e.preventDefault();
@@ -6890,6 +6894,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       pendingSurfacePick = null;
       if (e.type !== "pointercancel") {
         // 确认是短按后才执行多选切换，避免长按旋转时误改选中状态
+        // 同一元素再次点击（非 Ctrl）→ toggle 后集合变空 → 取消选中
+        let deselected = false;
         if (surf.kind === "allFloors" && surf.roomId) {
           if (isCtrl) {
             toggleRoomFloorSelection(surf.roomId);
@@ -6899,6 +6905,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             clearWallFaceSelection();
             toggleRoomFloorSelection(surf.roomId);
           }
+          if (selectedRoomFloorIds.size === 0) deselected = true;
         } else if (surf.kind === "allDoors" && surf.doorId) {
           if (isCtrl) {
             toggleDoorSelection(surf.doorId);
@@ -6909,6 +6916,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             clearWallFaceSelection();
             toggleDoorSelection(surf.doorId);
           }
+          if (selectedDoorIds.size === 0) deselected = true;
         } else if (surf.kind === "allWindows" && surf.windowId) {
           if (isCtrl) {
             toggleWindowSelection(surf.windowId);
@@ -6919,6 +6927,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             clearWallFaceSelection();
             toggleWindowSelection(surf.windowId);
           }
+          if (selectedWindowIds.size === 0) deselected = true;
         } else if (surf.kind === "wallFace" && surf.wallId) {
           if (isCtrl) {
             clearRoomFloorSelection();
@@ -6932,14 +6941,23 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             clearWindowSelection();
             toggleWallFaceSelection(surf.wallId, surf.faceId);
           }
+          if (selectedWallFaceIds.size === 0) deselected = true;
         } else {
-          // allWalls 等无多选 id 的类型：清除所有多选集合
+          // allWalls 等无多选 id 的类型：再次点击同层同类型 → 取消选中
+          const prev = selectedFloorplanSurface;
+          if (!isCtrl && prev && prev.kind === surf.kind && prev.floorLevelId === surf.floorLevelId) {
+            deselected = true;
+          }
           clearRoomFloorSelection();
           clearDoorSelection();
           clearWindowSelection();
           clearWallFaceSelection();
         }
-        void selectFloorplanSurface(surf);
+        if (deselected) {
+          clearFloorplanSurfaceSelection();
+        } else {
+          void selectFloorplanSurface(surf);
+        }
       }
     }
     if (pendingClearSelection && e.pointerId === pendingClearSelection.pointerId) {
@@ -6960,8 +6978,19 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return;
     }
     if (!dragState || e.pointerId !== dragState.pointerId) return;
+    const ds = dragState;
     dragState = null;
     controls.enabled = true;
+    if (e.type !== "pointercancel") {
+      const dx = e.clientX - (ds.startX ?? e.clientX);
+      const dy = e.clientY - (ds.startY ?? e.clientY);
+      const didDrag = dx * dx + dy * dy > FLOORPLAN_SURFACE_MOVE_CANCEL_PX2;
+      if (!didDrag && ds.wasSelected) {
+        // 再次点击同一家具且没有拖拽：取消选中
+        selectFurniture(null);
+        return;
+      }
+    }
     if (historyReady) pushHistorySnapshot();
   }
 

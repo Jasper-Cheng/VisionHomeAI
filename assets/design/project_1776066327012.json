@@ -4,38 +4,38 @@
   "name": "大",
   "description": "",
   "createdAt": "2026-04-13T07:45:27.012Z",
-  "updatedAt": "2026-04-13T08:23:49.369Z",
+  "updatedAt": "2026-04-13T08:45:10.078Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
   "furnitureInstances": [
     {
       "instanceId": "fi_1",
-      "furnitureId": "potted_plant_02",
+      "furnitureId": "ArmChair_01",
       "floorId": "floor1",
       "positionCm": [
-        314,
-        -289
+        -29,
+        200
       ],
       "rotationDeg": 0
     },
     {
       "instanceId": "fi_2",
-      "furnitureId": "ArmChair_01",
+      "furnitureId": "BarberShopChair_01",
       "floorId": "floor1",
       "positionCm": [
-        -46,
-        320
+        44,
+        483
       ],
       "rotationDeg": 0
     },
     {
       "instanceId": "fi_3",
-      "furnitureId": "BarberShopChair_01",
+      "furnitureId": "potted_plant_02",
       "floorId": "floor1",
       "positionCm": [
-        119,
-        479
+        314,
+        -289
       ],
       "rotationDeg": 0
     }
@@ -47,24 +47,24 @@
     "floorplanStyleKey": "s_1",
     "furniture": [
       {
-        "model": "potted_plant_02",
-        "floorId": "floor1",
-        "x": 314,
-        "y": -289,
-        "rotation": 0
-      },
-      {
         "model": "ArmChair_01",
         "floorId": "floor1",
-        "x": -46,
-        "y": 320,
+        "x": -29,
+        "y": 200,
         "rotation": 0
       },
       {
         "model": "BarberShopChair_01",
         "floorId": "floor1",
-        "x": 119,
-        "y": 479,
+        "x": 44,
+        "y": 483,
+        "rotation": 0
+      },
+      {
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": 314,
+        "y": -289,
         "rotation": 0
       }
     ],
@@ -86,11 +86,95 @@
           }
         },
         "doorOverrides": {},
-        "windowOverrides": {}
+        "windowOverrides": {},
+        "wallFaceOverrides": {
+          "floor1": {
+            "w_int_v_mid_s": {
+              "face_b": {
+                "color": "#e8dcc8",
+                "materialId": "w_ext_left_n",
+                "roughness": 0.9,
+                "metalness": 0,
+                "uvScale": [
+                  2,
+                  2
+                ],
+                "textureRotation": 0,
+                "textureAlbedo": "dark_wood_diff.jpg"
+              }
+            },
+            "w_int_v_bath": {
+              "face_b": {
+                "color": "#e8dcc8",
+                "materialId": "w_ext_left_n",
+                "roughness": 0.9,
+                "metalness": 0,
+                "uvScale": [
+                  2,
+                  2
+                ],
+                "textureRotation": 0,
+                "textureAlbedo": "dark_wood_diff.jpg"
+              }
+            },
+            "w_ext_right_s": {
+              "face_a": {
+                "color": "#e8dcc8",
+                "materialId": "w_ext_left_n",
+                "roughness": 0.9,
+                "metalness": 0,
+                "uvScale": [
+                  2,
+                  2
+                ],
+                "textureRotation": 0,
+                "textureAlbedo": "blue_metal_plate_diff.jpg"
+              },
+              "face_b": {
+                "color": "#e8dcc8",
+                "materialId": "w_ext_left_n",
+                "roughness": 0.9,
+                "metalness": 0,
+                "uvScale": [
+                  2,
+                  2
+                ],
+                "textureRotation": 0,
+                "textureAlbedo": "blue_metal_plate_diff.jpg"
+              }
+            },
+            "w_ext_bot_e": {
+              "face_a": {
+                "color": "#e8dcc8",
+                "materialId": "w_ext_left_n",
+                "roughness": 0.9,
+                "metalness": 0,
+                "uvScale": [
+                  2,
+                  2
+                ],
+                "textureRotation": 0,
+                "textureAlbedo": "brick_wall_04_diff.jpg"
+              },
+              "face_b": {
+                "color": "#e8dcc8",
+                "materialId": "w_ext_left_n",
+                "roughness": 0.9,
+                "metalness": 0,
+                "uvScale": [
+                  2,
+                  2
+                ],
+                "textureRotation": 0,
+                "textureAlbedo": "brick_wall_04_diff.jpg"
+              }
+            }
+          }
+        }
       }
     },
     "lightingConfig": {
-      "toneMappingExposure": 0.99,
+      "toneMappingExposure": 1.61,
       "ambient": {
         "intensity": 0.26
       },
