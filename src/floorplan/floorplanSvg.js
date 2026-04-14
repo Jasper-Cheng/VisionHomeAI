@@ -349,10 +349,8 @@ function appendFloorDimensionAnnotations(floor, innerG, snapCoord, inversePlanSc
     const name = String(room.name || "").trim();
     const lh = 14;
     const cap = 11;
-    let nLines = 0;
-    if (name) nLines += 1;
-    nLines += 1;
-    if (arM2 >= 0.01) nLines += 1;
+    let nLines = 1;
+    if (shortName || areaStr) nLines += 1;
     const totalH = (nLines - 1) * lh + cap;
     text.setAttribute("x", "0");
     text.setAttribute("y", String(-totalH));
@@ -367,11 +365,30 @@ function appendFloorDimensionAnnotations(floor, innerG, snapCoord, inversePlanSc
       ts.textContent = content;
       text.appendChild(ts);
     }
-    if (name) addTspan(name.length > 16 ? `${name.slice(0, 15)}…` : name, "svg-floor-dim-label__name");
-    addTspan(`${wR}×${hR} cm`);
-    if (arM2 >= 0.01) {
-      addTspan(arM2 >= 100 ? `≈ ${arM2.toFixed(1)} m²` : `≈ ${arM2.toFixed(2)} m²`);
+    const shortName = name && name.length > 16 ? `${name.slice(0, 15)}…` : name;
+    const areaStr = arM2 >= 0.01 ? (arM2 >= 100 ? `≈ ${arM2.toFixed(1)} m²` : `≈ ${arM2.toFixed(2)} m²`) : null;
+
+    if (shortName || areaStr) {
+      const ts = document.createElementNS(NS, "tspan");
+      ts.setAttribute("x", "0");
+      ts.setAttribute("dy", "0");
+      if (shortName) {
+        const nameSpan = document.createElementNS(NS, "tspan");
+        nameSpan.setAttribute("class", "svg-floor-dim-label__name");
+        nameSpan.textContent = shortName;
+        ts.appendChild(nameSpan);
+      }
+      if (areaStr) {
+        const sep = shortName ? "  " : "";
+        const areaSpan = document.createElementNS(NS, "tspan");
+        areaSpan.setAttribute("class", "svg-floor-dim-label__area");
+        areaSpan.textContent = `${sep}${areaStr}`;
+        ts.appendChild(areaSpan);
+      }
+      text.appendChild(ts);
+      first = false;
     }
+    addTspan(`${wR}×${hR} cm`);
     g.appendChild(text);
     layer.appendChild(g);
   }
