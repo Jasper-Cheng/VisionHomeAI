@@ -205,6 +205,236 @@
             "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [2, 2]
+        },
+        "w_ext_west_n": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_ext_west_s": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_ext_north_w": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_ext_north_c": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_ext_north_e": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_ext_east_kitchen": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_ext_east_bath": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_ext_south_w": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_ext_south_c": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_ext_south_e": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_master_living": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_corridor_bed3": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_kitchen_dining": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_study_east": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_kitchen_bath": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_kitchen_top": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_master_corridor": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_corridor_bed2": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_corridor_bed3_v": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_bed2_bed3": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_dining_kitchen": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_dining_bath": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
+        },
+        "w_int_dining_study": {
+          "type": "paint",
+          "color": "#E6DACB",
+          "roughness": 0.9,
+          "metalness": 0,
+          "texture": {
+            "roughness": "textures/painted_plaster_wall_rough.jpg"
+          },
+          "uvScale": [2, 2]
         }
       },
       "decorations": {
