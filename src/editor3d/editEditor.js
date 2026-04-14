@@ -6955,6 +6955,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         }
         if (deselected) {
           clearFloorplanSurfaceSelection();
+          propertiesPanel?.classList.remove("is-visible");
         } else {
           void selectFloorplanSurface(surf);
         }
