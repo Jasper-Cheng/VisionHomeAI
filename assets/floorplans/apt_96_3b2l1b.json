@@ -1,0 +1,72 @@
+{
+  "id": "apt_96_3b2l1b",
+  "styleKey": "default",
+  "project": {
+    "id": "vision_home_96sqm_3b2l1b",
+    "name": "96平经典三室两厅一卫",
+    "unit": "cm",
+    "version": 1.0,
+    "areaM2": 96
+  },
+  "floors": [
+    {
+      "id": "floor1",
+      "name": "一层",
+      "elevation": 0,
+      "height": 280,
+      "rooms": [
+        {
+          "id": "r_master_bed",
+          "name": "主卧",
+          "type": "bedroom",
+          "polygon": [[0, 0], [340, 0], [340, 380], [0, 380]]
+        },
+        {
+          "id": "r_corridor",
+          "name": "走廊",
+          "type": "corridor",
+          "polygon": [[340, 0], [460, 0], [460, 520], [340, 520]]
+        },
+        {
+          "id": "r_bed2",
+          "name": "次卧",
+          "type": "bedroom",
+          "polygon": [[460, 0], [780, 0], [780, 300], [460, 300]]
+        },
+        {
+          "id": "r_bed3",
+          "name": "书房",
+          "type": "bedroom",
+          "polygon": [[460, 300], [780, 300], [780, 520], [460, 520]]
+        },
+        {
+          "id": "r_living",
+          "name": "客厅",
+          "type": "living",
+          "polygon": [[0, 380], [0, 860], [340, 860], [340, 380]]
+        },
+        {
+          "id": "r_dining",
+          "name": "餐厅",
+          "type": "living",
+          "polygon": [[340, 520], [340, 860], [780, 860], [780, 520]]
+        },
+        {
+          "id": "r_kitchen",
+          "name": "厨房",
+          "type": "kitchen",
+          "polygon": [[780, 380], [1020, 380], [1020, 700], [780, 700]]
+        },
+        {
+          "id": "r_bath",
+          "name": "卫生间",
+          "type": "bathroom",
+          "polygon": [[780, 700], [1020, 700], [1020, 860], [780, 860]]
+        }
+      ],
+      "walls": [],
+      "doors": [],
+      "windows": []
+    }
+  ]
+}

@@ -2,6 +2,7 @@
   "schemaVersion": "1.0",
   "source": "floorPlanLibrary.json",
   "files": [
-    "apt_2b1l_compact_01.json"
+    "apt_2b1l_compact_01.json",
+    "apt_96_3b2l1b.json"
   ]
 }
