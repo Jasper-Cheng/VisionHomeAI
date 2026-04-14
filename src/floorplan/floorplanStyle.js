@@ -443,14 +443,23 @@ export function findWallSideRoomsAt(floor, wall, t, epsCm = 4) {
   const len = Math.hypot(x2 - x1, y2 - y1);
   if (len < 1e-6) return { roomPosZ: null, roomNegZ: null };
   const u = Math.max(0, Math.min(1, Number(t)));
-  const mx = x1 + u * (x2 - x1);
-  const my = y1 + u * (y2 - y1);
   const ux = (y2 - y1) / len;
   const uy = (x2 - x1) / len;
   const eps = Number(epsCm);
   const e = Number.isFinite(eps) && eps > 0 ? eps : 4;
-  const roomPosZ = findRoomContainingPointCm(mx + ux * e, my + uy * e, floor);
-  const roomNegZ = findRoomContainingPointCm(mx - ux * e, my - uy * e, floor);
+  const isNearEndpoint = u < 0.02 || u > 0.98;
+  // 沿墙方向的偏移量，用于在端点处远离边界
+  const wallOffset = len * 0.02;
+  // 法线方向的偏移量
+  const normalOffset = isNearEndpoint ? e * 0.3 : e;
+  // 计算采样点：先沿墙方向偏移，再设法线方向偏移
+  const wallDir = (x2 - x1) / len;
+  const wallDirY = (y2 - y1) / len;
+  const baseU = isNearEndpoint ? (u < 0.02 ? 0.02 : 0.98) : u;
+  const baseX = x1 + baseU * (x2 - x1);
+  const baseY = y1 + baseU * (y2 - y1);
+  const roomPosZ = findRoomContainingPointCm(baseX + ux * normalOffset, baseY + uy * normalOffset, floor);
+  const roomNegZ = findRoomContainingPointCm(baseX - ux * normalOffset, baseY - uy * normalOffset, floor);
   return { roomPosZ, roomNegZ };
 }
 
