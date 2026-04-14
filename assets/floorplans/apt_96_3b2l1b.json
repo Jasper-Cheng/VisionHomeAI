@@ -64,7 +64,268 @@
           "polygon": [[780, 700], [1020, 700], [1020, 860], [780, 860]]
         }
       ],
-      "walls": [],
+      "walls": [
+        {
+          "id": "w_ext_left",
+          "name": "西墙",
+          "start": [0, -12],
+          "end": [0, 872],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "faces": [
+            { "id": "face_a", "normal": [-1, 0], "side": "exterior" },
+            { "id": "face_b", "normal": [1, 0], "roomId": "r_master_bed" }
+          ]
+        },
+        {
+          "id": "w_ext_top_w",
+          "name": "北墙·西段",
+          "start": [-12, 0],
+          "end": [340, 0],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "faces": [
+            { "id": "face_a", "normal": [0, -1], "side": "exterior" },
+            { "id": "face_b", "normal": [0, 1], "roomId": "r_master_bed" }
+          ]
+        },
+        {
+          "id": "w_ext_top_c",
+          "name": "北墙·中段",
+          "start": [340, 0],
+          "end": [460, 0],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "faces": [
+            { "id": "face_a", "normal": [0, -1], "side": "exterior" },
+            { "id": "face_b", "normal": [0, 1], "roomId": "r_corridor" }
+          ]
+        },
+        {
+          "id": "w_ext_top_e",
+          "name": "北墙·东段",
+          "start": [460, 0],
+          "end": [1020, 0],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "faces": [
+            { "id": "face_a", "normal": [0, -1], "side": "exterior" },
+            { "id": "face_b", "normal": [0, 1], "roomId": "r_bed2" }
+          ]
+        },
+        {
+          "id": "w_ext_right_n",
+          "name": "东墙·北段",
+          "start": [1020, -12],
+          "end": [1020, 380],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "faces": [
+            { "id": "face_a", "normal": [1, 0], "side": "exterior" },
+            { "id": "face_b", "normal": [-1, 0], "roomId": "r_bed2" }
+          ]
+        },
+        {
+          "id": "w_ext_right_m",
+          "name": "东墙·中段",
+          "start": [1020, 380],
+          "end": [1020, 700],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "faces": [
+            { "id": "face_a", "normal": [1, 0], "side": "exterior" },
+            { "id": "face_b", "normal": [-1, 0], "roomId": "r_kitchen" }
+          ]
+        },
+        {
+          "id": "w_ext_right_s",
+          "name": "东墙·南段",
+          "start": [1020, 700],
+          "end": [1020, 872],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "faces": [
+            { "id": "face_a", "normal": [1, 0], "side": "exterior" },
+            { "id": "face_b", "normal": [-1, 0], "roomId": "r_bath" }
+          ]
+        },
+        {
+          "id": "w_ext_bot_w",
+          "name": "南墙·西段",
+          "start": [-12, 860],
+          "end": [340, 860],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "faces": [
+            { "id": "face_a", "normal": [0, 1], "side": "exterior" },
+            { "id": "face_b", "normal": [0, -1], "roomId": "r_living" }
+          ]
+        },
+        {
+          "id": "w_ext_bot_c",
+          "name": "南墙·中段",
+          "start": [340, 860],
+          "end": [780, 860],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "faces": [
+            { "id": "face_a", "normal": [0, 1], "side": "exterior" },
+            { "id": "face_b", "normal": [0, -1], "roomId": "r_dining" }
+          ]
+        },
+        {
+          "id": "w_ext_bot_e",
+          "name": "南墙·东段",
+          "start": [780, 860],
+          "end": [1020, 860],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "faces": [
+            { "id": "face_a", "normal": [0, 1], "side": "exterior" },
+            { "id": "face_b", "normal": [0, -1], "roomId": "r_bath" }
+          ]
+        },
+        {
+          "id": "w_int_master_corridor",
+          "name": "主卧/走廊分隔墙",
+          "start": [340, 0],
+          "end": [340, 380],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "faces": [
+            { "id": "face_a", "normal": [-1, 0], "roomId": "r_master_bed" },
+            { "id": "face_b", "normal": [1, 0], "roomId": "r_corridor" }
+          ]
+        },
+        {
+          "id": "w_int_master_living",
+          "name": "主卧/客厅分隔墙",
+          "start": [0, 380],
+          "end": [340, 380],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "faces": [
+            { "id": "face_a", "normal": [0, -1], "roomId": "r_master_bed" },
+            { "id": "face_b", "normal": [0, 1], "roomId": "r_living" }
+          ]
+        },
+        {
+          "id": "w_int_corridor_bed2",
+          "name": "走廊/次卧分隔墙",
+          "start": [460, 0],
+          "end": [460, 300],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "faces": [
+            { "id": "face_a", "normal": [-1, 0], "roomId": "r_corridor" },
+            { "id": "face_b", "normal": [1, 0], "roomId": "r_bed2" }
+          ]
+        },
+        {
+          "id": "w_int_corridor_bed3",
+          "name": "走廊/书房分隔墙",
+          "start": [460, 300],
+          "end": [460, 520],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "faces": [
+            { "id": "face_a", "normal": [-1, 0], "roomId": "r_corridor" },
+            { "id": "face_b", "normal": [1, 0], "roomId": "r_bed3" }
+          ]
+        },
+        {
+          "id": "w_int_bed2_bed3",
+          "name": "次卧/书房分隔墙",
+          "start": [460, 300],
+          "end": [780, 300],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "faces": [
+            { "id": "face_a", "normal": [0, -1], "roomId": "r_bed2" },
+            { "id": "face_b", "normal": [0, 1], "roomId": "r_bed3" }
+          ]
+        },
+        {
+          "id": "w_int_bed3_kitchen",
+          "name": "书房/厨房分隔墙",
+          "start": [780, 380],
+          "end": [780, 520],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "faces": [
+            { "id": "face_a", "normal": [-1, 0], "roomId": "r_bed3" },
+            { "id": "face_b", "normal": [1, 0], "roomId": "r_kitchen" }
+          ]
+        },
+        {
+          "id": "w_int_kitchen_top",
+          "name": "厨房顶墙",
+          "start": [780, 380],
+          "end": [1020, 380],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "faces": [
+            { "id": "face_a", "normal": [0, -1], "roomId": "r_bed3" },
+            { "id": "face_b", "normal": [0, 1], "roomId": "r_kitchen" }
+          ]
+        },
+        {
+          "id": "w_int_dining_kitchen",
+          "name": "餐厅/厨房分隔墙",
+          "start": [780, 520],
+          "end": [780, 700],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "faces": [
+            { "id": "face_a", "normal": [-1, 0], "roomId": "r_dining" },
+            { "id": "face_b", "normal": [1, 0], "roomId": "r_kitchen" }
+          ]
+        },
+        {
+          "id": "w_int_dining_bath",
+          "name": "餐厅/卫生间分隔墙",
+          "start": [780, 700],
+          "end": [780, 860],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "faces": [
+            { "id": "face_a", "normal": [-1, 0], "roomId": "r_dining" },
+            { "id": "face_b", "normal": [1, 0], "roomId": "r_bath" }
+          ]
+        },
+        {
+          "id": "w_int_kitchen_bath",
+          "name": "厨房/卫生间分隔墙",
+          "start": [780, 700],
+          "end": [1020, 700],
+          "thickness": 12,
+          "height": 280,
+          "type": "internal",
+          "faces": [
+            { "id": "face_a", "normal": [0, -1], "roomId": "r_kitchen" },
+            { "id": "face_b", "normal": [0, 1], "roomId": "r_bath" }
+          ]
+        }
+      ],
       "doors": [],
       "windows": []
     }

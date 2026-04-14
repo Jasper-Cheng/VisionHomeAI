@@ -61,7 +61,6 @@
           "thickness": 24,
           "height": 280,
           "type": "external",
-          "polygon": [[-12, -12], [12, -12], [12, 400], [-12, 400]],
           "faces": [
             {
               "id": "face_a",
@@ -83,7 +82,6 @@
           "thickness": 24,
           "height": 280,
           "type": "external",
-          "polygon": [[-12, 400], [12, 400], [12, 912], [-12, 912]],
           "faces": [
             {
               "id": "face_a",
@@ -105,7 +103,6 @@
           "thickness": 24,
           "height": 280,
           "type": "external",
-          "polygon": [[12, -12], [560, -12], [560, 12], [12, 12]],
           "faces": [
             {
               "id": "face_a",
@@ -127,7 +124,6 @@
           "thickness": 24,
           "height": 280,
           "type": "external",
-          "polygon": [[560, -12], [888, -12], [888, 12], [560, 12]],
           "faces": [
             {
               "id": "face_a",
@@ -149,7 +145,6 @@
           "thickness": 24,
           "height": 280,
           "type": "external",
-          "polygon": [[888, -12], [912, -12], [912, 400], [888, 400]],
           "faces": [
             {
               "id": "face_a",
@@ -171,7 +166,6 @@
           "thickness": 24,
           "height": 280,
           "type": "external",
-          "polygon": [[888, 400], [912, 400], [912, 650], [888, 650]],
           "faces": [
             {
               "id": "face_a",
@@ -193,7 +187,6 @@
           "thickness": 24,
           "height": 280,
           "type": "external",
-          "polygon": [[888, 650], [912, 650], [912, 912], [888, 912]],
           "faces": [
             {
               "id": "face_a",
@@ -215,7 +208,6 @@
           "thickness": 24,
           "height": 280,
           "type": "external",
-          "polygon": [[12, 888], [700, 888], [700, 912], [12, 912]],
           "faces": [
             {
               "id": "face_a",
@@ -237,7 +229,6 @@
           "thickness": 24,
           "height": 280,
           "type": "external",
-          "polygon": [[700, 888], [888, 888], [888, 912], [700, 912]],
           "faces": [
             {
               "id": "face_a",
@@ -259,7 +250,6 @@
           "thickness": 12,
           "height": 280,
           "type": "internal",
-          "polygon": [[554, 12], [566, 12], [566, 272], [554, 272]],
           "faces": [
             {
               "id": "face_a",
@@ -281,7 +271,6 @@
           "thickness": 12,
           "height": 280,
           "type": "internal",
-          "polygon": [[554, 272], [566, 272], [566, 400], [554, 400]],
           "faces": [
             {
               "id": "face_a",
@@ -303,7 +292,6 @@
           "thickness": 12,
           "height": 280,
           "type": "internal",
-          "polygon": [[554, 400], [566, 400], [566, 644], [554, 644]],
           "faces": [
             {
               "id": "face_a",
@@ -325,7 +313,6 @@
           "thickness": 12,
           "height": 280,
           "type": "internal",
-          "polygon": [[12, 394], [414, 394], [414, 406], [12, 406]],
           "faces": [
             {
               "id": "face_a",
@@ -347,7 +334,6 @@
           "thickness": 12,
           "height": 280,
           "type": "internal",
-          "polygon": [[566, 394], [888, 394], [888, 406], [566, 406]],
           "faces": [
             {
               "id": "face_a",
@@ -369,7 +355,6 @@
           "thickness": 12,
           "height": 280,
           "type": "internal",
-          "polygon": [[554, 644], [700, 644], [700, 656], [554, 656]],
           "faces": [
             {
               "id": "face_a",
@@ -391,7 +376,6 @@
           "thickness": 12,
           "height": 280,
           "type": "internal",
-          "polygon": [[700, 644], [888, 644], [888, 656], [700, 656]],
           "faces": [
             {
               "id": "face_a",
@@ -413,7 +397,6 @@
           "thickness": 12,
           "height": 280,
           "type": "internal",
-          "polygon": [[694, 656], [706, 656], [706, 888], [694, 888]],
           "faces": [
             {
               "id": "face_a",
@@ -435,7 +418,6 @@
           "thickness": 12,
           "height": 280,
           "type": "internal",
-          "polygon": [[414, 214], [426, 214], [426, 406], [414, 406]],
           "faces": [
             {
               "id": "face_a",
@@ -457,7 +439,6 @@
           "thickness": 12,
           "height": 280,
           "type": "internal",
-          "polygon": [[426, 214], [554, 214], [554, 226], [426, 226]],
           "faces": [
             {
               "id": "face_a",
