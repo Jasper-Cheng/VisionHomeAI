@@ -66,10 +66,10 @@
       ],
       "walls": [
         {
-          "id": "w_ext_west",
-          "name": "西墙",
-          "start": [0, -12],
-          "end": [0, 872],
+          "id": "w_ext_west_n",
+          "name": "西墙·北段",
+          "start": [0, 0],
+          "end": [0, 380],
           "thickness": 24,
           "height": 280,
           "type": "external",
@@ -79,9 +79,22 @@
           ]
         },
         {
+          "id": "w_ext_west_s",
+          "name": "西墙·南段",
+          "start": [0, 380],
+          "end": [0, 860],
+          "thickness": 24,
+          "height": 280,
+          "type": "external",
+          "faces": [
+            { "id": "face_a", "normal": [-1, 0], "side": "exterior" },
+            { "id": "face_b", "normal": [1, 0], "roomId": "r_living" }
+          ]
+        },
+        {
           "id": "w_ext_north_w",
           "name": "北墙·西段",
-          "start": [-12, 0],
+          "start": [0, 0],
           "end": [340, 0],
           "thickness": 24,
           "height": 280,
@@ -146,7 +159,7 @@
         {
           "id": "w_ext_south_w",
           "name": "南墙·西段",
-          "start": [-12, 860],
+          "start": [0, 860],
           "end": [340, 860],
           "thickness": 24,
           "height": 280,
