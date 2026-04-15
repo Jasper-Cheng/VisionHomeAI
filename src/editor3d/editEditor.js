@@ -1039,28 +1039,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
     }
 
-    // 应用墙面（按面）覆盖
-    const wallFaceData = wallFaceOverridesByStyleKey[key];
-    if (wallFaceData && typeof wallFaceData === "object") {
-      for (const [floorLevelId, wallsData] of Object.entries(wallFaceData)) {
-        if (!wallsData || typeof wallsData !== "object") continue;
-        for (const [wallId, faces] of Object.entries(wallsData)) {
-          if (!faces || typeof faces !== "object") continue;
-          const pairs = [];
-          if (faces.face_a && surfaceOverrideIsActive(faces.face_a)) pairs.push({ wallId, faceId: "face_a" });
-          if (faces.face_b && surfaceOverrideIsActive(faces.face_b)) pairs.push({ wallId, faceId: "face_b" });
-          if (!pairs.length) continue;
-          for (const { wallId: wid, faceId } of pairs) {
-            floorplanRoot.traverse((o) => {
-              if (!o.isMesh) return;
-              if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
-              if (String(o.userData.floorplanWallId ?? "").trim() !== wid) return;
-              applySurfaceOverrideToMeshFace(o, faceId, faces[faceId], libraryBag);
-            });
-          }
-        }
-      }
-    }
+    await applyWallFaceOverridesFromMemoryToScene(libraryBag);
   }
 
   // --- 按门覆盖（内存） ---
@@ -2686,6 +2665,40 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
   }
 
+  /**
+   * 将 wallFaceOverridesByStyleKey 中当前风格下的按面覆盖应用到场景（rebuild 后必须调用，否则 undo 只恢复了内存、墙面仍显示风格默认）
+   * @param {object} libraryBag
+   */
+  async function applyWallFaceOverridesFromMemoryToScene(libraryBag) {
+    if (!floorplanRoot.children.length) return;
+    const wallFaceData = wallFaceOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey())];
+    if (!wallFaceData || typeof wallFaceData !== "object") return;
+    for (const [floorLevelId, wallsData] of Object.entries(wallFaceData)) {
+      if (!wallsData || typeof wallsData !== "object") continue;
+      for (const [wallId, faces] of Object.entries(wallsData)) {
+        if (!faces || typeof faces !== "object") continue;
+        const wid = String(wallId ?? "").trim();
+        if (!wid) continue;
+        if (faces.face_a && surfaceOverrideIsActive(faces.face_a)) {
+          floorplanRoot.traverse((o) => {
+            if (!o.isMesh) return;
+            if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
+            if (String(o.userData.floorplanWallId ?? "").trim() !== wid) return;
+            applySurfaceOverrideToMeshFace(o, "face_a", faces.face_a, libraryBag);
+          });
+        }
+        if (faces.face_b && surfaceOverrideIsActive(faces.face_b)) {
+          floorplanRoot.traverse((o) => {
+            if (!o.isMesh) return;
+            if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
+            if (String(o.userData.floorplanWallId ?? "").trim() !== wid) return;
+            applySurfaceOverrideToMeshFace(o, "face_b", faces.face_b, libraryBag);
+          });
+        }
+      }
+    }
+  }
+
   async function applySurfaceOverridesToFloorplan() {
     if (!floorplanRoot.children.length) return;
     const gWorld = floorplanRoot.children[0];
@@ -2795,6 +2808,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         applySurfaceOverrideToMesh(o, winOv, libraryBag);
       }
     });
+
+    await applyWallFaceOverridesFromMemoryToScene(libraryBag);
   }
 
   /**
@@ -4225,16 +4240,19 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     selectFurniture(null);
   }
 
-  function getEffectiveFloorplanStyleKey() {
-    const entry = currentFloorplanEntry;
+  function effectiveFloorplanStyleKeyFromEntryAndOverride(entry, overrideVal) {
     if (!entry) return "modern_minimal_v1";
-    const o = floorplanStyleKeyOverride != null ? String(floorplanStyleKeyOverride).trim() : "";
+    const o = overrideVal != null ? String(overrideVal).trim() : "";
     if (o) return o;
     const fromEntry = String(entry?.styleKey ?? entry?.styleId ?? "").trim();
     if (fromEntry) return fromEntry;
     const fpId = String(entry?.id ?? "").trim();
     const fromPack = fpId ? getDefaultStyleKeyForFloorplan(fpId) : "";
     return fromPack || "modern_minimal_v1";
+  }
+
+  function getEffectiveFloorplanStyleKey() {
+    return effectiveFloorplanStyleKeyFromEntryAndOverride(currentFloorplanEntry, floorplanStyleKeyOverride);
   }
 
 
@@ -4533,34 +4551,37 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     // 从风格包加载房间地板覆盖到内存
     // 注意：不清空所有风格键，切换项目时 applyFromDesignProject 会覆盖特定键
+    // undo/redo 恢复时已写入 room/door/window 覆盖，此处不得覆盖，否则撤销后材质仍错
     const sk = skEffective;
     const skKey = normalizeStyleKeyForSurfaceOverrides(sk);
-    const roomFloorMats = style?.roomFloorMaterials;
-    if (roomFloorMats && typeof roomFloorMats === "object") {
-      roomFloorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(roomFloorMats));
-    } else {
-      if (!roomFloorOverridesByStyleKey[skKey]) {
-        roomFloorOverridesByStyleKey[skKey] = {};
+    if (!isRestoring) {
+      const roomFloorMats = style?.roomFloorMaterials;
+      if (roomFloorMats && typeof roomFloorMats === "object") {
+        roomFloorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(roomFloorMats));
+      } else {
+        if (!roomFloorOverridesByStyleKey[skKey]) {
+          roomFloorOverridesByStyleKey[skKey] = {};
+        }
       }
-    }
 
-    // 从风格包加载门覆盖到内存
-    const doorMats = style?.doorOverrides;
-    if (doorMats && typeof doorMats === "object") {
-      doorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(doorMats));
-    } else {
-      if (!doorOverridesByStyleKey[skKey]) {
-        doorOverridesByStyleKey[skKey] = {};
+      // 从风格包加载门覆盖到内存
+      const doorMats = style?.doorOverrides;
+      if (doorMats && typeof doorMats === "object") {
+        doorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(doorMats));
+      } else {
+        if (!doorOverridesByStyleKey[skKey]) {
+          doorOverridesByStyleKey[skKey] = {};
+        }
       }
-    }
 
-    // 从风格包加载窗户覆盖到内存
-    const windowMats = style?.windowOverrides;
-    if (windowMats && typeof windowMats === "object") {
-      windowOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(windowMats));
-    } else {
-      if (!windowOverridesByStyleKey[skKey]) {
-        windowOverridesByStyleKey[skKey] = {};
+      // 从风格包加载窗户覆盖到内存
+      const windowMats = style?.windowOverrides;
+      if (windowMats && typeof windowMats === "object") {
+        windowOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(windowMats));
+      } else {
+        if (!windowOverridesByStyleKey[skKey]) {
+          windowOverridesByStyleKey[skKey] = {};
+        }
       }
     }
 
@@ -5451,6 +5472,37 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return null;
   }
 
+  function floorLevelIndexEqualsForHistory(stateIdx, currentIdx) {
+    if (stateIdx === undefined && currentIdx === undefined) return true;
+    if (stateIdx === null && currentIdx === null) return true;
+    if (stateIdx === undefined || currentIdx === undefined) return false;
+    if (stateIdx === null || currentIdx === null) return stateIdx === currentIdx;
+    return Math.trunc(Number(stateIdx)) === Math.trunc(Number(currentIdx));
+  }
+
+  function layoutRowKeyForHistory(row) {
+    if (!row || typeof row !== "object") return "";
+    return JSON.stringify({
+      m: row.model,
+      x: row.x,
+      y: row.y,
+      r: row.rotation ?? 0,
+      f: row.floorId ?? null,
+      l: row.decorationLiftCm,
+    });
+  }
+
+  function layoutsEqualForHistory(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+    if (a.length !== b.length) return false;
+    const sa = a.map(layoutRowKeyForHistory).sort();
+    const sb = b.map(layoutRowKeyForHistory).sort();
+    for (let i = 0; i < sa.length; i++) {
+      if (sa[i] !== sb[i]) return false;
+    }
+    return true;
+  }
+
   async function applyHistorySnapshotState(state) {
     if (!state) return;
     /** @type {Record<string, any>} */
@@ -5511,28 +5563,74 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       ? readStyleBucketMap(state.wallFaceOverridesByStyleKey)
       : extractNestedByStyle(restoredSurfaceByStyleKey, "wallFaceOverrides");
 
+    let floorplanSurfacesRefreshed = false;
+    const targetFurn = Array.isArray(state.furniture) ? state.furniture : [];
+    const skipFurnitureRebuild = layoutsEqualForHistory(targetFurn, getLayout());
+
     if (state.floorPlanId !== undefined) {
       if (state.floorPlanId) {
         const cat = window.__floorPlanCatalog;
         const entry = cat?.byId instanceof Map ? cat.byId.get(state.floorPlanId) : null;
         if (entry) {
+          let nextStyleOverride;
           if (Object.prototype.hasOwnProperty.call(state, "floorplanStyleKey")) {
             const sk = state.floorplanStyleKey;
-            floorplanStyleKeyOverride = sk != null && String(sk).trim() ? String(sk).trim() : null;
+            nextStyleOverride = sk != null && String(sk).trim() ? String(sk).trim() : null;
           } else {
-            floorplanStyleKeyOverride = null;
+            nextStyleOverride = null;
           }
-          await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
-            floorIndex: state.floorLevelIndex,
-            preserveStyleKeyOverride: true,
-            preserveSurfaceOverrides: true,
-            skipDecorFromStyleMerge: true,
-          });
-        } else clearFloorplan();
-      } else clearFloorplan();
+          const canSkipFloorplanRebuild =
+            getCurrentFloorplanId() === state.floorPlanId
+            && currentFloorplanEntry
+            && String(currentFloorplanEntry.id ?? "").trim() === String(entry.id ?? "").trim()
+            && floorLevelIndexEqualsForHistory(state.floorLevelIndex, getCurrentFloorLevelIndex())
+            && normalizeStyleKeyForSurfaceOverrides(
+              effectiveFloorplanStyleKeyFromEntryAndOverride(currentFloorplanEntry, nextStyleOverride),
+            ) === normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
+
+          if (canSkipFloorplanRebuild) {
+            floorplanStyleKeyOverride = nextStyleOverride;
+            // 仅 applySurfaceOverrides 无法撤销「去掉覆盖」时的 mesh 状态；轻量路径仍须重建挤出几何再套覆盖（不碰家具）
+            await rebuildFloorplan3D({ applyDecorFromStyle: false });
+            floorplanSurfacesRefreshed = true;
+          } else {
+            floorplanStyleKeyOverride = nextStyleOverride;
+            await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
+              floorIndex: state.floorLevelIndex,
+              preserveStyleKeyOverride: true,
+              preserveSurfaceOverrides: true,
+              skipDecorFromStyleMerge: true,
+            });
+            floorplanSurfacesRefreshed = true;
+          }
+        } else {
+          clearFloorplan();
+          floorplanSurfacesRefreshed = true;
+        }
+      } else if (getCurrentFloorplanId()) {
+        clearFloorplan();
+        floorplanSurfacesRefreshed = true;
+      }
+    } else if (floorplanRoot.children.length && currentFloorplanEntry) {
+      await rebuildFloorplan3D({ applyDecorFromStyle: false });
+      floorplanSurfacesRefreshed = true;
+    } else if (floorplanRoot.children.length) {
+      await applySurfaceOverridesToFloorplan();
+      floorplanSurfacesRefreshed = true;
     }
-    const furn = Array.isArray(state.furniture) ? state.furniture : [];
-    await rebuildFromLayout(furn);
+
+    if (!skipFurnitureRebuild) {
+      await rebuildFromLayout(targetFurn);
+    } else {
+      if (!floorplanSurfacesRefreshed && floorplanRoot.children.length) {
+        if (currentFloorplanEntry) {
+          await rebuildFloorplan3D({ applyDecorFromStyle: false });
+        } else {
+          await applySurfaceOverridesToFloorplan();
+        }
+      }
+      updateBottomUI();
+    }
   }
 
   function pushHistorySnapshot() {
@@ -5587,12 +5685,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   async function undo() {
     if (historyIndex <= 0) return;
+    if (historyReady) flushHistoryDebounce();
     historyIndex--;
     await applyHistoryIndex(historyIndex);
   }
 
   async function redo() {
     if (historyIndex >= history.length - 1) return;
+    if (historyReady) flushHistoryDebounce();
     historyIndex++;
     await applyHistoryIndex(historyIndex);
   }
@@ -6370,6 +6470,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (wasPendingMaterialPresetClear) pendingSurfaceMaterialPresetClear = true;
       return;
     }
+    // 连续多次改材质/墙面时若仍处在防抖窗口内，只会产生一条历史；先 flush 再提交，保证「一步一快照」
+    if (historyReady) flushHistoryDebounce();
     const scope = floorplanSurfaceScopeFromKind(sel.kind);
     const lib = await getFloorplanMaterialsLibraryBag();
     const fid = sel.floorLevelId;
