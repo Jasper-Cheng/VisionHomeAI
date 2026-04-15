@@ -5649,7 +5649,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function schedulePushHistory() {
     if (!historyReady || isRestoring) return;
     clearTimeout(historyDebounceTimer);
-    historyDebounceTimer = setTimeout(() => { historyDebounceTimer = null; pushHistorySnapshot(); }, 450);
+    historyDebounceTimer = setTimeout(() => { historyDebounceTimer = null; pushHistorySnapshot(); }, 300);
   }
 
   function flushHistoryDebounce() {
