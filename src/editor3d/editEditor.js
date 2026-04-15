@@ -5356,6 +5356,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       // 兼容旧版：surfaceOverrides 仅当前风格 bucket；新版优先使用 surfaceOverridesByStyleKey。
       surfaceOverrides: JSON.parse(JSON.stringify(getCurrentSurfaceOverridesBucket())),
       surfaceOverridesByStyleKey: JSON.parse(JSON.stringify(floorplanSurfaceOverridesByStyleKey)),
+      roomFloorOverridesByStyleKey: JSON.parse(JSON.stringify(roomFloorOverridesByStyleKey)),
+      doorOverridesByStyleKey: JSON.parse(JSON.stringify(doorOverridesByStyleKey)),
+      windowOverridesByStyleKey: JSON.parse(JSON.stringify(windowOverridesByStyleKey)),
+      wallFaceOverridesByStyleKey: JSON.parse(JSON.stringify(wallFaceOverridesByStyleKey)),
     });
   }
 
@@ -5391,6 +5395,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const surfaceOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "surfaceOverridesByStyleKey")
         ? cloneSurfaceOverridesPayload(parsed.surfaceOverridesByStyleKey)
         : undefined;
+      const roomFloorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "roomFloorOverridesByStyleKey")
+        ? cloneSurfaceOverridesPayload(parsed.roomFloorOverridesByStyleKey)
+        : undefined;
+      const doorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "doorOverridesByStyleKey")
+        ? cloneSurfaceOverridesPayload(parsed.doorOverridesByStyleKey)
+        : undefined;
+      const windowOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "windowOverridesByStyleKey")
+        ? cloneSurfaceOverridesPayload(parsed.windowOverridesByStyleKey)
+        : undefined;
+      const wallFaceOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "wallFaceOverridesByStyleKey")
+        ? cloneSurfaceOverridesPayload(parsed.wallFaceOverridesByStyleKey)
+        : undefined;
       if (id === undefined) {
         return {
           furniture: parsed.furniture,
@@ -5399,6 +5415,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           floorplanStyleKey,
           surfaceOverrides,
           surfaceOverridesByStyleKey,
+          roomFloorOverridesByStyleKey,
+          doorOverridesByStyleKey,
+          windowOverridesByStyleKey,
+          wallFaceOverridesByStyleKey,
         };
       }
       if (id === null || String(id).trim() === "") {
@@ -5409,6 +5429,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           floorplanStyleKey,
           surfaceOverrides,
           surfaceOverridesByStyleKey,
+          roomFloorOverridesByStyleKey,
+          doorOverridesByStyleKey,
+          windowOverridesByStyleKey,
+          wallFaceOverridesByStyleKey,
         };
       }
       return {
@@ -5418,6 +5442,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         floorplanStyleKey,
         surfaceOverrides,
         surfaceOverridesByStyleKey,
+        roomFloorOverridesByStyleKey,
+        doorOverridesByStyleKey,
+        windowOverridesByStyleKey,
+        wallFaceOverridesByStyleKey,
       };
     }
     return null;
@@ -5425,6 +5453,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   async function applyHistorySnapshotState(state) {
     if (!state) return;
+    /** @type {Record<string, any>} */
+    let restoredSurfaceByStyleKey = {};
     if (Object.prototype.hasOwnProperty.call(state, "surfaceOverridesByStyleKey")) {
       const raw = state.surfaceOverridesByStyleKey && typeof state.surfaceOverridesByStyleKey === "object"
         ? JSON.parse(JSON.stringify(state.surfaceOverridesByStyleKey))
@@ -5434,7 +5464,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (!bucket || typeof bucket !== "object") continue;
         next[normalizeStyleKeyForSurfaceOverrides(sk)] = migrateFloorplanSurfaceOverridesBucket(bucket);
       }
-      floorplanSurfaceOverridesByStyleKey = next;
+      restoredSurfaceByStyleKey = next;
     } else if (Object.prototype.hasOwnProperty.call(state, "surfaceOverrides")) {
       const legacy = migrateFloorplanSurfaceOverridesBucket(
         state.surfaceOverrides && typeof state.surfaceOverrides === "object"
@@ -5442,10 +5472,45 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           : {},
       );
       const sk = normalizeStyleKeyForSurfaceOverrides(state.floorplanStyleKey);
-      floorplanSurfaceOverridesByStyleKey = { [sk]: legacy };
+      restoredSurfaceByStyleKey = { [sk]: legacy };
     } else {
-      floorplanSurfaceOverridesByStyleKey = {};
+      restoredSurfaceByStyleKey = {};
     }
+    floorplanSurfaceOverridesByStyleKey = restoredSurfaceByStyleKey;
+
+    const readStyleBucketMap = (payload) => {
+      const out = {};
+      if (!payload || typeof payload !== "object") return out;
+      for (const [sk, bucket] of Object.entries(payload)) {
+        if (!bucket || typeof bucket !== "object") continue;
+        out[normalizeStyleKeyForSurfaceOverrides(sk)] = JSON.parse(JSON.stringify(bucket));
+      }
+      return out;
+    };
+    const extractNestedByStyle = (surfaceByStyle, nestedKey) => {
+      const out = {};
+      for (const [sk, bucket] of Object.entries(surfaceByStyle || {})) {
+        if (!bucket || typeof bucket !== "object") continue;
+        const nested = bucket[nestedKey];
+        out[normalizeStyleKeyForSurfaceOverrides(sk)] = nested && typeof nested === "object"
+          ? JSON.parse(JSON.stringify(nested))
+          : {};
+      }
+      return out;
+    };
+    roomFloorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(state, "roomFloorOverridesByStyleKey")
+      ? readStyleBucketMap(state.roomFloorOverridesByStyleKey)
+      : extractNestedByStyle(restoredSurfaceByStyleKey, "roomFloors");
+    doorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(state, "doorOverridesByStyleKey")
+      ? readStyleBucketMap(state.doorOverridesByStyleKey)
+      : extractNestedByStyle(restoredSurfaceByStyleKey, "doorOverrides");
+    windowOverridesByStyleKey = Object.prototype.hasOwnProperty.call(state, "windowOverridesByStyleKey")
+      ? readStyleBucketMap(state.windowOverridesByStyleKey)
+      : extractNestedByStyle(restoredSurfaceByStyleKey, "windowOverrides");
+    wallFaceOverridesByStyleKey = Object.prototype.hasOwnProperty.call(state, "wallFaceOverridesByStyleKey")
+      ? readStyleBucketMap(state.wallFaceOverridesByStyleKey)
+      : extractNestedByStyle(restoredSurfaceByStyleKey, "wallFaceOverrides");
+
     if (state.floorPlanId !== undefined) {
       if (state.floorPlanId) {
         const cat = window.__floorPlanCatalog;
