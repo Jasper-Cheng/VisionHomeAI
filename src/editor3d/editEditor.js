@@ -3118,6 +3118,247 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return [...set].sort((u, v) => u - v);
   }
 
+  /** @param {number[][]} pts */
+  function polygonSignedAreaCm2(pts) {
+    if (!Array.isArray(pts) || pts.length < 3) return 0;
+    let s = 0;
+    const n = pts.length;
+    for (let i = 0; i < n; i++) {
+      const [x1, y1] = pts[i];
+      const [x2, y2] = pts[(i + 1) % n];
+      s += x1 * y2 - x2 * y1;
+    }
+    return s / 2;
+  }
+
+  function polygonAabbCm(pts) {
+    if (!Array.isArray(pts) || !pts.length) return null;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const p of pts) {
+      const x = Number(p?.[0]);
+      const y = Number(p?.[1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+    if (!Number.isFinite(minX)) return null;
+    return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY };
+  }
+
+  function lineIntersection2d(a1, a2, b1, b2) {
+    const x1 = a1[0];
+    const y1 = a1[1];
+    const x2 = a2[0];
+    const y2 = a2[1];
+    const x3 = b1[0];
+    const y3 = b1[1];
+    const x4 = b2[0];
+    const y4 = b2[1];
+    const den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (Math.abs(den) < 1e-9) return null;
+    const n1 = x1 * y2 - y1 * x2;
+    const n2 = x3 * y4 - y3 * x4;
+    const x = (n1 * (x3 - x4) - (x1 - x2) * n2) / den;
+    const y = (n1 * (y3 - y4) - (y1 - y2) * n2) / den;
+    return [x, y];
+  }
+
+  function clipPolygonByEdge(subject, cp1, cp2, clipIsCcw) {
+    const out = [];
+    if (!Array.isArray(subject) || !subject.length) return out;
+    const ex = cp2[0] - cp1[0];
+    const ey = cp2[1] - cp1[1];
+    const edgeEps = 1e-7;
+    function isInside(p) {
+      const cross = ex * (p[1] - cp1[1]) - ey * (p[0] - cp1[0]);
+      return clipIsCcw ? cross >= -edgeEps : cross <= edgeEps;
+    }
+    let s = subject[subject.length - 1];
+    for (const e of subject) {
+      const sIn = isInside(s);
+      const eIn = isInside(e);
+      if (eIn) {
+        if (!sIn) {
+          const ip = lineIntersection2d(s, e, cp1, cp2);
+          if (ip) out.push(ip);
+        }
+        out.push(e);
+      } else if (sIn) {
+        const ip = lineIntersection2d(s, e, cp1, cp2);
+        if (ip) out.push(ip);
+      }
+      s = e;
+    }
+    return out;
+  }
+
+  function intersectConvexPolygons(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length < 3 || b.length < 3) return [];
+    let out = a.slice();
+    const clipIsCcw = polygonSignedAreaCm2(b) >= 0;
+    for (let i = 0; i < b.length; i++) {
+      const cp1 = b[i];
+      const cp2 = b[(i + 1) % b.length];
+      out = clipPolygonByEdge(out, cp1, cp2, clipIsCcw);
+      if (!out.length) return [];
+    }
+    return out;
+  }
+
+  function makeWallQuadFromSegmentCm(seg, thicknessCm) {
+    const x1 = Number(seg?.x1);
+    const y1 = Number(seg?.y1);
+    const x2 = Number(seg?.x2);
+    const y2 = Number(seg?.y2);
+    if (![x1, y1, x2, y2].every((v) => Number.isFinite(v))) return null;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-6) return null;
+    const half = (Number.isFinite(thicknessCm) && thicknessCm > 0 ? thicknessCm : 10) / 2;
+    const nx = (-dy / len) * half;
+    const ny = (dx / len) * half;
+    return [
+      [x1 + nx, y1 + ny],
+      [x2 + nx, y2 + ny],
+      [x2 - nx, y2 - ny],
+      [x1 - nx, y1 - ny],
+    ];
+  }
+
+  function getExtendedWallSegmentCm(wall, floorWalls) {
+    if (!wall || !Array.isArray(wall.start) || wall.start.length < 2 || !Array.isArray(wall.end) || wall.end.length < 2) {
+      return null;
+    }
+    const sx = snap(Number(wall.start[0]));
+    const sy = snap(Number(wall.start[1]));
+    const ex = snap(Number(wall.end[0]));
+    const ey = snap(Number(wall.end[1]));
+    const dx = ex - sx;
+    const dy = ey - sy;
+    const len = Math.hypot(dx, dy);
+    if (!Number.isFinite(len) || len < 1e-6) return null;
+    const ux = dx / len;
+    const uy = dy / len;
+    const { startExtCm, endExtCm } = computeWallEndpointExtensionsCm(wall, floorWalls || []);
+    return {
+      x1: sx - ux * startExtCm,
+      y1: sy - uy * startExtCm,
+      x2: ex + ux * endExtCm,
+      y2: ey + uy * endExtCm,
+    };
+  }
+
+  function buildWallOverlapHighlightGroup(floor, cx, cy, s, wallHeightCm, floorOpacity, floorLevelId) {
+    const walls = floor?.walls || [];
+    if (!walls.length) return null;
+
+    const op = floorOpacity ?? 1;
+    const mat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(0xff3b30),
+      emissive: new THREE.Color(0x4a0600),
+      emissiveIntensity: 0.32,
+      transparent: true,
+      opacity: Math.min(0.74, Math.max(0.4, op * 0.7)),
+      roughness: 0.58,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    tagFloorplanLayerOpacity(mat, op);
+
+    const g = new THREE.Group();
+    g.userData.floorplanWallOverlapGroup = true;
+    g.userData.floorplanFloorLevelId = String(floorLevelId ?? "").trim();
+    g.renderOrder = 20;
+    const seen = new Set();
+
+    const hM = Math.max(0.02, Number(wallHeightCm) / 100);
+    const k = s / 100;
+    for (const wall of walls) {
+      if (!Array.isArray(wall?.start) || wall.start.length < 2 || !Array.isArray(wall?.end) || wall.end.length < 2) continue;
+      const sx = snap(Number(wall.start[0]));
+      const sy = snap(Number(wall.start[1]));
+      const ex = snap(Number(wall.end[0]));
+      const ey = snap(Number(wall.end[1]));
+      const lenCm = Math.hypot(ex - sx, ey - sy);
+      if (!Number.isFinite(lenCm) || lenCm < 1e-6) continue;
+      const ux = (ex - sx) / lenCm;
+      const uy = (ey - sy) / lenCm;
+      const { startExtCm, endExtCm } = computeWallEndpointExtensionsCm(wall, walls);
+      const th = Number(wall?.thickness);
+      const thickM = Math.max(0.03, ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100);
+      const markerThickM = Math.max(0.02, thickM * 0.98);
+      const wid = String(wall?.id || "");
+
+      if (startExtCm > WALL_HOLE_EPS) {
+        const keyStart = [
+          Math.round(sx * 10),
+          Math.round(sy * 10),
+          Math.round(Math.abs(ux) * 1000),
+          Math.round(Math.abs(uy) * 1000),
+          Math.round(startExtCm * 10),
+          "start",
+        ].join("|");
+        if (!seen.has(keyStart)) {
+          seen.add(keyStart);
+          const segLen = ((startExtCm * 2) * s) / 100;
+          const geo = new THREE.BoxGeometry(Math.max(0.01, segLen), hM, markerThickM);
+          const mesh = new THREE.Mesh(geo, mat);
+          const cxCm = sx;
+          const cyCm = sy;
+          mesh.position.set((cxCm - cx) * k, hM / 2, (cyCm - cy) * k);
+          mesh.rotation.y = Math.atan2(uy, ux);
+          mesh.castShadow = false;
+          mesh.receiveShadow = false;
+          mesh.renderOrder = 21;
+          mesh.userData.floorplanWallOverlap = true;
+          mesh.userData.floorplanWallExtension = true;
+          mesh.userData.floorplanWallEndpoint = "start";
+          mesh.userData.floorplanWallId = wid;
+          mesh.userData.floorplanFloorLevelId = String(floorLevelId ?? "").trim();
+          g.add(mesh);
+        }
+      }
+
+      if (endExtCm > WALL_HOLE_EPS) {
+        const keyEnd = [
+          Math.round(ex * 10),
+          Math.round(ey * 10),
+          Math.round(Math.abs(ux) * 1000),
+          Math.round(Math.abs(uy) * 1000),
+          Math.round(endExtCm * 10),
+          "end",
+        ].join("|");
+        if (!seen.has(keyEnd)) {
+          seen.add(keyEnd);
+          const segLen = ((endExtCm * 2) * s) / 100;
+          const geo = new THREE.BoxGeometry(Math.max(0.01, segLen), hM, markerThickM);
+          const mesh = new THREE.Mesh(geo, mat);
+          const cxCm = ex;
+          const cyCm = ey;
+          mesh.position.set((cxCm - cx) * k, hM / 2, (cyCm - cy) * k);
+          mesh.rotation.y = Math.atan2(uy, ux);
+          mesh.castShadow = false;
+          mesh.receiveShadow = false;
+          mesh.renderOrder = 21;
+          mesh.userData.floorplanWallOverlap = true;
+          mesh.userData.floorplanWallExtension = true;
+          mesh.userData.floorplanWallEndpoint = "end";
+          mesh.userData.floorplanWallId = wid;
+          mesh.userData.floorplanFloorLevelId = String(floorLevelId ?? "").trim();
+          g.add(mesh);
+        }
+      }
+    }
+    return g.children.length ? g : null;
+  }
+
   function cellFullyInsideAnyHole(xa, xb, ya, yb, holes) {
     for (const h of holes) {
       if (xa >= h.x0 - WALL_HOLE_EPS && xb <= h.x1 + WALL_HOLE_EPS && ya >= h.y0 - WALL_HOLE_EPS && yb <= h.y1 + WALL_HOLE_EPS) {
@@ -4799,6 +5040,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const m = buildWallMesh(w, fl, cx, cy, s, defaultH, opacity, wallMat, style, getMaterialForKey, fidRaw);
         if (m) floorG.add(m);
       }
+      const overlapG = buildWallOverlapHighlightGroup(fl, cx, cy, s, defaultH, opacity, fidRaw);
+      if (overlapG) floorG.add(overlapG);
       for (const d of fl.doors || []) {
         const wid = String(d.wallId ?? "").trim();
         const w = wid ? (fl.walls || []).find((x) => String(x?.id ?? "") === wid) : null;

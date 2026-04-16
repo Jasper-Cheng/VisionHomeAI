@@ -969,6 +969,14 @@ a.avatar:hover {
   stroke-linecap: square;
 }
 
+.svg-floor-wall-overlap {
+  fill: rgba(255, 59, 48, 0.55);
+  stroke: rgba(255, 99, 99, 0.95);
+  stroke-width: 1.5;
+  paint-order: stroke fill;
+  pointer-events: none;
+}
+
 .svg-floor-window {
   fill: rgba(56, 189, 248, 0.38);
   stroke: rgba(224, 242, 254, 1);

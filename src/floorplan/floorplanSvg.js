@@ -484,6 +484,189 @@ function appendLineIfValid(innerG, x1, y1, x2, y2, className, strokeWidth, dataA
   innerG.appendChild(line);
 }
 
+/** @param {number[][]} pts */
+function polygonSignedAreaCm2(pts) {
+  if (!Array.isArray(pts) || pts.length < 3) return 0;
+  let s = 0;
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const [x1, y1] = pts[i];
+    const [x2, y2] = pts[(i + 1) % n];
+    s += x1 * y2 - x2 * y1;
+  }
+  return s / 2;
+}
+
+function lineIntersection2d(a1, a2, b1, b2) {
+  const x1 = a1[0];
+  const y1 = a1[1];
+  const x2 = a2[0];
+  const y2 = a2[1];
+  const x3 = b1[0];
+  const y3 = b1[1];
+  const x4 = b2[0];
+  const y4 = b2[1];
+  const den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+  if (Math.abs(den) < 1e-9) return null;
+  const n1 = x1 * y2 - y1 * x2;
+  const n2 = x3 * y4 - y3 * x4;
+  const x = (n1 * (x3 - x4) - (x1 - x2) * n2) / den;
+  const y = (n1 * (y3 - y4) - (y1 - y2) * n2) / den;
+  return [x, y];
+}
+
+function clipPolygonByEdge(subject, cp1, cp2, clipIsCcw) {
+  const out = [];
+  if (!Array.isArray(subject) || !subject.length) return out;
+  const ex = cp2[0] - cp1[0];
+  const ey = cp2[1] - cp1[1];
+  const edgeEps = 1e-7;
+  function isInside(p) {
+    const cross = ex * (p[1] - cp1[1]) - ey * (p[0] - cp1[0]);
+    return clipIsCcw ? cross >= -edgeEps : cross <= edgeEps;
+  }
+  let s = subject[subject.length - 1];
+  for (const e of subject) {
+    const sIn = isInside(s);
+    const eIn = isInside(e);
+    if (eIn) {
+      if (!sIn) {
+        const ip = lineIntersection2d(s, e, cp1, cp2);
+        if (ip) out.push(ip);
+      }
+      out.push(e);
+    } else if (sIn) {
+      const ip = lineIntersection2d(s, e, cp1, cp2);
+      if (ip) out.push(ip);
+    }
+    s = e;
+  }
+  return out;
+}
+
+function intersectConvexPolygons(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length < 3 || b.length < 3) return [];
+  let out = a.slice();
+  const clipIsCcw = polygonSignedAreaCm2(b) >= 0;
+  for (let i = 0; i < b.length; i++) {
+    const cp1 = b[i];
+    const cp2 = b[(i + 1) % b.length];
+    out = clipPolygonByEdge(out, cp1, cp2, clipIsCcw);
+    if (!out.length) return [];
+  }
+  return out;
+}
+
+function makeWallQuadFromSegment(seg, thicknessCm) {
+  const x1 = Number(seg?.x1);
+  const y1 = Number(seg?.y1);
+  const x2 = Number(seg?.x2);
+  const y2 = Number(seg?.y2);
+  if (![x1, y1, x2, y2].every((v) => Number.isFinite(v))) return null;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy);
+  if (len < 1e-6) return null;
+  const half = (Number.isFinite(thicknessCm) && thicknessCm > 0 ? thicknessCm : 10) / 2;
+  const nx = (-dy / len) * half;
+  const ny = (dx / len) * half;
+  return [
+    [x1 + nx, y1 + ny],
+    [x2 + nx, y2 + ny],
+    [x2 - nx, y2 - ny],
+    [x1 - nx, y1 - ny],
+  ];
+}
+
+function appendWallOverlapPolygons(innerG, walls, snapCoord = identitySnapCoord) {
+  if (!innerG || !Array.isArray(walls) || walls.length < 2) return;
+  const seen = new Set();
+  for (const wall of walls) {
+    if (!Array.isArray(wall?.start) || !Array.isArray(wall?.end) || wall.start.length < 2 || wall.end.length < 2) continue;
+    const sx = snapCoord(Number(wall.start[0]));
+    const sy = snapCoord(Number(wall.start[1]));
+    const ex = snapCoord(Number(wall.end[0]));
+    const ey = snapCoord(Number(wall.end[1]));
+    const dx = ex - sx;
+    const dy = ey - sy;
+    const len = Math.hypot(dx, dy);
+    if (!Number.isFinite(len) || len < 1e-6) continue;
+    const ux = dx / len;
+    const uy = dy / len;
+    const seg = getExtendedWallSegmentCm(wall, walls, snapCoord);
+    if (!seg) continue;
+    const startExt = Math.hypot(sx - seg.x1, sy - seg.y1);
+    const endExt = Math.hypot(seg.x2 - ex, seg.y2 - ey);
+    const th = Number(wall.thickness);
+    const thickness = Number.isFinite(th) && th > 0 ? th : 10;
+    const wid = String(wall.id || "");
+
+    if (startExt > 1e-6) {
+      const keyStart = [
+        Math.round(sx * 10),
+        Math.round(sy * 10),
+        Math.round(Math.abs(ux) * 1000),
+        Math.round(Math.abs(uy) * 1000),
+        Math.round(startExt * 10),
+        "start",
+      ].join("|");
+      if (seen.has(keyStart)) {
+        // 已有同位同向同长度标记
+      } else {
+        seen.add(keyStart);
+      const startSeg = {
+        x1: sx - ux * startExt,
+        y1: sy - uy * startExt,
+        x2: sx + ux * startExt,
+        y2: sy + uy * startExt,
+      };
+      const poly = makeWallQuadFromSegment(startSeg, thickness);
+      if (!poly || poly.length < 3) continue;
+      const pts = poly.map((p) => `${snapCoord(p[0])},${snapCoord(p[1])}`).join(" ");
+      if (!pts) continue;
+      const el = document.createElementNS(NS, "polygon");
+      el.setAttribute("points", pts);
+      el.setAttribute("class", "svg-floor-wall-overlap");
+      if (wid) el.setAttribute("data-wall-id", wid);
+      el.setAttribute("data-endpoint", "start");
+      innerG.appendChild(el);
+      }
+    }
+
+    if (endExt > 1e-6) {
+      const keyEnd = [
+        Math.round(ex * 10),
+        Math.round(ey * 10),
+        Math.round(Math.abs(ux) * 1000),
+        Math.round(Math.abs(uy) * 1000),
+        Math.round(endExt * 10),
+        "end",
+      ].join("|");
+      if (seen.has(keyEnd)) {
+        // 已有同位同向同长度标记
+      } else {
+        seen.add(keyEnd);
+      const endSeg = {
+        x1: ex - ux * endExt,
+        y1: ey - uy * endExt,
+        x2: ex + ux * endExt,
+        y2: ey + uy * endExt,
+      };
+      const poly = makeWallQuadFromSegment(endSeg, thickness);
+      if (!poly || poly.length < 3) continue;
+      const pts = poly.map((p) => `${snapCoord(p[0])},${snapCoord(p[1])}`).join(" ");
+      if (!pts) continue;
+      const el = document.createElementNS(NS, "polygon");
+      el.setAttribute("points", pts);
+      el.setAttribute("class", "svg-floor-wall-overlap");
+      if (wid) el.setAttribute("data-wall-id", wid);
+      el.setAttribute("data-endpoint", "end");
+      innerG.appendChild(el);
+      }
+    }
+  }
+}
+
 const WALL_JOIN_POINT_EPS_CM = 0.8;
 const WALL_JOIN_SEGMENT_INTERIOR_T = 0.04;
 const WALL_JOIN_PARALLEL_CROSS_MAX = 0.06;
@@ -903,6 +1086,7 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
       snapCoord,
     );
   }
+  appendWallOverlapPolygons(innerG, walls, snapCoord);
 
   const wallsForOpenings = walls;
 
