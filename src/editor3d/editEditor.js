@@ -2946,12 +2946,81 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   const WALL_HOLE_EPS = 1e-5;
+  const WALL_JOIN_POINT_EPS_CM = 0.8;
+
+  function dist2PointToSegmentCm(px, py, ax, ay, bx, by) {
+    const vx = bx - ax;
+    const vy = by - ay;
+    const vv = vx * vx + vy * vy;
+    if (vv < 1e-12) {
+      const dx = px - ax;
+      const dy = py - ay;
+      return { dist2: dx * dx + dy * dy, t: 0 };
+    }
+    const wx = px - ax;
+    const wy = py - ay;
+    const tRaw = (wx * vx + wy * vy) / vv;
+    const t = Math.max(0, Math.min(1, tRaw));
+    const qx = ax + vx * t;
+    const qy = ay + vy * t;
+    const dx = px - qx;
+    const dy = py - qy;
+    return { dist2: dx * dx + dy * dy, t };
+  }
+
+  /**
+   * 处理 L/T 相交缺角：若墙端点与其它墙端点或线段相接，则按相交墙厚度向外延伸半厚度。
+   * @returns {{ startExtCm: number, endExtCm: number }}
+   */
+  function computeWallEndpointExtensionsCm(wall, floorWalls) {
+    if (!wall || !Array.isArray(floorWalls)) return { startExtCm: 0, endExtCm: 0 };
+    if (!Array.isArray(wall.start) || wall.start.length < 2 || !Array.isArray(wall.end) || wall.end.length < 2) {
+      return { startExtCm: 0, endExtCm: 0 };
+    }
+    const wid = String(wall.id ?? "").trim();
+    const sx = snap(Number(wall.start[0]));
+    const sy = snap(Number(wall.start[1]));
+    const ex = snap(Number(wall.end[0]));
+    const ey = snap(Number(wall.end[1]));
+    if (![sx, sy, ex, ey].every((v) => Number.isFinite(v))) return { startExtCm: 0, endExtCm: 0 };
+
+    let startExtCm = 0;
+    let endExtCm = 0;
+    const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
+
+    for (const other of floorWalls) {
+      if (!other || !Array.isArray(other.start) || !Array.isArray(other.end) || other.start.length < 2 || other.end.length < 2) {
+        continue;
+      }
+      const oid = String(other.id ?? "").trim();
+      if (wid && oid && wid === oid) continue;
+
+      const ax = snap(Number(other.start[0]));
+      const ay = snap(Number(other.start[1]));
+      const bx = snap(Number(other.end[0]));
+      const by = snap(Number(other.end[1]));
+      if (![ax, ay, bx, by].every((v) => Number.isFinite(v))) continue;
+      if (Math.hypot(bx - ax, by - ay) < 1e-6) continue;
+
+      const otherTh = Number(other.thickness);
+      const candidate = Math.max(0, (Number.isFinite(otherTh) && otherTh > 0 ? otherTh : 10) / 2);
+      if (candidate < 1e-6) continue;
+
+      const sHit = dist2PointToSegmentCm(sx, sy, ax, ay, bx, by);
+      if (sHit.dist2 <= eps2) startExtCm = Math.max(startExtCm, candidate);
+
+      const eHit = dist2PointToSegmentCm(ex, ey, ax, ay, bx, by);
+      if (eHit.dist2 <= eps2) endExtCm = Math.max(endExtCm, candidate);
+    }
+
+    return { startExtCm, endExtCm };
+  }
 
   /**
    * 门/窗：wallId + pos（cm，从墙 start 沿中心线到洞口中心）+ width/height（cm）
    * 转为墙体局部 X（沿墙）× Y（向上）的矩形洞，用于从墙盒体中挖空（网格剖分）。
    */
-  function collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, hM, s) {
+  function collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, hM, s, startOffsetCm = 0) {
     const wid = String(wall?.id ?? "").trim();
     if (!wid || !Number.isFinite(lenCm) || lenCm < 1e-6) return [];
     const holes = [];
@@ -2973,7 +3042,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const hcm = Number(d.height);
       if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) continue;
       const wM = (wcm * s) / 100;
-      const centerX = -halfLen + (pos / lenCm) * lenWorld;
+      const centerX = -halfLen + ((startOffsetCm + pos) / lenCm) * lenWorld;
       pushHole(centerX - wM / 2, centerX + wM / 2, 0, Math.min((hcm * s) / 100, hM));
     }
     for (const win of floor?.windows || []) {
@@ -2984,7 +3053,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const altCm = Number(win.altitude ?? win.alt ?? win.sillHeightCm ?? 0);
       if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) continue;
       const wM = (wcm * s) / 100;
-      const centerX = -halfLen + (pos / lenCm) * lenWorld;
+      const centerX = -halfLen + ((startOffsetCm + pos) / lenCm) * lenWorld;
       const y0 = (altCm * s) / 100;
       const y1 = y0 + (hcm * s) / 100;
       pushHole(centerX - wM / 2, centerX + wM / 2, y0, y1);
@@ -3014,19 +3083,34 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    */
   function buildWallMesh(wall, floor, cx, cy, s, defaultHeightCm, floorOpacity, wallStyleMat, style, getMaterialForKey, floorLevelId) {
     if (!Array.isArray(wall?.start) || wall.start.length < 2 || !Array.isArray(wall?.end) || wall.end.length < 2) return null;
-    const x1 = snap(Number(wall.start[0])), y1 = snap(Number(wall.start[1]));
-    const x2 = snap(Number(wall.end[0])), y2 = snap(Number(wall.end[1]));
-    const dx = (x2 - x1) * (s / 100), dz = (y2 - y1) * (s / 100);
+    const x1Raw = snap(Number(wall.start[0]));
+    const y1Raw = snap(Number(wall.start[1]));
+    const x2Raw = snap(Number(wall.end[0]));
+    const y2Raw = snap(Number(wall.end[1]));
+    const dxc = x2Raw - x1Raw;
+    const dyc = y2Raw - y1Raw;
+    const lenCmRaw = Math.hypot(dxc, dyc);
+    if (lenCmRaw < 1e-9) return null;
+    const ux = dxc / lenCmRaw;
+    const uy = dyc / lenCmRaw;
+
+    const { startExtCm, endExtCm } = computeWallEndpointExtensionsCm(wall, floor?.walls || []);
+    const x1 = x1Raw - ux * startExtCm;
+    const y1 = y1Raw - uy * startExtCm;
+    const x2 = x2Raw + ux * endExtCm;
+    const y2 = y2Raw + uy * endExtCm;
+    const dx = (x2 - x1) * (s / 100);
+    const dz = (y2 - y1) * (s / 100);
     const lenWorld = Math.hypot(dx, dz);
     if (lenWorld < 1e-9) return null;
     const wallIdStr = String(wall?.id ?? "").trim();
     const floorIdStr = String(floorLevelId ?? "").trim();
-    const lenCm = Math.hypot(x2 - x1, y2 - y1);
+    const lenCm = lenCmRaw + startExtCm + endExtCm;
     const th = Number(wall.thickness);
     const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
     const thickM = Math.max(0.03, thickMRaw);
     const hM = defaultHeightCm / 100;
-    const holes = collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, hM, s);
+    const holes = collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, hM, s, startExtCm);
 
     const rotY = Math.atan2(dz, dx);
     const op = floorOpacity ?? 1;

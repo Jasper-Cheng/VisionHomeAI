@@ -484,6 +484,80 @@ function appendLineIfValid(innerG, x1, y1, x2, y2, className, strokeWidth, dataA
   innerG.appendChild(line);
 }
 
+const WALL_JOIN_POINT_EPS_CM = 0.8;
+
+function dist2PointToSegmentCm(px, py, ax, ay, bx, by) {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const vv = vx * vx + vy * vy;
+  if (vv < 1e-12) {
+    const dx = px - ax;
+    const dy = py - ay;
+    return dx * dx + dy * dy;
+  }
+  const wx = px - ax;
+  const wy = py - ay;
+  const tRaw = (wx * vx + wy * vy) / vv;
+  const t = Math.max(0, Math.min(1, tRaw));
+  const qx = ax + vx * t;
+  const qy = ay + vy * t;
+  const dx = px - qx;
+  const dy = py - qy;
+  return dx * dx + dy * dy;
+}
+
+/**
+ * 平面墙线补角：端点接到其它墙（L/T）时，按相交墙半厚度延伸，避免缺角。
+ * @returns {{ x1: number, y1: number, x2: number, y2: number }}
+ */
+function getExtendedWallSegmentCm(wall, walls, snapCoord = identitySnapCoord) {
+  if (!wall || !Array.isArray(wall.start) || wall.start.length < 2 || !Array.isArray(wall.end) || wall.end.length < 2) {
+    return { x1: NaN, y1: NaN, x2: NaN, y2: NaN };
+  }
+  const sx = snapCoord(Number(wall.start[0]));
+  const sy = snapCoord(Number(wall.start[1]));
+  const ex = snapCoord(Number(wall.end[0]));
+  const ey = snapCoord(Number(wall.end[1]));
+  const dx = ex - sx;
+  const dy = ey - sy;
+  const len = Math.hypot(dx, dy);
+  if (!Number.isFinite(len) || len < 1e-6) return { x1: sx, y1: sy, x2: ex, y2: ey };
+  const ux = dx / len;
+  const uy = dy / len;
+  const wid = String(wall.id ?? "").trim();
+  const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
+  let startExt = 0;
+  let endExt = 0;
+
+  for (const other of walls || []) {
+    if (!other || !Array.isArray(other.start) || other.start.length < 2 || !Array.isArray(other.end) || other.end.length < 2) {
+      continue;
+    }
+    const oid = String(other.id ?? "").trim();
+    if (wid && oid && wid === oid) continue;
+    const ax = snapCoord(Number(other.start[0]));
+    const ay = snapCoord(Number(other.start[1]));
+    const bx = snapCoord(Number(other.end[0]));
+    const by = snapCoord(Number(other.end[1]));
+    if (![ax, ay, bx, by].every((v) => Number.isFinite(v))) continue;
+    if (Math.hypot(bx - ax, by - ay) < 1e-6) continue;
+
+    const oth = Number(other.thickness);
+    const candidate = Math.max(0, (Number.isFinite(oth) && oth > 0 ? oth : 10) / 2);
+    if (candidate < 1e-6) continue;
+
+    if (dist2PointToSegmentCm(sx, sy, ax, ay, bx, by) <= eps2) startExt = Math.max(startExt, candidate);
+    if (dist2PointToSegmentCm(ex, ey, ax, ay, bx, by) <= eps2) endExt = Math.max(endExt, candidate);
+  }
+
+  return {
+    x1: sx - ux * startExt,
+    y1: sy - uy * startExt,
+    x2: ex + ux * endExt,
+    y2: ey + uy * endExt,
+  };
+}
+
 /**
  * 绘制 opening：优先 polygon → 线段 start/end → wallId+pos+width → position + length + angleDeg
  */
@@ -762,17 +836,19 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
   }
 
   /* 2. 墙（中心线 + 厚度） */
+  const walls = floor.walls || [];
   for (const wall of floor.walls || []) {
     if (!Array.isArray(wall?.start) || !Array.isArray(wall?.end) || wall.start.length < 2 || wall.end.length < 2) {
       continue;
     }
     const th = Number(wall.thickness);
+    const seg = getExtendedWallSegmentCm(wall, walls, snapCoord);
     appendLineIfValid(
       innerG,
-      Number(wall.start[0]),
-      Number(wall.start[1]),
-      Number(wall.end[0]),
-      Number(wall.end[1]),
+      seg.x1,
+      seg.y1,
+      seg.x2,
+      seg.y2,
       "svg-floor-wall",
       Number.isFinite(th) && th > 0 ? th : 10,
       { "data-wall-id": String(wall.id || "") },
@@ -780,7 +856,7 @@ export function appendFloorGeometryToGroup(floor, innerG, options = {}) {
     );
   }
 
-  const wallsForOpenings = floor.walls || [];
+  const wallsForOpenings = walls;
 
   /* 3. 窗洞填充（平面） */
   for (const win of floor.windows || []) {
