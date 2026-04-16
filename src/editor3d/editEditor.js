@@ -5040,8 +5040,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const m = buildWallMesh(w, fl, cx, cy, s, defaultH, opacity, wallMat, style, getMaterialForKey, fidRaw);
         if (m) floorG.add(m);
       }
-      const overlapG = buildWallOverlapHighlightGroup(fl, cx, cy, s, defaultH, opacity, fidRaw);
-      if (overlapG) floorG.add(overlapG);
       for (const d of fl.doors || []) {
         const wid = String(d.wallId ?? "").trim();
         const w = wid ? (fl.walls || []).find((x) => String(x?.id ?? "") === wid) : null;

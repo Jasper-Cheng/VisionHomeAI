@@ -970,11 +970,7 @@ a.avatar:hover {
 }
 
 .svg-floor-wall-overlap {
-  fill: rgba(255, 59, 48, 0.55);
-  stroke: rgba(255, 99, 99, 0.95);
-  stroke-width: 1.5;
-  paint-order: stroke fill;
-  pointer-events: none;
+  display: none;
 }
 
 .svg-floor-window {
