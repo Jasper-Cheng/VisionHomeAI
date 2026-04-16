@@ -2947,6 +2947,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   const WALL_HOLE_EPS = 1e-5;
   const WALL_JOIN_POINT_EPS_CM = 0.8;
+  /** 沿墙段归一化参数：离开端点小邻域后才视为线段内部（T 型竖墙落在横墙中点） */
+  const WALL_JOIN_SEGMENT_INTERIOR_T = 0.04;
 
   function dist2PointToSegmentCm(px, py, ax, ay, bx, by) {
     const vx = bx - ax;
@@ -2969,7 +2971,37 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 处理 L/T 相交缺角：若墙端点与其它墙端点或线段相接，则按相交墙厚度向外延伸半厚度。
+   * 平面某点附近有多少堵不同的墙参与交汇（端点落在容差内，或投影落在另一墙段内部且距离足够近）。
+   * T 型：≥3 堵墙共点，不延伸；L 型：仅 2 堵墙，按相交墙半厚度补角。
+   */
+  function countDistinctWallsAtPlanPoint(px, py, floorWalls) {
+    if (!Array.isArray(floorWalls)) return 0;
+    const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
+    const tMin = WALL_JOIN_SEGMENT_INTERIOR_T;
+    const ids = new Set();
+    for (let i = 0; i < floorWalls.length; i++) {
+      const w = floorWalls[i];
+      if (!w || !Array.isArray(w.start) || w.start.length < 2 || !Array.isArray(w.end) || w.end.length < 2) continue;
+      const wid = String(w.id ?? "").trim() || `__wall_${i}`;
+      const ax = snap(Number(w.start[0]));
+      const ay = snap(Number(w.start[1]));
+      const bx = snap(Number(w.end[0]));
+      const by = snap(Number(w.end[1]));
+      if (![ax, ay, bx, by].every((v) => Number.isFinite(v))) continue;
+      if (Math.hypot(bx - ax, by - ay) < 1e-6) continue;
+      const dA2 = (px - ax) * (px - ax) + (py - ay) * (py - ay);
+      if (dA2 <= eps2) ids.add(wid);
+      const dB2 = (px - bx) * (px - bx) + (py - by) * (py - by);
+      if (dB2 <= eps2) ids.add(wid);
+      const hit = dist2PointToSegmentCm(px, py, ax, ay, bx, by);
+      if (hit.dist2 <= eps2 && hit.t > tMin && hit.t < 1 - tMin) ids.add(wid);
+    }
+    return ids.size;
+  }
+
+  /**
+   * L 型相交缺角：仅当交汇点处少于 3 堵墙时，按相交墙半厚度向外延伸端点。
+   * T 型（≥3 堵墙共点）不延伸。
    * @returns {{ startExtCm: number, endExtCm: number }}
    */
   function computeWallEndpointExtensionsCm(wall, floorWalls) {
@@ -2987,6 +3019,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     let startExtCm = 0;
     let endExtCm = 0;
     const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
+    const startIsT = countDistinctWallsAtPlanPoint(sx, sy, floorWalls) >= 3;
+    const endIsT = countDistinctWallsAtPlanPoint(ex, ey, floorWalls) >= 3;
 
     for (const other of floorWalls) {
       if (!other || !Array.isArray(other.start) || !Array.isArray(other.end) || other.start.length < 2 || other.end.length < 2) {
@@ -3006,11 +3040,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const candidate = Math.max(0, (Number.isFinite(otherTh) && otherTh > 0 ? otherTh : 10) / 2);
       if (candidate < 1e-6) continue;
 
-      const sHit = dist2PointToSegmentCm(sx, sy, ax, ay, bx, by);
-      if (sHit.dist2 <= eps2) startExtCm = Math.max(startExtCm, candidate);
+      if (!startIsT) {
+        const sHit = dist2PointToSegmentCm(sx, sy, ax, ay, bx, by);
+        if (sHit.dist2 <= eps2) startExtCm = Math.max(startExtCm, candidate);
+      }
 
-      const eHit = dist2PointToSegmentCm(ex, ey, ax, ay, bx, by);
-      if (eHit.dist2 <= eps2) endExtCm = Math.max(endExtCm, candidate);
+      if (!endIsT) {
+        const eHit = dist2PointToSegmentCm(ex, ey, ax, ay, bx, by);
+        if (eHit.dist2 <= eps2) endExtCm = Math.max(endExtCm, candidate);
+      }
     }
 
     return { startExtCm, endExtCm };

@@ -485,6 +485,7 @@ function appendLineIfValid(innerG, x1, y1, x2, y2, className, strokeWidth, dataA
 }
 
 const WALL_JOIN_POINT_EPS_CM = 0.8;
+const WALL_JOIN_SEGMENT_INTERIOR_T = 0.04;
 
 function dist2PointToSegmentCm(px, py, ax, ay, bx, by) {
   const vx = bx - ax;
@@ -493,7 +494,7 @@ function dist2PointToSegmentCm(px, py, ax, ay, bx, by) {
   if (vv < 1e-12) {
     const dx = px - ax;
     const dy = py - ay;
-    return dx * dx + dy * dy;
+    return { dist2: dx * dx + dy * dy, t: 0 };
   }
   const wx = px - ax;
   const wy = py - ay;
@@ -503,11 +504,36 @@ function dist2PointToSegmentCm(px, py, ax, ay, bx, by) {
   const qy = ay + vy * t;
   const dx = px - qx;
   const dy = py - qy;
-  return dx * dx + dy * dy;
+  return { dist2: dx * dx + dy * dy, t };
+}
+
+function countDistinctWallsAtPlanPoint(px, py, walls, snapCoord = identitySnapCoord) {
+  if (!Array.isArray(walls)) return 0;
+  const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
+  const tMin = WALL_JOIN_SEGMENT_INTERIOR_T;
+  const ids = new Set();
+  for (let i = 0; i < walls.length; i++) {
+    const w = walls[i];
+    if (!w || !Array.isArray(w.start) || w.start.length < 2 || !Array.isArray(w.end) || w.end.length < 2) continue;
+    const wid = String(w.id ?? "").trim() || `__wall_${i}`;
+    const ax = snapCoord(Number(w.start[0]));
+    const ay = snapCoord(Number(w.start[1]));
+    const bx = snapCoord(Number(w.end[0]));
+    const by = snapCoord(Number(w.end[1]));
+    if (![ax, ay, bx, by].every((v) => Number.isFinite(v))) continue;
+    if (Math.hypot(bx - ax, by - ay) < 1e-6) continue;
+    const dA2 = (px - ax) * (px - ax) + (py - ay) * (py - ay);
+    if (dA2 <= eps2) ids.add(wid);
+    const dB2 = (px - bx) * (px - bx) + (py - by) * (py - by);
+    if (dB2 <= eps2) ids.add(wid);
+    const hit = dist2PointToSegmentCm(px, py, ax, ay, bx, by);
+    if (hit.dist2 <= eps2 && hit.t > tMin && hit.t < 1 - tMin) ids.add(wid);
+  }
+  return ids.size;
 }
 
 /**
- * 平面墙线补角：端点接到其它墙（L/T）时，按相交墙半厚度延伸，避免缺角。
+ * 平面墙线 L 型补角：交汇点少于 3 堵墙时按相交墙半厚度延伸；T 型（≥3 堵墙共点）不延伸。
  * @returns {{ x1: number, y1: number, x2: number, y2: number }}
  */
 function getExtendedWallSegmentCm(wall, walls, snapCoord = identitySnapCoord) {
@@ -528,8 +554,11 @@ function getExtendedWallSegmentCm(wall, walls, snapCoord = identitySnapCoord) {
   const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
   let startExt = 0;
   let endExt = 0;
+  const list = walls || [];
+  const startIsT = countDistinctWallsAtPlanPoint(sx, sy, list, snapCoord) >= 3;
+  const endIsT = countDistinctWallsAtPlanPoint(ex, ey, list, snapCoord) >= 3;
 
-  for (const other of walls || []) {
+  for (const other of list) {
     if (!other || !Array.isArray(other.start) || other.start.length < 2 || !Array.isArray(other.end) || other.end.length < 2) {
       continue;
     }
@@ -546,8 +575,14 @@ function getExtendedWallSegmentCm(wall, walls, snapCoord = identitySnapCoord) {
     const candidate = Math.max(0, (Number.isFinite(oth) && oth > 0 ? oth : 10) / 2);
     if (candidate < 1e-6) continue;
 
-    if (dist2PointToSegmentCm(sx, sy, ax, ay, bx, by) <= eps2) startExt = Math.max(startExt, candidate);
-    if (dist2PointToSegmentCm(ex, ey, ax, ay, bx, by) <= eps2) endExt = Math.max(endExt, candidate);
+    if (!startIsT) {
+      const hs = dist2PointToSegmentCm(sx, sy, ax, ay, bx, by);
+      if (hs.dist2 <= eps2) startExt = Math.max(startExt, candidate);
+    }
+    if (!endIsT) {
+      const he = dist2PointToSegmentCm(ex, ey, ax, ay, bx, by);
+      if (he.dist2 <= eps2) endExt = Math.max(endExt, candidate);
+    }
   }
 
   return {
