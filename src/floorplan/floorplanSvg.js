@@ -486,6 +486,7 @@ function appendLineIfValid(innerG, x1, y1, x2, y2, className, strokeWidth, dataA
 
 const WALL_JOIN_POINT_EPS_CM = 0.8;
 const WALL_JOIN_SEGMENT_INTERIOR_T = 0.04;
+const WALL_JOIN_PARALLEL_CROSS_MAX = 0.06;
 
 function dist2PointToSegmentCm(px, py, ax, ay, bx, by) {
   const vx = bx - ax;
@@ -507,11 +508,15 @@ function dist2PointToSegmentCm(px, py, ax, ay, bx, by) {
   return { dist2: dx * dx + dy * dy, t };
 }
 
-function countDistinctWallsAtPlanPoint(px, py, walls, snapCoord = identitySnapCoord) {
-  if (!Array.isArray(walls)) return 0;
+/**
+ * L 型：恰两堵墙交汇且走向不共线；T 型（≥3 堵墙共点）不补角。
+ */
+function isLCornerMiterAtPlanPoint(px, py, walls, snapCoord = identitySnapCoord) {
+  if (!Array.isArray(walls)) return false;
   const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
   const tMin = WALL_JOIN_SEGMENT_INTERIOR_T;
-  const ids = new Set();
+  /** @type {Map<string, { ux: number, uy: number }>} */
+  const byId = new Map();
   for (let i = 0; i < walls.length; i++) {
     const w = walls[i];
     if (!w || !Array.isArray(w.start) || w.start.length < 2 || !Array.isArray(w.end) || w.end.length < 2) continue;
@@ -521,19 +526,27 @@ function countDistinctWallsAtPlanPoint(px, py, walls, snapCoord = identitySnapCo
     const bx = snapCoord(Number(w.end[0]));
     const by = snapCoord(Number(w.end[1]));
     if (![ax, ay, bx, by].every((v) => Number.isFinite(v))) continue;
-    if (Math.hypot(bx - ax, by - ay) < 1e-6) continue;
+    const segLen = Math.hypot(bx - ax, by - ay);
+    if (segLen < 1e-6) continue;
+    const ux = (bx - ax) / segLen;
+    const uy = (by - ay) / segLen;
+    let touch = false;
     const dA2 = (px - ax) * (px - ax) + (py - ay) * (py - ay);
-    if (dA2 <= eps2) ids.add(wid);
+    if (dA2 <= eps2) touch = true;
     const dB2 = (px - bx) * (px - bx) + (py - by) * (py - by);
-    if (dB2 <= eps2) ids.add(wid);
+    if (dB2 <= eps2) touch = true;
     const hit = dist2PointToSegmentCm(px, py, ax, ay, bx, by);
-    if (hit.dist2 <= eps2 && hit.t > tMin && hit.t < 1 - tMin) ids.add(wid);
+    if (hit.dist2 <= eps2 && hit.t > tMin && hit.t < 1 - tMin) touch = true;
+    if (touch) byId.set(wid, { ux, uy });
   }
-  return ids.size;
+  if (byId.size !== 2) return false;
+  const [u, v] = Array.from(byId.values());
+  const cross = Math.abs(u.ux * v.uy - u.uy * v.ux);
+  return cross > WALL_JOIN_PARALLEL_CROSS_MAX;
 }
 
 /**
- * 平面墙线 L 型补角：交汇点少于 3 堵墙时按相交墙半厚度延伸；T 型（≥3 堵墙共点）不延伸。
+ * 平面墙线 L 型补角：两堵墙交汇且方向不同时按相交墙半厚度延伸；T 型不延伸。
  * @returns {{ x1: number, y1: number, x2: number, y2: number }}
  */
 function getExtendedWallSegmentCm(wall, walls, snapCoord = identitySnapCoord) {
@@ -555,8 +568,8 @@ function getExtendedWallSegmentCm(wall, walls, snapCoord = identitySnapCoord) {
   let startExt = 0;
   let endExt = 0;
   const list = walls || [];
-  const startIsT = countDistinctWallsAtPlanPoint(sx, sy, list, snapCoord) >= 3;
-  const endIsT = countDistinctWallsAtPlanPoint(ex, ey, list, snapCoord) >= 3;
+  const startMiter = isLCornerMiterAtPlanPoint(sx, sy, list, snapCoord);
+  const endMiter = isLCornerMiterAtPlanPoint(ex, ey, list, snapCoord);
 
   for (const other of list) {
     if (!other || !Array.isArray(other.start) || other.start.length < 2 || !Array.isArray(other.end) || other.end.length < 2) {
@@ -575,11 +588,11 @@ function getExtendedWallSegmentCm(wall, walls, snapCoord = identitySnapCoord) {
     const candidate = Math.max(0, (Number.isFinite(oth) && oth > 0 ? oth : 10) / 2);
     if (candidate < 1e-6) continue;
 
-    if (!startIsT) {
+    if (startMiter) {
       const hs = dist2PointToSegmentCm(sx, sy, ax, ay, bx, by);
       if (hs.dist2 <= eps2) startExt = Math.max(startExt, candidate);
     }
-    if (!endIsT) {
+    if (endMiter) {
       const he = dist2PointToSegmentCm(ex, ey, ax, ay, bx, by);
       if (he.dist2 <= eps2) endExt = Math.max(endExt, candidate);
     }
