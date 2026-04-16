@@ -312,6 +312,113 @@ function getCurrentFloorFromEntry(entry, indexLike) {
   if (!floors.length) return null;
   return floors[normalizeFloorIndex(entry, indexLike)] ?? floors[0] ?? null;
 }
+
+function cloneFloorplanEntryForLoad(entry) {
+  if (!entry || typeof entry !== "object") return entry;
+  if (typeof structuredClone === "function") return structuredClone(entry);
+  return JSON.parse(JSON.stringify(entry));
+}
+
+function wallOrientation(wall) {
+  const ori = String(wall?.orientation || "").trim().toLowerCase();
+  if (ori === "horizontal" || ori === "vertical") return ori;
+  if (!Array.isArray(wall?.start) || !Array.isArray(wall?.end) || wall.start.length < 2 || wall.end.length < 2) return null;
+  const dx = Math.abs(Number(wall.end[0]) - Number(wall.start[0]));
+  const dy = Math.abs(Number(wall.end[1]) - Number(wall.start[1]));
+  if (!Number.isFinite(dx) || !Number.isFinite(dy)) return null;
+  return dx >= dy ? "horizontal" : "vertical";
+}
+
+function isWallType(wall, type) {
+  return String(wall?.type || "").trim().toLowerCase() === type;
+}
+
+function pointsEqual(a, b, eps = 1e-6) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length < 2 || b.length < 2) return false;
+  const ax = Number(a[0]);
+  const ay = Number(a[1]);
+  const bx = Number(b[0]);
+  const by = Number(b[1]);
+  if (![ax, ay, bx, by].every((n) => Number.isFinite(n))) return false;
+  return Math.abs(ax - bx) <= eps && Math.abs(ay - by) <= eps;
+}
+
+function wallThicknessHalf(wall) {
+  const th = Number(wall?.thickness);
+  return Number.isFinite(th) && th > 0 ? th / 2 : 0;
+}
+
+function adjustWallCornerJointsByType(walls, wallType) {
+  const typedWalls = (Array.isArray(walls) ? walls : []).filter((w) => isWallType(w, wallType));
+  const hWalls = typedWalls.filter((w) => wallOrientation(w) === "horizontal");
+  const vWalls = typedWalls.filter((w) => wallOrientation(w) === "vertical");
+  const refs = new Map();
+  for (const w of typedWalls) {
+    const startRef = Array.isArray(w?.start) && w.start.length >= 2 ? [Number(w.start[0]), Number(w.start[1])] : null;
+    const endRef = Array.isArray(w?.end) && w.end.length >= 2 ? [Number(w.end[0]), Number(w.end[1])] : null;
+    refs.set(w, { startRef, endRef });
+  }
+
+  // 一级：横向墙；二级：竖向墙；命中 start/end 后改一级墙 x
+  for (const hWall of hWalls) {
+    if (!Array.isArray(hWall?.start) || !Array.isArray(hWall?.end) || hWall.start.length < 2 || hWall.end.length < 2) continue;
+    const hRef = refs.get(hWall);
+    if (!hRef?.startRef || !hRef?.endRef) continue;
+    let startDone = false;
+    let endDone = false;
+    for (const vWall of vWalls) {
+      const vRef = refs.get(vWall);
+      if (!vRef?.startRef || !vRef?.endRef) continue;
+      const half = wallThicknessHalf(vWall);
+      if (half <= 0) continue;
+      if (!startDone && (pointsEqual(hRef.startRef, vRef.startRef) || pointsEqual(hRef.startRef, vRef.endRef))) {
+        hWall.start[0] = Number(hWall.start[0]) - half;
+        startDone = true;
+      }
+      if (!endDone && (pointsEqual(hRef.endRef, vRef.startRef) || pointsEqual(hRef.endRef, vRef.endRef))) {
+        hWall.end[0] = Number(hWall.end[0]) + half;
+        endDone = true;
+      }
+      if (startDone && endDone) break;
+    }
+  }
+
+  // 一级：竖向墙；二级：横向墙；命中 start/end 后改一级墙 y
+  for (const vWall of vWalls) {
+    if (!Array.isArray(vWall?.start) || !Array.isArray(vWall?.end) || vWall.start.length < 2 || vWall.end.length < 2) continue;
+    const vRef = refs.get(vWall);
+    if (!vRef?.startRef || !vRef?.endRef) continue;
+    let startDone = false;
+    let endDone = false;
+    for (const hWall of hWalls) {
+      const hRef = refs.get(hWall);
+      if (!hRef?.startRef || !hRef?.endRef) continue;
+      const half = wallThicknessHalf(hWall);
+      if (half <= 0) continue;
+      if (!startDone && (pointsEqual(vRef.startRef, hRef.startRef) || pointsEqual(vRef.startRef, hRef.endRef))) {
+        vWall.start[1] = Number(vWall.start[1]) - half;
+        startDone = true;
+      }
+      if (!endDone && (pointsEqual(vRef.endRef, hRef.startRef) || pointsEqual(vRef.endRef, hRef.endRef))) {
+        vWall.end[1] = Number(vWall.end[1]) + half;
+        endDone = true;
+      }
+      if (startDone && endDone) break;
+    }
+  }
+}
+
+function preprocessFloorplanWallCorners(entry) {
+  const cloned = cloneFloorplanEntryForLoad(entry);
+  const floors = getFloorsFromEntry(cloned);
+  for (const floor of floors) {
+    const walls = Array.isArray(floor?.walls) ? floor.walls : [];
+    adjustWallCornerJointsByType(walls, "external");
+    adjustWallCornerJointsByType(walls, "internal");
+  }
+  return cloned;
+}
+
 function getEntryBBoxCm(entry) {
   const floors = getFloorsFromEntry(entry);
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -4808,8 +4915,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       windowOverridesByStyleKey = {};
       wallFaceOverridesByStyleKey = {};
     }
-    currentFloorplanEntry = entry;
-    currentFloorIndex = normalizeFloorIndex(entry, options.floorIndex);
+    const processedEntry = preprocessFloorplanWallCorners(entry);
+    currentFloorplanEntry = processedEntry;
+    currentFloorIndex = normalizeFloorIndex(processedEntry, options.floorIndex);
     if (!options.preserveStyleKeyOverride) floorplanStyleKeyOverride = null;
     floorSelectionEnabled = true;
     syncOtherOpacityUi();
