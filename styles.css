@@ -2283,6 +2283,34 @@ a.avatar:hover {
   margin-bottom: 8px;
 }
 
+.prop-surface-color-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.prop-surface-color-heading .prop-input-label {
+  margin-bottom: 0;
+}
+
+.prop-surface-color-reset {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+}
+
+.prop-surface-color-reset:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .prop-input-group--surface-color {
   margin-top: 12px;
 }

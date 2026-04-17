@@ -1549,6 +1549,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const propSurfaceOpacity = document.getElementById("propSurfaceOpacity");
   const propSurfaceTransmission = document.getElementById("propSurfaceTransmission");
   const propSurfaceIor = document.getElementById("propSurfaceIor");
+  const propSurfaceColorReset = document.getElementById("propSurfaceColorReset");
   const propSurfaceResetDefault = document.getElementById("propSurfaceResetDefault");
   let surfaceMaterialGridClickBound = false;
   let surfaceMaterialCategoryFilter = "全部";
@@ -7298,6 +7299,70 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     emitLayoutChanged();
   }
 
+  function overrideWithoutColor(ov) {
+    if (!ov || typeof ov !== "object") return null;
+    const next = { ...ov };
+    delete next.color;
+    return Object.keys(next).length ? next : null;
+  }
+
+  async function resetFloorplanSurfaceColorOnly() {
+    const sel = selectedFloorplanSurface;
+    if (!sel || !propSurfaceColor) return;
+    const scope = floorplanSurfaceScopeFromKind(sel.kind);
+    const fid = sel.floorLevelId;
+
+    const hasMultiSelectFloor = selectedRoomFloorIds.size > 0 && sel.kind === "allFloors" && sel.roomId;
+    const hasMultiSelectDoor = selectedDoorIds.size > 0 && sel.kind === "allDoors" && sel.doorId;
+    const hasMultiSelectWindow = selectedWindowIds.size > 0 && sel.kind === "allWindows" && sel.windowId;
+    const isWallFaceEdit = sel.kind === "wallFace";
+
+    if (hasMultiSelectFloor) {
+      for (const roomId of getSelectedRoomFloorIds()) {
+        setRoomFloorOverride(fid, roomId, overrideWithoutColor(getRoomFloorOverride(fid, roomId)));
+      }
+      syncRoomFloorOverridesToDesignJson();
+    } else if (sel.kind === "allFloors" && sel.roomId) {
+      setRoomFloorOverride(fid, sel.roomId, overrideWithoutColor(getRoomFloorOverride(fid, sel.roomId)));
+      syncRoomFloorOverridesToDesignJson();
+    } else if (hasMultiSelectDoor) {
+      for (const doorId of getSelectedDoorIds()) {
+        setDoorOverride(fid, doorId, overrideWithoutColor(getDoorOverride(fid, doorId)));
+      }
+      syncDoorOverridesToDesignJson();
+    } else if (sel.kind === "allDoors" && sel.doorId) {
+      setDoorOverride(fid, sel.doorId, overrideWithoutColor(getDoorOverride(fid, sel.doorId)));
+      syncDoorOverridesToDesignJson();
+    } else if (hasMultiSelectWindow) {
+      for (const windowId of getSelectedWindowIds()) {
+        setWindowOverride(fid, windowId, overrideWithoutColor(getWindowOverride(fid, windowId)));
+      }
+      syncWindowOverridesToDesignJson();
+    } else if (sel.kind === "allWindows" && sel.windowId) {
+      setWindowOverride(fid, sel.windowId, overrideWithoutColor(getWindowOverride(fid, sel.windowId)));
+      syncWindowOverridesToDesignJson();
+    } else if (isWallFaceEdit) {
+      const wallFacePairs = selectedWallFaceIds.size > 0
+        ? getSelectedWallFaces()
+        : [{ wallId: sel.wallId, faceId: sel.faceId }];
+      for (const { wallId, faceId } of wallFacePairs) {
+        setWallFaceOverride(fid, wallId, faceId, overrideWithoutColor(getWallFaceOverride(fid, wallId, faceId)));
+      }
+      syncWallFaceOverridesToDesignJson();
+    } else {
+      setFloorplanSurfaceGlobalOverride(
+        fid,
+        scope,
+        overrideWithoutColor(getFloorplanSurfaceGlobalOverride(fid, scope)),
+      );
+    }
+
+    await rebuildFloorplan3D();
+    await selectFloorplanSurface(sel);
+    if (historyReady) schedulePushHistory();
+    emitLayoutChanged();
+  }
+
   /**
    * 序列化设计基线（用于风格切换提示）
    * 只包含装饰物和材质覆盖，不包含家具
@@ -7831,6 +7896,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   });
   propSurfaceResetDefault?.addEventListener("click", () => {
     void resetFloorplanSurfaceToDefault();
+  });
+  propSurfaceColorReset?.addEventListener("click", () => {
+    void resetFloorplanSurfaceColorOnly();
   });
 
   container.addEventListener("dblclick", (e) => {
