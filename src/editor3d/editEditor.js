@@ -3304,6 +3304,32 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return [...set].sort((u, v) => u - v);
   }
 
+  /**
+   * 将墙体分段 box 的 UV 重映射到整堵墙统一坐标：
+   * U 沿墙长 [u0,u1]，V 沿墙高 [v0,v1]，避免门窗切段后贴图断裂。
+   * @param {import("three").BoxGeometry} geo
+   * @param {number} u0
+   * @param {number} u1
+   * @param {number} v0
+   * @param {number} v1
+   */
+  function remapWallBoxUvToWallSpan(geo, u0, u1, v0 = 0, v1 = 1) {
+    if (!geo?.attributes?.position || !geo?.attributes?.uv) return;
+    const w = Number(geo.parameters?.width);
+    const h = Number(geo.parameters?.height);
+    if (!Number.isFinite(w) || !Number.isFinite(h) || Math.abs(w) < 1e-9 || Math.abs(h) < 1e-9) return;
+    const pos = geo.attributes.position;
+    const uv = geo.attributes.uv;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      const tx = x / w + 0.5;
+      const ty = y / h + 0.5;
+      uv.setXY(i, u0 + tx * (u1 - u0), v0 + ty * (v1 - v0));
+    }
+    uv.needsUpdate = true;
+  }
+
   /** @param {number[][]} pts */
   function polygonSignedAreaCm2(pts) {
     if (!Array.isArray(pts) || pts.length < 3) return 0;
@@ -3638,10 +3664,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return { mats, baseMat };
     }
 
-    function pushWallSegmentMesh(parent, segLenWorld, tMid, matsOrSingle) {
+    function pushWallSegmentMesh(parent, segLenWorld, tMid, t0, t1, matsOrSingle) {
       const mxSeg = (x1 + tMid * (x2 - x1) - cx) * (s / 100);
       const mzSeg = (y1 + tMid * (y2 - y1) - cy) * (s / 100);
       const geo = new THREE.BoxGeometry(segLenWorld, hM, thickM);
+      remapWallBoxUvToWallSpan(geo, t0, t1, 0, 1);
       const mesh = new THREE.Mesh(geo, matsOrSingle);
       mesh.castShadow = true;
       mesh.receiveShadow = false;
@@ -3661,6 +3688,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const useRoomWalls = style && typeof getMaterialForKey === "function";
       if (!useRoomWalls) {
         const geo = new THREE.BoxGeometry(lenWorld, hM, thickM);
+        remapWallBoxUvToWallSpan(geo, 0, 1, 0, 1);
         const mat = makeWallMaterial();
         const mesh = new THREE.Mesh(geo, mat);
         mesh.castShadow = true;
@@ -3706,6 +3734,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const tMid = (it.t0 + it.t1) / 2;
         const { mats } = wallFaceMaterialsAtT(tMid);
         const geo = new THREE.BoxGeometry(lenWorld * (it.t1 - it.t0), hM, thickM);
+        remapWallBoxUvToWallSpan(geo, it.t0, it.t1, 0, 1);
         const mesh = new THREE.Mesh(geo, mats || makeWallMaterial());
         mesh.castShadow = true;
         mesh.receiveShadow = false;
@@ -3738,7 +3767,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const segLen = lenWorld * dt;
         if (segLen < 0.015) continue;
         const tMid = (it.t0 + it.t1) / 2;
-        pushWallSegmentMesh(group, segLen, tMid, matsForInterval(it.roomPosZ, it.roomNegZ));
+        pushWallSegmentMesh(group, segLen, tMid, it.t0, it.t1, matsForInterval(it.roomPosZ, it.roomNegZ));
       }
       return group.children.length ? group : null;
     }
@@ -3765,6 +3794,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const gw = xb - xa;
         const gh = yb - ya;
         const geo = new THREE.BoxGeometry(gw, gh, thickM);
+        const u0 = (xa + halfSpan) / lenWorld;
+        const u1 = (xb + halfSpan) / lenWorld;
+        const v0 = ya / hM;
+        const v1 = yb / hM;
+        remapWallBoxUvToWallSpan(geo, u0, u1, v0, v1);
         const tAlong = (cxLocal + halfSpan) / lenWorld;
         const { mats } = wallFaceMaterialsAtT(tAlong);
         const mat = mats || makeWallMaterial();
