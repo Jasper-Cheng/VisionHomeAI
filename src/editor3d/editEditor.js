@@ -5739,6 +5739,49 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   // ── 预算明细弹出窗 ────────────────────────────────────────────────
+  /**
+   * 从预算/空间弹窗条目选中对应 3D 家具/装饰；若目标在其他楼层，先切到该层再选中
+   * @param {THREE.Group | null | undefined} group
+   */
+  function selectFurnitureFromPopupItem(group) {
+    if (!group || !group.userData?.isFurniture) return;
+    const fid = String(group.userData.floorId ?? "").trim();
+    if (fid && currentFloorplanEntry) {
+      const floors = getFloorsFromEntry(currentFloorplanEntry);
+      const idx = floors.findIndex((fl) => normalizeFloorKey(fl?.id ?? "") === normalizeFloorKey(fid));
+      if (idx >= 0) {
+        const cur = floorSelectionEnabled ? normalizeFloorIndex(currentFloorplanEntry, currentFloorIndex) : -1;
+        if (!floorSelectionEnabled || cur !== idx) {
+          floorSelectionEnabled = true;
+          currentFloorIndex = idx;
+          syncOtherOpacityUi();
+          setFloorLevelsVisible();
+          applyFloorLevelSelectionChange();
+        }
+      }
+    }
+    selectFurniture(group);
+  }
+
+  /**
+   * @param {HTMLElement} rowEl
+   * @param {THREE.Group | null | undefined} group
+   */
+  function bindPopupRowSelectToFurniture(rowEl, group) {
+    if (!rowEl || !group?.userData?.isFurniture) return;
+    rowEl.classList.add("is-selectable");
+    rowEl.tabIndex = 0;
+    rowEl.setAttribute("role", "button");
+    rowEl.addEventListener("click", () => {
+      selectFurnitureFromPopupItem(group);
+    });
+    rowEl.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      selectFurnitureFromPopupItem(group);
+    });
+  }
+
   function setBomArrow(open) {
     const arrow = document.getElementById("bomArrow");
     if (arrow) arrow.textContent = open ? "▼" : "▲";
@@ -5774,9 +5817,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         markup = det.skuMarkup != null && Number.isFinite(det.skuMarkup) ? det.skuMarkup : 0;
       }
       if (tally.has(key)) {
-        tally.get(key).count += 1;
+        const hit = tally.get(key);
+        hit.count += 1;
+        hit.groups.push(g);
       } else {
-        tally.set(key, { name, line, count: 1, skuName, markup, baseUnit });
+        tally.set(key, { name, line, count: 1, skuName, markup, baseUnit, groups: [g] });
       }
     });
 
@@ -5794,7 +5839,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const fmtBomYuan = (n) =>
       `¥${n.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    for (const { name, line, count, skuName, markup, baseUnit } of tally.values()) {
+    for (const { name, line, count, skuName, markup, baseUnit, groups } of tally.values()) {
       const li = document.createElement("li");
       li.className = "bom-popup__item";
       const label = skuName
@@ -5846,6 +5891,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
       li.appendChild(nameCol);
       li.appendChild(priceCol);
+      bindPopupRowSelectToFurniture(li, Array.isArray(groups) && groups.length ? groups[0] : null);
       list.appendChild(li);
     }
 
@@ -5925,7 +5971,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const areaCm2 = hw * hh * 4; // footprint 是半尺寸，乘 4 才是实际平方厘米
       const pct = floorAreaCm2 > 0 ? (areaCm2 / floorAreaCm2) * 100 : 0;
 
-      items.push({ name, hw, hh, areaCm2, pct, isDecoration });
+      items.push({ name, hw, hh, areaCm2, pct, isDecoration, group: g });
     });
 
     // 更新总面积显示
@@ -5946,7 +5992,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 按面积降序排列
     items.sort((a, b) => b.areaCm2 - a.areaCm2);
 
-    for (const { name, hw, hh, areaCm2, pct, isDecoration } of items) {
+    for (const { name, hw, hh, areaCm2, pct, isDecoration, group } of items) {
       const li = document.createElement("li");
       li.className = "space-popup__item";
 
@@ -5973,6 +6019,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
       li.appendChild(nameCol);
       li.appendChild(percentCol);
+      bindPopupRowSelectToFurniture(li, group);
       list.appendChild(li);
     }
   }

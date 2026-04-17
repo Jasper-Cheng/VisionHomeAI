@@ -1333,6 +1333,14 @@ a.avatar:hover {
   gap: 10px;
 }
 .bom-popup__item:hover { background: rgba(255,255,255,0.05); }
+.bom-popup__item.is-selectable {
+  cursor: pointer;
+}
+.bom-popup__item.is-selectable:focus-visible {
+  outline: 1px solid rgba(109, 92, 255, 0.75);
+  outline-offset: -1px;
+  background: rgba(109, 92, 255, 0.14);
+}
 
 .bom-popup__item-name {
   flex: 1;
@@ -1483,6 +1491,14 @@ a.avatar:hover {
   gap: 10px;
 }
 .space-popup__item:hover { background: rgba(255,255,255,0.05); }
+.space-popup__item.is-selectable {
+  cursor: pointer;
+}
+.space-popup__item.is-selectable:focus-visible {
+  outline: 1px solid rgba(109, 92, 255, 0.75);
+  outline-offset: -1px;
+  background: rgba(109, 92, 255, 0.14);
+}
 
 .space-popup__item-name {
   flex: 1;
