@@ -518,31 +518,31 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    */
   const RENDER_QUALITY_CONFIGS = {
     standard: {
-      pixelRatioScale: 0.85,
-      pixelRatioCap: 1.5,
+      pixelRatioScale: 0.65,
+      pixelRatioCap: 1.0,
       label: "标准",
-      shadowMapSize: 1024,
-      shadowRadius: 1.5,
-      shadowType: THREE.PCFShadowMap,
-      anisotropy: 2,
+      shadowMapSize: 512,
+      shadowRadius: 0,
+      shadowType: THREE.BasicShadowMap,
+      anisotropy: 1,
     },
     high: {
-      pixelRatioScale: 1.35,
-      pixelRatioCap: 2.2,
+      pixelRatioScale: 1.15,
+      pixelRatioCap: 1.8,
       label: "高精度",
       shadowMapSize: 2048,
       shadowRadius: 3,
       shadowType: THREE.PCFSoftShadowMap,
-      anisotropy: 6,
+      anisotropy: 8,
     },
     ultra: {
-      pixelRatioScale: 1.9,
-      pixelRatioCap: 3,
+      pixelRatioScale: 2.2,
+      pixelRatioCap: 3.5,
       label: "超清",
       shadowMapSize: 4096,
-      shadowRadius: 4,
+      shadowRadius: 5,
       shadowType: THREE.PCFSoftShadowMap,
-      anisotropy: 12,
+      anisotropy: 16,
     },
   };
   /** @type {"standard" | "high" | "ultra"} */
@@ -551,7 +551,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const cfg = RENDER_QUALITY_CONFIGS[renderQualityMode] || RENDER_QUALITY_CONFIGS.standard;
     const baseDpr = Math.max(1, Number(window.devicePixelRatio || 1));
     const scaled = baseDpr * (Number(cfg.pixelRatioScale) || 1);
-    const nextPixelRatio = Math.max(0.75, Math.min(scaled, Number(cfg.pixelRatioCap) || 2));
+    const nextPixelRatio = Math.max(0.5, Math.min(scaled, Number(cfg.pixelRatioCap) || 2));
     renderer.setPixelRatio(nextPixelRatio);
   }
   function applyRendererQualityDetails() {
