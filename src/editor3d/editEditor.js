@@ -2227,6 +2227,34 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const fid = String(floorLevelId ?? "").trim();
     if (!fid) return;
 
+    if (scope === "wallFace") {
+      const wallBoxes = new Map();
+      floorplanRoot.traverse((o) => {
+        if (!o.isMesh || !o.material) return;
+        if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
+        const meshWallId = String(o.userData.floorplanWallId ?? "").trim();
+        if (!meshWallId) return;
+        if (wallFaceFilter && wallFaceFilter.size > 0 && !wallFaceFilter.has(meshWallId)) return;
+        let box = wallBoxes.get(meshWallId);
+        if (!box) {
+          box = new THREE.Box3();
+          wallBoxes.set(meshWallId, box);
+        }
+        box.expandByObject(o);
+      });
+      for (const box of wallBoxes.values()) {
+        if (box.isEmpty()) continue;
+        const helper = new THREE.Box3Helper(box, 0x00aaff);
+        helper.material.transparent = true;
+        helper.material.opacity = 0.85;
+        helper.material.depthTest = true;
+        helper.material.depthWrite = false;
+        scene.add(helper);
+        floorplanSurfaceBoxHelpers.push(helper);
+      }
+      return;
+    }
+
     // 收集匹配的网格并创建选中框
     floorplanRoot.traverse((o) => {
       if (!o.isMesh || !o.material) return;
