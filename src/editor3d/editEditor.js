@@ -2211,6 +2211,68 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return line;
   }
 
+  /**
+   * 将同一 wallId 的多个分段 mesh 合并为“单一墙面线框”（仅当前面，不含上下左右）。
+   * @param {import("three").Mesh[]} meshes
+   * @param {"face_a" | "face_b" | null} faceId
+   * @returns {import("three").LineLoop | null}
+   */
+  function createMergedWallFaceHelper(meshes, faceId) {
+    if (!Array.isArray(meshes) || meshes.length === 0) return null;
+    const base = meshes.find((m) => m?.isMesh);
+    if (!base) return null;
+    base.updateWorldMatrix(true, false);
+    const worldToLocal = new THREE.Matrix4().copy(base.matrixWorld).invert();
+    const localToWorld = base.matrixWorld.clone();
+    const v = new THREE.Vector3();
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (const mesh of meshes) {
+      if (!mesh?.isMesh || !mesh.geometry) continue;
+      mesh.updateWorldMatrix(true, false);
+      if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+      const bb = mesh.geometry.boundingBox;
+      if (!bb) continue;
+      for (const x of [bb.min.x, bb.max.x]) {
+        for (const y of [bb.min.y, bb.max.y]) {
+          for (const z of [bb.min.z, bb.max.z]) {
+            v.set(x, y, z).applyMatrix4(mesh.matrixWorld).applyMatrix4(worldToLocal);
+            minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x);
+            minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
+            minZ = Math.min(minZ, v.z); maxZ = Math.max(maxZ, v.z);
+          }
+        }
+      }
+    }
+    if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(minZ)) return null;
+    const zFace = faceId === "face_b" ? minZ : maxZ;
+    const pts = faceId === "face_b"
+      ? [
+          new THREE.Vector3(maxX, minY, zFace),
+          new THREE.Vector3(minX, minY, zFace),
+          new THREE.Vector3(minX, maxY, zFace),
+          new THREE.Vector3(maxX, maxY, zFace),
+        ]
+      : [
+          new THREE.Vector3(minX, minY, zFace),
+          new THREE.Vector3(maxX, minY, zFace),
+          new THREE.Vector3(maxX, maxY, zFace),
+          new THREE.Vector3(minX, maxY, zFace),
+        ];
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x00aaff,
+      transparent: true,
+      opacity: 0.9,
+      depthTest: true,
+      depthWrite: false,
+    });
+    const loop = new THREE.LineLoop(geo, mat);
+    loop.applyMatrix4(localToWorld);
+    return loop;
+  }
+
   function setFloorplanGlobalSurfaceHighlight(floorLevelId, scope, on, roomIdFilter, doorIdFilter, windowIdFilter, wallFaceFilter) {
     // 移除旧的选中框
     floorplanSurfaceBoxHelpers.forEach((helper) => {
@@ -2232,29 +2294,26 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!fid) return;
 
     if (scope === "wallFace") {
-      const wallBoxes = new Map();
+      /** @type {Map<string, import("three").Mesh[]>} */
+      const wallMeshes = new Map();
       floorplanRoot.traverse((o) => {
         if (!o.isMesh || !o.material) return;
         if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
         const meshWallId = String(o.userData.floorplanWallId ?? "").trim();
         if (!meshWallId) return;
         if (wallFaceFilter && wallFaceFilter.size > 0 && !wallFaceFilter.has(meshWallId)) return;
-        let box = wallBoxes.get(meshWallId);
-        if (!box) {
-          box = new THREE.Box3();
-          wallBoxes.set(meshWallId, box);
-        }
-        box.expandByObject(o);
+        if (!wallMeshes.has(meshWallId)) wallMeshes.set(meshWallId, []);
+        wallMeshes.get(meshWallId).push(o);
       });
-      for (const box of wallBoxes.values()) {
-        if (box.isEmpty()) continue;
-        const helper = new THREE.Box3Helper(box, 0x00aaff);
-        helper.material.transparent = true;
-        helper.material.opacity = 0.85;
-        helper.material.depthTest = true;
-        helper.material.depthWrite = false;
-        scene.add(helper);
-        floorplanSurfaceBoxHelpers.push(helper);
+      for (const [wallId, meshes] of wallMeshes.entries()) {
+        const faceIds = wallFaceFilter?.get(wallId);
+        const targets = faceIds && faceIds.size > 0 ? [...faceIds] : ["face_a", "face_b"];
+        for (const faceId of targets) {
+          const helper = createMergedWallFaceHelper(meshes, faceId);
+          if (!helper) continue;
+          scene.add(helper);
+          floorplanSurfaceBoxHelpers.push(helper);
+        }
       }
       return;
     }
