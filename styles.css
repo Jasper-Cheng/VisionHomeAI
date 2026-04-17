@@ -2155,15 +2155,33 @@ a.avatar:hover {
 }
 
 .prop-surface-material-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   width: 100%;
   max-height: min(220px, 36vh);
   overflow-y: auto;
   padding: 2px;
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+.prop-surface-material-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prop-surface-material-group__title {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.prop-surface-material-group__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
 }
 
 .prop-surface-material-grid::-webkit-scrollbar {

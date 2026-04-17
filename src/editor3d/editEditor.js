@@ -1544,6 +1544,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const propSurfaceUvScaleY = document.getElementById("propSurfaceUvScaleY");
   const propSurfaceTextureRotation = document.getElementById("propSurfaceTextureRotation");
   const propSurfaceGlassFields = document.getElementById("propSurfaceGlassFields");
+  const propSurfacePbrFields = document.getElementById("propSurfacePbrFields");
   const propSurfaceOpacity = document.getElementById("propSurfaceOpacity");
   const propSurfaceTransmission = document.getElementById("propSurfaceTransmission");
   const propSurfaceIor = document.getElementById("propSurfaceIor");
@@ -6523,6 +6524,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {boolean} [isWindowSurface] 本层全部窗洞玻璃：显示 Opacity / Transmission / IOR
    */
   function syncSurfacePbrInputs(ov, selectVal, lib, isWindowSurface) {
+    const matId = String(selectVal ?? "").trim();
+    const displayName = materialPresetDisplayName(matId, lib, ov?.textureAlbedo);
+    // 面板上显示为“无”时，按“无材质”处理：隐藏材质参数区
+    const hasSelectedMaterial = matId.length > 0 && displayName !== null;
+    if (propSurfacePbrFields) propSurfacePbrFields.hidden = !hasSelectedMaterial;
+    if (!hasSelectedMaterial) {
+      if (propSurfaceGlassFields) propSurfaceGlassFields.hidden = true;
+      if (propSurfaceUvTextureSection) propSurfaceUvTextureSection.hidden = true;
+      return;
+    }
+
     const base = selectVal && lib[selectVal] ? lib[selectVal] : null;
     const r =
       ov?.roughness != null && Number.isFinite(Number(ov.roughness))
@@ -6551,6 +6563,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (propSurfaceMetalness) propSurfaceMetalness.value = String(Math.round(m * 1000) / 1000);
 
     if (propSurfaceGlassFields) propSurfaceGlassFields.hidden = !isWindowSurface;
+    if (propSurfaceUvTextureSection) propSurfaceUvTextureSection.hidden = isWindowSurface;
     if (isWindowSurface && propSurfaceOpacity && propSurfaceTransmission && propSurfaceIor) {
       const oOp =
         ov?.opacity != null && Number.isFinite(Number(ov.opacity))
@@ -6580,6 +6593,29 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (propSurfaceUvScaleY) propSurfaceUvScaleY.value = String(Math.round(us[1] * 1000) / 1000);
       if (propSurfaceTextureRotation) propSurfaceTextureRotation.value = String(Math.round(rot * 10) / 10);
     }
+  }
+
+  function surfaceTextureCategoryLabel(fileName) {
+    const name = String(fileName ?? "").toLowerCase();
+    if (/(wood|parquet|plank|laminate|cabinet|table)/.test(name)) return "木质";
+    if (/(brick|pavement|sandstone|asphalt|concrete|gravel)/.test(name)) return "石材 / 砖石";
+    if (/(metal|rust|shutter|plate)/.test(name)) return "金属";
+    if (/(tile|marble|linoleum)/.test(name)) return "瓷砖 / 石纹";
+    if (/(wall|plaster|paint)/.test(name)) return "墙面";
+    return "其他";
+  }
+
+  function groupSurfaceTextureFiles(files) {
+    const order = ["木质", "石材 / 砖石", "金属", "瓷砖 / 石纹", "墙面", "其他"];
+    const map = new Map(order.map((label) => [label, []]));
+    for (const fn of files) {
+      const label = surfaceTextureCategoryLabel(fn);
+      if (!map.has(label)) map.set(label, []);
+      map.get(label).push(fn);
+    }
+    return order
+      .map((label) => ({ label, files: map.get(label) || [] }))
+      .filter((group) => group.files.length > 0);
   }
 
   function ensureSurfaceMaterialGridClick() {
@@ -6917,21 +6953,34 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           : "";
 
       propSurfaceMaterialGrid.replaceChildren();
-      for (const fn of files) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "prop-surface-material__cell";
-        btn.dataset.albedoFile = fn;
-        if (effectiveBasename && effectiveBasename === fn) {
-          btn.classList.add("is-selected");
+      const groupedFiles = groupSurfaceTextureFiles(files);
+      for (const group of groupedFiles) {
+        const section = document.createElement("div");
+        section.className = "prop-surface-material-group";
+        const title = document.createElement("div");
+        title.className = "prop-surface-material-group__title";
+        title.textContent = group.label;
+        section.appendChild(title);
+        const grid = document.createElement("div");
+        grid.className = "prop-surface-material-group__grid";
+        for (const fn of group.files) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "prop-surface-material__cell";
+          btn.dataset.albedoFile = fn;
+          if (effectiveBasename && effectiveBasename === fn) {
+            btn.classList.add("is-selected");
+          }
+          btn.title = fn;
+          const img = document.createElement("img");
+          img.src = resolveStyleTextureUrl(`textures/${fn}`);
+          img.alt = "";
+          img.loading = "lazy";
+          btn.appendChild(img);
+          grid.appendChild(btn);
         }
-        btn.title = fn;
-        const img = document.createElement("img");
-        img.src = resolveStyleTextureUrl(`textures/${fn}`);
-        img.alt = "";
-        img.loading = "lazy";
-        btn.appendChild(img);
-        propSurfaceMaterialGrid.appendChild(btn);
+        section.appendChild(grid);
+        propSurfaceMaterialGrid.appendChild(section);
       }
       ensureSurfaceMaterialGridClick();
     }
