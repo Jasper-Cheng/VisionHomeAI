@@ -2155,9 +2155,9 @@ a.avatar:hover {
 }
 
 .prop-surface-material-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
   width: 100%;
   max-height: min(220px, 36vh);
   overflow-y: auto;
@@ -2166,22 +2166,34 @@ a.avatar:hover {
   -ms-overflow-style: none;
 }
 
-.prop-surface-material-group {
+.prop-surface-material-filters {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 6px;
+  margin-bottom: 8px;
 }
 
-.prop-surface-material-group__title {
+.prop-surface-material-filter {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.72);
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.58);
+  cursor: pointer;
 }
 
-.prop-surface-material-group__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
-  gap: 8px;
+.prop-surface-material-filter:hover {
+  border-color: rgba(109, 92, 255, 0.45);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.prop-surface-material-filter.is-active {
+  border-color: rgba(109, 92, 255, 0.95);
+  background: rgba(109, 92, 255, 0.2);
+  color: rgba(235, 233, 255, 0.98);
 }
 
 .prop-surface-material-grid::-webkit-scrollbar {

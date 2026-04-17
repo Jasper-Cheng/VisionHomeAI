@@ -1534,6 +1534,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const propSurfaceMaterial = document.getElementById("propSurfaceMaterial");
   const propSurfaceTextureAlbedo = document.getElementById("propSurfaceTextureAlbedo");
   const propSurfaceMaterialName = document.getElementById("propSurfaceMaterialName");
+  const propSurfaceMaterialFilters = document.getElementById("propSurfaceMaterialFilters");
   const propSurfaceMaterialGrid = document.getElementById("propSurfaceMaterialGrid");
   const propSurfaceMaterialSection = document.getElementById("propSurfaceMaterialSection");
   const propSurfaceUvTextureSection = document.getElementById("propSurfaceUvTextureSection");
@@ -1550,6 +1551,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const propSurfaceIor = document.getElementById("propSurfaceIor");
   const propSurfaceResetDefault = document.getElementById("propSurfaceResetDefault");
   let surfaceMaterialGridClickBound = false;
+  let surfaceMaterialCategoryFilter = "全部";
   /** 材质预设「清除」点击后下一次 commit 需写入 materialPresetCleared */
   let pendingSurfaceMaterialPresetClear = false;
   let colorTextureIndexPromise = null;
@@ -6618,6 +6620,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       .filter((group) => group.files.length > 0);
   }
 
+  function listSurfaceTextureCategories(files) {
+    const groups = groupSurfaceTextureFiles(files);
+    return ["全部", ...groups.map((g) => g.label)];
+  }
+
   function ensureSurfaceMaterialGridClick() {
     if (
       surfaceMaterialGridClickBound ||
@@ -6951,38 +6958,53 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         : selectVal && lib[selectVal]
           ? getDefAlbedoBasename(lib[selectVal])
           : "";
+      const categories = listSurfaceTextureCategories(files);
+      if (!categories.includes(surfaceMaterialCategoryFilter)) {
+        surfaceMaterialCategoryFilter = "全部";
+      }
 
-      propSurfaceMaterialGrid.replaceChildren();
-      const groupedFiles = groupSurfaceTextureFiles(files);
-      for (const group of groupedFiles) {
-        const section = document.createElement("div");
-        section.className = "prop-surface-material-group";
-        const title = document.createElement("div");
-        title.className = "prop-surface-material-group__title";
-        title.textContent = group.label;
-        section.appendChild(title);
-        const grid = document.createElement("div");
-        grid.className = "prop-surface-material-group__grid";
-        for (const fn of group.files) {
+      if (propSurfaceMaterialFilters) {
+        propSurfaceMaterialFilters.replaceChildren();
+        for (const label of categories) {
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "prop-surface-material__cell";
-          btn.dataset.albedoFile = fn;
-          if (effectiveBasename && effectiveBasename === fn) {
-            btn.classList.add("is-selected");
-          }
-          btn.title = fn;
-          const img = document.createElement("img");
-          img.src = resolveStyleTextureUrl(`textures/${fn}`);
-          img.alt = "";
-          img.loading = "lazy";
-          btn.appendChild(img);
-          grid.appendChild(btn);
+          btn.className = "prop-surface-material-filter" + (label === surfaceMaterialCategoryFilter ? " is-active" : "");
+          btn.textContent = label;
+          btn.addEventListener("click", () => {
+            if (surfaceMaterialCategoryFilter === label) return;
+            surfaceMaterialCategoryFilter = label;
+            if (selectedFloorplanSurface) {
+              void syncPropertiesPanelForFloorplanSurface(selectedFloorplanSurface);
+            }
+          });
+          propSurfaceMaterialFilters.appendChild(btn);
         }
-        section.appendChild(grid);
-        propSurfaceMaterialGrid.appendChild(section);
+      }
+
+      propSurfaceMaterialGrid.replaceChildren();
+      const visibleFiles =
+        surfaceMaterialCategoryFilter === "全部"
+          ? files
+          : files.filter((fn) => surfaceTextureCategoryLabel(fn) === surfaceMaterialCategoryFilter);
+      for (const fn of visibleFiles) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "prop-surface-material__cell";
+        btn.dataset.albedoFile = fn;
+        if (effectiveBasename && effectiveBasename === fn) {
+          btn.classList.add("is-selected");
+        }
+        btn.title = fn;
+        const img = document.createElement("img");
+        img.src = resolveStyleTextureUrl(`textures/${fn}`);
+        img.alt = "";
+        img.loading = "lazy";
+        btn.appendChild(img);
+        propSurfaceMaterialGrid.appendChild(btn);
       }
       ensureSurfaceMaterialGridClick();
+    } else if (propSurfaceMaterialFilters) {
+      propSurfaceMaterialFilters.replaceChildren();
     }
   }
 
