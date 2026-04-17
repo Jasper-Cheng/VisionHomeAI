@@ -2307,7 +2307,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       });
       for (const [wallId, meshes] of wallMeshes.entries()) {
         const faceIds = wallFaceFilter?.get(wallId);
-        const targets = faceIds && faceIds.size > 0 ? [...faceIds] : ["face_a", "face_b"];
+        let targets = ["face_a", "face_b"];
+        if (faceIds && faceIds.size > 0) {
+          targets = [];
+          for (const fidSel of faceIds) {
+            if (fidSel === null) {
+              targets.push("face_a", "face_b");
+            } else {
+              targets.push(fidSel);
+            }
+          }
+        }
+        targets = [...new Set(targets)];
         for (const faceId of targets) {
           const helper = createMergedWallFaceHelper(meshes, faceId);
           if (!helper) continue;
