@@ -3837,7 +3837,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     })();
   }
 
-  function buildDoorFillGroup(door, wall, cx, cy, s, defaultHeightCm, floorOpacity, styleDoorMat, floorLevelIdStr) {
+  function buildDoorFillGroup(door, wall, floorWalls, cx, cy, s, defaultHeightCm, floorOpacity, styleDoorMat, floorLevelIdStr) {
     if (!door || !wall) return null;
     const ns =
       door.style != null && typeof door.style === "object" && !Array.isArray(door.style)
@@ -3847,15 +3847,27 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const wcm = Number(door.width);
     const hcm = Number(door.height);
     if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) return null;
-    const x1 = snap(Number(wall.start[0]));
-    const y1 = snap(Number(wall.start[1]));
-    const x2 = snap(Number(wall.end[0]));
-    const y2 = snap(Number(wall.end[1]));
+    const x1Raw = snap(Number(wall.start[0]));
+    const y1Raw = snap(Number(wall.start[1]));
+    const x2Raw = snap(Number(wall.end[0]));
+    const y2Raw = snap(Number(wall.end[1]));
+    const dxcRaw = x2Raw - x1Raw;
+    const dycRaw = y2Raw - y1Raw;
+    const lenCmRaw = Math.hypot(dxcRaw, dycRaw);
+    if (lenCmRaw < 1e-9) return null;
+    const ux = dxcRaw / lenCmRaw;
+    const uy = dycRaw / lenCmRaw;
+    const { startExtCm, endExtCm } = computeWallEndpointExtensionsCm(wall, floorWalls || []);
+    const x1 = x1Raw - ux * startExtCm;
+    const y1 = y1Raw - uy * startExtCm;
+    const x2 = x2Raw + ux * endExtCm;
+    const y2 = y2Raw + uy * endExtCm;
     const dx = (x2 - x1) * (s / 100);
     const dz = (y2 - y1) * (s / 100);
     const lenWorld = Math.hypot(dx, dz);
     if (lenWorld < 1e-9) return null;
-    const lenCm = Math.hypot(x2 - x1, y2 - y1);
+    const lenCm = lenCmRaw + startExtCm + endExtCm;
+    if (!Number.isFinite(lenCm) || lenCm < 1e-9) return null;
     const hM = defaultHeightCm / 100;
     const wM = (wcm * s) / 100;
     const hDoor = Math.min((hcm * s) / 100, hM);
@@ -3864,7 +3876,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
     const thickM = Math.max(0.03, thickMRaw);
     const halfLen = lenWorld / 2;
-    const centerX = -halfLen + (pos / lenCm) * lenWorld;
+    const centerX = -halfLen + ((startExtCm + pos) / lenCm) * lenWorld;
     const mx = ((x1 + x2) / 2 - cx) * (s / 100);
     const mz = ((y1 + y2) / 2 - cy) * (s / 100);
     const rotY = Math.atan2(dz, dx);
@@ -4008,7 +4020,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /**
    * 窗洞玻璃片（与墙体洞口一致）；无 style 时 normalizeWindowStyle 为白 clear
    */
-  function buildWindowGlassGroup(win, wall, cx, cy, s, defaultHeightCm, floorOpacity, styleWinMat, floorLevelIdStr) {
+  function buildWindowGlassGroup(win, wall, floorWalls, cx, cy, s, defaultHeightCm, floorOpacity, styleWinMat, floorLevelIdStr) {
     if (!win || !wall) return null;
     const ns =
       win.style != null && typeof win.style === "object" && !Array.isArray(win.style)
@@ -4020,15 +4032,27 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const altCm = Number(win.altitude ?? win.alt ?? win.sillHeightCm ?? 0);
     if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) return null;
     if (!Number.isFinite(altCm)) return null;
-    const x1 = snap(Number(wall.start[0]));
-    const y1 = snap(Number(wall.start[1]));
-    const x2 = snap(Number(wall.end[0]));
-    const y2 = snap(Number(wall.end[1]));
+    const x1Raw = snap(Number(wall.start[0]));
+    const y1Raw = snap(Number(wall.start[1]));
+    const x2Raw = snap(Number(wall.end[0]));
+    const y2Raw = snap(Number(wall.end[1]));
+    const dxcRaw = x2Raw - x1Raw;
+    const dycRaw = y2Raw - y1Raw;
+    const lenCmRaw = Math.hypot(dxcRaw, dycRaw);
+    if (lenCmRaw < 1e-9) return null;
+    const ux = dxcRaw / lenCmRaw;
+    const uy = dycRaw / lenCmRaw;
+    const { startExtCm, endExtCm } = computeWallEndpointExtensionsCm(wall, floorWalls || []);
+    const x1 = x1Raw - ux * startExtCm;
+    const y1 = y1Raw - uy * startExtCm;
+    const x2 = x2Raw + ux * endExtCm;
+    const y2 = y2Raw + uy * endExtCm;
     const dx = (x2 - x1) * (s / 100);
     const dz = (y2 - y1) * (s / 100);
     const lenWorld = Math.hypot(dx, dz);
     if (lenWorld < 1e-9) return null;
-    const lenCm = Math.hypot(x2 - x1, y2 - y1);
+    const lenCm = lenCmRaw + startExtCm + endExtCm;
+    if (!Number.isFinite(lenCm) || lenCm < 1e-9) return null;
     const hM = defaultHeightCm / 100;
     const wM = (wcm * s) / 100;
     const y0 = (altCm * s) / 100;
@@ -4039,7 +4063,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
     const thickM = Math.max(0.03, thickMRaw);
     const halfLen = lenWorld / 2;
-    const centerX = -halfLen + (pos / lenCm) * lenWorld;
+    const centerX = -halfLen + ((startExtCm + pos) / lenCm) * lenWorld;
     const mx = ((x1 + x2) / 2 - cx) * (s / 100);
     const mz = ((y1 + y2) / 2 - cy) * (s / 100);
     const rotY = Math.atan2(dz, dx);
@@ -5130,7 +5154,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (!w) continue;
         const dk = resolveDoorMaterialKey(style, d);
         const doorMat = dk ? getMaterialForKey(dk) : null;
-        const fillG = buildDoorFillGroup(d, w, cx, cy, s, defaultH, opacity, doorMat, fidRaw);
+        const fillG = buildDoorFillGroup(d, w, fl.walls || [], cx, cy, s, defaultH, opacity, doorMat, fidRaw);
         if (fillG) floorG.add(fillG);
       }
       for (const win of fl.windows || []) {
@@ -5139,7 +5163,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (!w) continue;
         const wink = resolveWindowMaterialKey(style, win);
         const winMat = wink ? getMaterialForKey(wink, { forGlass: true }) : null;
-        const winG = buildWindowGlassGroup(win, w, cx, cy, s, defaultH, opacity, winMat, fidRaw);
+        const winG = buildWindowGlassGroup(win, w, fl.walls || [], cx, cy, s, defaultH, opacity, winMat, fidRaw);
         if (winG) floorG.add(winG);
       }
             // 尺寸/名称：每层都生成，用 visible 控制开关与「仅选中楼层时只显示当前层」（点击开关不 rebuild）
