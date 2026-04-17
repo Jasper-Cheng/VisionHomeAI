@@ -7251,11 +7251,51 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   async function resetFloorplanSurfaceToDefault() {
     const sel = selectedFloorplanSurface;
     if (!sel || !propSurfaceColor || !propSurfaceMaterial) return;
+    pendingSurfaceMaterialPresetClear = false;
     const scope = floorplanSurfaceScopeFromKind(sel.kind);
-    setFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope, null);
+    const fid = sel.floorLevelId;
+
+    const hasMultiSelectFloor = selectedRoomFloorIds.size > 0 && sel.kind === "allFloors" && sel.roomId;
+    const hasMultiSelectDoor = selectedDoorIds.size > 0 && sel.kind === "allDoors" && sel.doorId;
+    const hasMultiSelectWindow = selectedWindowIds.size > 0 && sel.kind === "allWindows" && sel.windowId;
+    const isWallFaceEdit = sel.kind === "wallFace";
+
+    if (hasMultiSelectFloor) {
+      const roomIds = getSelectedRoomFloorIds();
+      setRoomFloorOverridesForMultiple(fid, roomIds, null);
+      syncRoomFloorOverridesToDesignJson();
+    } else if (sel.kind === "allFloors" && sel.roomId) {
+      setRoomFloorOverride(fid, sel.roomId, null);
+      syncRoomFloorOverridesToDesignJson();
+    } else if (hasMultiSelectDoor) {
+      const doorIds = getSelectedDoorIds();
+      setDoorOverridesForMultiple(fid, doorIds, null);
+      syncDoorOverridesToDesignJson();
+    } else if (sel.kind === "allDoors" && sel.doorId) {
+      setDoorOverride(fid, sel.doorId, null);
+      syncDoorOverridesToDesignJson();
+    } else if (hasMultiSelectWindow) {
+      const windowIds = getSelectedWindowIds();
+      setWindowOverridesForMultiple(fid, windowIds, null);
+      syncWindowOverridesToDesignJson();
+    } else if (sel.kind === "allWindows" && sel.windowId) {
+      setWindowOverride(fid, sel.windowId, null);
+      syncWindowOverridesToDesignJson();
+    } else if (isWallFaceEdit) {
+      const wallFacePairs = selectedWallFaceIds.size > 0
+        ? getSelectedWallFaces()
+        : [{ wallId: sel.wallId, faceId: sel.faceId }];
+      setWallFaceOverridesForMultiple(fid, wallFacePairs, null);
+      syncWallFaceOverridesToDesignJson();
+    } else {
+      setFloorplanSurfaceGlobalOverride(fid, scope, null);
+    }
+
+    // 清空覆盖后必须重建：否则 mesh 仍可能保留上一次 override 材质实例
     await rebuildFloorplan3D();
     await selectFloorplanSurface(sel);
     if (historyReady) schedulePushHistory();
+    emitLayoutChanged();
   }
 
   /**
