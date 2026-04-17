@@ -3026,12 +3026,62 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const ex = snap(Number(wall.end[0]));
     const ey = snap(Number(wall.end[1]));
     if (![sx, sy, ex, ey].every((v) => Number.isFinite(v))) return { startExtCm: 0, endExtCm: 0 };
+    const wdx = ex - sx;
+    const wdy = ey - sy;
+    const wlen = Math.hypot(wdx, wdy);
+    if (wlen < 1e-6) return { startExtCm: 0, endExtCm: 0 };
+    const ux = wdx / wlen;
+    const uy = wdy / wlen;
 
     let startExtCm = 0;
     let endExtCm = 0;
+    let startTrimCm = 0;
+    let endTrimCm = 0;
     const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
+    const tMin = WALL_JOIN_SEGMENT_INTERIOR_T;
     const startMiter = isLCornerMiterAtPlanPoint(sx, sy, floorWalls);
     const endMiter = isLCornerMiterAtPlanPoint(ex, ey, floorWalls);
+
+    function endpointTrimForSplitMain(px, py) {
+      /** @type {{ ux: number, uy: number, halfTh: number }[]} */
+      const touches = [];
+      for (const other of floorWalls) {
+        if (!other || !Array.isArray(other.start) || !Array.isArray(other.end) || other.start.length < 2 || other.end.length < 2) {
+          continue;
+        }
+        const oid = String(other.id ?? "").trim();
+        if (wid && oid && wid === oid) continue;
+        const ax = snap(Number(other.start[0]));
+        const ay = snap(Number(other.start[1]));
+        const bx = snap(Number(other.end[0]));
+        const by = snap(Number(other.end[1]));
+        if (![ax, ay, bx, by].every((v) => Number.isFinite(v))) continue;
+        const segLen = Math.hypot(bx - ax, by - ay);
+        if (segLen < 1e-6) continue;
+        const dA2 = (px - ax) * (px - ax) + (py - ay) * (py - ay);
+        const dB2 = (px - bx) * (px - bx) + (py - by) * (py - by);
+        if (dA2 > eps2 && dB2 > eps2) continue;
+        const othTh = Number(other.thickness);
+        const halfTh = Math.max(0, (Number.isFinite(othTh) && othTh > 0 ? othTh : 10) / 2);
+        if (halfTh < 1e-6) continue;
+        touches.push({ ux: (bx - ax) / segLen, uy: (by - ay) / segLen, halfTh });
+      }
+      if (touches.length < 2) return 0;
+      let trim = 0;
+      for (let i = 0; i < touches.length; i++) {
+        for (let j = i + 1; j < touches.length; j++) {
+          const a = touches[i];
+          const b = touches[j];
+          const pairCross = Math.abs(a.ux * b.uy - a.uy * b.ux);
+          if (pairCross > WALL_JOIN_PARALLEL_CROSS_MAX) continue;
+          const alignA = Math.abs(ux * a.uy - uy * a.ux);
+          const alignB = Math.abs(ux * b.uy - uy * b.ux);
+          if (alignA <= WALL_JOIN_PARALLEL_CROSS_MAX || alignB <= WALL_JOIN_PARALLEL_CROSS_MAX) continue;
+          trim = Math.max(trim, a.halfTh, b.halfTh);
+        }
+      }
+      return trim;
+    }
 
     for (const other of floorWalls) {
       if (!other || !Array.isArray(other.start) || !Array.isArray(other.end) || other.start.length < 2 || other.end.length < 2) {
@@ -3051,15 +3101,49 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const candidate = Math.max(0, (Number.isFinite(otherTh) && otherTh > 0 ? otherTh : 10) / 2);
       if (candidate < 1e-6) continue;
 
-      if (startMiter) {
-        const sHit = dist2PointToSegmentCm(sx, sy, ax, ay, bx, by);
-        if (sHit.dist2 <= eps2) startExtCm = Math.max(startExtCm, candidate);
+      const sHit = dist2PointToSegmentCm(sx, sy, ax, ay, bx, by);
+      const eHit = dist2PointToSegmentCm(ex, ey, ax, ay, bx, by);
+
+      if (startMiter || sHit.dist2 <= eps2) {
+        const startOnOtherSegment = sHit.dist2 <= eps2;
+        const startOnOtherInterior = startOnOtherSegment && sHit.t > tMin && sHit.t < 1 - tMin;
+        const startOnOtherEndpoint =
+          startOnOtherSegment &&
+          (((sx - ax) * (sx - ax) + (sy - ay) * (sy - ay) <= eps2) ||
+            ((sx - bx) * (sx - bx) + (sy - by) * (sy - by) <= eps2));
+        if (startMiter && startOnOtherEndpoint) {
+          startExtCm = Math.max(startExtCm, candidate);
+        }
+        if (startOnOtherInterior) {
+          startTrimCm = Math.min(startTrimCm, -candidate);
+        }
       }
 
-      if (endMiter) {
-        const eHit = dist2PointToSegmentCm(ex, ey, ax, ay, bx, by);
-        if (eHit.dist2 <= eps2) endExtCm = Math.max(endExtCm, candidate);
+      if (endMiter || eHit.dist2 <= eps2) {
+        const endOnOtherSegment = eHit.dist2 <= eps2;
+        const endOnOtherInterior = endOnOtherSegment && eHit.t > tMin && eHit.t < 1 - tMin;
+        const endOnOtherEndpoint =
+          endOnOtherSegment &&
+          (((ex - ax) * (ex - ax) + (ey - ay) * (ey - ay) <= eps2) ||
+            ((ex - bx) * (ex - bx) + (ey - by) * (ey - by) <= eps2));
+        if (endMiter && endOnOtherEndpoint) {
+          endExtCm = Math.max(endExtCm, candidate);
+        }
+        if (endOnOtherInterior) {
+          endTrimCm = Math.min(endTrimCm, -candidate);
+        }
       }
+    }
+
+    if (startTrimCm < 0) startExtCm = startTrimCm;
+    if (endTrimCm < 0) endExtCm = endTrimCm;
+    if (startExtCm >= 0) {
+      const tTrim = endpointTrimForSplitMain(sx, sy);
+      if (tTrim > 1e-6) startExtCm = -tTrim;
+    }
+    if (endExtCm >= 0) {
+      const tTrim = endpointTrimForSplitMain(ex, ey);
+      if (tTrim > 1e-6) endExtCm = -tTrim;
     }
 
     return { startExtCm, endExtCm };

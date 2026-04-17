@@ -748,8 +748,11 @@ function getExtendedWallSegmentCm(wall, walls, snapCoord = identitySnapCoord) {
   const uy = dy / len;
   const wid = String(wall.id ?? "").trim();
   const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
+  const tMin = WALL_JOIN_SEGMENT_INTERIOR_T;
   let startExt = 0;
   let endExt = 0;
+  let startTrim = 0;
+  let endTrim = 0;
   const list = walls || [];
   const startMiter = isLCornerMiterAtPlanPoint(sx, sy, list, snapCoord);
   const endMiter = isLCornerMiterAtPlanPoint(ex, ey, list, snapCoord);
@@ -771,15 +774,42 @@ function getExtendedWallSegmentCm(wall, walls, snapCoord = identitySnapCoord) {
     const candidate = Math.max(0, (Number.isFinite(oth) && oth > 0 ? oth : 10) / 2);
     if (candidate < 1e-6) continue;
 
-    if (startMiter) {
-      const hs = dist2PointToSegmentCm(sx, sy, ax, ay, bx, by);
-      if (hs.dist2 <= eps2) startExt = Math.max(startExt, candidate);
+    const hs = dist2PointToSegmentCm(sx, sy, ax, ay, bx, by);
+    const he = dist2PointToSegmentCm(ex, ey, ax, ay, bx, by);
+
+    if (startMiter || hs.dist2 <= eps2) {
+      const startOnOtherSegment = hs.dist2 <= eps2;
+      const startOnOtherInterior = startOnOtherSegment && hs.t > tMin && hs.t < 1 - tMin;
+      const startOnOtherEndpoint =
+        startOnOtherSegment &&
+        (((sx - ax) * (sx - ax) + (sy - ay) * (sy - ay) <= eps2) ||
+          ((sx - bx) * (sx - bx) + (sy - by) * (sy - by) <= eps2));
+      if (startMiter && startOnOtherEndpoint) {
+        startExt = Math.max(startExt, candidate);
+      }
+      if (startOnOtherInterior) {
+        startTrim = Math.min(startTrim, -candidate);
+      }
     }
-    if (endMiter) {
-      const he = dist2PointToSegmentCm(ex, ey, ax, ay, bx, by);
-      if (he.dist2 <= eps2) endExt = Math.max(endExt, candidate);
+
+    if (endMiter || he.dist2 <= eps2) {
+      const endOnOtherSegment = he.dist2 <= eps2;
+      const endOnOtherInterior = endOnOtherSegment && he.t > tMin && he.t < 1 - tMin;
+      const endOnOtherEndpoint =
+        endOnOtherSegment &&
+        (((ex - ax) * (ex - ax) + (ey - ay) * (ey - ay) <= eps2) ||
+          ((ex - bx) * (ex - bx) + (ey - by) * (ey - by) <= eps2));
+      if (endMiter && endOnOtherEndpoint) {
+        endExt = Math.max(endExt, candidate);
+      }
+      if (endOnOtherInterior) {
+        endTrim = Math.min(endTrim, -candidate);
+      }
     }
   }
+
+  if (startTrim < 0) startExt = startTrim;
+  if (endTrim < 0) endExt = endTrim;
 
   return {
     x1: sx - ux * startExt,
