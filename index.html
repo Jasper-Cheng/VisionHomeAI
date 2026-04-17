@@ -303,6 +303,24 @@
                     </div>
                   </div>
                 </div>
+                <div class="svg-render-quality-wrap" id="svgRenderQualityWrap">
+                  <button
+                    type="button"
+                    class="svg-view-btn svg-view-btn--wide"
+                    id="svgRenderQualityBtn"
+                    title="渲染效果"
+                    aria-label="渲染效果"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  >
+                    渲染·标准
+                  </button>
+                  <div class="svg-render-quality-dropdown" id="svgRenderQualityDropdown" hidden role="menu" aria-label="渲染效果">
+                    <button type="button" class="svg-render-quality-option is-active" data-render-quality="standard">标准（流畅）</button>
+                    <button type="button" class="svg-render-quality-option" data-render-quality="high">高精度（推荐）</button>
+                    <button type="button" class="svg-render-quality-option" data-render-quality="ultra">超清（高负载）</button>
+                  </div>
+                </div>
                 <div
                   id="otherLayersOpacityWrap"
                   class="svg-other-opacity-wrap"

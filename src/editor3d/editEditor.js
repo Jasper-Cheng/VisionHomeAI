@@ -510,10 +510,90 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 大场景深度精度更好，减轻近共面/阴影条纹带来的“花屏”感
     logarithmicDepthBuffer: true,
   });
-  /** 户型/家具视图抗锯齿：MSAA + 较高 DPR 上限（过高会明显吃 GPU） */
-  const PIXEL_RATIO_CAP = 2;
+  /**
+   * 渲染质量：
+   * - standard: 性能优先（较低 DPR 上限）
+   * - high: 画质优先
+   * - ultra: 更高分辨率，显著增加 GPU 开销
+   */
+  const RENDER_QUALITY_CONFIGS = {
+    standard: {
+      pixelRatioScale: 0.85,
+      pixelRatioCap: 1.5,
+      label: "标准",
+      shadowMapSize: 1024,
+      shadowRadius: 1.5,
+      shadowType: THREE.PCFShadowMap,
+      anisotropy: 2,
+    },
+    high: {
+      pixelRatioScale: 1.35,
+      pixelRatioCap: 2.2,
+      label: "高精度",
+      shadowMapSize: 2048,
+      shadowRadius: 3,
+      shadowType: THREE.PCFSoftShadowMap,
+      anisotropy: 6,
+    },
+    ultra: {
+      pixelRatioScale: 1.9,
+      pixelRatioCap: 3,
+      label: "超清",
+      shadowMapSize: 4096,
+      shadowRadius: 4,
+      shadowType: THREE.PCFSoftShadowMap,
+      anisotropy: 12,
+    },
+  };
+  /** @type {"standard" | "high" | "ultra"} */
+  let renderQualityMode = "standard";
   function applyRendererPixelRatio() {
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO_CAP));
+    const cfg = RENDER_QUALITY_CONFIGS[renderQualityMode] || RENDER_QUALITY_CONFIGS.standard;
+    const baseDpr = Math.max(1, Number(window.devicePixelRatio || 1));
+    const scaled = baseDpr * (Number(cfg.pixelRatioScale) || 1);
+    const nextPixelRatio = Math.max(0.75, Math.min(scaled, Number(cfg.pixelRatioCap) || 2));
+    renderer.setPixelRatio(nextPixelRatio);
+  }
+  function applyRendererQualityDetails() {
+    const cfg = RENDER_QUALITY_CONFIGS[renderQualityMode] || RENDER_QUALITY_CONFIGS.standard;
+    renderer.shadowMap.type = cfg.shadowType;
+    dirLight.shadow.radius = cfg.shadowRadius;
+    const prevSize = dirLight.shadow.mapSize.x;
+    if (prevSize !== cfg.shadowMapSize) {
+      dirLight.shadow.mapSize.set(cfg.shadowMapSize, cfg.shadowMapSize);
+      if (dirLight.shadow.map) {
+        dirLight.shadow.map.dispose();
+        dirLight.shadow.map = null;
+      }
+    }
+    dirLight.shadow.needsUpdate = true;
+
+    const maxSupported = Number(renderer.capabilities.getMaxAnisotropy?.() || 1);
+    const targetAnisotropy = Math.max(1, Math.min(maxSupported, cfg.anisotropy));
+    scene.traverse((o) => {
+      if (!o.isMesh || !o.material) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const mat of mats) {
+        if (!mat || typeof mat !== "object") continue;
+        for (const key of [
+          "map",
+          "normalMap",
+          "roughnessMap",
+          "metalnessMap",
+          "aoMap",
+          "alphaMap",
+          "emissiveMap",
+          "bumpMap",
+        ]) {
+          const tex = mat[key];
+          if (!tex || typeof tex !== "object") continue;
+          if (tex.anisotropy !== targetAnisotropy) {
+            tex.anisotropy = targetAnisotropy;
+            tex.needsUpdate = true;
+          }
+        }
+      }
+    });
   }
   applyRendererPixelRatio();
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -563,6 +643,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   dirLight.shadow.camera.top = 40;
   dirLight.shadow.camera.bottom = -40;
   dirLight.shadow.camera.updateProjectionMatrix();
+  applyRendererQualityDetails();
   dirLight.target.position.set(0, 0, 0);
   scene.add(ambientLight);
   scene.add(hemiLight);
@@ -8539,6 +8620,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (hasSvgEditor && se.lightingConfig && typeof se.lightingConfig === "object") {
         window.svgEditorApplyLightingConfig(se.lightingConfig);
       }
+      if (hasSvgEditor && typeof se.renderQualityMode === "string") {
+        setRenderQualityMode(se.renderQualityMode, { rerender: false });
+        syncRenderQualityToolbarUi();
+      }
     } finally {
       isRestoring = false;
     }
@@ -8603,6 +8688,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
 
     if (!payload || Number(payload.version) !== 1) return;
+    if (typeof payload.renderQualityMode === "string") {
+      setRenderQualityMode(payload.renderQualityMode, { rerender: false });
+      syncRenderQualityToolbarUi();
+    }
 
     const v = payload.view;
     if (v && Number.isFinite(Number(v.tx)) && Number.isFinite(Number(v.ty)) && Number.isFinite(Number(v.scale))) {
@@ -9695,6 +9784,34 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     document.getElementById("svgLightingEnvVal").textContent = env.toFixed(2);
   }
 
+  function getCurrentRenderQualityLabel() {
+    return (RENDER_QUALITY_CONFIGS[renderQualityMode] || RENDER_QUALITY_CONFIGS.standard).label;
+  }
+
+  /**
+   * @param {"standard" | "high" | "ultra"} mode
+   * @param {{ rerender?: boolean }} [opts]
+   */
+  function setRenderQualityMode(mode, opts = {}) {
+    const next = mode === "ultra" ? "ultra" : mode === "high" ? "high" : "standard";
+    renderQualityMode = next;
+    applyRendererPixelRatio();
+    applyRendererQualityDetails();
+    resizeRenderer();
+    if (opts.rerender !== false) renderEditorScene();
+  }
+
+  function syncRenderQualityToolbarUi() {
+    const btn = document.getElementById("svgRenderQualityBtn");
+    const dropdown = document.getElementById("svgRenderQualityDropdown");
+    if (btn) btn.textContent = `渲染·${getCurrentRenderQualityLabel()}`;
+    if (!dropdown) return;
+    dropdown.querySelectorAll(".svg-render-quality-option").forEach((el) => {
+      const mode = String(el.getAttribute("data-render-quality") || "");
+      el.classList.toggle("is-active", mode === renderQualityMode);
+    });
+  }
+
   function initLightingToolbar() {
     const btn = document.getElementById("svgLightingBtn");
     const dropdown = document.getElementById("svgLightingDropdown");
@@ -9758,6 +9875,45 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   initLightingToolbar();
 
+  function initRenderQualityToolbar() {
+    const btn = document.getElementById("svgRenderQualityBtn");
+    const dropdown = document.getElementById("svgRenderQualityDropdown");
+    if (!btn || !dropdown) return;
+
+    function openDropdown() {
+      syncRenderQualityToolbarUi();
+      dropdown.hidden = false;
+      btn.setAttribute("aria-expanded", "true");
+      btn.classList.add("is-active");
+    }
+    function closeDropdown() {
+      dropdown.hidden = true;
+      btn.setAttribute("aria-expanded", "false");
+      btn.classList.remove("is-active");
+    }
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      dropdown.hidden ? openDropdown() : closeDropdown();
+    });
+    document.addEventListener("click", (e) => {
+      if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) closeDropdown();
+    });
+    dropdown.addEventListener("click", (e) => {
+      const option = e.target.closest(".svg-render-quality-option");
+      if (!option || !dropdown.contains(option)) return;
+      const mode = String(option.getAttribute("data-render-quality") || "");
+      if (mode !== "standard" && mode !== "high" && mode !== "ultra") return;
+      setRenderQualityMode(mode);
+      syncRenderQualityToolbarUi();
+      closeDropdown();
+    });
+
+    syncRenderQualityToolbarUi();
+  }
+
+  initRenderQualityToolbar();
+
   window.svgEditorAddFurniture = addFurniture;
   window.svgEditorGetLayout = getLayout;
   window.svgEditorApplyFloorplanAtWorld = applyFloorplanEntryAtWorld;
@@ -9784,6 +9940,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.svgEditorToggleShadows = () => setShadowsEnabled(!shadowsEnabled);
   window.svgEditorSetShadowsEnabled = setShadowsEnabled;
   window.svgEditorGetShadowsEnabled = () => shadowsEnabled;
+  window.svgEditorGetRenderQualityMode = () => renderQualityMode;
+  window.svgEditorSetRenderQualityMode = (mode) => {
+    setRenderQualityMode(mode, { rerender: true });
+    syncRenderQualityToolbarUi();
+  };
   window.svgEditorGetLightingConfig = () => getCurrentLightingConfig();
   window.svgEditorApplyLightingConfig = (cfg) => {
     if (!cfg || typeof cfg !== "object") return;

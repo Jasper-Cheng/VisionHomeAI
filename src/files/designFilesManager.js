@@ -383,6 +383,7 @@ function collectSvgEditorState(layout) {
   const getSurf = window.svgEditorGetSurfaceOverrides;
   const getStyleKey = window.svgEditorGetFloorplanStyleKey;
   const getLighting = window.svgEditorGetLightingConfig;
+  const getRenderQuality = window.svgEditorGetRenderQualityMode;
   const floorPlanId = typeof getFp === "function" ? getFp() : null;
   const floorLevelIndex = typeof getFloorLevel === "function" ? getFloorLevel() : null;
   const floorplanStyleKey = typeof getStyleKey === "function" ? getStyleKey() : null;
@@ -397,6 +398,8 @@ function collectSvgEditorState(layout) {
     typeof getSurf === "function" ? getSurf() : null;
   const lightingConfig =
     typeof getLighting === "function" ? getLighting() : null;
+  const renderQualityMode =
+    typeof getRenderQuality === "function" ? getRenderQuality() : null;
   const out = {
     version: 1,
     floorPlanId,
@@ -409,6 +412,9 @@ function collectSvgEditorState(layout) {
   }
   if (lightingConfig && typeof lightingConfig === "object") {
     out.lightingConfig = lightingConfig;
+  }
+  if (renderQualityMode === "standard" || renderQualityMode === "high" || renderQualityMode === "ultra") {
+    out.renderQualityMode = renderQualityMode;
   }
   return out;
 }
