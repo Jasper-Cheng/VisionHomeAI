@@ -3159,11 +3159,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * L 型：恰两堵墙在一点交汇，且两墙走向不共线（非同一直线延伸）。
    * T 型：≥3 堵墙共点（本检测下 incident 墙数 ≠ 2）不补角。
    */
-  function isLCornerMiterAtPlanPoint(px, py, floorWalls) {
+  /**
+   * 检测L型角落交汇
+   * @param {number} px - 端点x坐标
+   * @param {number} py - 端点y坐标
+   * @param {any[]} floorWalls - 所有墙体数组
+   * @param {string} currentWallOrientation - 当前墙的方向 ("vertical" | "horizontal")
+   */
+  function isLCornerMiterAtPlanPoint(px, py, floorWalls, currentWallOrientation) {
     if (!Array.isArray(floorWalls)) return false;
     const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
     const tMin = WALL_JOIN_SEGMENT_INTERIOR_T;
-    /** @type {Map<string, { ux: number, uy: number }>} */
+    /** @type {Map<string, { ux: number, uy: number, thickness: number, orientation: string, ax: number, ay: number, bx: number, by: number }>} */
     const byId = new Map();
     for (let i = 0; i < floorWalls.length; i++) {
       const w = floorWalls[i];
@@ -3185,12 +3192,91 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (dB2 <= eps2) touch = true;
       const hit = dist2PointToSegmentCm(px, py, ax, ay, bx, by);
       if (hit.dist2 <= eps2 && hit.t > tMin && hit.t < 1 - tMin) touch = true;
-      if (touch) byId.set(wid, { ux, uy });
+      if (touch) {
+        const wallTh = Number(w.thickness);
+        const th = Number.isFinite(wallTh) && wallTh > 0 ? wallTh : 10;
+        const ori = String(w.orientation ?? "").trim().toLowerCase();
+        byId.set(wid, { ux, uy, thickness: th, orientation: ori, ax, ay, bx, by });
+      }
     }
     if (byId.size !== 2) return false;
-    const [u, v] = Array.from(byId.values());
+    const entries = Array.from(byId.entries());
+    const [u, v] = [entries[0][1], entries[1][1]];
     const cross = Math.abs(u.ux * v.uy - u.uy * v.ux);
-    return cross > WALL_JOIN_PARALLEL_CROSS_MAX;
+    const isL = cross > WALL_JOIN_PARALLEL_CROSS_MAX;
+    if (isL) {
+      const wallIds = Array.from(byId.keys());
+      // console.log(`[L型区域交点] 坐标: (${px.toFixed(2)}, ${py.toFixed(2)}) cm, 交汇墙体: [${wallIds.join(', ')}], 方向向量: [(${u.ux.toFixed(4)}, ${u.uy.toFixed(4)}), (${v.ux.toFixed(4)}, ${v.uy.toFixed(4)})], 叉积: ${cross.toFixed(4)}`);
+      // 根据orientation判断竖墙和横墙
+      const wall1 = entries[0][1];
+      const wall2 = entries[1][1];
+      const vWall = wall1.orientation === "vertical" ? wall1 : wall2;
+      const hWall = wall1.orientation === "horizontal" ? wall1 : wall2;
+      const n1 = vWall.thickness; // 竖墙厚度
+      const n2 = hWall.thickness; // 横墙厚度
+      const halfN1 = n1 / 2;
+      const halfN2 = n2 / 2;
+      // q1为竖墙，q2为横墙
+      // 判断q2（横墙）相对于q1（竖墙）的位置
+      const q1MinX = Math.min(vWall.ax, vWall.bx);
+      const q1MaxX = Math.max(vWall.ax, vWall.bx);
+      const q2MinX = Math.min(hWall.ax, hWall.bx);
+      const q2MaxX = Math.max(hWall.ax, hWall.bx);
+      const q1MinY = Math.min(vWall.ay, vWall.by);
+      const q1MaxY = Math.max(vWall.ay, vWall.by);
+      const q2MinY = Math.min(hWall.ay, hWall.by);
+      const q2MaxY = Math.max(hWall.ay, hWall.by);
+      // 左侧：竖墙的max(x) <= 横墙的min(x)，即横墙在竖墙左侧
+      const isLeft = q1MaxX <= q2MinX;
+      // 上侧：竖墙的min(y) >= 横墙的max(y)，即横墙在竖墙上侧
+      const isTop = q1MinY >= q2MaxY;
+      let cornerPt;
+      let cornerType;
+      let triPt1, triPt2;
+      if (isLeft && isTop) {
+        cornerType = "左上";
+        cornerPt = [px - halfN1, py - halfN2];
+        if (currentWallOrientation === "vertical") {
+          triPt1 = [px - halfN1, py + halfN2];
+          triPt2 = [px + halfN1, py + halfN2];
+        } else {
+          triPt1 = [px + halfN1, py - halfN2];
+          triPt2 = [px + halfN1, py + halfN2];
+        }
+      } else if (isLeft && !isTop) {
+        cornerType = "左下";
+        cornerPt = [px - halfN1, py + halfN2];
+        if (currentWallOrientation === "vertical") {
+          triPt1 = [px - halfN1, py - halfN2];
+          triPt2 = [px + halfN1, py - halfN2];
+        } else {
+          triPt1 = [px + halfN1, py - halfN2];
+          triPt2 = [px + halfN1, py + halfN2];
+        }
+      } else if (!isLeft && isTop) {
+        cornerType = "右上";
+        cornerPt = [px + halfN1, py - halfN2];
+        if (currentWallOrientation === "vertical") {
+          triPt1 = [px - halfN1, py + halfN2];
+          triPt2 = [px + halfN1, py + halfN2];
+        } else {
+          triPt1 = [px - halfN1, py - halfN2];
+          triPt2 = [px - halfN1, py + halfN2];
+        }
+      } else {
+        cornerType = "右下";
+        cornerPt = [px + halfN1, py + halfN2];
+        if (currentWallOrientation === "vertical") {
+          triPt1 = [px - halfN1, py - halfN2];
+          triPt2 = [px + halfN1, py - halfN2];
+        } else {
+          triPt1 = [px - halfN1, py - halfN2];
+          triPt2 = [px - halfN1, py + halfN2];
+        }
+      }
+      console.log(`[L型区域] ${cornerType}角落: [${cornerPt[0].toFixed(2)}, ${cornerPt[1].toFixed(2)}] | 三角: [[${cornerPt[0].toFixed(2)}, ${cornerPt[1].toFixed(2)}], [${triPt1[0].toFixed(2)}, ${triPt1[1].toFixed(2)}], [${triPt2[0].toFixed(2)}, ${triPt2[1].toFixed(2)}]]`);
+    }
+    return isL;
   }
 
   /**
@@ -3215,6 +3301,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (wlen < 1e-6) return { startExtCm: 0, endExtCm: 0 };
     const ux = wdx / wlen;
     const uy = wdy / wlen;
+    const wallOrientation = String(wall.orientation ?? "").trim().toLowerCase();
 
     let startExtCm = 0;
     let endExtCm = 0;
@@ -3222,8 +3309,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     let endTrimCm = 0;
     const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
     const tMin = WALL_JOIN_SEGMENT_INTERIOR_T;
-    const startMiter = isLCornerMiterAtPlanPoint(sx, sy, floorWalls);
-    const endMiter = isLCornerMiterAtPlanPoint(ex, ey, floorWalls);
+    const startMiter = isLCornerMiterAtPlanPoint(sx, sy, floorWalls, wallOrientation);
+    const endMiter = isLCornerMiterAtPlanPoint(ex, ey, floorWalls, wallOrientation);
 
     function endpointTrimForSplitMain(px, py) {
       /** @type {{ ux: number, uy: number, halfTh: number }[]} */
