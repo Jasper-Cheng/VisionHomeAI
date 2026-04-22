@@ -3160,14 +3160,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * T 型：≥3 堵墙共点（本检测下 incident 墙数 ≠ 2）不补角。
    */
   /**
-   * 检测L型角落交汇
+   * 检测 L 型角落交汇，并返回当前墙在该角点应保留的补角三角。
    * @param {number} px - 端点x坐标
    * @param {number} py - 端点y坐标
    * @param {any[]} floorWalls - 所有墙体数组
    * @param {string} currentWallOrientation - 当前墙的方向 ("vertical" | "horizontal")
    */
-  function isLCornerMiterAtPlanPoint(px, py, floorWalls, currentWallOrientation) {
-    if (!Array.isArray(floorWalls)) return false;
+  function getLCornerMiterInfoAtPlanPoint(px, py, floorWalls, currentWallOrientation) {
+    if (!Array.isArray(floorWalls)) return null;
     const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
     const tMin = WALL_JOIN_SEGMENT_INTERIOR_T;
     /** @type {Map<string, { ux: number, uy: number, thickness: number, orientation: string, ax: number, ay: number, bx: number, by: number }>} */
@@ -3199,118 +3199,148 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         byId.set(wid, { ux, uy, thickness: th, orientation: ori, ax, ay, bx, by });
       }
     }
-    if (byId.size !== 2) return false;
+    if (byId.size !== 2) return null;
     const entries = Array.from(byId.entries());
     const [u, v] = [entries[0][1], entries[1][1]];
     const cross = Math.abs(u.ux * v.uy - u.uy * v.ux);
-    const isL = cross > WALL_JOIN_PARALLEL_CROSS_MAX;
-    if (isL) {
-      const wallIds = Array.from(byId.keys());
-      // console.log(`[L型区域交点] 坐标: (${px.toFixed(2)}, ${py.toFixed(2)}) cm, 交汇墙体: [${wallIds.join(', ')}], 方向向量: [(${u.ux.toFixed(4)}, ${u.uy.toFixed(4)}), (${v.ux.toFixed(4)}, ${v.uy.toFixed(4)})], 叉积: ${cross.toFixed(4)}`);
-      // 根据orientation判断竖墙和横墙
-      const wall1 = entries[0][1];
-      const wall2 = entries[1][1];
-      const vWall = wall1.orientation === "vertical" ? wall1 : wall2;
-      const hWall = wall1.orientation === "horizontal" ? wall1 : wall2;
-      const n1 = vWall.thickness; // 竖墙厚度
-      const n2 = hWall.thickness; // 横墙厚度
-      const halfN1 = n1 / 2;
-      const halfN2 = n2 / 2;
-      // q1为竖墙，q2为横墙
-      // 判断q2（横墙）相对于q1（竖墙）的位置
-      const q1MinX = Math.min(vWall.ax, vWall.bx);
-      const q1MaxX = Math.max(vWall.ax, vWall.bx);
-      const q2MinX = Math.min(hWall.ax, hWall.bx);
-      const q2MaxX = Math.max(hWall.ax, hWall.bx);
-      const q1MinY = Math.min(vWall.ay, vWall.by);
-      const q1MaxY = Math.max(vWall.ay, vWall.by);
-      const q2MinY = Math.min(hWall.ay, hWall.by);
-      const q2MaxY = Math.max(hWall.ay, hWall.by);
-      // 左侧：竖墙的max(x) <= 横墙的min(x)，即横墙在竖墙左侧
-      const isLeft = q1MaxX <= q2MinX;
-      // 上侧：竖墙的min(y) >= 横墙的max(y)，即横墙在竖墙上侧
-      const isTop = q1MinY >= q2MaxY;
-      let cornerPt;
-      let cornerType;
-      let triPt1, triPt2;
-      if (isLeft && isTop) {
-        cornerType = "左上";
-        cornerPt = [px - halfN1, py - halfN2];
-        if (currentWallOrientation === "vertical") {
-          triPt1 = [px - halfN1, py + halfN2];
-          triPt2 = [px + halfN1, py + halfN2];
-        } else {
-          triPt1 = [px + halfN1, py - halfN2];
-          triPt2 = [px + halfN1, py + halfN2];
-        }
-      } else if (isLeft && !isTop) {
-        cornerType = "左下";
-        cornerPt = [px - halfN1, py + halfN2];
-        if (currentWallOrientation === "vertical") {
-          triPt1 = [px - halfN1, py - halfN2];
-          triPt2 = [px + halfN1, py - halfN2];
-        } else {
-          triPt1 = [px + halfN1, py - halfN2];
-          triPt2 = [px + halfN1, py + halfN2];
-        }
-      } else if (!isLeft && isTop) {
-        cornerType = "右上";
-        cornerPt = [px + halfN1, py - halfN2];
-        if (currentWallOrientation === "vertical") {
-          triPt1 = [px - halfN1, py + halfN2];
-          triPt2 = [px + halfN1, py + halfN2];
-        } else {
-          triPt1 = [px - halfN1, py - halfN2];
-          triPt2 = [px - halfN1, py + halfN2];
-        }
-      } else {
-        cornerType = "右下";
-        cornerPt = [px + halfN1, py + halfN2];
-        if (currentWallOrientation === "vertical") {
-          triPt1 = [px - halfN1, py - halfN2];
-          triPt2 = [px + halfN1, py - halfN2];
-        } else {
-          triPt1 = [px - halfN1, py - halfN2];
-          triPt2 = [px - halfN1, py + halfN2];
-        }
-      }
-      console.log(`[L型区域] ${cornerType}角落: [${cornerPt[0].toFixed(2)}, ${cornerPt[1].toFixed(2)}] | 三角: [[${cornerPt[0].toFixed(2)}, ${cornerPt[1].toFixed(2)}], [${triPt1[0].toFixed(2)}, ${triPt1[1].toFixed(2)}], [${triPt2[0].toFixed(2)}, ${triPt2[1].toFixed(2)}]]`);
+    if (cross <= WALL_JOIN_PARALLEL_CROSS_MAX) return null;
+
+    function resolveWallAxis(info) {
+      if (info.orientation === "vertical" || info.orientation === "horizontal") return info.orientation;
+      return Math.abs(info.uy) >= Math.abs(info.ux) ? "vertical" : "horizontal";
     }
-    return isL;
+
+    const wall1 = entries[0][1];
+    const wall2 = entries[1][1];
+    const wall1Axis = resolveWallAxis(wall1);
+    const wall2Axis = resolveWallAxis(wall2);
+    const vWall = wall1Axis === "vertical" ? wall1 : wall2Axis === "vertical" ? wall2 : null;
+    const hWall = wall1Axis === "horizontal" ? wall1 : wall2Axis === "horizontal" ? wall2 : null;
+    if (!vWall || !hWall) return null;
+
+    const n1 = vWall.thickness;
+    const n2 = hWall.thickness;
+    const halfN1 = n1 / 2;
+    const halfN2 = n2 / 2;
+    const q1MinX = Math.min(vWall.ax, vWall.bx);
+    const q1MaxX = Math.max(vWall.ax, vWall.bx);
+    const q2MinX = Math.min(hWall.ax, hWall.bx);
+    const q2MaxX = Math.max(hWall.ax, hWall.bx);
+    const q1MinY = Math.min(vWall.ay, vWall.by);
+    const q2MaxY = Math.max(hWall.ay, hWall.by);
+    const isLeft = q1MaxX <= q2MinX;
+    const isTop = q1MinY >= q2MaxY;
+    let cornerPt;
+    let cornerType;
+    let triPt1;
+    let triPt2;
+    if (isLeft && isTop) {
+      cornerType = "左上";
+      cornerPt = [px - halfN1, py - halfN2];
+      if (currentWallOrientation === "vertical") {
+        triPt1 = [px - halfN1, py + halfN2];
+        triPt2 = [px + halfN1, py + halfN2];
+      } else {
+        triPt1 = [px + halfN1, py - halfN2];
+        triPt2 = [px + halfN1, py + halfN2];
+      }
+    } else if (isLeft && !isTop) {
+      cornerType = "左下";
+      cornerPt = [px - halfN1, py + halfN2];
+      if (currentWallOrientation === "vertical") {
+        triPt1 = [px - halfN1, py - halfN2];
+        triPt2 = [px + halfN1, py - halfN2];
+      } else {
+        triPt1 = [px + halfN1, py - halfN2];
+        triPt2 = [px + halfN1, py + halfN2];
+      }
+    } else if (!isLeft && isTop) {
+      cornerType = "右上";
+      cornerPt = [px + halfN1, py - halfN2];
+      if (currentWallOrientation === "vertical") {
+        triPt1 = [px - halfN1, py + halfN2];
+        triPt2 = [px + halfN1, py + halfN2];
+      } else {
+        triPt1 = [px - halfN1, py - halfN2];
+        triPt2 = [px - halfN1, py + halfN2];
+      }
+    } else {
+      cornerType = "右下";
+      cornerPt = [px + halfN1, py + halfN2];
+      if (currentWallOrientation === "vertical") {
+        triPt1 = [px - halfN1, py - halfN2];
+        triPt2 = [px + halfN1, py - halfN2];
+      } else {
+        triPt1 = [px - halfN1, py - halfN2];
+        triPt2 = [px - halfN1, py + halfN2];
+      }
+    }
+
+    return {
+      cornerType,
+      wallIds: Array.from(byId.keys()),
+      cornerPt,
+      triPt1,
+      triPt2,
+      triangleCm: [
+        [cornerPt[0], cornerPt[1]],
+        [triPt1[0], triPt1[1]],
+        [triPt2[0], triPt2[1]],
+      ],
+    };
   }
 
   /**
-   * L 型相交缺角：两堵墙交汇且方向不同（非共线）时，按相交墙半厚度向外延伸端点。
-   * T 型（≥3 堵墙共点）不延伸。
-   * @returns {{ startExtCm: number, endExtCm: number }}
+   * L 型角落：墙身主体回退交墙半厚度，并额外补一个三角柱，避免拐角体块双重重叠。
+   * T 型（≥3 堵墙共点）不补角。
+   * @returns {{
+   *   startExtCm: number,
+   *   endExtCm: number,
+   *   startMiterFill: { endpoint: "start", cornerType: string, triangleCm: number[][] } | null,
+   *   endMiterFill: { endpoint: "end", cornerType: string, triangleCm: number[][] } | null
+   * }}
    */
   function computeWallEndpointExtensionsCm(wall, floorWalls) {
-    if (!wall || !Array.isArray(floorWalls)) return { startExtCm: 0, endExtCm: 0 };
+    if (!wall || !Array.isArray(floorWalls)) {
+      return { startExtCm: 0, endExtCm: 0, startMiterFill: null, endMiterFill: null };
+    }
     if (!Array.isArray(wall.start) || wall.start.length < 2 || !Array.isArray(wall.end) || wall.end.length < 2) {
-      return { startExtCm: 0, endExtCm: 0 };
+      return { startExtCm: 0, endExtCm: 0, startMiterFill: null, endMiterFill: null };
     }
     const wid = String(wall.id ?? "").trim();
     const sx = snap(Number(wall.start[0]));
     const sy = snap(Number(wall.start[1]));
     const ex = snap(Number(wall.end[0]));
     const ey = snap(Number(wall.end[1]));
-    if (![sx, sy, ex, ey].every((v) => Number.isFinite(v))) return { startExtCm: 0, endExtCm: 0 };
+    if (![sx, sy, ex, ey].every((v) => Number.isFinite(v))) {
+      return { startExtCm: 0, endExtCm: 0, startMiterFill: null, endMiterFill: null };
+    }
     const wdx = ex - sx;
     const wdy = ey - sy;
     const wlen = Math.hypot(wdx, wdy);
-    if (wlen < 1e-6) return { startExtCm: 0, endExtCm: 0 };
+    if (wlen < 1e-6) return { startExtCm: 0, endExtCm: 0, startMiterFill: null, endMiterFill: null };
     const ux = wdx / wlen;
     const uy = wdy / wlen;
-    const wallOrientation = String(wall.orientation ?? "").trim().toLowerCase();
+    const wallOrientationRaw = String(wall.orientation ?? "").trim().toLowerCase();
+    const wallOrientation =
+      wallOrientationRaw === "vertical" || wallOrientationRaw === "horizontal"
+        ? wallOrientationRaw
+        : Math.abs(wdy) >= Math.abs(wdx)
+          ? "vertical"
+          : "horizontal";
 
     let startExtCm = 0;
     let endExtCm = 0;
     let startTrimCm = 0;
     let endTrimCm = 0;
+    let startMiterFill = null;
+    let endMiterFill = null;
     const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
     const tMin = WALL_JOIN_SEGMENT_INTERIOR_T;
-    const startMiter = isLCornerMiterAtPlanPoint(sx, sy, floorWalls, wallOrientation);
-    const endMiter = isLCornerMiterAtPlanPoint(ex, ey, floorWalls, wallOrientation);
+    const startMiterInfo = getLCornerMiterInfoAtPlanPoint(sx, sy, floorWalls, wallOrientation);
+    const endMiterInfo = getLCornerMiterInfoAtPlanPoint(ex, ey, floorWalls, wallOrientation);
+    const startMiter = !!startMiterInfo;
+    const endMiter = !!endMiterInfo;
 
     function endpointTrimForSplitMain(px, py) {
       /** @type {{ ux: number, uy: number, halfTh: number }[]} */
@@ -3407,6 +3437,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     if (startTrimCm < 0) startExtCm = startTrimCm;
     if (endTrimCm < 0) endExtCm = endTrimCm;
+    if (startMiterInfo && startExtCm > WALL_HOLE_EPS) {
+      startMiterFill = {
+        endpoint: "start",
+        cornerType: startMiterInfo.cornerType,
+        triangleCm: startMiterInfo.triangleCm.map((pt) => [pt[0], pt[1]]),
+      };
+      startExtCm = -startExtCm;
+    }
+    if (endMiterInfo && endExtCm > WALL_HOLE_EPS) {
+      endMiterFill = {
+        endpoint: "end",
+        cornerType: endMiterInfo.cornerType,
+        triangleCm: endMiterInfo.triangleCm.map((pt) => [pt[0], pt[1]]),
+      };
+      endExtCm = -endExtCm;
+    }
     if (startExtCm >= 0) {
       const tTrim = endpointTrimForSplitMain(sx, sy);
       if (tTrim > 1e-6) startExtCm = -tTrim;
@@ -3416,7 +3462,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (tTrim > 1e-6) endExtCm = -tTrim;
     }
 
-    return { startExtCm, endExtCm };
+    return { startExtCm, endExtCm, startMiterFill, endMiterFill };
   }
 
   /**
@@ -3634,6 +3680,32 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     };
   }
 
+  function makePlanPrismGeometryCm(planPtsCm, cx, cy, s, heightM) {
+    if (!Array.isArray(planPtsCm) || planPtsCm.length < 3) return null;
+    if (!Number.isFinite(heightM) || heightM <= 1e-6) return null;
+    if (Math.abs(polygonSignedAreaCm2(planPtsCm)) < 1e-6) return null;
+    const contour = [];
+    for (const pt of planPtsCm) {
+      const x = Number(pt?.[0]);
+      const y = Number(pt?.[1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      contour.push(new THREE.Vector2((x - cx) * (s / 100), -((y - cy) * (s / 100))));
+    }
+    if (contour.length < 3) return null;
+    if (ShapeUtils.isClockWise(contour) === false) {
+      contour.reverse();
+    }
+    const shape = new THREE.Shape(contour);
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: heightM,
+      bevelEnabled: false,
+      steps: 1,
+    });
+    geo.rotateX(-Math.PI / 2);
+    geo.computeVertexNormals();
+    return geo;
+  }
+
   function buildWallOverlapHighlightGroup(floor, cx, cy, s, wallHeightCm, floorOpacity, floorLevelId) {
     const walls = floor?.walls || [];
     if (!walls.length) return null;
@@ -3764,7 +3836,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const ux = dxc / lenCmRaw;
     const uy = dyc / lenCmRaw;
 
-    const { startExtCm, endExtCm } = computeWallEndpointExtensionsCm(wall, floor?.walls || []);
+    const { startExtCm, endExtCm, startMiterFill, endMiterFill } = computeWallEndpointExtensionsCm(wall, floor?.walls || []);
     const x1 = x1Raw - ux * startExtCm;
     const y1 = y1Raw - uy * startExtCm;
     const x2 = x2Raw + ux * endExtCm;
@@ -3784,6 +3856,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     const rotY = Math.atan2(dz, dx);
     const op = floorOpacity ?? 1;
+    const cornerMiterFills = [startMiterFill, endMiterFill].filter(Boolean);
 
     function makeWallMaterial() {
       if (wallStyleMat) {
@@ -3832,6 +3905,39 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return { mats, baseMat };
     }
 
+    function buildWallCornerMiterMesh(fill) {
+      const geo = makePlanPrismGeometryCm(fill?.triangleCm, cx, cy, s, hM);
+      if (!geo) return null;
+      const mat = makeWallMaterial();
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = false;
+      mesh.userData.floorplanPick = true;
+      mesh.userData.floorplanWallFace = true;
+      mesh.userData.floorplanWall = true;
+      mesh.userData.wallId = wallIdStr;
+      mesh.userData.floorplanWallId = wallIdStr;
+      mesh.userData.floorplanFloorLevelId = floorIdStr;
+      mesh.userData.floorplanSurfaceOpacity = op;
+      mesh.userData.floorplanWallMiterFill = true;
+      mesh.userData.floorplanWallEndpoint = fill.endpoint;
+      return mesh;
+    }
+
+    function attachWallCornerMiterFills(node) {
+      if (!cornerMiterFills.length) return node;
+      const wrapper = new THREE.Group();
+      wrapper.userData.floorplanPick = true;
+      wrapper.userData.floorplanWallId = wallIdStr;
+      wrapper.userData.floorplanFloorLevelId = floorIdStr;
+      if (node) wrapper.add(node);
+      for (const fill of cornerMiterFills) {
+        const mesh = buildWallCornerMiterMesh(fill);
+        if (mesh) wrapper.add(mesh);
+      }
+      return wrapper.children.length ? wrapper : node;
+    }
+
     function pushWallSegmentMesh(parent, segLenWorld, tMid, t0, t1, matsOrSingle) {
       const mxSeg = (x1 + tMid * (x2 - x1) - cx) * (s / 100);
       const mzSeg = (y1 + tMid * (y2 - y1) - cy) * (s / 100);
@@ -3870,7 +3976,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         mesh.userData.floorplanWallId = wallIdStr;
         mesh.userData.floorplanFloorLevelId = floorIdStr;
         mesh.userData.floorplanSurfaceOpacity = op;
-        return mesh;
+        return attachWallCornerMiterFills(mesh);
       }
       const N = Math.min(256, Math.max(24, Math.ceil(lenCm / 4)));
       const samples = [];
@@ -3914,7 +4020,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         mesh.userData.floorplanWallId = wallIdStr;
         mesh.userData.floorplanFloorLevelId = floorIdStr;
         mesh.userData.floorplanSurfaceOpacity = op;
-        return mesh;
+        return attachWallCornerMiterFills(mesh);
       }
       const group = new THREE.Group();
       group.userData.floorplanPick = true;
@@ -3937,7 +4043,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const tMid = (it.t0 + it.t1) / 2;
         pushWallSegmentMesh(group, segLen, tMid, it.t0, it.t1, matsForInterval(it.roomPosZ, it.roomNegZ));
       }
-      return group.children.length ? group : null;
+      return attachWallCornerMiterFills(group.children.length ? group : null);
     }
 
     const halfSpan = lenWorld / 2;
@@ -3982,7 +4088,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         group.add(mesh);
       }
     }
-    return group;
+    return attachWallCornerMiterFills(group.children.length ? group : null);
   }
 
   /**
