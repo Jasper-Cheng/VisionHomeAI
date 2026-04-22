@@ -2315,10 +2315,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
       const bb = mesh.geometry.boundingBox;
       if (!bb) continue;
+      const clampXMin = Number(mesh.userData?.floorplanWallSelectionClampXMin);
+      const clampXMax = Number(mesh.userData?.floorplanWallSelectionClampXMax);
+      const shouldClampX = Number.isFinite(clampXMin) && Number.isFinite(clampXMax) && clampXMin < clampXMax;
       for (const x of [bb.min.x, bb.max.x]) {
         for (const y of [bb.min.y, bb.max.y]) {
           for (const z of [bb.min.z, bb.max.z]) {
             v.set(x, y, z).applyMatrix4(mesh.matrixWorld).applyMatrix4(worldToLocal);
+            if (shouldClampX) {
+              v.x = Math.max(clampXMin, Math.min(clampXMax, v.x));
+            }
             minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x);
             minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
             minZ = Math.min(minZ, v.z); maxZ = Math.max(maxZ, v.z);
@@ -3973,6 +3979,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const rotY = Math.atan2(dz, dx);
     const op = floorOpacity ?? 1;
     const cornerMiterFills = [startMiterFill, endMiterFill].filter(Boolean);
+    const wallType = String(wall?.type ?? "").trim().toLowerCase();
+    const wallName = String(wall?.name ?? "").trim();
+    const isExternalWall =
+      wallType === "external" ||
+      wallType === "exterior" ||
+      wallType === "outer" ||
+      (Array.isArray(wall?.faces) && wall.faces.some((face) => String(face?.side ?? "").trim().toLowerCase() === "exterior")) ||
+      (!wallType && wallName.includes("外墙"));
+    const shouldClampMiterSelection = !isExternalWall;
 
     function makeWallMaterial() {
       if (wallStyleMat) {
@@ -4074,6 +4089,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!geo) return;
       const mesh = new THREE.Mesh(geo, wallMaterialArrayAtT(tMid));
       tagWallMesh(mesh);
+      if (shouldClampMiterSelection) {
+        mesh.userData.floorplanWallSelectionClampXMin = -lenWorld / 2;
+        mesh.userData.floorplanWallSelectionClampXMax = lenWorld / 2;
+      }
       parent.add(mesh);
     }
 
