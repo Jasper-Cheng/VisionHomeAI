@@ -3657,6 +3657,148 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     ];
   }
 
+  function polygonArea2d(points) {
+    if (!Array.isArray(points) || points.length < 3) return 0;
+    let area = 0;
+    for (let i = 0; i < points.length; i++) {
+      const a = points[i];
+      const b = points[(i + 1) % points.length];
+      area += a[0] * b[1] - b[0] * a[1];
+    }
+    return area / 2;
+  }
+
+  function convexHull2d(points) {
+    const clean = [];
+    const seen = new Set();
+    for (const p of points || []) {
+      const x = Number(p?.[0]);
+      const y = Number(p?.[1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      const key = `${Math.round(x * 1e7)}|${Math.round(y * 1e7)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      clean.push([x, y]);
+    }
+    if (clean.length < 3) return clean;
+    clean.sort((a, b) => (a[0] === b[0] ? a[1] - b[1] : a[0] - b[0]));
+    function cross(o, a, b) {
+      return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    }
+    const lower = [];
+    for (const p of clean) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 1e-9) lower.pop();
+      lower.push(p);
+    }
+    const upper = [];
+    for (let i = clean.length - 1; i >= 0; i--) {
+      const p = clean[i];
+      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 1e-9) upper.pop();
+      upper.push(p);
+    }
+    const hull = lower.slice(0, -1).concat(upper.slice(0, -1));
+    return polygonArea2d(hull) < 0 ? hull.reverse() : hull;
+  }
+
+  function clipLocalPolygonByXRange(poly, xMin, xMax) {
+    if (!Array.isArray(poly) || poly.length < 3) return [];
+    const eps = 1e-8;
+    function clip(subject, inside, intersect) {
+      const out = [];
+      if (!subject.length) return out;
+      let s = subject[subject.length - 1];
+      for (const e of subject) {
+        const sIn = inside(s);
+        const eIn = inside(e);
+        if (eIn) {
+          if (!sIn) out.push(intersect(s, e));
+          out.push(e);
+        } else if (sIn) {
+          out.push(intersect(s, e));
+        }
+        s = e;
+      }
+      return out;
+    }
+    function intersectAtX(a, b, x) {
+      const dx = b[0] - a[0];
+      if (Math.abs(dx) < eps) return [x, a[1]];
+      const t = (x - a[0]) / dx;
+      return [x, a[1] + (b[1] - a[1]) * t];
+    }
+    let out = poly.slice();
+    out = clip(out, (p) => p[0] >= xMin - eps, (a, b) => intersectAtX(a, b, xMin));
+    out = clip(out, (p) => p[0] <= xMax + eps, (a, b) => intersectAtX(a, b, xMax));
+    return out.length >= 3 && Math.abs(polygonArea2d(out)) > 1e-10 ? out : [];
+  }
+
+  function makeWallPlanPrismGeometryLocal(polyXZ, y0, y1, lenWorld, hM) {
+    if (!Array.isArray(polyXZ) || polyXZ.length < 3) return null;
+    if (!Number.isFinite(y0) || !Number.isFinite(y1) || y1 - y0 < WALL_HOLE_EPS) return null;
+    let poly = polyXZ.map((p) => [Number(p?.[0]), Number(p?.[1])]).filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]));
+    if (poly.length < 3) return null;
+    if (polygonArea2d(poly) < 0) poly = poly.slice().reverse();
+    if (Math.abs(polygonArea2d(poly)) < 1e-10) return null;
+    const positions = [];
+    const uvs = [];
+    const groups = [];
+    const halfSpan = Math.max(1e-9, lenWorld / 2);
+
+    function uvFor(v) {
+      return [(v[0] + halfSpan) / Math.max(1e-9, lenWorld), Number.isFinite(hM) && hM > 1e-9 ? v[1] / hM : 0];
+    }
+    function pushVertex(v) {
+      positions.push(v[0], v[1], v[2]);
+      const uv = uvFor(v);
+      uvs.push(uv[0], uv[1]);
+    }
+    function pushTri(a, b, c, materialIndex) {
+      const start = positions.length / 3;
+      pushVertex(a);
+      pushVertex(b);
+      pushVertex(c);
+      groups.push({ start, count: 3, materialIndex });
+    }
+    function materialIndexForEdge(a, b) {
+      const dx = b[0] - a[0];
+      const dz = b[1] - a[1];
+      if (Math.abs(dz) <= 1e-8 && Math.abs(dx) > 1e-8) {
+        return (a[1] + b[1]) / 2 >= 0 ? 4 : 5;
+      }
+      if (Math.abs(dx) <= 1e-8) return 0;
+      const extreme = (a[0] + b[0]) / 2 < 0
+        ? (a[0] <= b[0] ? a : b)
+        : (a[0] >= b[0] ? a : b);
+      return extreme[1] >= 0 ? 4 : 5;
+    }
+
+    for (let i = 1; i < poly.length - 1; i++) {
+      const p0 = poly[0];
+      const p1 = poly[i];
+      const p2 = poly[i + 1];
+      pushTri([p0[0], y0, p0[1]], [p1[0], y0, p1[1]], [p2[0], y0, p2[1]], 3);
+      pushTri([p0[0], y1, p0[1]], [p2[0], y1, p2[1]], [p1[0], y1, p1[1]], 2);
+    }
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i];
+      const b = poly[(i + 1) % poly.length];
+      const mi = materialIndexForEdge(a, b);
+      const ab = [a[0], y0, a[1]];
+      const bb = [b[0], y0, b[1]];
+      const bt = [b[0], y1, b[1]];
+      const at = [a[0], y1, a[1]];
+      pushTri(ab, bt, bb, mi);
+      pushTri(ab, at, bt, mi);
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    for (const g of groups) geo.addGroup(g.start, g.count, g.materialIndex);
+    geo.computeVertexNormals();
+    return geo;
+  }
+
   function getExtendedWallSegmentCm(wall, floorWalls) {
     if (!wall || !Array.isArray(wall.start) || wall.start.length < 2 || !Array.isArray(wall.end) || wall.end.length < 2) {
       return null;
@@ -3678,32 +3820,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       x2: ex + ux * endExtCm,
       y2: ey + uy * endExtCm,
     };
-  }
-
-  function makePlanPrismGeometryCm(planPtsCm, cx, cy, s, heightM) {
-    if (!Array.isArray(planPtsCm) || planPtsCm.length < 3) return null;
-    if (!Number.isFinite(heightM) || heightM <= 1e-6) return null;
-    if (Math.abs(polygonSignedAreaCm2(planPtsCm)) < 1e-6) return null;
-    const contour = [];
-    for (const pt of planPtsCm) {
-      const x = Number(pt?.[0]);
-      const y = Number(pt?.[1]);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-      contour.push(new THREE.Vector2((x - cx) * (s / 100), -((y - cy) * (s / 100))));
-    }
-    if (contour.length < 3) return null;
-    if (ShapeUtils.isClockWise(contour) === false) {
-      contour.reverse();
-    }
-    const shape = new THREE.Shape(contour);
-    const geo = new THREE.ExtrudeGeometry(shape, {
-      depth: heightM,
-      bevelEnabled: false,
-      steps: 1,
-    });
-    geo.rotateX(-Math.PI / 2);
-    geo.computeVertexNormals();
-    return geo;
   }
 
   function buildWallOverlapHighlightGroup(floor, cx, cy, s, wallHeightCm, floorOpacity, floorLevelId) {
@@ -3905,11 +4021,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return { mats, baseMat };
     }
 
-    function buildWallCornerMiterMesh(fill) {
-      const geo = makePlanPrismGeometryCm(fill?.triangleCm, cx, cy, s, hM);
-      if (!geo) return null;
-      const mat = makeWallMaterial();
-      const mesh = new THREE.Mesh(geo, mat);
+    function wallMaterialArrayAtT(t) {
+      const { mats, baseMat } = wallFaceMaterialsAtT(t);
+      if (Array.isArray(mats)) return mats;
+      return [baseMat, baseMat, baseMat, baseMat, baseMat, baseMat];
+    }
+
+    function tagWallMesh(mesh) {
       mesh.castShadow = true;
       mesh.receiveShadow = false;
       mesh.userData.floorplanPick = true;
@@ -3919,23 +4037,117 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       mesh.userData.floorplanWallId = wallIdStr;
       mesh.userData.floorplanFloorLevelId = floorIdStr;
       mesh.userData.floorplanSurfaceOpacity = op;
-      mesh.userData.floorplanWallMiterFill = true;
-      mesh.userData.floorplanWallEndpoint = fill.endpoint;
-      return mesh;
     }
 
-    function attachWallCornerMiterFills(node) {
-      if (!cornerMiterFills.length) return node;
-      const wrapper = new THREE.Group();
-      wrapper.userData.floorplanPick = true;
-      wrapper.userData.floorplanWallId = wallIdStr;
-      wrapper.userData.floorplanFloorLevelId = floorIdStr;
-      if (node) wrapper.add(node);
+    function buildMiteredWallPlanPolygonLocal() {
+      if (!cornerMiterFills.length) return null;
+      const halfSpan = lenWorld / 2;
+      const halfThick = thickM / 2;
+      const pts = [
+        [-halfSpan, -halfThick],
+        [halfSpan, -halfThick],
+        [halfSpan, halfThick],
+        [-halfSpan, halfThick],
+      ];
+      const k = s / 100;
+      const wallCenter = new THREE.Vector3(((x1 + x2) / 2 - cx) * k, 0, ((y1 + y2) / 2 - cy) * k);
+      const wallMatrix = new THREE.Matrix4().makeRotationY(rotY);
+      wallMatrix.setPosition(wallCenter);
+      const worldToWall = new THREE.Matrix4().copy(wallMatrix).invert();
+      const v = new THREE.Vector3();
       for (const fill of cornerMiterFills) {
-        const mesh = buildWallCornerMiterMesh(fill);
-        if (mesh) wrapper.add(mesh);
+        for (const pt of fill?.triangleCm || []) {
+          const px = Number(pt?.[0]);
+          const py = Number(pt?.[1]);
+          if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
+          v.set((px - cx) * k, 0, (py - cy) * k).applyMatrix4(worldToWall);
+          pts.push([v.x, v.z]);
+        }
       }
-      return wrapper.children.length ? wrapper : node;
+      return convexHull2d(pts);
+    }
+
+    function addMiteredWallPiece(parent, planPoly, xMin, xMax, yMin, yMax, tMid) {
+      const clipped = clipLocalPolygonByXRange(planPoly, xMin, xMax);
+      if (clipped.length < 3) return;
+      const geo = makeWallPlanPrismGeometryLocal(clipped, yMin, yMax, lenWorld, hM);
+      if (!geo) return;
+      const mesh = new THREE.Mesh(geo, wallMaterialArrayAtT(tMid));
+      tagWallMesh(mesh);
+      parent.add(mesh);
+    }
+
+    function buildMiteredWallMesh(planPoly) {
+      const group = new THREE.Group();
+      group.position.set(((x1 + x2) / 2 - cx) * (s / 100), 0, ((y1 + y2) / 2 - cy) * (s / 100));
+      group.rotation.y = rotY;
+      group.userData.floorplanPick = true;
+      group.userData.floorplanWallId = wallIdStr;
+      group.userData.floorplanFloorLevelId = floorIdStr;
+      const halfSpan = lenWorld / 2;
+      const bounds = polygonAabbCm(planPoly);
+      if (!bounds) return null;
+      const polyMinX = bounds.minX;
+      const polyMaxX = bounds.maxX;
+      const hasStartExtension = polyMinX < -halfSpan - WALL_HOLE_EPS;
+      const hasEndExtension = polyMaxX > halfSpan + WALL_HOLE_EPS;
+      if (!holes.length) {
+        const useRoomWalls = style && typeof getMaterialForKey === "function";
+        if (!useRoomWalls) {
+          addMiteredWallPiece(group, planPoly, polyMinX, polyMaxX, 0, hM, 0.5);
+          return group.children.length ? group : null;
+        }
+        if (hasStartExtension) {
+          addMiteredWallPiece(group, planPoly, polyMinX, -halfSpan, 0, hM, 0);
+        }
+        if (hasEndExtension) {
+          addMiteredWallPiece(group, planPoly, halfSpan, polyMaxX, 0, hM, 1);
+        }
+        const N = Math.min(256, Math.max(24, Math.ceil(lenCm / 4)));
+        const samples = [];
+        for (let i = 0; i <= N; i++) {
+          const t = i / N;
+          const { roomPosZ, roomNegZ } = findWallSideRoomsAt(floor, wall, t, 4);
+          const rk = `${String(roomPosZ?.id ?? "")}|${String(roomNegZ?.id ?? "")}`;
+          samples.push({ t, roomPosZ, roomNegZ, rk });
+        }
+        const tLeft = (idx) => (idx === 0 ? 0 : (2 * idx - 1) / (2 * N));
+        const tRight = (idx) => (idx === N ? 1 : (2 * idx + 1) / (2 * N));
+        let start = 0;
+        for (let i = 1; i <= N + 1; i++) {
+          if (i === N + 1 || (i <= N && samples[i].rk !== samples[start].rk)) {
+            const b = i - 1;
+            const t0 = tLeft(start);
+            const t1 = tRight(b);
+            const tMid = (t0 + t1) / 2;
+            addMiteredWallPiece(group, planPoly, -halfSpan + lenWorld * t0, -halfSpan + lenWorld * t1, 0, hM, tMid);
+            start = i;
+          }
+        }
+        return group.children.length ? group : null;
+      }
+      const xs = mergeSplitEdges(-halfSpan, halfSpan, holes.flatMap((h) => [h.x0, h.x1]));
+      const ys = mergeSplitEdges(0, hM, holes.flatMap((h) => [h.y0, h.y1]));
+      if (hasStartExtension) {
+        addMiteredWallPiece(group, planPoly, polyMinX, -halfSpan, 0, hM, 0);
+      }
+      if (hasEndExtension) {
+        addMiteredWallPiece(group, planPoly, halfSpan, polyMaxX, 0, hM, 1);
+      }
+      for (let i = 0; i < xs.length - 1; i++) {
+        const xa = xs[i];
+        const xb = xs[i + 1];
+        if (xb - xa < WALL_HOLE_EPS) continue;
+        for (let j = 0; j < ys.length - 1; j++) {
+          const ya = ys[j];
+          const yb = ys[j + 1];
+          if (yb - ya < WALL_HOLE_EPS) continue;
+          if (cellFullyInsideAnyHole(xa, xb, ya, yb, holes)) continue;
+          const tMid = ((xa + xb) / 2 + halfSpan) / lenWorld;
+          addMiteredWallPiece(group, planPoly, xa, xb, ya, yb, tMid);
+        }
+      }
+      return group.children.length ? group : null;
     }
 
     function pushWallSegmentMesh(parent, segLenWorld, tMid, t0, t1, matsOrSingle) {
@@ -3958,6 +4170,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       parent.add(mesh);
     }
 
+    const miteredPlanPoly = buildMiteredWallPlanPolygonLocal();
+    if (miteredPlanPoly && miteredPlanPoly.length >= 3) {
+      const built = buildMiteredWallMesh(miteredPlanPoly);
+      if (built) return built;
+    }
+
     if (!holes.length) {
       const useRoomWalls = style && typeof getMaterialForKey === "function";
       if (!useRoomWalls) {
@@ -3976,7 +4194,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         mesh.userData.floorplanWallId = wallIdStr;
         mesh.userData.floorplanFloorLevelId = floorIdStr;
         mesh.userData.floorplanSurfaceOpacity = op;
-        return attachWallCornerMiterFills(mesh);
+        return mesh;
       }
       const N = Math.min(256, Math.max(24, Math.ceil(lenCm / 4)));
       const samples = [];
@@ -4020,7 +4238,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         mesh.userData.floorplanWallId = wallIdStr;
         mesh.userData.floorplanFloorLevelId = floorIdStr;
         mesh.userData.floorplanSurfaceOpacity = op;
-        return attachWallCornerMiterFills(mesh);
+        return mesh;
       }
       const group = new THREE.Group();
       group.userData.floorplanPick = true;
@@ -4043,7 +4261,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const tMid = (it.t0 + it.t1) / 2;
         pushWallSegmentMesh(group, segLen, tMid, it.t0, it.t1, matsForInterval(it.roomPosZ, it.roomNegZ));
       }
-      return attachWallCornerMiterFills(group.children.length ? group : null);
+      return group.children.length ? group : null;
     }
 
     const halfSpan = lenWorld / 2;
@@ -4088,7 +4306,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         group.add(mesh);
       }
     }
-    return attachWallCornerMiterFills(group.children.length ? group : null);
+    return group.children.length ? group : null;
   }
 
   /**
