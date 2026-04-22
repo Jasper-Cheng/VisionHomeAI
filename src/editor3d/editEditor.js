@@ -3141,6 +3141,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   /** 两墙单位方向叉积 |sin θ| 小于此值视为同向共线（直线相接），不做 L 补角 */
   const WALL_JOIN_PARALLEL_CROSS_MAX = 0.06;
 
+  function emptyWallEndpointExtensionsCm() {
+    return {
+      startExtCm: 0,
+      endExtCm: 0,
+      startMiterFill: null,
+      endMiterFill: null,
+      startTrimClip: null,
+      endTrimClip: null,
+    };
+  }
+
   function dist2PointToSegmentCm(px, py, ax, ay, bx, by) {
     const vx = bx - ax;
     const vy = by - ay;
@@ -3307,15 +3318,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    *   startExtCm: number,
    *   endExtCm: number,
    *   startMiterFill: { endpoint: "start", cornerType: string, triangleCm: number[][], seamCm: number[][] } | null,
-   *   endMiterFill: { endpoint: "end", cornerType: string, triangleCm: number[][], seamCm: number[][] } | null
+   *   endMiterFill: { endpoint: "end", cornerType: string, triangleCm: number[][], seamCm: number[][] } | null,
+   *   startTrimClip: { pointCm: number[], dirCm: number[], keepPointCm: number[] } | null,
+   *   endTrimClip: { pointCm: number[], dirCm: number[], keepPointCm: number[] } | null
    * }}
    */
   function computeWallEndpointExtensionsCm(wall, floorWalls) {
     if (!wall || !Array.isArray(floorWalls)) {
-      return { startExtCm: 0, endExtCm: 0, startMiterFill: null, endMiterFill: null };
+      return emptyWallEndpointExtensionsCm();
     }
     if (!Array.isArray(wall.start) || wall.start.length < 2 || !Array.isArray(wall.end) || wall.end.length < 2) {
-      return { startExtCm: 0, endExtCm: 0, startMiterFill: null, endMiterFill: null };
+      return emptyWallEndpointExtensionsCm();
     }
     const wid = String(wall.id ?? "").trim();
     const sx = snap(Number(wall.start[0]));
@@ -3323,12 +3336,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const ex = snap(Number(wall.end[0]));
     const ey = snap(Number(wall.end[1]));
     if (![sx, sy, ex, ey].every((v) => Number.isFinite(v))) {
-      return { startExtCm: 0, endExtCm: 0, startMiterFill: null, endMiterFill: null };
+      return emptyWallEndpointExtensionsCm();
     }
     const wdx = ex - sx;
     const wdy = ey - sy;
     const wlen = Math.hypot(wdx, wdy);
-    if (wlen < 1e-6) return { startExtCm: 0, endExtCm: 0, startMiterFill: null, endMiterFill: null };
+    if (wlen < 1e-6) return emptyWallEndpointExtensionsCm();
     const ux = wdx / wlen;
     const uy = wdy / wlen;
     const wallOrientationRaw = String(wall.orientation ?? "").trim().toLowerCase();
@@ -3345,6 +3358,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     let endTrimCm = 0;
     let startMiterFill = null;
     let endMiterFill = null;
+    let startTrimClip = null;
+    let endTrimClip = null;
     const eps2 = WALL_JOIN_POINT_EPS_CM * WALL_JOIN_POINT_EPS_CM;
     const tMin = WALL_JOIN_SEGMENT_INTERIOR_T;
     const startMiterInfo = getLCornerMiterInfoAtPlanPoint(sx, sy, floorWalls, wallOrientation);
@@ -3352,7 +3367,23 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const startMiter = !!startMiterInfo;
     const endMiter = !!endMiterInfo;
 
-    function endpointTrimForSplitMain(px, py) {
+    function trimClipForOtherWallSide(px, py, dirIntoWallX, dirIntoWallY, otherUx, otherUy, otherHalfTh) {
+      const cross = Math.abs(dirIntoWallX * otherUy - dirIntoWallY * otherUx);
+      if (cross <= WALL_JOIN_PARALLEL_CROSS_MAX) return null;
+      const nx = -otherUy;
+      const ny = otherUx;
+      const sideSign = dirIntoWallX * nx + dirIntoWallY * ny >= 0 ? 1 : -1;
+      const sideX = px + nx * sideSign * otherHalfTh;
+      const sideY = py + ny * sideSign * otherHalfTh;
+      const keepOffset = Math.max(otherHalfTh + 1, 2);
+      return {
+        pointCm: [sideX, sideY],
+        dirCm: [otherUx, otherUy],
+        keepPointCm: [px + dirIntoWallX * keepOffset, py + dirIntoWallY * keepOffset],
+      };
+    }
+
+    function endpointTrimForSplitMain(px, py, dirIntoWallX, dirIntoWallY) {
       /** @type {{ ux: number, uy: number, halfTh: number }[]} */
       const touches = [];
       for (const other of floorWalls) {
@@ -3376,8 +3407,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (halfTh < 1e-6) continue;
         touches.push({ ux: (bx - ax) / segLen, uy: (by - ay) / segLen, halfTh });
       }
-      if (touches.length < 2) return 0;
+      if (touches.length < 2) return { trim: 0, clip: null };
       let trim = 0;
+      let clip = null;
       for (let i = 0; i < touches.length; i++) {
         for (let j = i + 1; j < touches.length; j++) {
           const a = touches[i];
@@ -3387,10 +3419,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           const alignA = Math.abs(ux * a.uy - uy * a.ux);
           const alignB = Math.abs(ux * b.uy - uy * b.ux);
           if (alignA <= WALL_JOIN_PARALLEL_CROSS_MAX || alignB <= WALL_JOIN_PARALLEL_CROSS_MAX) continue;
-          trim = Math.max(trim, a.halfTh, b.halfTh);
+          const other = a.halfTh >= b.halfTh ? a : b;
+          const trimCandidate = other.halfTh / Math.max(alignA, 1e-6);
+          if (trimCandidate > trim) {
+            trim = trimCandidate;
+            clip = trimClipForOtherWallSide(px, py, dirIntoWallX, dirIntoWallY, other.ux, other.uy, other.halfTh);
+          }
         }
       }
-      return trim;
+      return { trim, clip };
     }
 
     for (const other of floorWalls) {
@@ -3405,11 +3442,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const bx = snap(Number(other.end[0]));
       const by = snap(Number(other.end[1]));
       if (![ax, ay, bx, by].every((v) => Number.isFinite(v))) continue;
-      if (Math.hypot(bx - ax, by - ay) < 1e-6) continue;
+      const otherLen = Math.hypot(bx - ax, by - ay);
+      if (otherLen < 1e-6) continue;
+      const otherUx = (bx - ax) / otherLen;
+      const otherUy = (by - ay) / otherLen;
 
       const otherTh = Number(other.thickness);
       const candidate = Math.max(0, (Number.isFinite(otherTh) && otherTh > 0 ? otherTh : 10) / 2);
       if (candidate < 1e-6) continue;
+      const crossMag = Math.abs(ux * otherUy - uy * otherUx);
+      const trimCandidate = crossMag > WALL_JOIN_PARALLEL_CROSS_MAX
+        ? candidate / Math.max(crossMag, 1e-6)
+        : candidate;
 
       const sHit = dist2PointToSegmentCm(sx, sy, ax, ay, bx, by);
       const eHit = dist2PointToSegmentCm(ex, ey, ax, ay, bx, by);
@@ -3425,7 +3469,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           startExtCm = Math.max(startExtCm, candidate);
         }
         if (startOnOtherInterior) {
-          startTrimCm = Math.min(startTrimCm, -candidate);
+          if (trimCandidate > -startTrimCm) {
+            startTrimCm = -trimCandidate;
+            startTrimClip = trimClipForOtherWallSide(sx, sy, ux, uy, otherUx, otherUy, candidate);
+          }
         }
       }
 
@@ -3440,7 +3487,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           endExtCm = Math.max(endExtCm, candidate);
         }
         if (endOnOtherInterior) {
-          endTrimCm = Math.min(endTrimCm, -candidate);
+          if (trimCandidate > -endTrimCm) {
+            endTrimCm = -trimCandidate;
+            endTrimClip = trimClipForOtherWallSide(ex, ey, -ux, -uy, otherUx, otherUy, candidate);
+          }
         }
       }
     }
@@ -3466,15 +3516,21 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       endExtCm = -endExtCm;
     }
     if (startExtCm >= 0) {
-      const tTrim = endpointTrimForSplitMain(sx, sy);
-      if (tTrim > 1e-6) startExtCm = -tTrim;
+      const tTrim = endpointTrimForSplitMain(sx, sy, ux, uy);
+      if (tTrim.trim > 1e-6) {
+        startExtCm = -tTrim.trim;
+        startTrimClip = tTrim.clip;
+      }
     }
     if (endExtCm >= 0) {
-      const tTrim = endpointTrimForSplitMain(ex, ey);
-      if (tTrim > 1e-6) endExtCm = -tTrim;
+      const tTrim = endpointTrimForSplitMain(ex, ey, -ux, -uy);
+      if (tTrim.trim > 1e-6) {
+        endExtCm = -tTrim.trim;
+        endTrimClip = tTrim.clip;
+      }
     }
 
-    return { startExtCm, endExtCm, startMiterFill, endMiterFill };
+    return { startExtCm, endExtCm, startMiterFill, endMiterFill, startTrimClip, endTrimClip };
   }
 
   /**
@@ -3530,6 +3586,66 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return [...set].sort((u, v) => u - v);
   }
 
+  function mergeIntervalRanges(ranges, tol = 1e-6) {
+    const clean = (ranges || [])
+      .map((r) => {
+        const x0 = Number(r?.x0);
+        const x1 = Number(r?.x1);
+        if (!Number.isFinite(x0) || !Number.isFinite(x1)) return null;
+        return x0 <= x1 ? { x0, x1 } : { x0: x1, x1: x0 };
+      })
+      .filter((r) => r && r.x1 - r.x0 > tol)
+      .sort((a, b) => a.x0 - b.x0);
+    if (!clean.length) return [];
+    const out = [clean[0]];
+    for (let i = 1; i < clean.length; i++) {
+      const prev = out[out.length - 1];
+      const cur = clean[i];
+      if (cur.x0 <= prev.x1 + tol) {
+        prev.x1 = Math.max(prev.x1, cur.x1);
+      } else {
+        out.push(cur);
+      }
+    }
+    return out;
+  }
+
+  function intervalRangeCovers(rangeList, x0, x1, tol = WALL_HOLE_EPS) {
+    const a = Math.min(x0, x1);
+    const b = Math.max(x0, x1);
+    return (rangeList || []).some((r) => a >= r.x0 - tol && b <= r.x1 + tol);
+  }
+
+  function mergeIntervalRanges(ranges, tol = 1e-6) {
+    const clean = (ranges || [])
+      .map((r) => {
+        const x0 = Number(r?.x0);
+        const x1 = Number(r?.x1);
+        if (!Number.isFinite(x0) || !Number.isFinite(x1)) return null;
+        return x0 <= x1 ? { x0, x1 } : { x0: x1, x1: x0 };
+      })
+      .filter((r) => r && r.x1 - r.x0 > tol)
+      .sort((a, b) => a.x0 - b.x0);
+    if (!clean.length) return [];
+    const out = [clean[0]];
+    for (let i = 1; i < clean.length; i++) {
+      const prev = out[out.length - 1];
+      const cur = clean[i];
+      if (cur.x0 <= prev.x1 + tol) {
+        prev.x1 = Math.max(prev.x1, cur.x1);
+      } else {
+        out.push(cur);
+      }
+    }
+    return out;
+  }
+
+  function intervalRangeCovers(rangeList, x0, x1, tol = WALL_HOLE_EPS) {
+    const a = Math.min(x0, x1);
+    const b = Math.max(x0, x1);
+    return (rangeList || []).some((r) => a >= r.x0 - tol && b <= r.x1 + tol);
+  }
+
   /**
    * 将墙体分段 box 的 UV 重映射到整堵墙统一坐标：
    * U 沿墙长 [u0,u1]，V 沿墙高 [v0,v1]，避免门窗切段后贴图断裂。
@@ -3554,6 +3670,36 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       uv.setXY(i, u0 + tx * (u1 - u0), v0 + ty * (v1 - v0));
     }
     uv.needsUpdate = true;
+  }
+
+  function removeGeometryGroupsByMaterialIndex(geo, materialIndices) {
+    if (!geo?.index || !Array.isArray(geo.groups) || !geo.groups.length) return;
+    const skip = new Set((materialIndices || []).map(Number).filter((v) => Number.isFinite(v)));
+    if (!skip.size) return;
+    const oldIndex = geo.index.array;
+    const kept = [];
+    const groups = [];
+    for (const group of geo.groups) {
+      if (skip.has(group.materialIndex)) continue;
+      const start = kept.length;
+      const end = group.start + group.count;
+      for (let i = group.start; i < end; i++) kept.push(oldIndex[i]);
+      groups.push({ start, count: group.count, materialIndex: group.materialIndex });
+    }
+    geo.setIndex(kept);
+    geo.clearGroups();
+    for (const group of groups) geo.addGroup(group.start, group.count, group.materialIndex);
+  }
+
+  function suppressWallBoxFaces(geo, opts = {}) {
+    const skip = [];
+    if (opts.skipEndCap) skip.push(0);
+    if (opts.skipStartCap) skip.push(1);
+    if (opts.skipTopCap) skip.push(2);
+    if (opts.skipBottomCap) skip.push(3);
+    if (opts.skipFaceA) skip.push(4);
+    if (opts.skipFaceB) skip.push(5);
+    removeGeometryGroupsByMaterialIndex(geo, skip);
   }
 
   function removeGeometryGroupsByMaterialIndex(geo, materialIndices) {
@@ -3719,6 +3865,28 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return pointOnSegmentCm(a, c, d, tol) && pointOnSegmentCm(b, c, d, tol);
   }
 
+  function pointOnSegmentCm(p, a, b, tol = WALL_JOIN_POINT_EPS_CM) {
+    const px = Number(p?.[0]);
+    const py = Number(p?.[1]);
+    const ax = Number(a?.[0]);
+    const ay = Number(a?.[1]);
+    const bx = Number(b?.[0]);
+    const by = Number(b?.[1]);
+    if (![px, py, ax, ay, bx, by].every((v) => Number.isFinite(v))) return false;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-9) return Math.hypot(px - ax, py - ay) <= tol;
+    const cross = Math.abs((px - ax) * dy - (py - ay) * dx);
+    if (cross > tol * len) return false;
+    const dot = (px - ax) * dx + (py - ay) * dy;
+    return dot >= -tol * len && dot <= len * len + tol * len;
+  }
+
+  function segmentOnSegmentCm(a, b, c, d, tol = WALL_JOIN_POINT_EPS_CM) {
+    return pointOnSegmentCm(a, c, d, tol) && pointOnSegmentCm(b, c, d, tol);
+  }
+
   function polygonArea2d(points) {
     if (!Array.isArray(points) || points.length < 3) return 0;
     let area = 0;
@@ -3791,6 +3959,44 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     let out = poly.slice();
     out = clip(out, (p) => p[0] >= xMin - eps, (a, b) => intersectAtX(a, b, xMin));
     out = clip(out, (p) => p[0] <= xMax + eps, (a, b) => intersectAtX(a, b, xMax));
+    return out.length >= 3 && Math.abs(polygonArea2d(out)) > 1e-10 ? out : [];
+  }
+
+  function clipLocalPolygonByLineKeepPoint(poly, lineA, lineB, keepPoint) {
+    if (!Array.isArray(poly) || poly.length < 3) return [];
+    const ax = Number(lineA?.[0]);
+    const az = Number(lineA?.[1]);
+    const bx = Number(lineB?.[0]);
+    const bz = Number(lineB?.[1]);
+    const kx = Number(keepPoint?.[0]);
+    const kz = Number(keepPoint?.[1]);
+    if (![ax, az, bx, bz, kx, kz].every((v) => Number.isFinite(v))) return poly;
+    const lx = bx - ax;
+    const lz = bz - az;
+    if (Math.hypot(lx, lz) < 1e-9) return poly;
+    const eps = 1e-8;
+    const keepCross = lx * (kz - az) - lz * (kx - ax);
+    const keepSign = keepCross >= 0 ? 1 : -1;
+    function side(p) {
+      return keepSign * (lx * (p[1] - az) - lz * (p[0] - ax));
+    }
+    const out = [];
+    let s = poly[poly.length - 1];
+    for (const e of poly) {
+      const sIn = side(s) >= -eps;
+      const eIn = side(e) >= -eps;
+      if (eIn) {
+        if (!sIn) {
+          const ip = lineIntersection2d(s, e, [ax, az], [bx, bz]);
+          if (ip) out.push(ip);
+        }
+        out.push(e);
+      } else if (sIn) {
+        const ip = lineIntersection2d(s, e, [ax, az], [bx, bz]);
+        if (ip) out.push(ip);
+      }
+      s = e;
+    }
     return out.length >= 3 && Math.abs(polygonArea2d(out)) > 1e-10 ? out : [];
   }
 
@@ -3968,6 +4174,126 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return false;
   }
 
+  function wallEndCapCoveredByOtherWallCm(wall, floorWalls, capCenterX, capCenterY, ux, uy, thicknessCm) {
+    if (!Array.isArray(floorWalls) || !Number.isFinite(capCenterX) || !Number.isFinite(capCenterY)) return false;
+    if (!Number.isFinite(ux) || !Number.isFinite(uy)) return false;
+    const half = Math.max(0, (Number.isFinite(thicknessCm) && thicknessCm > 0 ? thicknessCm : 10) / 2);
+    if (half < 1e-6) return false;
+    const nx = -uy * half;
+    const ny = ux * half;
+    const capA = [capCenterX + nx, capCenterY + ny];
+    const capB = [capCenterX - nx, capCenterY - ny];
+    const wid = String(wall?.id ?? "").trim();
+    const tol = Math.max(WALL_JOIN_POINT_EPS_CM, half * 0.05);
+    for (const other of floorWalls) {
+      if (!other || other === wall) continue;
+      const oid = String(other?.id ?? "").trim();
+      if (wid && oid && wid === oid) continue;
+      const seg = getExtendedWallSegmentCm(other, floorWalls);
+      if (!seg) continue;
+      const othTh = Number(other?.thickness);
+      const quad = makeWallQuadFromSegmentCm(seg, Number.isFinite(othTh) && othTh > 0 ? othTh : 10);
+      if (!quad || quad.length < 3) continue;
+      for (let i = 0; i < quad.length; i++) {
+        const a = quad[i];
+        const b = quad[(i + 1) % quad.length];
+        if (segmentOnSegmentCm(capA, capB, a, b, tol)) return true;
+      }
+    }
+    return false;
+  }
+
+  function computeParallelWallSideOverlapRangesLocal(wall, floorWalls, seg, lenCm, ux, uy, thicknessCm, scaleMetersPerCm) {
+    const empty = { faceA: [], faceB: [], splitXs: [] };
+    if (!wall || !Array.isArray(floorWalls) || !seg) return empty;
+    if (!Number.isFinite(lenCm) || lenCm < 1e-6) return empty;
+    if (!Number.isFinite(ux) || !Number.isFinite(uy)) return empty;
+    const half = Math.max(0, (Number.isFinite(thicknessCm) && thicknessCm > 0 ? thicknessCm : 10) / 2);
+    if (half < 1e-6) return empty;
+    const wid = String(wall?.id ?? "").trim();
+    const tol = Math.max(WALL_JOIN_POINT_EPS_CM, half * 0.05);
+    const currentStart = [Number(seg.x1), Number(seg.y1)];
+    const currentEnd = [Number(seg.x2), Number(seg.y2)];
+    if (!currentStart.concat(currentEnd).every((v) => Number.isFinite(v))) return empty;
+    const lenScale = Number(scaleMetersPerCm);
+    if (!Number.isFinite(lenScale) || lenScale <= 0) return empty;
+
+    function makeSideSegment(baseStart, baseEnd, nx, ny, faceKey, halfTh) {
+      return {
+        faceKey,
+        a: [baseStart[0] + nx * halfTh, baseStart[1] + ny * halfTh],
+        b: [baseEnd[0] + nx * halfTh, baseEnd[1] + ny * halfTh],
+      };
+    }
+
+    function lineOverlapOnCurrent(currentSide, otherSide) {
+      const crossA = Math.abs((otherSide.a[0] - currentSide.a[0]) * uy - (otherSide.a[1] - currentSide.a[1]) * ux);
+      const crossB = Math.abs((otherSide.b[0] - currentSide.a[0]) * uy - (otherSide.b[1] - currentSide.a[1]) * ux);
+      if (crossA > tol || crossB > tol) return null;
+      const ta = (otherSide.a[0] - currentSide.a[0]) * ux + (otherSide.a[1] - currentSide.a[1]) * uy;
+      const tb = (otherSide.b[0] - currentSide.a[0]) * ux + (otherSide.b[1] - currentSide.a[1]) * uy;
+      const start = Math.max(0, Math.min(ta, tb));
+      const end = Math.min(lenCm, Math.max(ta, tb));
+      return end - start > tol ? { start, end } : null;
+    }
+
+    const currentNormalPos = [-uy, ux];
+    const currentSides = {
+      faceA: makeSideSegment(currentStart, currentEnd, currentNormalPos[0], currentNormalPos[1], "faceA", half),
+      faceB: makeSideSegment(currentStart, currentEnd, -currentNormalPos[0], -currentNormalPos[1], "faceB", half),
+    };
+    const rangesCm = { faceA: [], faceB: [] };
+
+    for (const other of floorWalls) {
+      if (!other || other === wall) continue;
+      const oid = String(other?.id ?? "").trim();
+      if (wid && oid && wid === oid) continue;
+      const otherSeg = getExtendedWallSegmentCm(other, floorWalls);
+      if (!otherSeg) continue;
+      const ox1 = Number(otherSeg.x1);
+      const oy1 = Number(otherSeg.y1);
+      const ox2 = Number(otherSeg.x2);
+      const oy2 = Number(otherSeg.y2);
+      if (![ox1, oy1, ox2, oy2].every((v) => Number.isFinite(v))) continue;
+      const odx = ox2 - ox1;
+      const ody = oy2 - oy1;
+      const otherLen = Math.hypot(odx, ody);
+      if (otherLen < 1e-6) continue;
+      const oux = odx / otherLen;
+      const ouy = ody / otherLen;
+      const cross = Math.abs(ux * ouy - uy * oux);
+      if (cross > WALL_JOIN_PARALLEL_CROSS_MAX) continue;
+      const otherTh = Number(other?.thickness);
+      const otherHalf = Math.max(0, (Number.isFinite(otherTh) && otherTh > 0 ? otherTh : 10) / 2);
+      if (otherHalf < 1e-6) continue;
+      const otherNormalPos = [-ouy, oux];
+      const otherSides = [
+        makeSideSegment([ox1, oy1], [ox2, oy2], otherNormalPos[0], otherNormalPos[1], "faceA", otherHalf),
+        makeSideSegment([ox1, oy1], [ox2, oy2], -otherNormalPos[0], -otherNormalPos[1], "faceB", otherHalf),
+      ];
+      for (const faceKey of ["faceA", "faceB"]) {
+        const currentSide = currentSides[faceKey];
+        for (const otherSide of otherSides) {
+          const overlap = lineOverlapOnCurrent(currentSide, otherSide);
+          if (!overlap) continue;
+          rangesCm[faceKey].push({
+            x0: (-lenCm / 2 + overlap.start) * lenScale,
+            x1: (-lenCm / 2 + overlap.end) * lenScale,
+          });
+        }
+      }
+    }
+
+    const faceA = mergeIntervalRanges(rangesCm.faceA, WALL_HOLE_EPS);
+    const faceB = mergeIntervalRanges(rangesCm.faceB, WALL_HOLE_EPS);
+    const splitXs = mergeSplitEdges(
+      -((lenCm * lenScale) / 2),
+      (lenCm * lenScale) / 2,
+      faceA.concat(faceB).flatMap((r) => [r.x0, r.x1]),
+    ).filter((x) => x > -((lenCm * lenScale) / 2) + WALL_HOLE_EPS && x < (lenCm * lenScale) / 2 - WALL_HOLE_EPS);
+    return { faceA, faceB, splitXs };
+  }
+
   function buildWallOverlapHighlightGroup(floor, cx, cy, s, wallHeightCm, floorOpacity, floorLevelId) {
     const walls = floor?.walls || [];
     if (!walls.length) return null;
@@ -4098,7 +4424,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const ux = dxc / lenCmRaw;
     const uy = dyc / lenCmRaw;
 
-    const { startExtCm, endExtCm, startMiterFill, endMiterFill } = computeWallEndpointExtensionsCm(wall, floor?.walls || []);
+    const { startExtCm, endExtCm, startMiterFill, endMiterFill, startTrimClip, endTrimClip } = computeWallEndpointExtensionsCm(wall, floor?.walls || []);
     const x1 = x1Raw - ux * startExtCm;
     const y1 = y1Raw - uy * startExtCm;
     const x2 = x2Raw + ux * endExtCm;
@@ -4120,17 +4446,35 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const rotY = Math.atan2(dz, dx);
     const op = floorOpacity ?? 1;
     const cornerMiterFills = [startMiterFill, endMiterFill].filter(Boolean);
-    const wallType = String(wall?.type ?? "").trim().toLowerCase();
-    const wallName = String(wall?.name ?? "").trim();
-    const isExternalWall =
-      wallType === "external" ||
-      wallType === "exterior" ||
-      wallType === "outer" ||
-      (Array.isArray(wall?.faces) && wall.faces.some((face) => String(face?.side ?? "").trim().toLowerCase() === "exterior")) ||
-      (!wallType && wallName.includes("外墙"));
-    const shouldClampMiterSelection = !isExternalWall;
     const skipWallStartCap = wallEndCapCoveredByOtherWallCm(wall, floor?.walls || [], x1, y1, ux, uy, thicknessCm);
     const skipWallEndCap = wallEndCapCoveredByOtherWallCm(wall, floor?.walls || [], x2, y2, ux, uy, thicknessCm);
+    const parallelSideOverlaps = computeParallelWallSideOverlapRangesLocal(
+      wall,
+      floor?.walls || [],
+      { x1, y1, x2, y2 },
+      lenCm,
+      ux,
+      uy,
+      thicknessCm,
+      s / 100,
+    );
+    const parallelSplitXs = parallelSideOverlaps.splitXs || [];
+    const halfThick = thickM / 2;
+
+    function wallSideSuppressForRange(xa, xb) {
+      return {
+        skipFaceA: intervalRangeCovers(parallelSideOverlaps.faceA, xa, xb),
+        skipFaceB: intervalRangeCovers(parallelSideOverlaps.faceB, xa, xb),
+      };
+    }
+
+    function wallSideSkipEdgesForRange(xa, xb) {
+      const suppress = wallSideSuppressForRange(xa, xb);
+      const out = [];
+      if (suppress.skipFaceA) out.push([[xa, halfThick], [xb, halfThick]]);
+      if (suppress.skipFaceB) out.push([[xa, -halfThick], [xb, -halfThick]]);
+      return { suppress, skipSideEdges: out };
+    }
 
     function makeWallMaterial() {
       if (wallStyleMat) {
@@ -4198,15 +4542,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
 
     function buildMiteredWallPlanPolygonLocal() {
-      if (!cornerMiterFills.length) return null;
+      const trimClips = [startTrimClip, endTrimClip].filter(Boolean);
+      if (!cornerMiterFills.length && !trimClips.length) return null;
       const halfSpan = lenWorld / 2;
       const halfThick = thickM / 2;
-      const pts = [
-        [-halfSpan, -halfThick],
-        [halfSpan, -halfThick],
-        [halfSpan, halfThick],
-        [-halfSpan, halfThick],
-      ];
       const k = s / 100;
       const wallCenter = new THREE.Vector3(((x1 + x2) / 2 - cx) * k, 0, ((y1 + y2) / 2 - cy) * k);
       const wallMatrix = new THREE.Matrix4().makeRotationY(rotY);
@@ -4221,6 +4560,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         v.set((px - cx) * k, 0, (py - cy) * k).applyMatrix4(worldToWall);
         return [v.x, v.z];
       }
+      const rawStartLocal = startTrimClip ? planPointToWallLocal([x1Raw, y1Raw]) : null;
+      const rawEndLocal = endTrimClip ? planPointToWallLocal([x2Raw, y2Raw]) : null;
+      const baseMinX = rawStartLocal ? Math.min(-halfSpan, rawStartLocal[0]) : -halfSpan;
+      const baseMaxX = rawEndLocal ? Math.max(halfSpan, rawEndLocal[0]) : halfSpan;
+      const pts = [
+        [baseMinX, -halfThick],
+        [baseMaxX, -halfThick],
+        [baseMaxX, halfThick],
+        [baseMinX, halfThick],
+      ];
       for (const fill of cornerMiterFills) {
         for (const pt of fill?.triangleCm || []) {
           const localPt = planPointToWallLocal(pt);
@@ -4232,7 +4581,41 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           if (a && b) skipSideEdges.push([a, b]);
         }
       }
-      const poly = convexHull2d(pts);
+      for (const clip of trimClips) {
+        const pointCm = clip?.pointCm;
+        const dirCm = clip?.dirCm;
+        const keepPointCm = clip?.keepPointCm;
+        if (!Array.isArray(pointCm) || !Array.isArray(dirCm) || !Array.isArray(keepPointCm)) continue;
+        const px = Number(pointCm[0]);
+        const py = Number(pointCm[1]);
+        const dxClip = Number(dirCm[0]);
+        const dyClip = Number(dirCm[1]);
+        if (![px, py, dxClip, dyClip].every((v) => Number.isFinite(v))) continue;
+        const lineHalfCm = Math.max(lenCmRaw, thicknessCm, 100) * 100;
+        const a = planPointToWallLocal([px - dxClip * lineHalfCm, py - dyClip * lineHalfCm]);
+        const b = planPointToWallLocal([px + dxClip * lineHalfCm, py + dyClip * lineHalfCm]);
+        const keepPoint = planPointToWallLocal(keepPointCm);
+        if (a && b && keepPoint) skipSideEdges.push([a, b]);
+      }
+      let poly = convexHull2d(pts);
+      for (const clip of trimClips) {
+        const pointCm = clip?.pointCm;
+        const dirCm = clip?.dirCm;
+        const keepPointCm = clip?.keepPointCm;
+        if (!Array.isArray(pointCm) || !Array.isArray(dirCm) || !Array.isArray(keepPointCm)) continue;
+        const px = Number(pointCm[0]);
+        const py = Number(pointCm[1]);
+        const dxClip = Number(dirCm[0]);
+        const dyClip = Number(dirCm[1]);
+        if (![px, py, dxClip, dyClip].every((v) => Number.isFinite(v))) continue;
+        const a = planPointToWallLocal([px, py]);
+        const b = planPointToWallLocal([px + dxClip, py + dyClip]);
+        const keepPoint = planPointToWallLocal(keepPointCm);
+        if (a && b && keepPoint) {
+          poly = clipLocalPolygonByLineKeepPoint(poly, a, b, keepPoint);
+          if (poly.length < 3) return null;
+        }
+      }
       return poly.length >= 3 ? { poly, skipSideEdges } : null;
     }
 
@@ -4243,14 +4626,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!geo) return;
       const mesh = new THREE.Mesh(geo, wallMaterialArrayAtT(tMid));
       tagWallMesh(mesh);
-      if (shouldClampMiterSelection) {
-        mesh.userData.floorplanWallSelectionClampXMin = -lenWorld / 2;
-        mesh.userData.floorplanWallSelectionClampXMax = lenWorld / 2;
-      }
       parent.add(mesh);
     }
 
-    function buildMiteredWallMesh(planPoly, skipSideEdges = []) {
+    function buildMiteredWallMesh(planPoly, baseSkipSideEdges = []) {
       const group = new THREE.Group();
       group.position.set(((x1 + x2) / 2 - cx) * (s / 100), 0, ((y1 + y2) / 2 - cy) * (s / 100));
       group.rotation.y = rotY;
@@ -4264,21 +4643,59 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const polyMaxX = bounds.maxX;
       const hasStartExtension = polyMinX < -halfSpan - WALL_HOLE_EPS;
       const hasEndExtension = polyMaxX > halfSpan + WALL_HOLE_EPS;
-      const pieceOptions = (skipCapAtX = []) => ({ skipSideEdges, skipCapAtX });
+      const coreSplitXs = mergeSplitEdges(-halfSpan, halfSpan, parallelSplitXs);
+      function pieceOptions(xa, xb, skipCapAtX = [], extra = {}) {
+        const { skipSideEdges } = wallSideSkipEdgesForRange(xa, xb);
+        return {
+          ...extra,
+          skipCapAtX,
+          skipSideEdges: baseSkipSideEdges.concat(skipSideEdges),
+        };
+      }
       const fullPieceSkipCapAtX = [];
       if (skipWallStartCap && !hasStartExtension) fullPieceSkipCapAtX.push(-halfSpan);
       if (skipWallEndCap && !hasEndExtension) fullPieceSkipCapAtX.push(halfSpan);
       if (!holes.length) {
         const useRoomWalls = style && typeof getMaterialForKey === "function";
         if (!useRoomWalls) {
-          addMiteredWallPiece(group, planPoly, polyMinX, polyMaxX, 0, hM, 0.5, pieceOptions(fullPieceSkipCapAtX));
+          if (!hasStartExtension && !hasEndExtension && coreSplitXs.length === 2) {
+            addMiteredWallPiece(group, planPoly, polyMinX, polyMaxX, 0, hM, 0.5, pieceOptions(-halfSpan, halfSpan, fullPieceSkipCapAtX));
+          } else {
+            if (hasStartExtension) {
+              addMiteredWallPiece(group, planPoly, polyMinX, -halfSpan, 0, hM, 0, {
+                skipCapAtX: [-halfSpan],
+                skipSideEdges: baseSkipSideEdges.slice(),
+              });
+            }
+            if (hasEndExtension) {
+              addMiteredWallPiece(group, planPoly, halfSpan, polyMaxX, 0, hM, 1, {
+                skipCapAtX: [halfSpan],
+                skipSideEdges: baseSkipSideEdges.slice(),
+              });
+            }
+            for (let i = 0; i < coreSplitXs.length - 1; i++) {
+              const xa = coreSplitXs[i];
+              const xb = coreSplitXs[i + 1];
+              if (xb - xa < WALL_HOLE_EPS) continue;
+              const skipCapAtX = [];
+              if (i > 0 || hasStartExtension || skipWallStartCap) skipCapAtX.push(xa);
+              if (i < coreSplitXs.length - 2 || hasEndExtension || skipWallEndCap) skipCapAtX.push(xb);
+              addMiteredWallPiece(group, planPoly, xa, xb, 0, hM, ((xa + xb) / 2 + halfSpan) / lenWorld, pieceOptions(xa, xb, skipCapAtX));
+            }
+          }
           return group.children.length ? group : null;
         }
         if (hasStartExtension) {
-          addMiteredWallPiece(group, planPoly, polyMinX, -halfSpan, 0, hM, 0, pieceOptions([-halfSpan]));
+          addMiteredWallPiece(group, planPoly, polyMinX, -halfSpan, 0, hM, 0, {
+            skipCapAtX: [-halfSpan],
+            skipSideEdges: baseSkipSideEdges.slice(),
+          });
         }
         if (hasEndExtension) {
-          addMiteredWallPiece(group, planPoly, halfSpan, polyMaxX, 0, hM, 1, pieceOptions([halfSpan]));
+          addMiteredWallPiece(group, planPoly, halfSpan, polyMaxX, 0, hM, 1, {
+            skipCapAtX: [halfSpan],
+            skipSideEdges: baseSkipSideEdges.slice(),
+          });
         }
         const N = Math.min(256, Math.max(24, Math.ceil(lenCm / 4)));
         const samples = [];
@@ -4296,25 +4713,37 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             const b = i - 1;
             const t0 = tLeft(start);
             const t1 = tRight(b);
-            const tMid = (t0 + t1) / 2;
-            const xa = -halfSpan + lenWorld * t0;
-            const xb = -halfSpan + lenWorld * t1;
-            const skipCapAtX = [];
-            if (t0 > WALL_HOLE_EPS || hasStartExtension || skipWallStartCap) skipCapAtX.push(xa);
-            if (t1 < 1 - WALL_HOLE_EPS || hasEndExtension || skipWallEndCap) skipCapAtX.push(xb);
-            addMiteredWallPiece(group, planPoly, xa, xb, 0, hM, tMid, pieceOptions(skipCapAtX));
+            const xa0 = -halfSpan + lenWorld * t0;
+            const xb0 = -halfSpan + lenWorld * t1;
+            const xsLocal = mergeSplitEdges(xa0, xb0, parallelSplitXs);
+            for (let k = 0; k < xsLocal.length - 1; k++) {
+              const xa = xsLocal[k];
+              const xb = xsLocal[k + 1];
+              if (xb - xa < WALL_HOLE_EPS) continue;
+              const tMid = ((xa + xb) / 2 + halfSpan) / lenWorld;
+              const skipCapAtX = [];
+              if (k > 0 || t0 > WALL_HOLE_EPS || hasStartExtension || skipWallStartCap) skipCapAtX.push(xa);
+              if (k < xsLocal.length - 2 || t1 < 1 - WALL_HOLE_EPS || hasEndExtension || skipWallEndCap) skipCapAtX.push(xb);
+              addMiteredWallPiece(group, planPoly, xa, xb, 0, hM, tMid, pieceOptions(xa, xb, skipCapAtX));
+            }
             start = i;
           }
         }
         return group.children.length ? group : null;
       }
-      const xs = mergeSplitEdges(-halfSpan, halfSpan, holes.flatMap((h) => [h.x0, h.x1]));
+      const xs = mergeSplitEdges(-halfSpan, halfSpan, holes.flatMap((h) => [h.x0, h.x1]).concat(parallelSplitXs));
       const ys = mergeSplitEdges(0, hM, holes.flatMap((h) => [h.y0, h.y1]));
       if (hasStartExtension) {
-        addMiteredWallPiece(group, planPoly, polyMinX, -halfSpan, 0, hM, 0, pieceOptions([-halfSpan]));
+        addMiteredWallPiece(group, planPoly, polyMinX, -halfSpan, 0, hM, 0, {
+          skipCapAtX: [-halfSpan],
+          skipSideEdges: baseSkipSideEdges.slice(),
+        });
       }
       if (hasEndExtension) {
-        addMiteredWallPiece(group, planPoly, halfSpan, polyMaxX, 0, hM, 1, pieceOptions([halfSpan]));
+        addMiteredWallPiece(group, planPoly, halfSpan, polyMaxX, 0, hM, 1, {
+          skipCapAtX: [halfSpan],
+          skipSideEdges: baseSkipSideEdges.slice(),
+        });
       }
       for (let i = 0; i < xs.length - 1; i++) {
         const xa = xs[i];
@@ -4334,7 +4763,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           if (hasLeftSolidNeighbor || (hasStartExtension && Math.abs(xa + halfSpan) <= WALL_HOLE_EPS) || (skipWallStartCap && Math.abs(xa + halfSpan) <= WALL_HOLE_EPS)) skipCapAtX.push(xa);
           if (hasRightSolidNeighbor || (hasEndExtension && Math.abs(xb - halfSpan) <= WALL_HOLE_EPS) || (skipWallEndCap && Math.abs(xb - halfSpan) <= WALL_HOLE_EPS)) skipCapAtX.push(xb);
           addMiteredWallPiece(group, planPoly, xa, xb, ya, yb, tMid, {
-            ...pieceOptions(skipCapAtX),
+            ...pieceOptions(xa, xb, skipCapAtX),
             skipBottomFace: hasBottomSolidNeighbor,
             skipTopFace: hasTopSolidNeighbor,
           });
@@ -4372,24 +4801,46 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     if (!holes.length) {
       const useRoomWalls = style && typeof getMaterialForKey === "function";
+      const coreSplitXs = mergeSplitEdges(-lenWorld / 2, lenWorld / 2, parallelSplitXs);
       if (!useRoomWalls) {
-        const geo = new THREE.BoxGeometry(lenWorld, hM, thickM);
-        remapWallBoxUvToWallSpan(geo, 0, 1, 0, 1);
-        suppressWallBoxFaces(geo, { skipStartCap: skipWallStartCap, skipEndCap: skipWallEndCap });
+        const fullSideSuppress = wallSideSuppressForRange(-lenWorld / 2, lenWorld / 2);
+        if (coreSplitXs.length === 2 && !fullSideSuppress.skipFaceA && !fullSideSuppress.skipFaceB) {
+          const geo = new THREE.BoxGeometry(lenWorld, hM, thickM);
+          remapWallBoxUvToWallSpan(geo, 0, 1, 0, 1);
+          suppressWallBoxFaces(geo, { skipStartCap: skipWallStartCap, skipEndCap: skipWallEndCap });
+          const mat = makeWallMaterial();
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.castShadow = true;
+          mesh.receiveShadow = false;
+          mesh.position.set(((x1 + x2) / 2 - cx) * (s / 100), hM / 2, ((y1 + y2) / 2 - cy) * (s / 100));
+          mesh.rotation.y = rotY;
+          mesh.userData.floorplanPick = true;
+          mesh.userData.floorplanWallFace = true;
+          mesh.userData.floorplanWall = true; // 用于快速切换
+          mesh.userData.wallId = wallIdStr; // 用于快速切换
+          mesh.userData.floorplanWallId = wallIdStr;
+          mesh.userData.floorplanFloorLevelId = floorIdStr;
+          mesh.userData.floorplanSurfaceOpacity = op;
+          return mesh;
+        }
+        const group = new THREE.Group();
+        group.userData.floorplanPick = true;
         const mat = makeWallMaterial();
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.castShadow = true;
-        mesh.receiveShadow = false;
-        mesh.position.set(((x1 + x2) / 2 - cx) * (s / 100), hM / 2, ((y1 + y2) / 2 - cy) * (s / 100));
-        mesh.rotation.y = rotY;
-        mesh.userData.floorplanPick = true;
-        mesh.userData.floorplanWallFace = true;
-        mesh.userData.floorplanWall = true; // 用于快速切换
-        mesh.userData.wallId = wallIdStr; // 用于快速切换
-        mesh.userData.floorplanWallId = wallIdStr;
-        mesh.userData.floorplanFloorLevelId = floorIdStr;
-        mesh.userData.floorplanSurfaceOpacity = op;
-        return mesh;
+        for (let i = 0; i < coreSplitXs.length - 1; i++) {
+          const xa = coreSplitXs[i];
+          const xb = coreSplitXs[i + 1];
+          if (xb - xa < WALL_HOLE_EPS) continue;
+          const t0 = (xa + lenWorld / 2) / lenWorld;
+          const t1 = (xb + lenWorld / 2) / lenWorld;
+          const suppress = wallSideSuppressForRange(xa, xb);
+          pushWallSegmentMesh(group, xb - xa, (t0 + t1) / 2, t0, t1, mat, {
+            skipStartCap: i > 0 || skipWallStartCap,
+            skipEndCap: i < coreSplitXs.length - 2 || skipWallEndCap,
+            skipFaceA: suppress.skipFaceA,
+            skipFaceB: suppress.skipFaceB,
+          });
+        }
+        return group.children.length ? group : null;
       }
       const N = Math.min(256, Math.max(24, Math.ceil(lenCm / 4)));
       const samples = [];
@@ -4418,23 +4869,34 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       }
       if (intervals.length === 1) {
         const it = intervals[0];
-        const tMid = (it.t0 + it.t1) / 2;
-        const { mats } = wallFaceMaterialsAtT(tMid);
-        const geo = new THREE.BoxGeometry(lenWorld * (it.t1 - it.t0), hM, thickM);
-        remapWallBoxUvToWallSpan(geo, it.t0, it.t1, 0, 1);
-        suppressWallBoxFaces(geo, { skipStartCap: skipWallStartCap, skipEndCap: skipWallEndCap });
-        const mesh = new THREE.Mesh(geo, mats || makeWallMaterial());
-        mesh.castShadow = true;
-        mesh.receiveShadow = false;
-        const tm = (it.t0 + it.t1) / 2;
-        mesh.position.set((x1 + tm * (x2 - x1) - cx) * (s / 100), hM / 2, (y1 + tm * (y2 - y1) - cy) * (s / 100));
-        mesh.rotation.y = rotY;
-        mesh.userData.floorplanPick = true;
-        mesh.userData.floorplanWallFace = true;
-        mesh.userData.floorplanWallId = wallIdStr;
-        mesh.userData.floorplanFloorLevelId = floorIdStr;
-        mesh.userData.floorplanSurfaceOpacity = op;
-        return mesh;
+        const xa0 = -lenWorld / 2 + lenWorld * it.t0;
+        const xb0 = -lenWorld / 2 + lenWorld * it.t1;
+        const xsLocal = mergeSplitEdges(xa0, xb0, parallelSplitXs);
+        if (xsLocal.length === 2) {
+          const tMid = (it.t0 + it.t1) / 2;
+          const { mats } = wallFaceMaterialsAtT(tMid);
+          const geo = new THREE.BoxGeometry(lenWorld * (it.t1 - it.t0), hM, thickM);
+          remapWallBoxUvToWallSpan(geo, it.t0, it.t1, 0, 1);
+          const suppress = wallSideSuppressForRange(xa0, xb0);
+          suppressWallBoxFaces(geo, {
+            skipStartCap: skipWallStartCap,
+            skipEndCap: skipWallEndCap,
+            skipFaceA: suppress.skipFaceA,
+            skipFaceB: suppress.skipFaceB,
+          });
+          const mesh = new THREE.Mesh(geo, mats || makeWallMaterial());
+          mesh.castShadow = true;
+          mesh.receiveShadow = false;
+          const tm = (it.t0 + it.t1) / 2;
+          mesh.position.set((x1 + tm * (x2 - x1) - cx) * (s / 100), hM / 2, (y1 + tm * (y2 - y1) - cy) * (s / 100));
+          mesh.rotation.y = rotY;
+          mesh.userData.floorplanPick = true;
+          mesh.userData.floorplanWallFace = true;
+          mesh.userData.floorplanWallId = wallIdStr;
+          mesh.userData.floorplanFloorLevelId = floorIdStr;
+          mesh.userData.floorplanSurfaceOpacity = op;
+          return mesh;
+        }
       }
       const group = new THREE.Group();
       group.userData.floorplanPick = true;
@@ -4452,19 +4914,31 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       for (const it of intervals) {
         const dt = it.t1 - it.t0;
         if (dt < 1e-8) continue;
-        const segLen = lenWorld * dt;
-        if (segLen < 0.015) continue;
-        const tMid = (it.t0 + it.t1) / 2;
-        pushWallSegmentMesh(group, segLen, tMid, it.t0, it.t1, matsForInterval(it.roomPosZ, it.roomNegZ), {
-          skipStartCap: it.t0 > WALL_HOLE_EPS || skipWallStartCap,
-          skipEndCap: it.t1 < 1 - WALL_HOLE_EPS || skipWallEndCap,
-        });
+        const xa0 = -lenWorld / 2 + lenWorld * it.t0;
+        const xb0 = -lenWorld / 2 + lenWorld * it.t1;
+        const xsLocal = mergeSplitEdges(xa0, xb0, parallelSplitXs);
+        for (let i = 0; i < xsLocal.length - 1; i++) {
+          const xa = xsLocal[i];
+          const xb = xsLocal[i + 1];
+          const segLen = xb - xa;
+          if (segLen < 0.015) continue;
+          const t0 = (xa + lenWorld / 2) / lenWorld;
+          const t1 = (xb + lenWorld / 2) / lenWorld;
+          const tMid = (t0 + t1) / 2;
+          const suppress = wallSideSuppressForRange(xa, xb);
+          pushWallSegmentMesh(group, segLen, tMid, t0, t1, matsForInterval(it.roomPosZ, it.roomNegZ), {
+            skipStartCap: i > 0 || it.t0 > WALL_HOLE_EPS || skipWallStartCap,
+            skipEndCap: i < xsLocal.length - 2 || it.t1 < 1 - WALL_HOLE_EPS || skipWallEndCap,
+            skipFaceA: suppress.skipFaceA,
+            skipFaceB: suppress.skipFaceB,
+          });
+        }
       }
       return group.children.length ? group : null;
     }
 
     const halfSpan = lenWorld / 2;
-    const xs = mergeSplitEdges(-halfSpan, halfSpan, holes.flatMap((h) => [h.x0, h.x1]));
+    const xs = mergeSplitEdges(-halfSpan, halfSpan, holes.flatMap((h) => [h.x0, h.x1]).concat(parallelSplitXs));
     const ys = mergeSplitEdges(0, hM, holes.flatMap((h) => [h.y0, h.y1]));
     const group = new THREE.Group();
     group.position.set(((x1 + x2) / 2 - cx) * (s / 100), 0, ((y1 + y2) / 2 - cy) * (s / 100));
@@ -4494,11 +4968,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const hasRightSolidNeighbor = i < xs.length - 2 && !cellFullyInsideAnyHole(xb, xs[i + 2], ya, yb, holes);
         const hasBottomSolidNeighbor = j > 0 && !cellFullyInsideAnyHole(xa, xb, ys[j - 1], ya, holes);
         const hasTopSolidNeighbor = j < ys.length - 2 && !cellFullyInsideAnyHole(xa, xb, yb, ys[j + 2], holes);
+        const suppress = wallSideSuppressForRange(xa, xb);
         suppressWallBoxFaces(geo, {
           skipStartCap: hasLeftSolidNeighbor || (skipWallStartCap && Math.abs(xa + halfSpan) <= WALL_HOLE_EPS),
           skipEndCap: hasRightSolidNeighbor || (skipWallEndCap && Math.abs(xb - halfSpan) <= WALL_HOLE_EPS),
           skipBottomCap: hasBottomSolidNeighbor,
           skipTopCap: hasTopSolidNeighbor,
+          skipFaceA: suppress.skipFaceA,
+          skipFaceB: suppress.skipFaceB,
         });
         const tAlong = (cxLocal + halfSpan) / lenWorld;
         const { mats } = wallFaceMaterialsAtT(tAlong);
