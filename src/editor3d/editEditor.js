@@ -3556,6 +3556,34 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     uv.needsUpdate = true;
   }
 
+  function removeGeometryGroupsByMaterialIndex(geo, materialIndices) {
+    if (!geo?.index || !Array.isArray(geo.groups) || !geo.groups.length) return;
+    const skip = new Set((materialIndices || []).map(Number).filter((v) => Number.isFinite(v)));
+    if (!skip.size) return;
+    const oldIndex = geo.index.array;
+    const kept = [];
+    const groups = [];
+    for (const group of geo.groups) {
+      if (skip.has(group.materialIndex)) continue;
+      const start = kept.length;
+      const end = group.start + group.count;
+      for (let i = group.start; i < end; i++) kept.push(oldIndex[i]);
+      groups.push({ start, count: group.count, materialIndex: group.materialIndex });
+    }
+    geo.setIndex(kept);
+    geo.clearGroups();
+    for (const group of groups) geo.addGroup(group.start, group.count, group.materialIndex);
+  }
+
+  function suppressWallBoxFaces(geo, opts = {}) {
+    const skip = [];
+    if (opts.skipEndCap) skip.push(0);
+    if (opts.skipStartCap) skip.push(1);
+    if (opts.skipTopCap) skip.push(2);
+    if (opts.skipBottomCap) skip.push(3);
+    removeGeometryGroupsByMaterialIndex(geo, skip);
+  }
+
   /** @param {number[][]} pts */
   function polygonSignedAreaCm2(pts) {
     if (!Array.isArray(pts) || pts.length < 3) return 0;
@@ -3669,6 +3697,28 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     ];
   }
 
+  function pointOnSegmentCm(p, a, b, tol = WALL_JOIN_POINT_EPS_CM) {
+    const px = Number(p?.[0]);
+    const py = Number(p?.[1]);
+    const ax = Number(a?.[0]);
+    const ay = Number(a?.[1]);
+    const bx = Number(b?.[0]);
+    const by = Number(b?.[1]);
+    if (![px, py, ax, ay, bx, by].every((v) => Number.isFinite(v))) return false;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-9) return Math.hypot(px - ax, py - ay) <= tol;
+    const cross = Math.abs((px - ax) * dy - (py - ay) * dx);
+    if (cross > tol * len) return false;
+    const dot = (px - ax) * dx + (py - ay) * dy;
+    return dot >= -tol * len && dot <= len * len + tol * len;
+  }
+
+  function segmentOnSegmentCm(a, b, c, d, tol = WALL_JOIN_POINT_EPS_CM) {
+    return pointOnSegmentCm(a, c, d, tol) && pointOnSegmentCm(b, c, d, tol);
+  }
+
   function polygonArea2d(points) {
     if (!Array.isArray(points) || points.length < 3) return 0;
     let area = 0;
@@ -3771,6 +3821,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           return out.flat().every((v) => Number.isFinite(v)) ? out : null;
         }).filter(Boolean)
       : [];
+    const skipBottomFace = !!options?.skipBottomFace;
+    const skipTopFace = !!options?.skipTopFace;
 
     function uvFor(v) {
       return [(v[0] + halfSpan) / Math.max(1e-9, lenWorld), Number.isFinite(hM) && hM > 1e-9 ? v[1] / hM : 0];
@@ -3836,8 +3888,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const p0 = poly[0];
       const p1 = poly[i];
       const p2 = poly[i + 1];
-      pushTri([p0[0], y0, p0[1]], [p1[0], y0, p1[1]], [p2[0], y0, p2[1]], 3);
-      pushTri([p0[0], y1, p0[1]], [p2[0], y1, p2[1]], [p1[0], y1, p1[1]], 2);
+      if (!skipBottomFace) {
+        pushTri([p0[0], y0, p0[1]], [p1[0], y0, p1[1]], [p2[0], y0, p2[1]], 3);
+      }
+      if (!skipTopFace) {
+        pushTri([p0[0], y1, p0[1]], [p2[0], y1, p2[1]], [p1[0], y1, p1[1]], 2);
+      }
     }
     for (let i = 0; i < poly.length; i++) {
       const a = poly[i];
@@ -3881,6 +3937,35 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       x2: ex + ux * endExtCm,
       y2: ey + uy * endExtCm,
     };
+  }
+
+  function wallEndCapCoveredByOtherWallCm(wall, floorWalls, capCenterX, capCenterY, ux, uy, thicknessCm) {
+    if (!Array.isArray(floorWalls) || !Number.isFinite(capCenterX) || !Number.isFinite(capCenterY)) return false;
+    if (!Number.isFinite(ux) || !Number.isFinite(uy)) return false;
+    const half = Math.max(0, (Number.isFinite(thicknessCm) && thicknessCm > 0 ? thicknessCm : 10) / 2);
+    if (half < 1e-6) return false;
+    const nx = -uy * half;
+    const ny = ux * half;
+    const capA = [capCenterX + nx, capCenterY + ny];
+    const capB = [capCenterX - nx, capCenterY - ny];
+    const wid = String(wall?.id ?? "").trim();
+    const tol = Math.max(WALL_JOIN_POINT_EPS_CM, half * 0.05);
+    for (const other of floorWalls) {
+      if (!other || other === wall) continue;
+      const oid = String(other?.id ?? "").trim();
+      if (wid && oid && wid === oid) continue;
+      const seg = getExtendedWallSegmentCm(other, floorWalls);
+      if (!seg) continue;
+      const othTh = Number(other?.thickness);
+      const quad = makeWallQuadFromSegmentCm(seg, Number.isFinite(othTh) && othTh > 0 ? othTh : 10);
+      if (!quad || quad.length < 3) continue;
+      for (let i = 0; i < quad.length; i++) {
+        const a = quad[i];
+        const b = quad[(i + 1) % quad.length];
+        if (segmentOnSegmentCm(capA, capB, a, b, tol)) return true;
+      }
+    }
+    return false;
   }
 
   function buildWallOverlapHighlightGroup(floor, cx, cy, s, wallHeightCm, floorOpacity, floorLevelId) {
@@ -4026,7 +4111,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const floorIdStr = String(floorLevelId ?? "").trim();
     const lenCm = lenCmRaw + startExtCm + endExtCm;
     const th = Number(wall.thickness);
-    const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
+    const thicknessCm = Number.isFinite(th) && th > 0 ? th : 10;
+    const thickMRaw = (thicknessCm * s) / 100;
     const thickM = Math.max(0.03, thickMRaw);
     const hM = defaultHeightCm / 100;
     const holes = collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, hM, s, startExtCm);
@@ -4043,6 +4129,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       (Array.isArray(wall?.faces) && wall.faces.some((face) => String(face?.side ?? "").trim().toLowerCase() === "exterior")) ||
       (!wallType && wallName.includes("外墙"));
     const shouldClampMiterSelection = !isExternalWall;
+    const skipWallStartCap = wallEndCapCoveredByOtherWallCm(wall, floor?.walls || [], x1, y1, ux, uy, thicknessCm);
+    const skipWallEndCap = wallEndCapCoveredByOtherWallCm(wall, floor?.walls || [], x2, y2, ux, uy, thicknessCm);
 
     function makeWallMaterial() {
       if (wallStyleMat) {
@@ -4177,10 +4265,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const hasStartExtension = polyMinX < -halfSpan - WALL_HOLE_EPS;
       const hasEndExtension = polyMaxX > halfSpan + WALL_HOLE_EPS;
       const pieceOptions = (skipCapAtX = []) => ({ skipSideEdges, skipCapAtX });
+      const fullPieceSkipCapAtX = [];
+      if (skipWallStartCap && !hasStartExtension) fullPieceSkipCapAtX.push(-halfSpan);
+      if (skipWallEndCap && !hasEndExtension) fullPieceSkipCapAtX.push(halfSpan);
       if (!holes.length) {
         const useRoomWalls = style && typeof getMaterialForKey === "function";
         if (!useRoomWalls) {
-          addMiteredWallPiece(group, planPoly, polyMinX, polyMaxX, 0, hM, 0.5, pieceOptions());
+          addMiteredWallPiece(group, planPoly, polyMinX, polyMaxX, 0, hM, 0.5, pieceOptions(fullPieceSkipCapAtX));
           return group.children.length ? group : null;
         }
         if (hasStartExtension) {
@@ -4209,8 +4300,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             const xa = -halfSpan + lenWorld * t0;
             const xb = -halfSpan + lenWorld * t1;
             const skipCapAtX = [];
-            if (t0 > WALL_HOLE_EPS || hasStartExtension) skipCapAtX.push(xa);
-            if (t1 < 1 - WALL_HOLE_EPS || hasEndExtension) skipCapAtX.push(xb);
+            if (t0 > WALL_HOLE_EPS || hasStartExtension || skipWallStartCap) skipCapAtX.push(xa);
+            if (t1 < 1 - WALL_HOLE_EPS || hasEndExtension || skipWallEndCap) skipCapAtX.push(xb);
             addMiteredWallPiece(group, planPoly, xa, xb, 0, hM, tMid, pieceOptions(skipCapAtX));
             start = i;
           }
@@ -4236,19 +4327,28 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           if (cellFullyInsideAnyHole(xa, xb, ya, yb, holes)) continue;
           const tMid = ((xa + xb) / 2 + halfSpan) / lenWorld;
           const skipCapAtX = [];
-          if (hasStartExtension && Math.abs(xa + halfSpan) <= WALL_HOLE_EPS) skipCapAtX.push(xa);
-          if (hasEndExtension && Math.abs(xb - halfSpan) <= WALL_HOLE_EPS) skipCapAtX.push(xb);
-          addMiteredWallPiece(group, planPoly, xa, xb, ya, yb, tMid, pieceOptions(skipCapAtX));
+          const hasLeftSolidNeighbor = i > 0 && !cellFullyInsideAnyHole(xs[i - 1], xa, ya, yb, holes);
+          const hasRightSolidNeighbor = i < xs.length - 2 && !cellFullyInsideAnyHole(xb, xs[i + 2], ya, yb, holes);
+          const hasBottomSolidNeighbor = j > 0 && !cellFullyInsideAnyHole(xa, xb, ys[j - 1], ya, holes);
+          const hasTopSolidNeighbor = j < ys.length - 2 && !cellFullyInsideAnyHole(xa, xb, yb, ys[j + 2], holes);
+          if (hasLeftSolidNeighbor || (hasStartExtension && Math.abs(xa + halfSpan) <= WALL_HOLE_EPS) || (skipWallStartCap && Math.abs(xa + halfSpan) <= WALL_HOLE_EPS)) skipCapAtX.push(xa);
+          if (hasRightSolidNeighbor || (hasEndExtension && Math.abs(xb - halfSpan) <= WALL_HOLE_EPS) || (skipWallEndCap && Math.abs(xb - halfSpan) <= WALL_HOLE_EPS)) skipCapAtX.push(xb);
+          addMiteredWallPiece(group, planPoly, xa, xb, ya, yb, tMid, {
+            ...pieceOptions(skipCapAtX),
+            skipBottomFace: hasBottomSolidNeighbor,
+            skipTopFace: hasTopSolidNeighbor,
+          });
         }
       }
       return group.children.length ? group : null;
     }
 
-    function pushWallSegmentMesh(parent, segLenWorld, tMid, t0, t1, matsOrSingle) {
+    function pushWallSegmentMesh(parent, segLenWorld, tMid, t0, t1, matsOrSingle, faceSuppress = {}) {
       const mxSeg = (x1 + tMid * (x2 - x1) - cx) * (s / 100);
       const mzSeg = (y1 + tMid * (y2 - y1) - cy) * (s / 100);
       const geo = new THREE.BoxGeometry(segLenWorld, hM, thickM);
       remapWallBoxUvToWallSpan(geo, t0, t1, 0, 1);
+      suppressWallBoxFaces(geo, faceSuppress);
       const mesh = new THREE.Mesh(geo, matsOrSingle);
       mesh.castShadow = true;
       mesh.receiveShadow = false;
@@ -4275,6 +4375,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!useRoomWalls) {
         const geo = new THREE.BoxGeometry(lenWorld, hM, thickM);
         remapWallBoxUvToWallSpan(geo, 0, 1, 0, 1);
+        suppressWallBoxFaces(geo, { skipStartCap: skipWallStartCap, skipEndCap: skipWallEndCap });
         const mat = makeWallMaterial();
         const mesh = new THREE.Mesh(geo, mat);
         mesh.castShadow = true;
@@ -4321,6 +4422,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const { mats } = wallFaceMaterialsAtT(tMid);
         const geo = new THREE.BoxGeometry(lenWorld * (it.t1 - it.t0), hM, thickM);
         remapWallBoxUvToWallSpan(geo, it.t0, it.t1, 0, 1);
+        suppressWallBoxFaces(geo, { skipStartCap: skipWallStartCap, skipEndCap: skipWallEndCap });
         const mesh = new THREE.Mesh(geo, mats || makeWallMaterial());
         mesh.castShadow = true;
         mesh.receiveShadow = false;
@@ -4353,7 +4455,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const segLen = lenWorld * dt;
         if (segLen < 0.015) continue;
         const tMid = (it.t0 + it.t1) / 2;
-        pushWallSegmentMesh(group, segLen, tMid, it.t0, it.t1, matsForInterval(it.roomPosZ, it.roomNegZ));
+        pushWallSegmentMesh(group, segLen, tMid, it.t0, it.t1, matsForInterval(it.roomPosZ, it.roomNegZ), {
+          skipStartCap: it.t0 > WALL_HOLE_EPS || skipWallStartCap,
+          skipEndCap: it.t1 < 1 - WALL_HOLE_EPS || skipWallEndCap,
+        });
       }
       return group.children.length ? group : null;
     }
@@ -4385,6 +4490,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         const v0 = ya / hM;
         const v1 = yb / hM;
         remapWallBoxUvToWallSpan(geo, u0, u1, v0, v1);
+        const hasLeftSolidNeighbor = i > 0 && !cellFullyInsideAnyHole(xs[i - 1], xa, ya, yb, holes);
+        const hasRightSolidNeighbor = i < xs.length - 2 && !cellFullyInsideAnyHole(xb, xs[i + 2], ya, yb, holes);
+        const hasBottomSolidNeighbor = j > 0 && !cellFullyInsideAnyHole(xa, xb, ys[j - 1], ya, holes);
+        const hasTopSolidNeighbor = j < ys.length - 2 && !cellFullyInsideAnyHole(xa, xb, yb, ys[j + 2], holes);
+        suppressWallBoxFaces(geo, {
+          skipStartCap: hasLeftSolidNeighbor || (skipWallStartCap && Math.abs(xa + halfSpan) <= WALL_HOLE_EPS),
+          skipEndCap: hasRightSolidNeighbor || (skipWallEndCap && Math.abs(xb - halfSpan) <= WALL_HOLE_EPS),
+          skipBottomCap: hasBottomSolidNeighbor,
+          skipTopCap: hasTopSolidNeighbor,
+        });
         const tAlong = (cxLocal + halfSpan) / lenWorld;
         const { mats } = wallFaceMaterialsAtT(tAlong);
         const mat = mats || makeWallMaterial();
