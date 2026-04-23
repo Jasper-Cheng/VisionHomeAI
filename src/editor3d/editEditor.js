@@ -8436,9 +8436,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         setWindowOverridesForMultiple(fid, windowIds, hasScopeData ? next : null);
         // 同步到 Design JSON
         syncWindowOverridesToDesignJson();
+        if (historyReady) pushHistorySnapshot();
         await applyWindowOverridesForMultiple(fid, windowIds);
         await selectFloorplanSurface(sel);
-        if (historyReady) schedulePushHistory();
         emitLayoutChanged();
         return;
       }
@@ -8448,22 +8448,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         setWindowOverride(fid, sel.windowId, hasScopeData ? next : null);
         // 同步到 Design JSON
         syncWindowOverridesToDesignJson();
+        if (historyReady) pushHistorySnapshot();
         await applyWindowOverridesForMultiple(fid, [sel.windowId]);
         await selectFloorplanSurface(sel);
-        if (historyReady) schedulePushHistory();
         emitLayoutChanged();
         return;
       }
       
       // 全部窗户：设置全局覆盖
       setFloorplanSurfaceGlobalOverride(fid, scope, hasScopeData ? next : null);
+      if (historyReady) pushHistorySnapshot();
       if (!hasScopeData) {
         await rebuildFloorplan3D();
       } else {
         await applySurfaceOverridesForFloorScope(fid, scope);
       }
       await selectFloorplanSurface(sel);
-      if (historyReady) schedulePushHistory();
       emitLayoutChanged();
       return;
     }
@@ -8521,9 +8521,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       setRoomFloorOverridesForMultiple(fid, roomIds, hasScopeData ? next : null);
       // 同步到 Design JSON
       syncRoomFloorOverridesToDesignJson();
+      if (historyReady) pushHistorySnapshot();
       await applyRoomFloorOverridesForMultiple(fid, roomIds);
       await selectFloorplanSurface(sel);
-      if (historyReady) schedulePushHistory();
       emitLayoutChanged();
       return;
     }
@@ -8534,9 +8534,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       setDoorOverridesForMultiple(fid, doorIds, hasScopeData ? next : null);
       // 同步到 Design JSON
       syncDoorOverridesToDesignJson();
+      if (historyReady) pushHistorySnapshot();
       await applyDoorOverridesForMultiple(fid, doorIds);
       await selectFloorplanSurface(sel);
-      if (historyReady) schedulePushHistory();
       emitLayoutChanged();
       return;
     }
@@ -8546,9 +8546,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const windowIds = getSelectedWindowIds();
       setWindowOverridesForMultiple(fid, windowIds, hasScopeData ? next : null);
       syncWindowOverridesToDesignJson();
+      if (historyReady) pushHistorySnapshot();
       await applyWindowOverridesForMultiple(fid, windowIds);
       await selectFloorplanSurface(sel);
-      if (historyReady) schedulePushHistory();
       emitLayoutChanged();
       return;
     }
@@ -8560,21 +8560,21 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         : [{ wallId: sel.wallId, faceId: sel.faceId }];
       setWallFaceOverridesForMultiple(fid, wallFacePairs, hasScopeData ? next : null);
       syncWallFaceOverridesToDesignJson();
+      if (historyReady) pushHistorySnapshot();
       await applyWallFaceOverridesToScene(fid, wallFacePairs);
       await selectFloorplanSurface(sel);
-      if (historyReady) schedulePushHistory();
       emitLayoutChanged();
       return;
     }
 
     setFloorplanSurfaceGlobalOverride(fid, scope, hasScopeData ? next : null);
+    if (historyReady) pushHistorySnapshot();
     if (!hasScopeData) {
       await rebuildFloorplan3D();
     } else {
       await applySurfaceOverridesForFloorScope(fid, scope);
     }
     await selectFloorplanSurface(sel);
-    if (historyReady) schedulePushHistory();
     emitLayoutChanged();
   }
 
@@ -8621,10 +8621,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       setFloorplanSurfaceGlobalOverride(fid, scope, null);
     }
 
+    if (historyReady) pushHistorySnapshot();
     // 清空覆盖后必须重建：否则 mesh 仍可能保留上一次 override 材质实例
     await rebuildFloorplan3D();
     await selectFloorplanSurface(sel);
-    if (historyReady) schedulePushHistory();
     emitLayoutChanged();
   }
 
@@ -8686,9 +8686,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       );
     }
 
+    if (historyReady) pushHistorySnapshot();
     await rebuildFloorplan3D();
     await selectFloorplanSurface(sel);
-    if (historyReady) schedulePushHistory();
     emitLayoutChanged();
   }
 
