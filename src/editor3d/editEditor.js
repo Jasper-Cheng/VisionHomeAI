@@ -935,17 +935,30 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 同步房间地板覆盖到 Design JSON（修改地板时调用）
-   * 将 roomFloorOverridesByStyleKey 写入 window.__currentDesignProject.svgEditor.surfaceOverrides
+   * 将材质覆盖同步到当前活跃方案对象，保持与保存文件使用的 surfaceOverridesByStyleKey schema 一致。
+   * @param {"roomFloors" | "doorOverrides" | "windowOverrides" | "wallFaceOverrides"} nestedKey
+   * @param {object} payload
+   */
+  function syncNestedSurfaceOverridesToActiveDesignProject(nestedKey, payload) {
+    const proj = window.__activeDesignProject;
+    if (!proj || typeof proj !== "object") return;
+    if (!proj.svgEditor || typeof proj.svgEditor !== "object") proj.svgEditor = {};
+    const key = normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
+    if (!proj.svgEditor.surfaceOverridesByStyleKey || typeof proj.svgEditor.surfaceOverridesByStyleKey !== "object") {
+      proj.svgEditor.surfaceOverridesByStyleKey = {};
+    }
+    if (!proj.svgEditor.surfaceOverridesByStyleKey[key] || typeof proj.svgEditor.surfaceOverridesByStyleKey[key] !== "object") {
+      proj.svgEditor.surfaceOverridesByStyleKey[key] = {};
+    }
+    proj.svgEditor.surfaceOverridesByStyleKey[key][nestedKey] = JSON.parse(JSON.stringify(payload || {}));
+  }
+
+  /**
+   * 同步房间地板覆盖到当前活跃 Design JSON（修改地板时调用）
    */
   function syncRoomFloorOverridesToDesignJson() {
-    const proj = window.__currentDesignProject;
-    if (!proj || !proj.svgEditor) return;
-    const sk = getEffectiveFloorplanStyleKey();
-    const key = normalizeStyleKeyForSurfaceOverrides(sk);
-    if (!proj.svgEditor.surfaceOverrides) proj.svgEditor.surfaceOverrides = {};
-    if (!proj.svgEditor.surfaceOverrides[key]) proj.svgEditor.surfaceOverrides[key] = {};
-    proj.svgEditor.surfaceOverrides[key].roomFloors = JSON.parse(JSON.stringify(roomFloorOverridesByStyleKey[key] || {}));
+    const key = normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
+    syncNestedSurfaceOverridesToActiveDesignProject("roomFloors", roomFloorOverridesByStyleKey[key] || {});
   }
 
   /**
@@ -1190,16 +1203,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 同步门覆盖到 Design JSON（修改门时调用）
+   * 同步门覆盖到当前活跃 Design JSON（修改门时调用）
    */
   function syncDoorOverridesToDesignJson() {
-    const proj = window.__currentDesignProject;
-    if (!proj || !proj.svgEditor) return;
-    const sk = getEffectiveFloorplanStyleKey();
-    const key = normalizeStyleKeyForSurfaceOverrides(sk);
-    if (!proj.svgEditor.surfaceOverrides) proj.svgEditor.surfaceOverrides = {};
-    if (!proj.svgEditor.surfaceOverrides[key]) proj.svgEditor.surfaceOverrides[key] = {};
-    proj.svgEditor.surfaceOverrides[key].doorOverrides = JSON.parse(JSON.stringify(doorOverridesByStyleKey[key] || {}));
+    const key = normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
+    syncNestedSurfaceOverridesToActiveDesignProject("doorOverrides", doorOverridesByStyleKey[key] || {});
   }
 
   /**
@@ -1309,16 +1317,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 同步窗户覆盖到 Design JSON（修改窗户时调用）
+   * 同步窗户覆盖到当前活跃 Design JSON（修改窗户时调用）
    */
   function syncWindowOverridesToDesignJson() {
-    const proj = window.__currentDesignProject;
-    if (!proj || !proj.svgEditor) return;
-    const sk = getEffectiveFloorplanStyleKey();
-    const key = normalizeStyleKeyForSurfaceOverrides(sk);
-    if (!proj.svgEditor.surfaceOverrides) proj.svgEditor.surfaceOverrides = {};
-    if (!proj.svgEditor.surfaceOverrides[key]) proj.svgEditor.surfaceOverrides[key] = {};
-    proj.svgEditor.surfaceOverrides[key].windowOverrides = JSON.parse(JSON.stringify(windowOverridesByStyleKey[key] || {}));
+    const key = normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
+    syncNestedSurfaceOverridesToActiveDesignProject("windowOverrides", windowOverridesByStyleKey[key] || {});
   }
 
   /**
@@ -1466,16 +1469,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 同步墙面覆盖到 Design JSON（修改墙面时调用）
+   * 同步墙面覆盖到当前活跃 Design JSON（修改墙面时调用）
    */
   function syncWallFaceOverridesToDesignJson() {
-    const proj = window.__currentDesignProject;
-    if (!proj || !proj.svgEditor) return;
-    const sk = getEffectiveFloorplanStyleKey();
-    const key = normalizeStyleKeyForSurfaceOverrides(sk);
-    if (!proj.svgEditor.surfaceOverrides) proj.svgEditor.surfaceOverrides = {};
-    if (!proj.svgEditor.surfaceOverrides[key]) proj.svgEditor.surfaceOverrides[key] = {};
-    proj.svgEditor.surfaceOverrides[key].wallFaceOverrides = JSON.parse(JSON.stringify(wallFaceOverridesByStyleKey[key] || {}));
+    const key = normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
+    syncNestedSurfaceOverridesToActiveDesignProject("wallFaceOverrides", wallFaceOverridesByStyleKey[key] || {});
   }
 
   /**
