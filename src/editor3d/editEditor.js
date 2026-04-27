@@ -2,11 +2,7 @@
  * 编辑模式 Three.js：户型挤出 + 家具交互，兼容 window.svgEditor* API
  */
 import * as THREE from "three";
-import { ShapeUtils } from "three";
 import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
-import { getFloorBBoxCm } from "../floorplan/floorplanSvg.js";
-import { normalizeDoorStyle, defaultDoorStyleWhite } from "../floorplan/doorStyle.js";
-import { normalizeWindowStyle, defaultWindowStyleWhite } from "../floorplan/windowStyle.js";
 import {
   loadStyleConfig,
   loadStylePackIndex,
@@ -35,439 +31,50 @@ import {
   resolveFurnitureSelectionDetail,
   resolveTextureAssetUrl,
 } from "../furniture/furnitureConfig.js";
-import { GLTFLoader } from "../../assets/vendor/GLTFLoader.js";
 import { RoomEnvironment } from "../../assets/vendor/RoomEnvironment.js";
-import { resolveModelUrl } from "../furniture/furnitureManager.js";
 import { mountFloorplanColorPicker } from "../ui/floorplanColorPicker.js";
 import { DATA_PATHS } from "../core/schema.js";
+import { createAnnotations } from "./modules/annotations.js";
+import { createBomPanel } from "./modules/bomPanel.js";
+import { createFloorplanCore } from "./modules/floorplanCore.js";
+import { createFurnitureMeshModule } from "./modules/furnitureMesh.js";
+import { createHistoryModule } from "./modules/history.js";
+import { createMaterialFactory } from "./modules/materialFactory.js";
+import { createMeshBuilder } from "./modules/meshBuilder.js";
+import { createProjectIoModule } from "./modules/projectIo.js";
+import { createRenderLoop } from "./modules/renderLoop.js";
+import { createStylePackTools } from "./modules/stylePackTools.js";
+import { createSurfaceOverrideModule } from "./modules/surfaceOverride.js";
+import { createToolbarInit } from "./modules/toolbarInit.js";
+import { createWallMeshBuilder } from "./modules/wallMeshBuilder.js";
+import { DEFAULT_SCENE_LIGHTING, applySceneLightingConfig, mergeSceneLighting } from "./utils/lightingUtils.js";
+import {
+  FLOOR_SURFACE_Y_M,
+  GRID,
+  VIEW_H,
+  VIEW_W,
+  canvasCmToSceneXZ,
+  centeredCmToSceneXZ,
+  centeredToCanvasCm,
+  clampFurnitureCentered,
+  closestPointOnSegment2D,
+  computeFloorplanCanvasPlacement,
+  extractFurnitureFootprintCm,
+  fitGltfToFootprint,
+  furnitureWallSnapSamplePointsCm,
+  getCurrentFloorFromEntry,
+  getEntryBBoxCm,
+  getFloorsFromEntry,
+  normalizeFloorIndex,
+  normalizeFloorKey,
+  sceneXZToCenteredCm,
+  snap,
+} from "./utils/coordUtils.js";
 
-const VIEW_W = 3000;
-const VIEW_H = 3000;
-/** 编辑区平面半宽/半深（cm），原点在画布中心，与 Three 场景 XZ=0 对齐 */
-const CENTER_HALF = VIEW_W / 2;
-const GRID = 1;
-const FLOORPLAN_PAD = 80;
-const FLOORPLAN_SIZE_FACTOR = 0.38;
 const MAX_HISTORY = 80;
-/** 户型墙体与地面挤出块统一颜色 */
 /** 户型墙/地/顶面：略偏灰，避免与 IBL 叠加后发白糊成一片 */
 const FLOORPLAN_SURFACE_COLOR = 0xc9c4be;
-
-// ============ 性能优化：全局缓存 ============
-/** 纹理缓存：key = 纹理URL，value = THREE.Texture */
-const globalTextureCache = new Map();
-/** 材质缓存：key = 材质定义的哈希，value = THREE.Material */
-const globalMaterialCache = new Map();
-/** 风格预加载状态：key = styleKey，value = Promise */
-const stylePreloadPromises = new Map();
-
-/**
- * 风格包未配置 sceneLighting 时的默认曝光与灯光（偏中性）。
- * 户型风格包 `assets/floorplans/style/<floorplanId>.json` 中 `styles.<key>.sceneLighting` 可覆盖全局光照。
- */
-const DEFAULT_SCENE_LIGHTING = {
-  toneMappingExposure: 1.0,
-  ambient: { color: "#ffffff", intensity: 0.26 },
-  hemisphere: { sky: "#dbeafe", ground: "#0b1220", intensity: 0.36 },
-  directional: { color: "#ffffff", intensity: 1.0 },
-  envMapIntensity: 0.35,
-};
-
-// 地面网格在 y=0.02（见 buildRoomMesh）；家具/装饰的 group.position.y 需要抬到地面之上，
-// 否则很多 glTF 会以 y=0 为底面导致“下陷”。
-const FLOOR_SURFACE_Y_M = 0.02;
-
-/**
- * 生成材质定义的哈希key（用于材质缓存）
- * @param {object} def 材质定义
- * @param {number} opacity 透明度
- * @param {object} options 选项
- * @returns {string}
- */
-function getMaterialCacheKey(def, opacity, options = {}) {
-  const parts = [
-    def.type || 'standard',
-    def.color || '#ffffff',
-    def.roughness ?? 0.55,
-    def.metalness ?? 0.05,
-    def.opacity ?? 1,
-    def.transmission ?? 0,
-    def.ior ?? 1.45,
-    opacity,
-    options.forGlass ? 'glass' : '',
-    options.floorUv ? 'floor' : '',
-    options.side || 'front',
-    JSON.stringify(def.uvScale || []),
-    def.textureRotation || 0,
-    JSON.stringify(def.texture || {}),
-  ];
-  return parts.join('|');
-}
-
-/**
- * 从缓存获取或创建纹理
- * @param {string} url 纹理URL
- * @param {THREE.TextureLoader} loader 纹理加载器
- * @param {boolean} isSRGB 是否为sRGB颜色空间
- * @returns {Promise<THREE.Texture>}
- */
-async function getCachedTexture(url, loader, isSRGB = false) {
-  const cacheKey = `${url}|${isSRGB ? 'srgb' : 'linear'}`;
-  if (globalTextureCache.has(cacheKey)) {
-    return globalTextureCache.get(cacheKey).clone();
-  }
-  
-  try {
-    const tex = await loader.loadAsync(url);
-    if (isSRGB) {
-      tex.colorSpace = THREE.SRGBColorSpace;
-    }
-    tex.flipY = false;
-    globalTextureCache.set(cacheKey, tex);
-    return tex.clone();
-  } catch (e) {
-    console.warn('[VisionHome] 纹理加载失败:', url, e);
-    return null;
-  }
-}
-
-/**
- * 预加载风格的所有纹理
- * @param {object} style 风格对象
- * @returns {Promise<void>}
- */
-async function preloadStyleTextures(style) {
-  if (!style?.materials) return;
-  
-  const loader = new THREE.TextureLoader();
-  const promises = [];
-  
-  for (const def of Object.values(style.materials)) {
-    if (!def?.texture || typeof def.texture !== 'object') continue;
-    
-    const t = def.texture;
-    if (t.albedo) {
-      const url = resolveStyleTextureUrl(String(t.albedo).trim());
-      promises.push(getCachedTexture(url, loader, true));
-    }
-    if (t.roughness) {
-      const url = resolveStyleTextureUrl(String(t.roughness).trim());
-      promises.push(getCachedTexture(url, loader, false));
-    }
-    if (t.normal) {
-      const url = resolveStyleTextureUrl(String(t.normal).trim());
-      promises.push(getCachedTexture(url, loader, false));
-    }
-    if (t.metalnessMap) {
-      const url = resolveStyleTextureUrl(String(t.metalnessMap).trim());
-      promises.push(getCachedTexture(url, loader, false));
-    }
-  }
-  
-  await Promise.allSettled(promises);
-}
-
-/**
- * 清理缓存（在切换项目或需要释放内存时调用）
- */
-function clearGlobalCaches() {
-  // 释放纹理
-  for (const tex of globalTextureCache.values()) {
-    tex.dispose();
-  }
-  globalTextureCache.clear();
-  
-  // 释放材质
-  for (const mat of globalMaterialCache.values()) {
-    mat.dispose();
-  }
-  globalMaterialCache.clear();
-  
-  stylePreloadPromises.clear();
-}
-
-
-/**
- * @param {object | null | undefined} over 风格 JSON 中的 sceneLighting
- */
-function mergeSceneLighting(over) {
-  const base = DEFAULT_SCENE_LIGHTING;
-  if (!over || typeof over !== "object") {
-    return {
-      toneMappingExposure: base.toneMappingExposure,
-      ambient: { ...base.ambient },
-      hemisphere: { ...base.hemisphere },
-      directional: { ...base.directional },
-      envMapIntensity: base.envMapIntensity,
-    };
-  }
-  return {
-    toneMappingExposure: Number.isFinite(Number(over.toneMappingExposure))
-      ? Number(over.toneMappingExposure)
-      : base.toneMappingExposure,
-    ambient: { ...base.ambient, ...(typeof over.ambient === "object" && over.ambient ? over.ambient : {}) },
-    hemisphere: {
-      ...base.hemisphere,
-      ...(typeof over.hemisphere === "object" && over.hemisphere ? over.hemisphere : {}),
-    },
-    directional: {
-      ...base.directional,
-      ...(typeof over.directional === "object" && over.directional ? over.directional : {}),
-    },
-    envMapIntensity: Number.isFinite(Number(over.envMapIntensity))
-      ? Number(over.envMapIntensity)
-      : base.envMapIntensity,
-  };
-}
-
-function applyHexToThreeColor(threeColor, hex, fallbackHexNum) {
-  const s = String(hex ?? "").trim();
-  try {
-    threeColor.setStyle(s.startsWith("#") ? s : `#${s}`);
-  } catch {
-    threeColor.setHex(fallbackHexNum);
-  }
-}
-
-/**
- * @param {import("three").WebGLRenderer} renderer
- * @param {import("three").AmbientLight} ambientLight
- * @param {import("three").HemisphereLight} hemiLight
- * @param {import("three").DirectionalLight} dirLight
- * @param {ReturnType<typeof mergeSceneLighting>} cfg
- */
-function applySceneLightingConfig(renderer, ambientLight, hemiLight, dirLight, cfg) {
-  if (!cfg) return;
-  const exp = cfg.toneMappingExposure;
-  if (Number.isFinite(exp)) renderer.toneMappingExposure = exp;
-
-  const amb = cfg.ambient;
-  if (amb) {
-    applyHexToThreeColor(ambientLight.color, amb.color, 0xffffff);
-    const ai = Number(amb.intensity);
-    if (Number.isFinite(ai)) ambientLight.intensity = ai;
-  }
-
-  const hemi = cfg.hemisphere;
-  if (hemi) {
-    const sky = hemi.sky ?? hemi.skyColor;
-    const ground = hemi.ground ?? hemi.groundColor;
-    applyHexToThreeColor(hemiLight.color, sky, 0xffffff);
-    applyHexToThreeColor(hemiLight.groundColor, ground, 0x0b1220);
-    const hi = Number(hemi.intensity);
-    if (Number.isFinite(hi)) hemiLight.intensity = hi;
-  }
-
-  const dir = cfg.directional;
-  if (dir) {
-    applyHexToThreeColor(dirLight.color, dir.color, 0xffffff);
-    const di = Number(dir.intensity);
-    if (Number.isFinite(di)) dirLight.intensity = di;
-  }
-}
-
-/** 户型世界摆放等：画布 cm（左上角为 0）↔ 场景米 */
-function canvasCmToSceneXZ(xCm, yCm) {
-  return { x: (xCm - VIEW_W / 2) / 100, z: (yCm - VIEW_H / 2) / 100 };
-}
-function sceneXZToCanvasCm(x, z) {
-  return { x: x * 100 + VIEW_W / 2, y: z * 100 + VIEW_H / 2 };
-}
-
-/** 家具布局：以编辑区中心为原点的 cm（约 [-1500,1500]）↔ 场景米 */
-function centeredCmToSceneXZ(cx, cy) {
-  return { x: cx / 100, z: cy / 100 };
-}
-function sceneXZToCenteredCm(x, z) {
-  return { x: x * 100, y: z * 100 };
-}
-function centeredToCanvasCm(cx, cy) {
-  return { x: cx + CENTER_HALF, y: cy + CENTER_HALF };
-}
-function canvasCmToCentered(xCm, yCm) {
-  return { x: xCm - CENTER_HALF, y: yCm - CENTER_HALF };
-}
-
-function clampFurnitureCentered(cx, cy, rotDeg, hw, hh) {
-  const canvas = centeredToCanvasCm(cx, cy);
-  const c = clampFurnitureToCanvas(canvas.x, canvas.y, rotDeg, hw, hh);
-  return canvasCmToCentered(c.x, c.y);
-}
-function snap(v) {
-  return Math.round(v / GRID) * GRID;
-}
-function getFloorsFromEntry(entry) {
-  const floors = entry?.floors;
-  return Array.isArray(floors) ? floors : [];
-}
-function normalizeFloorIndex(entry, indexLike) {
-  const floors = getFloorsFromEntry(entry);
-  if (!floors.length) return 0;
-  const n = Math.trunc(Number(indexLike));
-  if (!Number.isFinite(n)) return 0;
-  return Math.min(Math.max(n, 0), floors.length - 1);
-}
-function getCurrentFloorFromEntry(entry, indexLike) {
-  const floors = getFloorsFromEntry(entry);
-  if (!floors.length) return null;
-  return floors[normalizeFloorIndex(entry, indexLike)] ?? floors[0] ?? null;
-}
-function getEntryBBoxCm(entry) {
-  const floors = getFloorsFromEntry(entry);
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const fl of floors) {
-    const b = getFloorBBoxCm(fl);
-    if (!b) continue;
-    minX = Math.min(minX, b.minX);
-    minY = Math.min(minY, b.minY);
-    maxX = Math.max(maxX, b.maxX);
-    maxY = Math.max(maxY, b.maxY);
-  }
-  if (!Number.isFinite(minX)) return null;
-  return { minX, minY, maxX, maxY, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, w: maxX - minX, h: maxY - minY };
-}
-
-/** 与 rebuildFloorplan3D 中一致的户型在画布坐标系（cm）下的缩放与平移 */
-function computeFloorplanCanvasPlacement(entry) {
-  const bbox = getEntryBBoxCm(entry);
-  if (!bbox) return null;
-  const availW = Math.max(40, VIEW_W - 2 * FLOORPLAN_PAD);
-  const availH = Math.max(40, VIEW_H - 2 * FLOORPLAN_PAD);
-  let s = bbox.w > 1e-6 && bbox.h > 1e-6 ? Math.min(availW / bbox.w, availH / bbox.h) : 1;
-  s *= FLOORPLAN_SIZE_FACTOR;
-  s = Math.min(Math.max(s, 0.02), 4);
-  if (bbox.w > 1e-6) {
-    const nw = Math.max(1, Math.round((s * bbox.w) / GRID));
-    s = (nw * GRID) / bbox.w;
-    s = Math.min(Math.max(s, 0.02), 4);
-  }
-  let worldX = snap(VIEW_W / 2);
-  let worldY = snap(VIEW_H / 2);
-  const wxMin = worldX + s * (bbox.minX - bbox.cx);
-  const wyMin = worldY + s * (bbox.minY - bbox.cy);
-  worldX += Math.round(wxMin / GRID) * GRID - wxMin;
-  worldY += Math.round(wyMin / GRID) * GRID - wyMin;
-  return { worldX, worldY, s, cx: bbox.cx, cy: bbox.cy };
-}
-
-function closestPointOnSegment2D(px, py, ax, ay, bx, by) {
-  const abx = bx - ax;
-  const aby = by - ay;
-  const apx = px - ax;
-  const apy = py - ay;
-  const ab2 = abx * abx + aby * aby;
-  if (ab2 < 1e-12) return { x: ax, y: ay };
-  let t = (apx * abx + apy * aby) / ab2;
-  t = Math.max(0, Math.min(1, t));
-  return { x: ax + t * abx, y: ay + t * aby };
-}
-
-/** 家具底面四角 + 四边中点（画布 cm），用于墙体磁吸 */
-function furnitureWallSnapSamplePointsCm(cx, cy, rotDeg, hw, hh) {
-  const lc = [
-    [-hw, -hh],
-    [hw, -hh],
-    [hw, hh],
-    [-hw, hh],
-  ];
-  const out = [];
-  for (const [lx, ly] of lc) {
-    const p = rotateYLocal(lx, ly, rotDeg);
-    out.push({ x: cx + p.x, y: cy + p.z });
-  }
-  for (let i = 0; i < 4; i++) {
-    const [x1, y1] = lc[i];
-    const [x2, y2] = lc[(i + 1) % 4];
-    const p = rotateYLocal((x1 + x2) / 2, (y1 + y2) / 2, rotDeg);
-    out.push({ x: cx + p.x, y: cy + p.z });
-  }
-  return out;
-}
-
-function extractFurnitureFootprintCm(item) {
-  if (!item || typeof item !== "object") return { w: 100, d: 100, h: 80, hw: 50, hh: 50 };
-  const raw = item.size;
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { w: 100, d: 100, h: 80, hw: 50, hh: 50 };
-  let w = Number(raw.widthCm ?? raw.width ?? raw.w);
-  let d = Number(raw.depthCm ?? raw.depth ?? raw.d ?? raw.length);
-  let h = Number(raw.heightCm ?? raw.height ?? raw.h);
-  if (!Number.isFinite(w) || w <= 0) w = 210;
-  if (!Number.isFinite(d) || d <= 0) d = 90;
-  if (!Number.isFinite(h) || h <= 0) h = 80;
-  if (w > 600 || d > 600) { w /= 10; d /= 10; }
-  if (h > 600) h /= 10;
-  return { w, d, h, hw: Math.max(8, w / 2), hh: Math.max(8, d / 2) };
-}
-
-/**
- * 将 GLTF 场景缩放到目标尺寸（米）并落底：底面 y=0，水平居中。
- * width→X，height→Y，depth→Z（与 BoxGeometry(w,h,d) 一致）
- */
-function fitGltfToFootprint(root, widthM, heightM, depthM) {
-  root.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(root);
-  if (!box.isEmpty()) {
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    if (size.x > 1e-6 && size.y > 1e-6 && size.z > 1e-6) {
-      const sx = widthM / size.x;
-      const sy = heightM / size.y;
-      const sz = depthM / size.z;
-      root.scale.set(sx, sy, sz);
-      root.updateMatrixWorld(true);
-    }
-  }
-  const box2 = new THREE.Box3().setFromObject(root);
-  if (box2.isEmpty()) return;
-  const cx = (box2.min.x + box2.max.x) / 2;
-  const cz = (box2.min.z + box2.max.z) / 2;
-  root.position.x -= cx;
-  root.position.z -= cz;
-  root.position.y -= box2.min.y;
-}
-
-function rotateYLocal(x, z, deg) {
-  const rad = (deg * Math.PI) / 180;
-  const c = Math.cos(rad), s = Math.sin(rad);
-  return { x: c * x + s * z, z: -s * x + c * z };
-}
-function furnitureFootprintAabbCm(cx, cy, rotDeg, hw, hh) {
-  const corners = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const [lx, ly] of corners) {
-    const p = rotateYLocal(lx, ly, rotDeg);
-    minX = Math.min(minX, p.x + cx);
-    minY = Math.min(minY, p.z + cy);
-    maxX = Math.max(maxX, p.x + cx);
-    maxY = Math.max(maxY, p.z + cy);
-  }
-  return { minX, minY, maxX, maxY };
-}
-function clampFurnitureToCanvas(cx, cy, rotDeg, hw, hh) {
-  const margin = 10;
-  let x = cx, y = cy;
-  for (let iter = 0; iter < 16; iter++) {
-    let b = furnitureFootprintAabbCm(x, y, rotDeg, hw, hh);
-    x += Math.round(b.minX / GRID) * GRID - b.minX;
-    y += Math.round(b.minY / GRID) * GRID - b.minY;
-    b = furnitureFootprintAabbCm(x, y, rotDeg, hw, hh);
-    let adjusted = false;
-    if (b.minX < margin) { x += margin - b.minX; adjusted = true; }
-    b = furnitureFootprintAabbCm(x, y, rotDeg, hw, hh);
-    if (b.minY < margin) { y += margin - b.minY; adjusted = true; }
-    b = furnitureFootprintAabbCm(x, y, rotDeg, hw, hh);
-    if (b.maxX > VIEW_W - margin) { x += VIEW_W - margin - b.maxX; adjusted = true; }
-    b = furnitureFootprintAabbCm(x, y, rotDeg, hw, hh);
-    if (b.maxY > VIEW_H - margin) { y += VIEW_H - margin - b.maxY; adjusted = true; }
-    if (!adjusted) {
-      b = furnitureFootprintAabbCm(x, y, rotDeg, hw, hh);
-      x += Math.round(b.minX / GRID) * GRID - b.minX;
-      y += Math.round(b.minY / GRID) * GRID - b.minY;
-      break;
-    }
-  }
-  return { x, y };
-}
+const WALL_HOLE_EPS = 1e-5;
 
 /**
  * @typedef {object} SurfaceScopeOverride
@@ -962,99 +569,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 对多个房间地板应用覆盖（不重建几何体）
-   * @param {string} floorLevelId
-   * @param {string[]} roomIds
-   */
-  async function applyRoomFloorOverridesForMultiple(floorLevelId, roomIds) {
-    if (!floorplanRoot.children.length) return;
-    if (!Array.isArray(roomIds) || !roomIds.length) return;
-    const fid = String(floorLevelId ?? "").trim();
-    if (!fid) return;
-    const libraryBag = await getFloorplanMaterialsLibraryBag();
-    const roomIdSet = new Set(roomIds.map((r) => String(r).trim()));
-    const meshes = [];
-    floorplanRoot.traverse((o) => {
-      if (!o.isMesh) return;
-      if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
-      if (!o.userData.floorplanRoomFloor) return;
-      const rid = String(o.userData.floorplanRoomId ?? "").trim();
-      if (!rid || !roomIdSet.has(rid)) return;
-      meshes.push(o);
-    });
-    if (!meshes.length) return;
-    for (const mesh of meshes) {
-      const rid = String(mesh.userData.floorplanRoomId ?? "").trim();
-      const ov = getRoomFloorOverride(fid, rid);
-      if (ov && surfaceOverrideIsActive(ov)) {
-        applySurfaceOverrideToMesh(mesh, ov, libraryBag);
-      }
-    }
-  }
-
-  /**
-   * 对多个门应用覆盖（不重建几何体）
-   * @param {string} floorLevelId
-   * @param {string[]} doorIds
-   */
-  async function applyDoorOverridesForMultiple(floorLevelId, doorIds) {
-    if (!floorplanRoot.children.length) return;
-    if (!Array.isArray(doorIds) || !doorIds.length) return;
-    const fid = String(floorLevelId ?? "").trim();
-    if (!fid) return;
-    const libraryBag = await getFloorplanMaterialsLibraryBag();
-    const doorIdSet = new Set(doorIds.map((d) => String(d).trim()));
-    const meshes = [];
-    floorplanRoot.traverse((o) => {
-      if (!o.isMesh) return;
-      if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
-      if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle) return;
-      const did = String(o.userData.floorplanDoorId ?? "").trim();
-      if (!did || !doorIdSet.has(did)) return;
-      meshes.push(o);
-    });
-    if (!meshes.length) return;
-    for (const mesh of meshes) {
-      const did = String(mesh.userData.floorplanDoorId ?? "").trim();
-      const ov = getDoorOverride(fid, did);
-      if (ov && surfaceOverrideIsActive(ov)) {
-        applySurfaceOverrideToMesh(mesh, ov, libraryBag);
-      }
-    }
-  }
-
-  /**
-   * 对多个窗户应用覆盖（不重建几何体）
-   * @param {string} floorLevelId
-   * @param {string[]} windowIds
-   */
-  async function applyWindowOverridesForMultiple(floorLevelId, windowIds) {
-    if (!floorplanRoot.children.length) return;
-    if (!Array.isArray(windowIds) || !windowIds.length) return;
-    const fid = String(floorLevelId ?? "").trim();
-    if (!fid) return;
-    const libraryBag = await getFloorplanMaterialsLibraryBag();
-    const windowIdSet = new Set(windowIds.map((w) => String(w).trim()));
-    const meshes = [];
-    floorplanRoot.traverse((o) => {
-      if (!o.isMesh) return;
-      if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
-      if (!o.userData.floorplanWindowFill) return;
-      const wid = String(o.userData.floorplanWindowId ?? "").trim();
-      if (!wid || !windowIdSet.has(wid)) return;
-      meshes.push(o);
-    });
-    if (!meshes.length) return;
-    for (const mesh of meshes) {
-      const wid = String(mesh.userData.floorplanWindowId ?? "").trim();
-      const ov = getWindowOverride(fid, wid);
-      if (ov && surfaceOverrideIsActive(ov)) {
-        applySurfaceOverrideToMesh(mesh, ov, libraryBag);
-      }
-    }
-  }
-
-  /**
    * 从 Design JSON 加载房间地板覆盖（加载项目时调用）
    * @param {object} designSurfaceOverrides - svgEditor.surfaceOverrides
    */
@@ -1068,72 +582,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!roomFloors || typeof roomFloors !== "object") return;
     // roomFloors 格式: { [floorLevelId]: { [roomId]: override } }
     roomFloorOverridesByStyleKey[key] = JSON.parse(JSON.stringify(roomFloors));
-  }
-
-  /**
-   * 应用所有已加载的材质覆盖到场景中（加载设计文件后调用）
-   */
-  async function applyAllOverridesToScene() {
-    if (!floorplanRoot.children.length) return;
-    const libraryBag = await getFloorplanMaterialsLibraryBag();
-    const sk = getEffectiveFloorplanStyleKey();
-    const key = normalizeStyleKeyForSurfaceOverrides(sk);
-    
-    // 应用房间地板覆盖
-    const roomFloorsData = roomFloorOverridesByStyleKey[key];
-    if (roomFloorsData && typeof roomFloorsData === "object") {
-      for (const [floorLevelId, roomsData] of Object.entries(roomFloorsData)) {
-        if (!roomsData || typeof roomsData !== "object") continue;
-        for (const [roomId, override] of Object.entries(roomsData)) {
-          if (!override || !surfaceOverrideIsActive(override)) continue;
-          floorplanRoot.traverse((o) => {
-            if (!o.isMesh) return;
-            if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
-            if (!o.userData.floorplanRoomFloor) return;
-            if (String(o.userData.floorplanRoomId ?? "").trim() !== roomId) return;
-            applySurfaceOverrideToMesh(o, override, libraryBag);
-          });
-        }
-      }
-    }
-    
-    // 应用门覆盖
-    const doorData = doorOverridesByStyleKey[key];
-    if (doorData && typeof doorData === "object") {
-      for (const [floorLevelId, doorsData] of Object.entries(doorData)) {
-        if (!doorsData || typeof doorsData !== "object") continue;
-        for (const [doorId, override] of Object.entries(doorsData)) {
-          if (!override || !surfaceOverrideIsActive(override)) continue;
-          floorplanRoot.traverse((o) => {
-            if (!o.isMesh) return;
-            if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
-            if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle) return;
-            if (String(o.userData.floorplanDoorId ?? "").trim() !== doorId) return;
-            applySurfaceOverrideToMesh(o, override, libraryBag);
-          });
-        }
-      }
-    }
-    
-    // 应用窗户覆盖
-    const windowData = windowOverridesByStyleKey[key];
-    if (windowData && typeof windowData === "object") {
-      for (const [floorLevelId, windowsData] of Object.entries(windowData)) {
-        if (!windowsData || typeof windowsData !== "object") continue;
-        for (const [windowId, override] of Object.entries(windowsData)) {
-          if (!override || !surfaceOverrideIsActive(override)) continue;
-          floorplanRoot.traverse((o) => {
-            if (!o.isMesh) return;
-            if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
-            if (!o.userData.floorplanWindowFill) return;
-            if (String(o.userData.floorplanWindowId ?? "").trim() !== windowId) return;
-            applySurfaceOverrideToMesh(o, override, libraryBag);
-          });
-        }
-      }
-    }
-
-    await applyWallFaceOverridesFromMemoryToScene(libraryBag);
   }
 
   // --- 按门覆盖（内存） ---
@@ -1507,16 +955,556 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let showNames = false;
   /** 家具拖曳/方向键/放置时是否沿墙磁吸 */
   let wallSnapEnabled = true;
-  const dimDepthTest = false; // 标注始终显示，不被模型遮挡
   let floorLevelDock = null;
   let floorLevelRow = null;
   // 楼层垂直偏移（场景单位：米）。key 对齐 furniture 的 floorId（如 "floor1"）。
   let floorYOffsetById = new Map();
   let floorElevationBaseCm = 0;
-  function normalizeFloorKey(id) {
-    return String(id ?? "").trim().toLowerCase();
-  }
-
+  const editorState = {
+    get currentFloorIndex() {
+      return currentFloorIndex;
+    },
+    set currentFloorIndex(v) {
+      currentFloorIndex = Number.isFinite(Number(v)) ? Math.trunc(Number(v)) : 0;
+    },
+    get currentFloorplanEntry() {
+      return currentFloorplanEntry;
+    },
+    set currentFloorplanEntry(v) {
+      currentFloorplanEntry = v ?? null;
+    },
+    get floorplanStyleKeyOverride() {
+      return floorplanStyleKeyOverride;
+    },
+    set floorplanStyleKeyOverride(v) {
+      floorplanStyleKeyOverride = v != null && String(v).trim() ? String(v).trim() : null;
+    },
+    get floorSelectionEnabled() {
+      return floorSelectionEnabled;
+    },
+    set floorSelectionEnabled(v) {
+      floorSelectionEnabled = Boolean(v);
+    },
+    get gridVisible() {
+      return gridVisible;
+    },
+    get hideOtherFloors() {
+      return hideOtherFloors;
+    },
+    get activeFloorId() {
+      return activeFloorId;
+    },
+    set activeFloorId(v) {
+      activeFloorId = v != null && String(v).trim() ? String(v).trim() : null;
+    },
+    get otherLayersOpacity() {
+      return otherLayersOpacity;
+    },
+    get showDimensions() {
+      return showDimensions;
+    },
+    set showDimensions(v) {
+      showDimensions = Boolean(v);
+    },
+    get showNames() {
+      return showNames;
+    },
+    set showNames(v) {
+      showNames = Boolean(v);
+    },
+    get floorplanSurfaceOverridesByStyleKey() {
+      return floorplanSurfaceOverridesByStyleKey;
+    },
+    set floorplanSurfaceOverridesByStyleKey(v) {
+      floorplanSurfaceOverridesByStyleKey = v && typeof v === "object" ? v : {};
+    },
+    get roomFloorOverridesByStyleKey() {
+      return roomFloorOverridesByStyleKey;
+    },
+    set roomFloorOverridesByStyleKey(v) {
+      roomFloorOverridesByStyleKey = v && typeof v === "object" ? v : {};
+    },
+    get doorOverridesByStyleKey() {
+      return doorOverridesByStyleKey;
+    },
+    set doorOverridesByStyleKey(v) {
+      doorOverridesByStyleKey = v && typeof v === "object" ? v : {};
+    },
+    get windowOverridesByStyleKey() {
+      return windowOverridesByStyleKey;
+    },
+    set windowOverridesByStyleKey(v) {
+      windowOverridesByStyleKey = v && typeof v === "object" ? v : {};
+    },
+    get wallFaceOverridesByStyleKey() {
+      return wallFaceOverridesByStyleKey;
+    },
+    set wallFaceOverridesByStyleKey(v) {
+      wallFaceOverridesByStyleKey = v && typeof v === "object" ? v : {};
+    },
+    get history() {
+      return history;
+    },
+    get historyIndex() {
+      return historyIndex;
+    },
+    set historyIndex(v) {
+      historyIndex = Number.isFinite(Number(v)) ? Math.trunc(Number(v)) : -1;
+    },
+    get historyReady() {
+      return historyReady;
+    },
+    set historyReady(v) {
+      historyReady = Boolean(v);
+    },
+    get isRestoring() {
+      return isRestoring;
+    },
+    set isRestoring(v) {
+      isRestoring = Boolean(v);
+    },
+    get historyDebounceTimer() {
+      return historyDebounceTimer;
+    },
+    set historyDebounceTimer(v) {
+      historyDebounceTimer = v;
+    },
+    get floorYOffsetById() {
+      return floorYOffsetById;
+    },
+    set floorYOffsetById(v) {
+      floorYOffsetById = v instanceof Map ? v : new Map();
+    },
+    get floorElevationBaseCm() {
+      return floorElevationBaseCm;
+    },
+    set floorElevationBaseCm(v) {
+      floorElevationBaseCm = Number.isFinite(Number(v)) ? Number(v) : 0;
+    },
+    get floorplanRebuildGen() {
+      return floorplanRebuildGen;
+    },
+    set floorplanRebuildGen(v) {
+      floorplanRebuildGen = Number.isFinite(Number(v)) ? Math.trunc(Number(v)) : 0;
+    },
+    get lastMergedFloorplanStyle() {
+      return lastMergedFloorplanStyle;
+    },
+    set lastMergedFloorplanStyle(v) {
+      lastMergedFloorplanStyle = v ?? null;
+    },
+    get sceneLightingEnvMapIntensity() {
+      return sceneLightingEnvMapIntensity;
+    },
+    set sceneLightingEnvMapIntensity(v) {
+      sceneLightingEnvMapIntensity = Number.isFinite(Number(v)) ? Number(v) : sceneLightingEnvMapIntensity;
+    },
+    get shadowCacheDirty() {
+      return shadowCacheDirty;
+    },
+    set shadowCacheDirty(v) {
+      shadowCacheDirty = Boolean(v);
+    },
+    get selectedGroup() {
+      return selectedGroup;
+    },
+  };
+  const {
+    buildFloorDimensions,
+    buildFloorNameAnnotations,
+    rebuildFurnitureDimAnnotations,
+    rebuildFurnitureNameAnnotations,
+    setDimensionsVisible,
+    setNamesVisible,
+    syncFloorAnnotationVisibility,
+  } = createAnnotations({
+    byId,
+    disposeObject3D,
+    extractFurnitureFootprintCm,
+    floorplanRoot,
+    furnitureRoot,
+    getFloorsFromEntry,
+    getFurnitureDisplayName,
+    normalizeFloorIndex,
+    rebuildFloorplan3D: (...args) => rebuildFloorplan3DFromCore(...args),
+    snap,
+    state: editorState,
+    updateFurnitureFloorVisibility: (...args) => updateFurnitureFloorVisibilityFromCore(...args),
+  });
+  const { initBomPanel, updateBottomUI } = createBomPanel({
+    applyFloorLevelSelectionChange: (...args) => applyFloorLevelSelectionChangeFromCore(...args),
+    byId,
+    extractFurnitureFootprintCm,
+    formatSkuMarkupLabel,
+    furnitureRoot,
+    getFloorsFromEntry,
+    getFurnitureDisplayName,
+    hasFurnitureMaterialConfig,
+    normalizeFloorIndex,
+    normalizeFloorKey,
+    normalizeFurnitureSelection,
+    resolveFurnitureSelectionDetail,
+    selectFurniture,
+    setFloorLevelsVisible,
+    state: editorState,
+    syncOtherOpacityUi,
+  });
+  initBomPanel();
+  const {
+    appendFurnitureItem,
+    refreshFurnitureVisualForConfig,
+  } = createFurnitureMeshModule({
+    byId,
+    applyFurnitureAppearanceToGroup,
+    applyFurnitureGltfPbrMaps,
+    clampDecorationLiftMForGroup,
+    extractFurnitureFootprintCm,
+    fitGltfToFootprint,
+    furnitureRoot,
+    getActiveFloorIdForFurniture,
+    hasFurnitureMaterialConfig,
+    markShadowCacheDirty: () => {
+      shadowCacheDirty = true;
+    },
+    normalizeFurnitureSelection,
+    registerFurnitureMeshes,
+    setFurnitureFromLayoutCm,
+  });
+  const {
+    createFloorplanMaterialFromStyleDef,
+    queueStylePackTextures,
+    tagFloorplanLayerOpacity,
+  } = createMaterialFactory({
+    applyFloorplanSurfaceAlpha,
+    getSceneLightingEnvMapIntensity: () => sceneLightingEnvMapIntensity,
+  });
+  const {
+    applyAllOverridesToScene,
+    applyDoorOverridesForMultiple,
+    applyRoomFloorOverridesForMultiple,
+    applySurfaceOverrideToMesh,
+    applySurfaceOverridesForFloorScope,
+    applySurfaceOverridesToFloorplan,
+    applyWallFaceOverridesToScene,
+    applyWindowOverridesForMultiple,
+    mergeMaterialOverrideIntoDef,
+    migrateFloorplanSurfaceOverridesBucket,
+    surfaceOverrideIsActive,
+    windowSurfaceOverrideForApply,
+  } = createSurfaceOverrideModule({
+    applyFloorplanSurfaceAlpha,
+    createFloorplanMaterialFromStyleDef,
+    floorplanRoot,
+    getCurrentSurfaceOverridesBucket,
+    getDoorOverride,
+    getEffectiveFloorplanStyleKey,
+    getFloorplanMaterialsLibraryBag,
+    getRoomFloorOverride,
+    getWallFaceOverride,
+    getWindowOverride,
+    normalizeStyleKeyForSurfaceOverrides,
+    queueStylePackTextures,
+    state: editorState,
+  });
+  const {
+    buildDoorFillGroup: buildDoorFillGroupFromMeshBuilder,
+    buildRoomMesh: buildRoomMeshFromMeshBuilder,
+    buildWindowGlassGroup: buildWindowGlassGroupFromMeshBuilder,
+    doorFillMaterialFromNs: doorFillMaterialFromMeshBuilder,
+    windowGlassMaterialFromNs: windowGlassMaterialFromMeshBuilder,
+  } = createMeshBuilder({
+    applyFloorplanSurfaceAlpha,
+    computeWallEndpointExtensionsCm,
+    floorplanStdMat,
+    getRoomFloorOverride,
+    snap,
+    surfaceOverrideIsActive,
+    tagFloorplanLayerOpacity,
+  });
+  const { buildWallMesh: buildWallMeshFromModule } = createWallMeshBuilder({
+    WALL_HOLE_EPS,
+    applyFloorplanSurfaceAlpha,
+    cellFullyInsideAnyHole,
+    clipLocalPolygonByLineKeepPoint,
+    clipLocalPolygonByXRange,
+    collectWallOpeningHolesLocal,
+    computeParallelWallSideOverlapRangesLocal,
+    computeWallEndpointExtensionsCm,
+    convexHull2d,
+    floorplanStdMat,
+    intervalRangeCovers,
+    makeWallPlanPrismGeometryLocal,
+    mergeSplitEdges,
+    polygonAabbCm,
+    remapWallBoxUvToWallSpan,
+    snap,
+    suppressWallBoxFaces,
+    tagFloorplanLayerOpacity,
+    wallEndCapCoveredByOtherWallCm,
+  });
+  const {
+    applyFloorLevelSelectionChange: applyFloorLevelSelectionChangeFromCore,
+    applyFloorplanEntryAtWorld: applyFloorplanEntryAtWorldFromCore,
+    applyFloorplanLayerOpacityToScene: applyFloorplanLayerOpacityToSceneFromCore,
+    clearFloorplan: clearFloorplanFromCore,
+    effectiveFloorplanStyleKeyFromEntryAndOverride: effectiveFloorplanStyleKeyFromEntryAndOverrideFromCore,
+    fastStyleSwitch: fastStyleSwitchFromCore,
+    mergeLayoutWithStyleDecorations: mergeLayoutWithStyleDecorationsFromCore,
+    rebuildFloorplan3D: rebuildFloorplan3DFromCore,
+    rebuildFromLayout: rebuildFromLayoutFromCore,
+    syncHideOtherFloorsFloorplanVisibility: syncHideOtherFloorsFloorplanVisibilityFromCore,
+    updateFurnitureFloorVisibility: updateFurnitureFloorVisibilityFromCore,
+  } = createFloorplanCore({
+    activeFloorPickMeshes,
+    ambientLight,
+    applyFloorplanSurfaceAlpha,
+    applySurfaceOverridesToFloorplan,
+    appendFurnitureItem,
+    buildDoorFillGroup: buildDoorFillGroupFromMeshBuilder,
+    buildFloorDimensions,
+    buildFloorNameAnnotations,
+    buildRoomMesh: buildRoomMeshFromMeshBuilder,
+    buildWallMesh: buildWallMeshFromModule,
+    buildWindowGlassGroup: buildWindowGlassGroupFromMeshBuilder,
+    clampDecorationLiftMForGroup,
+    clearInteractiveList,
+    createFloorplanMaterialFromStyleDef,
+    dirLight,
+    disposeObject3D,
+    doorFillMaterialFromNs: doorFillMaterialFromMeshBuilder,
+    floorplanRoot,
+    floorplanStdMat,
+    furnitureRoot,
+    getActiveLayerOpacity: () => activeLayerOpacity,
+    getEffectiveFloorplanStyleKey,
+    getLayout,
+    hemiLight,
+    modelIdIsDecoration,
+    normalizeStyleKeyForSurfaceOverrides,
+    pushHistorySnapshot: (...args) => pushHistorySnapshot(...args),
+    queueStylePackTextures,
+    rebuildFurnitureDimAnnotations,
+    rebuildFurnitureNameAnnotations,
+    rebuildWallSnapData,
+    renderer,
+    selectFurniture,
+    serializeDesignBaseline,
+    serializeDesignForSave,
+    setFloorLevelsVisible,
+    setFloorplanSelected: (v) => {
+      floorplanSelected = Boolean(v);
+    },
+    state: editorState,
+    syncFloorAnnotationVisibility,
+    syncOtherOpacityUi,
+    tagFloorplanLayerOpacity,
+    unregisterFurnitureGroup,
+    updateBottomUI,
+    windowGlassMaterialFromNs: windowGlassMaterialFromMeshBuilder,
+  });
+  const undoRedoButtons = { undo: null, redo: null };
+  const {
+    applyHistorySnapshotState,
+    flushHistoryDebounce,
+    initHistory,
+    normalizeHistorySnapshot,
+    pushHistorySnapshot,
+    redo,
+    schedulePushHistory,
+    syncUndoRedoButtons,
+    undo,
+  } = createHistoryModule({
+    applyFloorplanEntryAtWorld,
+    applySurfaceOverridesToFloorplan,
+    clearFloorplan,
+    effectiveFloorplanStyleKeyFromEntryAndOverride,
+    emitLayoutChanged,
+    floorplanRoot,
+    getCurrentFloorLevelIndex,
+    getCurrentFloorplanId,
+    getCurrentSurfaceOverridesBucket,
+    getEffectiveFloorplanStyleKey,
+    getLayout,
+    getRedoButton: () => undoRedoButtons.redo,
+    getUndoButton: () => undoRedoButtons.undo,
+    maxHistory: MAX_HISTORY,
+    migrateFloorplanSurfaceOverridesBucket,
+    normalizeStyleKeyForSurfaceOverrides,
+    rebuildFloorplan3D,
+    rebuildFromLayout,
+    resolveFloorplanCatalogEntry: (id) => {
+      const cat = window.__floorPlanCatalog;
+      return cat?.byId instanceof Map ? cat.byId.get(id) : null;
+    },
+    selectFurniture,
+    state: editorState,
+    updateBottomUI,
+  });
+  const {
+    applyExternalLayout,
+    applyFromDesignProject,
+    restoreEditorSession,
+  } = createProjectIoModule({
+    applyAllOverridesToScene,
+    applyFloorplanEntryAtWorld,
+    applyHistorySnapshotState,
+    applyLightingConfig: (cfg) => {
+      window.svgEditorApplyLightingConfig?.(cfg);
+    },
+    clearFloorplan,
+    emitLayoutChanged,
+    floorplanRoot,
+    getFloorsFromEntry,
+    initHistory,
+    maxHistory: MAX_HISTORY,
+    migrateFloorplanSurfaceOverridesBucket,
+    normalizeHistorySnapshot,
+    normalizeStyleKeyForSurfaceOverrides,
+    rebuildFromLayout,
+    resetCameraView,
+    resolveFloorplanCatalogEntry: (id) => {
+      const cat = window.__floorPlanCatalog;
+      return cat?.byId instanceof Map ? cat.byId.get(id) : null;
+    },
+    selectFurniture,
+    selectFloorplanLibraryCardById: (id) => {
+      window.__selectFloorplanLibraryCardById?.(id);
+    },
+    serializeDesignBaseline,
+    serializeDesignForSave,
+    setGridVisible,
+    setRenderQualityMode,
+    setViewTransform,
+    state: editorState,
+    syncRenderQualityToolbarUi,
+    syncUndoRedoButtons,
+  });
+  const propertiesPanel = document.getElementById("propertiesPanel");
+  const {
+    initFloorplanStyleToolbar,
+    initStylePackSaveDialogs,
+  } = createStylePackTools({
+    ambientLight,
+    clearFloorplanSurfaceSelection,
+    clearSurfaceOverridesForStyle,
+    fastStyleSwitch,
+    getCurrentFloorplanId,
+    getCurrentSurfaceOverridesBucket,
+    getEffectiveFloorplanStyleKey,
+    getFloorplanMaterialsLibraryBag,
+    getFloorsFromEntry,
+    getLastMergedFloorplanStyle: () => lastMergedFloorplanStyle,
+    getLayout,
+    getSceneLightingEnvMapIntensity: () => sceneLightingEnvMapIntensity,
+    hemiLight,
+    loadStylePackIndexFromMain: loadStylePackIndex,
+    mergeLayoutWithStyleDecorations,
+    mergeMaterialOverrideIntoDef,
+    modelIdIsDecoration,
+    normalizeFloorKey,
+    normalizeStyleKeyForSurfaceOverrides,
+    propertiesPanel,
+    pushHistorySnapshot,
+    rebuildFloorplan3D,
+    schedulePushHistory,
+    selectFurniture,
+    serializeDesignBaseline,
+    serializeDesignForSave,
+    setFloorplanSelected: (v) => {
+      floorplanSelected = Boolean(v);
+    },
+    state: editorState,
+    surfaceOverrideIsActive,
+    windowSurfaceOverrideForApply,
+    renderer,
+    dirLight,
+    getSurfaceOverridesBucketForStyle,
+  });
+  const {
+    applyLightingConfig: applyLightingConfigFromToolbar,
+    getCurrentLightingConfig: getCurrentLightingConfigFromToolbar,
+    initializeToolbarsAndApis,
+    setRenderQualityMode: setRenderQualityModeFromToolbar,
+    syncRenderQualityToolbarUi: syncRenderQualityToolbarUiFromToolbar,
+  } = createToolbarInit({
+    RENDER_QUALITY_CONFIGS,
+    addFurniture,
+    animate: () => animate(),
+    applyFloorplanEntryAtWorld,
+    applyPropertiesFromPanel,
+    applyRendererPixelRatio,
+    applyRendererQualityDetails,
+    clearFloorplan,
+    clearFloorplanSurfaceSelection,
+    deselectVisualOnly,
+    emitLayoutChanged,
+    flushHistoryDebounce,
+    getCurrentFloorId,
+    getCurrentFloorLevelIndex,
+    getCurrentFloorplanId,
+    getEffectiveFloorplanStyleKey,
+    getGetSurfaceOverrides: () => () => {
+      const result = {};
+      const allKeys = new Set([
+        ...Object.keys(floorplanSurfaceOverridesByStyleKey),
+        ...Object.keys(roomFloorOverridesByStyleKey),
+        ...Object.keys(doorOverridesByStyleKey),
+        ...Object.keys(windowOverridesByStyleKey),
+        ...Object.keys(wallFaceOverridesByStyleKey),
+      ]);
+      for (const key of allKeys) {
+        result[key] = {
+          ...JSON.parse(JSON.stringify(floorplanSurfaceOverridesByStyleKey[key] || {})),
+          roomFloors: JSON.parse(JSON.stringify(roomFloorOverridesByStyleKey[key] || {})),
+          doorOverrides: JSON.parse(JSON.stringify(doorOverridesByStyleKey[key] || {})),
+          windowOverrides: JSON.parse(JSON.stringify(windowOverridesByStyleKey[key] || {})),
+          wallFaceOverrides: JSON.parse(JSON.stringify(wallFaceOverridesByStyleKey[key] || {})),
+        };
+      }
+      return result;
+    },
+    getGridVisible: () => gridVisible,
+    getRenderQualityMode: () => renderQualityMode,
+    getSceneLightingEnvMapIntensity: () => sceneLightingEnvMapIntensity,
+    getShadowsEnabled: () => shadowsEnabled,
+    getShowDimensions: () => showDimensions,
+    getShowNames: () => showNames,
+    getUndoHistory: () => ({ entries: [...history], index: historyIndex }),
+    getViewTransform,
+    getWallSnapEnabled: () => wallSnapEnabled,
+    getWindowRestoreSession: () => restoreEditorSession,
+    getLayout,
+    ambientLight,
+    hemiLight,
+    dirLight,
+    initFloorplanStyleToolbar,
+    initStylePackSaveDialogs,
+    renderer,
+    renderEditorScene: () => renderEditorScene(),
+    resetCameraView,
+    resizeRenderer,
+    selectFurniture,
+    serializeDesignBaseline,
+    serializeDesignForSave,
+    setDimensionsVisible,
+    setFloorplanSelected: (v) => {
+      floorplanSelected = Boolean(v);
+    },
+    setGridVisible,
+    setNamesVisible,
+    setRenderQualityModeRaw: (mode) => {
+      renderQualityMode = mode;
+    },
+    setSceneLightingEnvMapIntensity: (v) => {
+      sceneLightingEnvMapIntensity = v;
+    },
+    setShadowsEnabled,
+    setViewTransform,
+    setWallSnapEnabled,
+    syncPropertiesPanelForSelection,
+    VIEW_H,
+    VIEW_W,
+  });
   /** 墙体中心线（画布 cm），按楼层 id 缓存，用于家具拖曳磁吸 */
   const WALL_SNAP_THRESHOLD_CM = 32;
   const wallSnapSegmentsByFloorId = new Map();
@@ -1588,7 +1576,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return { x: cx + best.dx, y: cy + best.dy };
   }
 
-  const propertiesPanel = document.getElementById("propertiesPanel");
   const propertiesName = propertiesPanel?.querySelector(".properties-name");
   const propInputX = propertiesPanel?.querySelector('input[data-prop="x"]');
   const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
@@ -1811,6 +1798,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
   const undoBtn = document.querySelector("[data-svg-undo]");
   const redoBtn = document.querySelector("[data-svg-redo]");
+  undoRedoButtons.undo = undoBtn;
+  undoRedoButtons.redo = redoBtn;
   const gridToggleBtn = document.getElementById("svgGridToggleBtn");
   const floorHideOthersToggleBtn = document.querySelector("[data-svg-floor-hide-others-toggle]");
   // 快速操作：只显示当前楼层，其它楼层/家具隐藏
@@ -1925,15 +1914,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     });
   }
 
-  function stdMat(color) {
-    return new THREE.MeshStandardMaterial({
-      color,
-      roughness: 0.55,
-      metalness: 0.05,
-      emissive: new THREE.Color(0x000000),
-    });
-  }
-
   /** 仅用于户型挤出：压低环境反射，减轻「户型过亮、立面无层次」 */
   function floorplanStdMat() {
     return new THREE.MeshStandardMaterial({
@@ -1976,247 +1956,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       mat.polygonOffsetFactor = 0;
       mat.polygonOffsetUnits = 0;
     }
-  }
-
-  /**
-   * 记录楼层透明度系数与当前 effective opacity 的比例（opacity / 层透明度），
-   * 供滑块只改材质时使用：newOpacity = perUnit * newLayerOpacity。
-   * 避免层透明度或 effective opacity 曾为 0 时，用 ratio=mat.opacity*new/old 无法恢复。
-   */
-  function tagFloorplanLayerOpacity(mat, layerOpacity) {
-    if (!mat) return;
-    const layer = Number.isFinite(Number(layerOpacity)) ? Number(layerOpacity) : 1;
-    mat.userData.__floorplanLayerOpacity = layer;
-    if (layer > 1e-9) {
-      mat.userData.__floorplanOpacityPerUnitLayer = mat.opacity / layer;
-    } else {
-      mat.userData.__floorplanOpacityPerUnitLayer = 1;
-    }
-  }
-
-  /**
-   * 从风格包 materials 条目创建 Three 材质（可先显示颜色，贴图异步叠加）
-   * @param {object} def
-   * @param {number} floorOpacity
-   * @param {{ forGlass?: boolean, envMapIntensity?: number, side?: import("three").Side }} [options]
-   */
-  function createFloorplanMaterialFromStyleDef(def, floorOpacity, options = {}) {
-    const envMapIntensity = options.envMapIntensity ?? sceneLightingEnvMapIntensity;
-    const floorOp = floorOpacity ?? 1;
-    const color = new THREE.Color();
-    try {
-      const h = String(def.color ?? "#cccccc").trim();
-      color.setStyle(h.startsWith("#") ? h : `#${h}`);
-    } catch {
-      color.setHex(0xcccccc);
-    }
-    const roughness = Number(def.roughness);
-    const metalness = Number(def.metalness);
-    const tr = Number(def.transmission);
-    const usePhysical =
-      options.forGlass !== true &&
-      String(def.type ?? "") === "glass" &&
-      Number.isFinite(tr) &&
-      tr > 0.02;
-
-    if (usePhysical) {
-      const baseOp = Number(def.opacity);
-      const opMult = Number.isFinite(baseOp) ? baseOp : 1;
-      const mat = new THREE.MeshPhysicalMaterial({
-        color,
-        roughness: Number.isFinite(roughness) ? roughness : 0.05,
-        metalness: Number.isFinite(metalness) ? metalness : 0,
-        transmission: Math.min(1, tr),
-        thickness: 0.03,
-        ior: Number.isFinite(Number(def.ior)) ? Number(def.ior) : 1.45,
-        transparent: true,
-        opacity: Math.min(1, opMult * floorOp),
-        envMapIntensity: 0.9,
-        emissive: new THREE.Color(0x000000),
-      });
-      applyFloorplanSurfaceAlpha(mat, Math.min(1, opMult * floorOp));
-      mat.side = options.side ?? THREE.DoubleSide;
-      tagFloorplanLayerOpacity(mat, floorOp);
-      return mat;
-    }
-
-    const mat = new THREE.MeshStandardMaterial({
-      color,
-      roughness: Number.isFinite(roughness) ? roughness : 0.55,
-      metalness: Number.isFinite(metalness) ? metalness : 0.05,
-      envMapIntensity,
-      emissive: new THREE.Color(0x000000),
-    });
-    const baseOp = Number(def.opacity);
-    const opMult = Number.isFinite(baseOp) ? baseOp : 1;
-    const isGlass = String(def.type ?? "") === "glass";
-    if (isGlass) {
-      mat.transparent = true;
-      applyFloorplanSurfaceAlpha(mat, Math.min(1, opMult * floorOp));
-    } else {
-      // 与玻璃一致：库/面板「不透明度」× 楼层透明度；仅压 floorOp 会让表面像被乘灰、而非真透明
-      applyFloorplanSurfaceAlpha(mat, Math.min(1, opMult * floorOp));
-    }
-    mat.side = options.side ?? THREE.FrontSide;
-    tagFloorplanLayerOpacity(mat, floorOp);
-    return mat;
-  }
-
-  /**
-   * 风格包 PBR 贴图异步加载（路径相对 assets/floorplans/style/）
-   * @param {import("three").MeshStandardMaterial | import("three").MeshPhysicalMaterial} mat
-   * @param {object} def
-   * @param {{ applyUvScale?: boolean }} [opts]
-   */
-  function queueStylePackTextures(mat, def, opts = {}) {
-    const t = def.texture;
-    if (!t || typeof t !== "object") return;
-    const albedo = String(t.albedo ?? "").trim();
-    const rough = String(t.roughness ?? "").trim();
-    const normal = String(t.normal ?? "").trim();
-    const metalnessMapPath = String(t.metalnessMap ?? "").trim();
-    if (!albedo && !rough && !normal && !metalnessMapPath) return;
-
-    const loader = new THREE.TextureLoader();
-    const applyUv = Boolean(opts.applyUvScale && Array.isArray(def.uvScale) && def.uvScale.length >= 2);
-    const rotDeg = Number(def.textureRotation);
-    const rotRad = Number.isFinite(rotDeg) && rotDeg !== 0 ? (rotDeg * Math.PI) / 180 : 0;
-
-    function applyStyleTextureMapOpts(tex) {
-      if (!tex) return;
-      if (applyUv) {
-        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        tex.repeat.set(def.uvScale[0], def.uvScale[1]);
-      }
-      if (rotRad !== 0) {
-        tex.center.set(0.5, 0.5);
-        tex.rotation = rotRad;
-      }
-    }
-
-    (async () => {
-      if (!mat?.isMeshStandardMaterial) return;
-
-      let diffTex = null;
-      let roughTex = null;
-      let normalTex = null;
-      let metalnessTex = null;
-
-      // 使用缓存的纹理加载
-      if (albedo) {
-        const au = resolveStyleTextureUrl(albedo);
-        diffTex = await getCachedTexture(au, loader, true);
-      }
-      if (rough) {
-        const ru = resolveStyleTextureUrl(rough);
-        roughTex = await getCachedTexture(ru, loader, false);
-        if (roughTex) roughTex.colorSpace = THREE.LinearSRGBColorSpace;
-      }
-      if (normal) {
-        const nu = resolveStyleTextureUrl(normal);
-        normalTex = await getCachedTexture(nu, loader, false);
-        if (normalTex) normalTex.colorSpace = THREE.NoColorSpace;
-      }
-      if (metalnessMapPath) {
-        const mu = resolveStyleTextureUrl(metalnessMapPath);
-        metalnessTex = await getCachedTexture(mu, loader, false);
-        if (metalnessTex) {
-          metalnessTex.colorSpace = THREE.LinearSRGBColorSpace;
-        }
-      }
-
-      if (!diffTex && !roughTex && !normalTex && !metalnessTex) return;
-
-      if (diffTex) {
-        applyStyleTextureMapOpts(diffTex);
-        mat.map = diffTex;
-        try {
-          const h = String(def.color ?? "#ffffff").trim();
-          mat.color.setStyle(h.startsWith("#") ? h : `#${h}`);
-        } catch {
-          mat.color.setHex(0xffffff);
-        }
-      }
-      if (roughTex) {
-        applyStyleTextureMapOpts(roughTex);
-        mat.roughnessMap = roughTex;
-      }
-      if (normalTex) {
-        applyStyleTextureMapOpts(normalTex);
-        mat.normalMap = normalTex;
-        mat.normalScale = new THREE.Vector2(1, 1);
-      }
-      if (metalnessTex) {
-        applyStyleTextureMapOpts(metalnessTex);
-        mat.metalnessMap = metalnessTex;
-      }
-      mat.needsUpdate = true;
-    })();
-  }
-
-  function disposeFloorplanOverrideMaterial(mesh) {
-    if (!mesh?.material) return;
-    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    mats.forEach((m) => {
-      if (!m?.userData?.__floorplanOverrideOwned) return;
-      if (m.map) m.map.dispose();
-      if (m.normalMap) m.normalMap.dispose();
-      if (m.roughnessMap) m.roughnessMap.dispose();
-      if (m.metalnessMap) m.metalnessMap.dispose();
-      m.dispose();
-    });
-  }
-
-  /**
-   * 多段墙体共用同一 override 材质时，每张 mesh dispose 一次会误删共享贴图；先按材质引用去重再 dispose。
-   * @param {import("three").Mesh[]} meshes
-   */
-  function disposeUniqueOverrideMaterialsOnMeshes(meshes) {
-    const seen = new Set();
-    for (const mesh of meshes) {
-      if (!mesh?.material) continue;
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      for (const m of mats) {
-        if (!m || seen.has(m)) continue;
-        seen.add(m);
-        if (!m.userData?.__floorplanOverrideOwned) continue;
-        if (m.map) m.map.dispose();
-        if (m.normalMap) m.normalMap.dispose();
-        if (m.roughnessMap) m.roughnessMap.dispose();
-        if (m.metalnessMap) m.metalnessMap.dispose();
-        m.dispose();
-      }
-    }
-  }
-
-  /**
-   * 由库材质 + 面板覆盖生成 **一份** Three 材质（同一楼层同 scope 下所有墙/地 mesh 可共用，避免每段墙重复 queueStylePackTextures）。
-   * @returns {{ mat: import("three").Material, mergedDef: object } | null}
-   */
-  function createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity, isRoomFloor) {
-    if (!ov?.materialId) return null;
-    const def = resolveMaterialDefFromLibrary(libraryBag, ov.materialId);
-    if (!def) return null;
-    const mergedDef = mergeMaterialOverrideIntoDef(def, ov);
-    const side = isRoomFloor ? THREE.DoubleSide : THREE.FrontSide;
-    const mat = createFloorplanMaterialFromStyleDef(mergedDef, opacity, {
-      forGlass: false,
-      envMapIntensity: sceneLightingEnvMapIntensity,
-      side,
-    });
-    mat.userData.__floorplanOverrideOwned = true;
-    if (isRoomFloor) {
-      mat.userData.__floorplanRoomFloorDepthWrite = true;
-    }
-    // create 已写入 opMult×层透明度；此处用 mat.opacity 再跑一遍以应用「房间地面」depth 规则，避免被单层系数覆盖
-    applyFloorplanSurfaceAlpha(mat, mat.opacity);
-    const applyUvOpts =
-      isRoomFloor ||
-      (Array.isArray(ov.uvScale) && ov.uvScale.length >= 2) ||
-      (ov.textureRotation != null && Number.isFinite(Number(ov.textureRotation)));
-    queueStylePackTextures(mat, mergedDef, { applyUvScale: applyUvOpts });
-    mat.needsUpdate = true;
-    return { mat, mergedDef };
   }
 
   let floorplanSurfaceBoxHelpers = []; // 存储户型表面选中框
@@ -2494,49 +2233,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   /**
-   * 将旧版 { rooms:{id}, walls:{id} } 转为 allFloors / allWalls（取各组第一条，仅迁移兼容）
-   * @param {Record<string, object>} raw
-   */
-  function migrateFloorplanSurfaceOverridesBucket(raw) {
-    if (!raw || typeof raw !== "object") return {};
-    const out = {};
-    for (const [fid, bag] of Object.entries(raw)) {
-      if (!bag || typeof bag !== "object") continue;
-      if (bag.allWalls || bag.allFloors || bag.allDoors || bag.allWindows) {
-        out[fid] = { ...bag };
-        continue;
-      }
-      const next = {};
-      if (bag.walls && typeof bag.walls === "object") {
-        const vals = Object.values(bag.walls).filter((v) => v && typeof v === "object");
-        if (vals.length) next.allWalls = { ...vals[0] };
-      }
-      if (bag.rooms && typeof bag.rooms === "object") {
-        const vals = Object.values(bag.rooms).filter((v) => v && typeof v === "object");
-        if (vals.length) next.allFloors = { ...vals[0] };
-      }
-      if (next.allWalls || next.allFloors) out[fid] = next;
-    }
-    // 保留 roomFloors（按房间的地板覆盖）
-    if (raw.roomFloors && typeof raw.roomFloors === "object") {
-      out.roomFloors = JSON.parse(JSON.stringify(raw.roomFloors));
-    }
-    // 保留 doorOverrides（按门的覆盖）
-    if (raw.doorOverrides && typeof raw.doorOverrides === "object") {
-      out.doorOverrides = JSON.parse(JSON.stringify(raw.doorOverrides));
-    }
-    // 保留 windowOverrides（按窗户的覆盖）
-    if (raw.windowOverrides && typeof raw.windowOverrides === "object") {
-      out.windowOverrides = JSON.parse(JSON.stringify(raw.windowOverrides));
-    }
-    // 保留 wallFaceOverrides（按墙段+面的覆盖）
-    if (raw.wallFaceOverrides && typeof raw.wallFaceOverrides === "object") {
-      out.wallFaceOverrides = JSON.parse(JSON.stringify(raw.wallFaceOverrides));
-    }
-    return out;
-  }
-
-  /**
    * @param {string} floorLevelId
    * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
    * @param {SurfaceScopeOverride | null} data null 表示删除该条
@@ -2583,556 +2279,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return found;
   }
 
-  /**
-   * 将面板中的数值覆盖合并到库材质定义（颜色、PBR、贴图 UV/旋转、albedo 等均在「该 materialId 对应材质」上生效）
-   * @param {object} def
-   * @param {SurfaceScopeOverride} ov
-   */
-  function mergeMaterialOverrideIntoDef(def, ov) {
-    if (!def || typeof def !== "object") return def;
-    const out = { ...def };
-    if (def.texture && typeof def.texture === "object") {
-      out.texture = { ...def.texture };
-    }
-    if (ov.color != null && String(ov.color).trim()) {
-      const h = String(ov.color).trim();
-      out.color = h.startsWith("#") ? h : `#${h.replace(/^#/, "")}`;
-    }
-    if (ov.roughness != null && Number.isFinite(Number(ov.roughness))) {
-      out.roughness = Math.min(1, Math.max(0, Number(ov.roughness)));
-    }
-    if (ov.metalness != null && Number.isFinite(Number(ov.metalness))) {
-      out.metalness = Math.min(1, Math.max(0, Number(ov.metalness)));
-    }
-    if (ov.opacity != null && Number.isFinite(Number(ov.opacity))) {
-      out.opacity = Math.min(1, Math.max(0, Number(ov.opacity)));
-    }
-    if (ov.transmission != null && Number.isFinite(Number(ov.transmission))) {
-      out.transmission = Math.min(1, Math.max(0, Number(ov.transmission)));
-    }
-    if (ov.ior != null && Number.isFinite(Number(ov.ior))) {
-      out.ior = Math.min(2.5, Math.max(1, Number(ov.ior)));
-    }
-    if (Array.isArray(ov.uvScale) && ov.uvScale.length >= 2) {
-      const u = Number(ov.uvScale[0]);
-      const v = Number(ov.uvScale[1]);
-      if (Number.isFinite(u) && Number.isFinite(v)) {
-        out.uvScale = [u, v];
-      }
-    }
-    if (ov.textureRotation != null && Number.isFinite(Number(ov.textureRotation))) {
-      out.textureRotation = Number(ov.textureRotation);
-    }
-    if (ov.textureAlbedo != null && String(ov.textureAlbedo).trim()) {
-      const raw = String(ov.textureAlbedo).trim();
-      const path = raw.includes("/") ? raw : `textures/${raw}`;
-      if (!out.texture) out.texture = {};
-      else out.texture = { ...out.texture };
-      out.texture.albedo = path;
-    }
-    return out;
-  }
-
-  /**
-   * 窗玻璃不切换材质库：应用覆盖时去掉 materialId / 贴图预设 / UV 与旋转，仅保留颜色与 PBR/玻璃参数。
-   * @param {SurfaceScopeOverride | null | undefined} ov
-   * @returns {SurfaceScopeOverride | null}
-   */
-  function windowSurfaceOverrideForApply(ov) {
-    if (!ov || typeof ov !== "object") return null;
-    const o = { ...ov };
-    delete o.materialId;
-    delete o.textureAlbedo;
-    delete o.materialPresetCleared;
-    delete o.uvScale;
-    delete o.textureRotation;
-    return o;
-  }
-
-  /** @param {SurfaceScopeOverride | null | undefined} ov */
-  function surfaceOverrideIsActive(ov) {
-    if (!ov || typeof ov !== "object") return false;
-    if (ov.color || ov.materialId) return true;
-    if (ov.textureAlbedo != null && String(ov.textureAlbedo).trim()) return true;
-    if (ov.materialPresetCleared) return true;
-    if (ov.roughness != null && Number.isFinite(Number(ov.roughness))) return true;
-    if (ov.metalness != null && Number.isFinite(Number(ov.metalness))) return true;
-    if (Array.isArray(ov.uvScale) && ov.uvScale.length >= 2) return true;
-    if (ov.textureRotation != null && Number.isFinite(Number(ov.textureRotation))) return true;
-    if (ov.opacity != null && Number.isFinite(Number(ov.opacity))) return true;
-    if (ov.transmission != null && Number.isFinite(Number(ov.transmission))) return true;
-    if (ov.ior != null && Number.isFinite(Number(ov.ior))) return true;
-    return false;
-  }
-
-  function applySurfaceOverrideToMesh(mesh, ov, libraryBag) {
-    if (!mesh?.isMesh || !ov) return;
-    const opacity = Number.isFinite(mesh.userData.floorplanSurfaceOpacity)
-      ? mesh.userData.floorplanSurfaceOpacity
-      : 1;
-    const isRoomFloor = mesh.userData.floorplanRoomFloor === true;
-    if (ov.materialId) {
-      disposeFloorplanOverrideMaterial(mesh);
-      const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity, isRoomFloor);
-      if (!built) return;
-      mesh.material = built.mat;
-      return;
-    }
-    const useColorPath =
-      ov.color ||
-      ov.roughness != null ||
-      ov.metalness != null ||
-      ov.opacity != null ||
-      ov.transmission != null ||
-      ov.ior != null ||
-      ov.materialPresetCleared;
-    if (!useColorPath) return;
-    const layerOp = Number.isFinite(mesh.userData.floorplanSurfaceOpacity) ? mesh.userData.floorplanSurfaceOpacity : 1;
-    const isRoomFloorMesh = mesh.userData.floorplanRoomFloor === true;
-    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    const next = mats.map((m) => {
-      if (!m?.isMeshStandardMaterial && !m?.isMeshPhysicalMaterial) return m;
-      const c = m.clone();
-      c.userData.__floorplanOverrideOwned = true;
-      if (ov.materialPresetCleared) {
-        c.map = null;
-        c.normalMap = null;
-        c.roughnessMap = null;
-        c.metalnessMap = null;
-        c.aoMap = null;
-      }
-      if (ov.color) {
-        try {
-          const h = String(ov.color).trim();
-          c.color.setStyle(h.startsWith("#") ? h : `#${h}`);
-        } catch {
-          /* ignore */
-        }
-      }
-      if (ov.roughness != null && Number.isFinite(Number(ov.roughness))) {
-        c.roughness = Math.min(1, Math.max(0, Number(ov.roughness)));
-      }
-      if (ov.metalness != null && Number.isFinite(Number(ov.metalness))) {
-        c.metalness = Math.min(1, Math.max(0, Number(ov.metalness)));
-      }
-      if (c.isMeshPhysicalMaterial) {
-        if (ov.transmission != null && Number.isFinite(Number(ov.transmission))) {
-          c.transmission = Math.min(1, Math.max(0, Number(ov.transmission)));
-        }
-        if (ov.ior != null && Number.isFinite(Number(ov.ior))) {
-          c.ior = Math.min(2.5, Math.max(1, Number(ov.ior)));
-        }
-      }
-      if (ov.opacity != null && Number.isFinite(Number(ov.opacity))) {
-        const op = Math.min(1, Math.max(0, Number(ov.opacity))) * layerOp;
-        if (isRoomFloorMesh) {
-          c.userData.__floorplanRoomFloorDepthWrite = true;
-        } else {
-          delete c.userData.__floorplanRoomFloorDepthWrite;
-        }
-        applyFloorplanSurfaceAlpha(c, op);
-      }
-      c.needsUpdate = true;
-      return c;
-    });
-    disposeFloorplanOverrideMaterial(mesh);
-    mesh.material = next.length === 1 ? next[0] : next;
-  }
-
-  /**
-   * 对墙体 mesh 单个面（Box materialIndex 4=face_a/+Z, 5=face_b/-Z）应用覆盖材质。
-   * 若 faceId 为 null，则对两面都应用（整段）。
-   * 若 mesh 当前为单材质，自动扩展为 6 元素材质数组。
-   * @param {import("three").Mesh} mesh
-   * @param {string | null} faceId - "face_a" | "face_b" | null
-   * @param {object} ov
-   * @param {object} libraryBag
-   */
-  function applySurfaceOverrideToMeshFace(mesh, faceId, ov, libraryBag) {
-    if (!mesh?.isMesh || !ov) return;
-    if (!surfaceOverrideIsActive(ov)) return;
-
-    const opacity = Number.isFinite(mesh.userData.floorplanSurfaceOpacity)
-      ? mesh.userData.floorplanSurfaceOpacity
-      : 1;
-
-    // 确保 mesh.material 是 6 元素数组（Box 面顺序：+X,-X,+Y,-Y,+Z(4),-Z(5)）
-    function ensureMaterialArray(mesh) {
-      if (Array.isArray(mesh.material)) return mesh.material;
-      const base = mesh.material;
-      const arr = [base, base, base, base, base.clone ? base.clone() : base, base.clone ? base.clone() : base];
-      arr[4].userData = { ...arr[4].userData };
-      arr[5].userData = { ...arr[5].userData };
-      mesh.material = arr;
-      return arr;
-    }
-
-    function buildFaceMat(existingMat) {
-      if (ov.materialId) {
-        const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity, false);
-        return built ? built.mat : existingMat;
-      }
-      const useColorPath =
-        ov.color ||
-        ov.roughness != null ||
-        ov.metalness != null ||
-        ov.opacity != null ||
-        ov.materialPresetCleared;
-      if (!useColorPath) return existingMat;
-      const m = existingMat;
-      if (!m?.isMeshStandardMaterial && !m?.isMeshPhysicalMaterial) return existingMat;
-      const c = m.clone();
-      c.userData.__floorplanOverrideOwned = true;
-      if (ov.materialPresetCleared) {
-        c.map = null;
-        c.normalMap = null;
-        c.roughnessMap = null;
-        c.metalnessMap = null;
-        c.aoMap = null;
-      }
-      if (ov.color) {
-        try {
-          const h = String(ov.color).trim();
-          c.color.setStyle(h.startsWith("#") ? h : `#${h}`);
-        } catch { /* ignore */ }
-      }
-      if (ov.roughness != null && Number.isFinite(Number(ov.roughness))) {
-        c.roughness = Math.min(1, Math.max(0, Number(ov.roughness)));
-      }
-      if (ov.metalness != null && Number.isFinite(Number(ov.metalness))) {
-        c.metalness = Math.min(1, Math.max(0, Number(ov.metalness)));
-      }
-      const us = ov.uvScale;
-      if (Array.isArray(us) && us.length >= 2 && Number.isFinite(us[0]) && Number.isFinite(us[1])) {
-        c.userData.__uvScaleX = us[0];
-        c.userData.__uvScaleY = us[1];
-      }
-      if (ov.textureRotation != null && Number.isFinite(Number(ov.textureRotation))) {
-        c.userData.__textureRotation = Number(ov.textureRotation);
-      }
-      c.needsUpdate = true;
-      return c;
-    }
-
-    const mats = ensureMaterialArray(mesh);
-    if (faceId === null) {
-      // 整段：更新正面和反面
-      mats[4] = buildFaceMat(mats[4]);
-      mats[5] = buildFaceMat(mats[5]);
-    } else if (faceId === "face_a") {
-      mats[4] = buildFaceMat(mats[4]);
-    } else if (faceId === "face_b") {
-      mats[5] = buildFaceMat(mats[5]);
-    }
-    mesh.material = mats;
-  }
-
-  /**
-   * 对多个墙面应用覆盖（不重建几何体）
-   * @param {string} floorLevelId
-   * @param {{ wallId: string, faceId: string | null }[]} wallFacePairs
-   */
-  async function applyWallFaceOverridesToScene(floorLevelId, wallFacePairs) {
-    if (!floorplanRoot.children.length) return;
-    if (!Array.isArray(wallFacePairs) || !wallFacePairs.length) return;
-    const fid = String(floorLevelId ?? "").trim();
-    if (!fid) return;
-    const libraryBag = await getFloorplanMaterialsLibraryBag();
-    for (const { wallId, faceId } of wallFacePairs) {
-      const wid = String(wallId ?? "").trim();
-      if (!wid) continue;
-      const ov = getWallFaceOverride(fid, wid, faceId);
-      if (!ov || !surfaceOverrideIsActive(ov)) continue;
-      floorplanRoot.traverse((o) => {
-        if (!o.isMesh) return;
-        if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
-        if (String(o.userData.floorplanWallId ?? "").trim() !== wid) return;
-        applySurfaceOverrideToMeshFace(o, faceId, ov, libraryBag);
-      });
-    }
-  }
-
-  /**
-   * 将 wallFaceOverridesByStyleKey 中当前风格下的按面覆盖应用到场景（rebuild 后必须调用，否则 undo 只恢复了内存、墙面仍显示风格默认）
-   * @param {object} libraryBag
-   */
-  async function applyWallFaceOverridesFromMemoryToScene(libraryBag) {
-    if (!floorplanRoot.children.length) return;
-    const wallFaceData = wallFaceOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey())];
-    if (!wallFaceData || typeof wallFaceData !== "object") return;
-    for (const [floorLevelId, wallsData] of Object.entries(wallFaceData)) {
-      if (!wallsData || typeof wallsData !== "object") continue;
-      for (const [wallId, faces] of Object.entries(wallsData)) {
-        if (!faces || typeof faces !== "object") continue;
-        const wid = String(wallId ?? "").trim();
-        if (!wid) continue;
-        if (faces.face_a && surfaceOverrideIsActive(faces.face_a)) {
-          floorplanRoot.traverse((o) => {
-            if (!o.isMesh) return;
-            if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
-            if (String(o.userData.floorplanWallId ?? "").trim() !== wid) return;
-            applySurfaceOverrideToMeshFace(o, "face_a", faces.face_a, libraryBag);
-          });
-        }
-        if (faces.face_b && surfaceOverrideIsActive(faces.face_b)) {
-          floorplanRoot.traverse((o) => {
-            if (!o.isMesh) return;
-            if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
-            if (String(o.userData.floorplanWallId ?? "").trim() !== wid) return;
-            applySurfaceOverrideToMeshFace(o, "face_b", faces.face_b, libraryBag);
-          });
-        }
-      }
-    }
-  }
-
-  async function applySurfaceOverridesToFloorplan() {
-    if (!floorplanRoot.children.length) return;
-    const gWorld = floorplanRoot.children[0];
-    if (!gWorld?.userData?.floorplanGWorld) return;
-    const libraryBag = await getFloorplanMaterialsLibraryBag();
-    const overrides = getCurrentSurfaceOverridesBucket();
-    /** @type {Map<string, { ov: SurfaceScopeOverride, meshes: import("three").Mesh[], isRoomFloor: boolean }>} */
-    const batches = new Map();
-    gWorld.traverse((o) => {
-      if (!o.isMesh) return;
-      const fid = String(o.userData.floorplanFloorLevelId ?? "").trim();
-      if (!fid) return;
-      const bag = overrides[fid];
-      if (!bag) return;
-      if (o.userData.floorplanRoomFloor && bag.allFloors && surfaceOverrideIsActive(bag.allFloors)) {
-        const k = `${fid}\0allFloors`;
-        if (!batches.has(k)) {
-          batches.set(k, { ov: bag.allFloors, meshes: [], isRoomFloor: true });
-        }
-        batches.get(k).meshes.push(o);
-      } else if (o.userData.floorplanWallId && bag.allWalls && surfaceOverrideIsActive(bag.allWalls)) {
-        const k = `${fid}\0allWalls`;
-        if (!batches.has(k)) {
-          batches.set(k, { ov: bag.allWalls, meshes: [], isRoomFloor: false });
-        }
-        batches.get(k).meshes.push(o);
-      } else if (
-        o.userData.floorplanDoorFill &&
-        !o.userData.floorplanDoorHandle &&
-        bag.allDoors &&
-        surfaceOverrideIsActive(bag.allDoors)
-      ) {
-        const k = `${fid}\0allDoors`;
-        if (!batches.has(k)) {
-          batches.set(k, { ov: bag.allDoors, meshes: [], isRoomFloor: false });
-        }
-        batches.get(k).meshes.push(o);
-      } else if (o.userData.floorplanWindowFill && bag.allWindows) {
-        const ovApply = windowSurfaceOverrideForApply(bag.allWindows);
-        if (!ovApply || !surfaceOverrideIsActive(ovApply)) return;
-        const k = `${fid}\0allWindows`;
-        if (!batches.has(k)) {
-          batches.set(k, { ov: ovApply, meshes: [], isRoomFloor: false });
-        }
-        batches.get(k).meshes.push(o);
-      }
-    });
-    for (const { ov, meshes, isRoomFloor } of batches.values()) {
-      if (!meshes.length) continue;
-      const opacity0 = Number.isFinite(meshes[0].userData.floorplanSurfaceOpacity)
-        ? meshes[0].userData.floorplanSurfaceOpacity
-        : 1;
-      const opMismatch = meshes.some(
-        (m) =>
-          (Number.isFinite(m.userData.floorplanSurfaceOpacity) ? m.userData.floorplanSurfaceOpacity : 1) !==
-          opacity0,
-      );
-      if (ov.materialId && !opMismatch) {
-        const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity0, isRoomFloor);
-        if (!built) continue;
-        disposeUniqueOverrideMaterialsOnMeshes(meshes);
-        for (const mesh of meshes) {
-          mesh.material = built.mat;
-        }
-        continue;
-      }
-      for (const mesh of meshes) {
-        applySurfaceOverrideToMesh(mesh, ov, libraryBag);
-      }
-    }
-
-    // 应用每个房间地板的单独覆盖
-    gWorld.traverse((o) => {
-      if (!o.isMesh) return;
-      if (!o.userData.floorplanRoomFloor) return;
-      const fid = String(o.userData.floorplanFloorLevelId ?? "").trim();
-      const rid = String(o.userData.floorplanRoomId ?? "").trim();
-      if (!fid || !rid) return;
-      const roomOv = getRoomFloorOverride(fid, rid);
-      if (roomOv && surfaceOverrideIsActive(roomOv)) {
-        applySurfaceOverrideToMesh(o, roomOv, libraryBag);
-      }
-    });
-
-    // 应用每个门的单独覆盖
-    gWorld.traverse((o) => {
-      if (!o.isMesh) return;
-      if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle) return;
-      const fid = String(o.userData.floorplanFloorLevelId ?? "").trim();
-      const did = String(o.userData.floorplanDoorId ?? "").trim();
-      if (!fid || !did) return;
-      const doorOv = getDoorOverride(fid, did);
-      if (doorOv && surfaceOverrideIsActive(doorOv)) {
-        applySurfaceOverrideToMesh(o, doorOv, libraryBag);
-      }
-    });
-
-    // 应用每个窗户的单独覆盖
-    gWorld.traverse((o) => {
-      if (!o.isMesh) return;
-      if (!o.userData.floorplanWindowFill) return;
-      const fid = String(o.userData.floorplanFloorLevelId ?? "").trim();
-      const wid = String(o.userData.floorplanWindowId ?? "").trim();
-      if (!fid || !wid) return;
-      const winOv = getWindowOverride(fid, wid);
-      if (winOv && surfaceOverrideIsActive(winOv)) {
-        applySurfaceOverrideToMesh(o, winOv, libraryBag);
-      }
-    });
-
-    await applyWallFaceOverridesFromMemoryToScene(libraryBag);
-  }
-
-  /**
-   * 仅重应用某一楼层、墙面/地面/门洞范围的材质覆盖（不重建几何体）。用于属性面板改色/材质/PBR 时避免全量 rebuild。
-   * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
-   */
-  async function applySurfaceOverridesForFloorScope(floorLevelId, scope) {
-    if (!floorplanRoot.children.length) return;
-    const gWorld = floorplanRoot.children[0];
-    if (!gWorld?.userData?.floorplanGWorld) return;
-    const fid = String(floorLevelId ?? "").trim();
-    if (!fid) return;
-    const libraryBag = await getFloorplanMaterialsLibraryBag();
-    const overrides = getCurrentSurfaceOverridesBucket();
-    const bag = overrides[fid];
-    /** @type {SurfaceScopeOverride | null} */
-    let ov = null;
-    if (scope === "allWalls" && bag?.allWalls && surfaceOverrideIsActive(bag.allWalls)) ov = bag.allWalls;
-    else if (scope === "allFloors" && bag?.allFloors && surfaceOverrideIsActive(bag.allFloors)) ov = bag.allFloors;
-    else if (scope === "allDoors" && bag?.allDoors && surfaceOverrideIsActive(bag.allDoors)) ov = bag.allDoors;
-    else if (scope === "allWindows" && bag?.allWindows) {
-      const w = windowSurfaceOverrideForApply(bag.allWindows);
-      if (w && surfaceOverrideIsActive(w)) ov = w;
-    }
-    if (!ov) return;
-    /** @type {import("three").Mesh[]} */
-    const meshes = [];
-    gWorld.traverse((o) => {
-      if (!o.isMesh) return;
-      if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
-      if (scope === "allWalls" && o.userData.floorplanWallId) {
-        meshes.push(o);
-      } else if (scope === "allFloors" && o.userData.floorplanRoomFloor) {
-        meshes.push(o);
-      } else if (scope === "allDoors" && o.userData.floorplanDoorFill && !o.userData.floorplanDoorHandle) {
-        meshes.push(o);
-      } else if (scope === "allWindows" && o.userData.floorplanWindowFill) {
-        meshes.push(o);
-      }
-    });
-    if (!meshes.length) return;
-    const isRoomFloor = scope === "allFloors";
-    const opacity0 = Number.isFinite(meshes[0].userData.floorplanSurfaceOpacity)
-      ? meshes[0].userData.floorplanSurfaceOpacity
-      : 1;
-    const opMismatch = meshes.some(
-      (m) =>
-        (Number.isFinite(m.userData.floorplanSurfaceOpacity) ? m.userData.floorplanSurfaceOpacity : 1) !== opacity0,
-    );
-    if (ov.materialId && !opMismatch) {
-      const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity0, isRoomFloor);
-      if (!built) return;
-      disposeUniqueOverrideMaterialsOnMeshes(meshes);
-      for (const mesh of meshes) {
-        mesh.material = built.mat;
-      }
-      return;
-    }
-    for (const mesh of meshes) {
-      applySurfaceOverrideToMesh(mesh, ov, libraryBag);
-    }
-  }
-
   function buildRoomMesh(room, cx, cy, s, floorOpacity, floorStyleMat, floorLevelId) {
-    const poly = room?.polygon;
-    if (!Array.isArray(poly) || poly.length < 3) return null;
-    const pts = poly.filter((p) => Array.isArray(p) && p.length >= 2).map((p) => [snap(Number(p[0])), snap(Number(p[1]))]);
-    if (pts.length < 3) return null;
-    // 户型平面为屏幕坐标（Y 向下）；ShapeUtils.area / isClockWise / Earcut 按数学坐标（Y 向上）约定。
-    // 若直接用向下 Y 做剖分，凹多边形（客厅）会三角化错误，木地面盖住厨卫。剖分时用 y' = -y，顶点再还原。
-    const contourTri = pts.map((p) => {
-      const xm = (p[0] - cx) * (s / 100);
-      const ym = (p[1] - cy) * (s / 100);
-      return new THREE.Vector2(xm, -ym);
-    });
-    if (ShapeUtils.isClockWise(contourTri) === false) {
-      contourTri.reverse();
-    }
-    const faceList = ShapeUtils.triangulateShape(contourTri, []);
-    if (!faceList.length) return null;
-    const pos = new Float32Array(contourTri.length * 3);
-    const uv = new Float32Array(contourTri.length * 2);
-    for (let i = 0; i < contourTri.length; i++) {
-      const v = contourTri[i];
-      const px = v.x;
-      const py = -v.y;
-      pos[i * 3] = px;
-      pos[i * 3 + 1] = py;
-      pos[i * 3 + 2] = 0;
-      uv[i * 2] = px;
-      uv[i * 2 + 1] = py;
-    }
-    const idx = [];
-    for (let fi = 0; fi < faceList.length; fi++) {
-      const f = faceList[fi];
-      idx.push(f[0], f[1], f[2]);
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-    geo.setIndex(idx);
-    // 让地面 XZ 坐标系与墙体一致：墙体使用 mz=(y-cy)*s/100（不取反），
-    // rotateX(-PI/2) 会导致 z 变号，造成地面相对墙体位置偏移。
-    geo.rotateX(Math.PI / 2);
-    geo.computeVertexNormals();
-    const mat = floorStyleMat || floorplanStdMat();
-    mat.userData.__floorplanRoomFloorDepthWrite = true;
-    const op = floorOpacity ?? 1;
-    applyFloorplanSurfaceAlpha(mat, op);
-    if (!floorStyleMat) tagFloorplanLayerOpacity(mat, op);
-    // ShapeGeometry 与挤出顶盖法线朝向可能不同；双面避免从上方只看到被剔除的一面
-    mat.side = THREE.DoubleSide;
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.receiveShadow = true;
-    mesh.position.y = 0.02;
-    mesh.userData.floorplanPick = true;
-    mesh.userData.floorplanRoomFloor = true;
-    mesh.userData.floorplanRoomId = String(room?.id ?? "").trim();
-    mesh.userData.roomId = String(room?.id ?? "").trim(); // 用于快速切换
-    mesh.userData.floorplanFloorLevelId = String(floorLevelId ?? "").trim();
-    mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
-
-    // 应用房间地板覆盖
-    const roomId = mesh.userData.floorplanRoomId;
-    if (roomId) {
-      const roomOv = getRoomFloorOverride(floorLevelId, roomId);
-      if (roomOv && surfaceOverrideIsActive(roomOv)) {
-        mesh.userData.floorplanRoomFloorOverride = roomOv;
-      }
-    }
-
-    return mesh;
+    return buildRoomMeshFromMeshBuilder(room, cx, cy, s, floorOpacity, floorStyleMat, floorLevelId);
   }
 
-  const WALL_HOLE_EPS = 1e-5;
   const WALL_JOIN_POINT_EPS_CM = 0.8;
   /** 沿墙段归一化参数：离开端点小邻域后才视为线段内部（T 型竖墙落在横墙中点） */
   const WALL_JOIN_SEGMENT_INTERIOR_T = 0.04;
@@ -4410,615 +3560,26 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * 墙盒：使用墙体 ID 作为材质 key；+Z/−Z 大面按「沿墙位置」取两侧房间，叠加房间墙面材质（roomId_wall）（分段采样，避免整墙只用中点导致卫生间瓷砖铺满相邻房间）。
    */
   function buildWallMesh(wall, floor, cx, cy, s, defaultHeightCm, floorOpacity, wallStyleMat, style, getMaterialForKey, floorLevelId) {
-    if (!Array.isArray(wall?.start) || wall.start.length < 2 || !Array.isArray(wall?.end) || wall.end.length < 2) return null;
-    const x1Raw = snap(Number(wall.start[0]));
-    const y1Raw = snap(Number(wall.start[1]));
-    const x2Raw = snap(Number(wall.end[0]));
-    const y2Raw = snap(Number(wall.end[1]));
-    const dxc = x2Raw - x1Raw;
-    const dyc = y2Raw - y1Raw;
-    const lenCmRaw = Math.hypot(dxc, dyc);
-    if (lenCmRaw < 1e-9) return null;
-    const ux = dxc / lenCmRaw;
-    const uy = dyc / lenCmRaw;
-
-    const { startExtCm, endExtCm, startMiterFill, endMiterFill, startTrimClip, endTrimClip } = computeWallEndpointExtensionsCm(wall, floor?.walls || []);
-    const x1 = x1Raw - ux * startExtCm;
-    const y1 = y1Raw - uy * startExtCm;
-    const x2 = x2Raw + ux * endExtCm;
-    const y2 = y2Raw + uy * endExtCm;
-    const dx = (x2 - x1) * (s / 100);
-    const dz = (y2 - y1) * (s / 100);
-    const lenWorld = Math.hypot(dx, dz);
-    if (lenWorld < 1e-9) return null;
-    const wallIdStr = String(wall?.id ?? "").trim();
-    const floorIdStr = String(floorLevelId ?? "").trim();
-    const lenCm = lenCmRaw + startExtCm + endExtCm;
-    const th = Number(wall.thickness);
-    const thicknessCm = Number.isFinite(th) && th > 0 ? th : 10;
-    const thickMRaw = (thicknessCm * s) / 100;
-    const thickM = Math.max(0.03, thickMRaw);
-    const hM = defaultHeightCm / 100;
-    const holes = collectWallOpeningHolesLocal(wall, floor, lenWorld, lenCm, hM, s, startExtCm);
-
-    const rotY = Math.atan2(dz, dx);
-    const op = floorOpacity ?? 1;
-    const cornerMiterFills = [startMiterFill, endMiterFill].filter(Boolean);
-    const skipWallStartCap = wallEndCapCoveredByOtherWallCm(wall, floor?.walls || [], x1, y1, ux, uy, thicknessCm);
-    const skipWallEndCap = wallEndCapCoveredByOtherWallCm(wall, floor?.walls || [], x2, y2, ux, uy, thicknessCm);
-    const parallelSideOverlaps = computeParallelWallSideOverlapRangesLocal(
+    return buildWallMeshFromModule(
       wall,
-      floor?.walls || [],
-      { x1, y1, x2, y2 },
-      lenCm,
-      ux,
-      uy,
-      thicknessCm,
-      s / 100,
+      floor,
+      cx,
+      cy,
+      s,
+      defaultHeightCm,
+      floorOpacity,
+      wallStyleMat,
+      style,
+      getMaterialForKey,
+      floorLevelId,
     );
-    const parallelSplitXs = parallelSideOverlaps.splitXs || [];
-    const halfThick = thickM / 2;
-
-    function wallSideSuppressForRange(xa, xb) {
-      return {
-        skipFaceA: intervalRangeCovers(parallelSideOverlaps.faceA, xa, xb),
-        skipFaceB: intervalRangeCovers(parallelSideOverlaps.faceB, xa, xb),
-      };
-    }
-
-    function wallSideSkipEdgesForRange(xa, xb) {
-      const suppress = wallSideSuppressForRange(xa, xb);
-      const out = [];
-      if (suppress.skipFaceA) out.push([[xa, halfThick], [xb, halfThick]]);
-      if (suppress.skipFaceB) out.push([[xa, -halfThick], [xb, -halfThick]]);
-      return { suppress, skipSideEdges: out };
-    }
-
-    function makeWallMaterial() {
-      if (wallStyleMat) {
-        wallStyleMat.side = THREE.FrontSide;
-        return wallStyleMat;
-      }
-      const mat = floorplanStdMat();
-      applyFloorplanSurfaceAlpha(mat, op);
-      mat.side = THREE.FrontSide;
-      tagFloorplanLayerOpacity(mat, op);
-      return mat;
-    }
-
-    function wallFaceMaterialsAtT(t) {
-      const baseMat = makeWallMaterial();
-      const useRoomWalls = style && typeof getMaterialForKey === "function";
-
-      // 优先检查风格包中按面烘焙的材质（wallId__face_a / wallId__face_b）
-      const faceAKey = wallIdStr ? `${wallIdStr}__face_a` : null;
-      const faceBKey = wallIdStr ? `${wallIdStr}__face_b` : null;
-      const bakedFaceA = faceAKey && typeof getMaterialForKey === "function" ? getMaterialForKey(faceAKey) : null;
-      const bakedFaceB = faceBKey && typeof getMaterialForKey === "function" ? getMaterialForKey(faceBKey) : null;
-
-      if (!useRoomWalls) {
-        if (bakedFaceA || bakedFaceB) {
-          const matA = bakedFaceA || baseMat;
-          const matB = bakedFaceB || baseMat;
-          return { mats: [baseMat, baseMat, baseMat, baseMat, matA, matB], baseMat };
-        }
-        return { mats: null, baseMat };
-      }
-      const { roomPosZ, roomNegZ } = findWallSideRoomsAt(floor, wall, t, 4);
-      function faceMatForRoom(room) {
-        if (!room) return baseMat;
-        const rk = resolveRoomWallMaterialKey(style, room);
-        if (!rk) return baseMat;
-        const m = getMaterialForKey(rk);
-        return m || baseMat;
-      }
-      const roomMatPosZ = faceMatForRoom(roomPosZ);
-      const roomMatNegZ = faceMatForRoom(roomNegZ);
-      // 烘焙的墙面材质优先于房间墙面材质
-      const matPosZ = bakedFaceA || roomMatPosZ;
-      const matNegZ = bakedFaceB || roomMatNegZ;
-      const mats = [baseMat, baseMat, baseMat, baseMat, matPosZ, matNegZ];
-      return { mats, baseMat };
-    }
-
-    function wallMaterialArrayAtT(t) {
-      const { mats, baseMat } = wallFaceMaterialsAtT(t);
-      if (Array.isArray(mats)) return mats;
-      return [baseMat, baseMat, baseMat, baseMat, baseMat, baseMat];
-    }
-
-    function tagWallMesh(mesh) {
-      mesh.castShadow = true;
-      mesh.receiveShadow = false;
-      mesh.userData.floorplanPick = true;
-      mesh.userData.floorplanWallFace = true;
-      mesh.userData.floorplanWall = true;
-      mesh.userData.wallId = wallIdStr;
-      mesh.userData.floorplanWallId = wallIdStr;
-      mesh.userData.floorplanFloorLevelId = floorIdStr;
-      mesh.userData.floorplanSurfaceOpacity = op;
-    }
-
-    function buildMiteredWallPlanPolygonLocal() {
-      const trimClips = [startTrimClip, endTrimClip].filter(Boolean);
-      if (!cornerMiterFills.length && !trimClips.length) return null;
-      const halfSpan = lenWorld / 2;
-      const halfThick = thickM / 2;
-      const k = s / 100;
-      const wallCenter = new THREE.Vector3(((x1 + x2) / 2 - cx) * k, 0, ((y1 + y2) / 2 - cy) * k);
-      const wallMatrix = new THREE.Matrix4().makeRotationY(rotY);
-      wallMatrix.setPosition(wallCenter);
-      const worldToWall = new THREE.Matrix4().copy(wallMatrix).invert();
-      const v = new THREE.Vector3();
-      const skipSideEdges = [];
-      function planPointToWallLocal(pt) {
-        const px = Number(pt?.[0]);
-        const py = Number(pt?.[1]);
-        if (!Number.isFinite(px) || !Number.isFinite(py)) return null;
-        v.set((px - cx) * k, 0, (py - cy) * k).applyMatrix4(worldToWall);
-        return [v.x, v.z];
-      }
-      const rawStartLocal = startTrimClip ? planPointToWallLocal([x1Raw, y1Raw]) : null;
-      const rawEndLocal = endTrimClip ? planPointToWallLocal([x2Raw, y2Raw]) : null;
-      const baseMinX = rawStartLocal ? Math.min(-halfSpan, rawStartLocal[0]) : -halfSpan;
-      const baseMaxX = rawEndLocal ? Math.max(halfSpan, rawEndLocal[0]) : halfSpan;
-      const pts = [
-        [baseMinX, -halfThick],
-        [baseMaxX, -halfThick],
-        [baseMaxX, halfThick],
-        [baseMinX, halfThick],
-      ];
-      for (const fill of cornerMiterFills) {
-        for (const pt of fill?.triangleCm || []) {
-          const localPt = planPointToWallLocal(pt);
-          if (localPt) pts.push(localPt);
-        }
-        if (Array.isArray(fill?.seamCm) && fill.seamCm.length >= 2) {
-          const a = planPointToWallLocal(fill.seamCm[0]);
-          const b = planPointToWallLocal(fill.seamCm[1]);
-          if (a && b) skipSideEdges.push([a, b]);
-        }
-      }
-      for (const clip of trimClips) {
-        const pointCm = clip?.pointCm;
-        const dirCm = clip?.dirCm;
-        const keepPointCm = clip?.keepPointCm;
-        if (!Array.isArray(pointCm) || !Array.isArray(dirCm) || !Array.isArray(keepPointCm)) continue;
-        const px = Number(pointCm[0]);
-        const py = Number(pointCm[1]);
-        const dxClip = Number(dirCm[0]);
-        const dyClip = Number(dirCm[1]);
-        if (![px, py, dxClip, dyClip].every((v) => Number.isFinite(v))) continue;
-        const lineHalfCm = Math.max(lenCmRaw, thicknessCm, 100) * 100;
-        const a = planPointToWallLocal([px - dxClip * lineHalfCm, py - dyClip * lineHalfCm]);
-        const b = planPointToWallLocal([px + dxClip * lineHalfCm, py + dyClip * lineHalfCm]);
-        const keepPoint = planPointToWallLocal(keepPointCm);
-        if (a && b && keepPoint) skipSideEdges.push([a, b]);
-      }
-      let poly = convexHull2d(pts);
-      for (const clip of trimClips) {
-        const pointCm = clip?.pointCm;
-        const dirCm = clip?.dirCm;
-        const keepPointCm = clip?.keepPointCm;
-        if (!Array.isArray(pointCm) || !Array.isArray(dirCm) || !Array.isArray(keepPointCm)) continue;
-        const px = Number(pointCm[0]);
-        const py = Number(pointCm[1]);
-        const dxClip = Number(dirCm[0]);
-        const dyClip = Number(dirCm[1]);
-        if (![px, py, dxClip, dyClip].every((v) => Number.isFinite(v))) continue;
-        const a = planPointToWallLocal([px, py]);
-        const b = planPointToWallLocal([px + dxClip, py + dyClip]);
-        const keepPoint = planPointToWallLocal(keepPointCm);
-        if (a && b && keepPoint) {
-          poly = clipLocalPolygonByLineKeepPoint(poly, a, b, keepPoint);
-          if (poly.length < 3) return null;
-        }
-      }
-      return poly.length >= 3 ? { poly, skipSideEdges } : null;
-    }
-
-    function addMiteredWallPiece(parent, planPoly, xMin, xMax, yMin, yMax, tMid, geometryOptions = {}) {
-      const clipped = clipLocalPolygonByXRange(planPoly, xMin, xMax);
-      if (clipped.length < 3) return;
-      const geo = makeWallPlanPrismGeometryLocal(clipped, yMin, yMax, lenWorld, hM, geometryOptions);
-      if (!geo) return;
-      const mesh = new THREE.Mesh(geo, wallMaterialArrayAtT(tMid));
-      tagWallMesh(mesh);
-      parent.add(mesh);
-    }
-
-    function buildMiteredWallMesh(planPoly, baseSkipSideEdges = []) {
-      const group = new THREE.Group();
-      group.position.set(((x1 + x2) / 2 - cx) * (s / 100), 0, ((y1 + y2) / 2 - cy) * (s / 100));
-      group.rotation.y = rotY;
-      group.userData.floorplanPick = true;
-      group.userData.floorplanWallId = wallIdStr;
-      group.userData.floorplanFloorLevelId = floorIdStr;
-      const halfSpan = lenWorld / 2;
-      const bounds = polygonAabbCm(planPoly);
-      if (!bounds) return null;
-      const polyMinX = bounds.minX;
-      const polyMaxX = bounds.maxX;
-      const hasStartExtension = polyMinX < -halfSpan - WALL_HOLE_EPS;
-      const hasEndExtension = polyMaxX > halfSpan + WALL_HOLE_EPS;
-      const coreSplitXs = mergeSplitEdges(-halfSpan, halfSpan, parallelSplitXs);
-      function pieceOptions(xa, xb, skipCapAtX = [], extra = {}) {
-        const { skipSideEdges } = wallSideSkipEdgesForRange(xa, xb);
-        return {
-          ...extra,
-          skipCapAtX,
-          skipSideEdges: baseSkipSideEdges.concat(skipSideEdges),
-        };
-      }
-      const fullPieceSkipCapAtX = [];
-      if (skipWallStartCap && !hasStartExtension) fullPieceSkipCapAtX.push(-halfSpan);
-      if (skipWallEndCap && !hasEndExtension) fullPieceSkipCapAtX.push(halfSpan);
-      if (!holes.length) {
-        const useRoomWalls = style && typeof getMaterialForKey === "function";
-        if (!useRoomWalls) {
-          if (!hasStartExtension && !hasEndExtension && coreSplitXs.length === 2) {
-            addMiteredWallPiece(group, planPoly, polyMinX, polyMaxX, 0, hM, 0.5, pieceOptions(-halfSpan, halfSpan, fullPieceSkipCapAtX));
-          } else {
-            if (hasStartExtension) {
-              addMiteredWallPiece(group, planPoly, polyMinX, -halfSpan, 0, hM, 0, {
-                skipCapAtX: [-halfSpan],
-                skipSideEdges: baseSkipSideEdges.slice(),
-              });
-            }
-            if (hasEndExtension) {
-              addMiteredWallPiece(group, planPoly, halfSpan, polyMaxX, 0, hM, 1, {
-                skipCapAtX: [halfSpan],
-                skipSideEdges: baseSkipSideEdges.slice(),
-              });
-            }
-            for (let i = 0; i < coreSplitXs.length - 1; i++) {
-              const xa = coreSplitXs[i];
-              const xb = coreSplitXs[i + 1];
-              if (xb - xa < WALL_HOLE_EPS) continue;
-              const skipCapAtX = [];
-              if (i > 0 || hasStartExtension || skipWallStartCap) skipCapAtX.push(xa);
-              if (i < coreSplitXs.length - 2 || hasEndExtension || skipWallEndCap) skipCapAtX.push(xb);
-              addMiteredWallPiece(group, planPoly, xa, xb, 0, hM, ((xa + xb) / 2 + halfSpan) / lenWorld, pieceOptions(xa, xb, skipCapAtX));
-            }
-          }
-          return group.children.length ? group : null;
-        }
-        if (hasStartExtension) {
-          addMiteredWallPiece(group, planPoly, polyMinX, -halfSpan, 0, hM, 0, {
-            skipCapAtX: [-halfSpan],
-            skipSideEdges: baseSkipSideEdges.slice(),
-          });
-        }
-        if (hasEndExtension) {
-          addMiteredWallPiece(group, planPoly, halfSpan, polyMaxX, 0, hM, 1, {
-            skipCapAtX: [halfSpan],
-            skipSideEdges: baseSkipSideEdges.slice(),
-          });
-        }
-        const N = Math.min(256, Math.max(24, Math.ceil(lenCm / 4)));
-        const samples = [];
-        for (let i = 0; i <= N; i++) {
-          const t = i / N;
-          const { roomPosZ, roomNegZ } = findWallSideRoomsAt(floor, wall, t, 4);
-          const rk = `${String(roomPosZ?.id ?? "")}|${String(roomNegZ?.id ?? "")}`;
-          samples.push({ t, roomPosZ, roomNegZ, rk });
-        }
-        const tLeft = (idx) => (idx === 0 ? 0 : (2 * idx - 1) / (2 * N));
-        const tRight = (idx) => (idx === N ? 1 : (2 * idx + 1) / (2 * N));
-        let start = 0;
-        for (let i = 1; i <= N + 1; i++) {
-          if (i === N + 1 || (i <= N && samples[i].rk !== samples[start].rk)) {
-            const b = i - 1;
-            const t0 = tLeft(start);
-            const t1 = tRight(b);
-            const xa0 = -halfSpan + lenWorld * t0;
-            const xb0 = -halfSpan + lenWorld * t1;
-            const xsLocal = mergeSplitEdges(xa0, xb0, parallelSplitXs);
-            for (let k = 0; k < xsLocal.length - 1; k++) {
-              const xa = xsLocal[k];
-              const xb = xsLocal[k + 1];
-              if (xb - xa < WALL_HOLE_EPS) continue;
-              const tMid = ((xa + xb) / 2 + halfSpan) / lenWorld;
-              const skipCapAtX = [];
-              if (k > 0 || t0 > WALL_HOLE_EPS || hasStartExtension || skipWallStartCap) skipCapAtX.push(xa);
-              if (k < xsLocal.length - 2 || t1 < 1 - WALL_HOLE_EPS || hasEndExtension || skipWallEndCap) skipCapAtX.push(xb);
-              addMiteredWallPiece(group, planPoly, xa, xb, 0, hM, tMid, pieceOptions(xa, xb, skipCapAtX));
-            }
-            start = i;
-          }
-        }
-        return group.children.length ? group : null;
-      }
-      const xs = mergeSplitEdges(-halfSpan, halfSpan, holes.flatMap((h) => [h.x0, h.x1]).concat(parallelSplitXs));
-      const ys = mergeSplitEdges(0, hM, holes.flatMap((h) => [h.y0, h.y1]));
-      if (hasStartExtension) {
-        addMiteredWallPiece(group, planPoly, polyMinX, -halfSpan, 0, hM, 0, {
-          skipCapAtX: [-halfSpan],
-          skipSideEdges: baseSkipSideEdges.slice(),
-        });
-      }
-      if (hasEndExtension) {
-        addMiteredWallPiece(group, planPoly, halfSpan, polyMaxX, 0, hM, 1, {
-          skipCapAtX: [halfSpan],
-          skipSideEdges: baseSkipSideEdges.slice(),
-        });
-      }
-      for (let i = 0; i < xs.length - 1; i++) {
-        const xa = xs[i];
-        const xb = xs[i + 1];
-        if (xb - xa < WALL_HOLE_EPS) continue;
-        for (let j = 0; j < ys.length - 1; j++) {
-          const ya = ys[j];
-          const yb = ys[j + 1];
-          if (yb - ya < WALL_HOLE_EPS) continue;
-          if (cellFullyInsideAnyHole(xa, xb, ya, yb, holes)) continue;
-          const tMid = ((xa + xb) / 2 + halfSpan) / lenWorld;
-          const skipCapAtX = [];
-          const hasLeftSolidNeighbor = i > 0 && !cellFullyInsideAnyHole(xs[i - 1], xa, ya, yb, holes);
-          const hasRightSolidNeighbor = i < xs.length - 2 && !cellFullyInsideAnyHole(xb, xs[i + 2], ya, yb, holes);
-          const hasBottomSolidNeighbor = j > 0 && !cellFullyInsideAnyHole(xa, xb, ys[j - 1], ya, holes);
-          const hasTopSolidNeighbor = j < ys.length - 2 && !cellFullyInsideAnyHole(xa, xb, yb, ys[j + 2], holes);
-          if (hasLeftSolidNeighbor || (hasStartExtension && Math.abs(xa + halfSpan) <= WALL_HOLE_EPS) || (skipWallStartCap && Math.abs(xa + halfSpan) <= WALL_HOLE_EPS)) skipCapAtX.push(xa);
-          if (hasRightSolidNeighbor || (hasEndExtension && Math.abs(xb - halfSpan) <= WALL_HOLE_EPS) || (skipWallEndCap && Math.abs(xb - halfSpan) <= WALL_HOLE_EPS)) skipCapAtX.push(xb);
-          addMiteredWallPiece(group, planPoly, xa, xb, ya, yb, tMid, {
-            ...pieceOptions(xa, xb, skipCapAtX),
-            skipBottomFace: hasBottomSolidNeighbor,
-            skipTopFace: hasTopSolidNeighbor,
-          });
-        }
-      }
-      return group.children.length ? group : null;
-    }
-
-    function pushWallSegmentMesh(parent, segLenWorld, tMid, t0, t1, matsOrSingle, faceSuppress = {}) {
-      const mxSeg = (x1 + tMid * (x2 - x1) - cx) * (s / 100);
-      const mzSeg = (y1 + tMid * (y2 - y1) - cy) * (s / 100);
-      const geo = new THREE.BoxGeometry(segLenWorld, hM, thickM);
-      remapWallBoxUvToWallSpan(geo, t0, t1, 0, 1);
-      suppressWallBoxFaces(geo, faceSuppress);
-      const mesh = new THREE.Mesh(geo, matsOrSingle);
-      mesh.castShadow = true;
-      mesh.receiveShadow = false;
-      mesh.position.set(mxSeg, hM / 2, mzSeg);
-      mesh.rotation.y = rotY;
-      mesh.userData.floorplanPick = true;
-      mesh.userData.floorplanWallFace = true;
-      mesh.userData.floorplanWall = true; // 用于快速切换
-      mesh.userData.wallId = wallIdStr; // 用于快速切换
-      mesh.userData.floorplanWallId = wallIdStr;
-      mesh.userData.floorplanFloorLevelId = floorIdStr;
-      mesh.userData.floorplanSurfaceOpacity = op;
-      parent.add(mesh);
-    }
-
-    const miteredPlan = buildMiteredWallPlanPolygonLocal();
-    if (miteredPlan?.poly && miteredPlan.poly.length >= 3) {
-      const built = buildMiteredWallMesh(miteredPlan.poly, miteredPlan.skipSideEdges || []);
-      if (built) return built;
-    }
-
-    if (!holes.length) {
-      const useRoomWalls = style && typeof getMaterialForKey === "function";
-      const coreSplitXs = mergeSplitEdges(-lenWorld / 2, lenWorld / 2, parallelSplitXs);
-      if (!useRoomWalls) {
-        const fullSideSuppress = wallSideSuppressForRange(-lenWorld / 2, lenWorld / 2);
-        if (coreSplitXs.length === 2 && !fullSideSuppress.skipFaceA && !fullSideSuppress.skipFaceB) {
-          const geo = new THREE.BoxGeometry(lenWorld, hM, thickM);
-          remapWallBoxUvToWallSpan(geo, 0, 1, 0, 1);
-          suppressWallBoxFaces(geo, { skipStartCap: skipWallStartCap, skipEndCap: skipWallEndCap });
-          const mat = makeWallMaterial();
-          const mesh = new THREE.Mesh(geo, mat);
-          mesh.castShadow = true;
-          mesh.receiveShadow = false;
-          mesh.position.set(((x1 + x2) / 2 - cx) * (s / 100), hM / 2, ((y1 + y2) / 2 - cy) * (s / 100));
-          mesh.rotation.y = rotY;
-          mesh.userData.floorplanPick = true;
-          mesh.userData.floorplanWallFace = true;
-          mesh.userData.floorplanWall = true; // 用于快速切换
-          mesh.userData.wallId = wallIdStr; // 用于快速切换
-          mesh.userData.floorplanWallId = wallIdStr;
-          mesh.userData.floorplanFloorLevelId = floorIdStr;
-          mesh.userData.floorplanSurfaceOpacity = op;
-          return mesh;
-        }
-        const group = new THREE.Group();
-        group.userData.floorplanPick = true;
-        const mat = makeWallMaterial();
-        for (let i = 0; i < coreSplitXs.length - 1; i++) {
-          const xa = coreSplitXs[i];
-          const xb = coreSplitXs[i + 1];
-          if (xb - xa < WALL_HOLE_EPS) continue;
-          const t0 = (xa + lenWorld / 2) / lenWorld;
-          const t1 = (xb + lenWorld / 2) / lenWorld;
-          const suppress = wallSideSuppressForRange(xa, xb);
-          pushWallSegmentMesh(group, xb - xa, (t0 + t1) / 2, t0, t1, mat, {
-            skipStartCap: i > 0 || skipWallStartCap,
-            skipEndCap: i < coreSplitXs.length - 2 || skipWallEndCap,
-            skipFaceA: suppress.skipFaceA,
-            skipFaceB: suppress.skipFaceB,
-          });
-        }
-        return group.children.length ? group : null;
-      }
-      const N = Math.min(256, Math.max(24, Math.ceil(lenCm / 4)));
-      const samples = [];
-      for (let i = 0; i <= N; i++) {
-        const t = i / N;
-        const { roomPosZ, roomNegZ } = findWallSideRoomsAt(floor, wall, t, 4);
-        const rk = `${String(roomPosZ?.id ?? "")}|${String(roomNegZ?.id ?? "")}`;
-        samples.push({ t, roomPosZ, roomNegZ, rk });
-      }
-      /** 采样 i 与 i+1 之间 rk 变化时的分界 t = (i/N + (i+1)/N) / 2；区间 [tLeft(a), tRight(b)] 完全覆盖 [0,1] 无隙。 */
-      const tLeft = (idx) => (idx === 0 ? 0 : (2 * idx - 1) / (2 * N));
-      const tRight = (idx) => (idx === N ? 1 : (2 * idx + 1) / (2 * N));
-      const intervals = [];
-      let start = 0;
-      for (let i = 1; i <= N + 1; i++) {
-        if (i === N + 1 || (i <= N && samples[i].rk !== samples[start].rk)) {
-          const b = i - 1;
-          intervals.push({
-            t0: tLeft(start),
-            t1: tRight(b),
-            roomPosZ: samples[start].roomPosZ,
-            roomNegZ: samples[start].roomNegZ,
-          });
-          start = i;
-        }
-      }
-      if (intervals.length === 1) {
-        const it = intervals[0];
-        const xa0 = -lenWorld / 2 + lenWorld * it.t0;
-        const xb0 = -lenWorld / 2 + lenWorld * it.t1;
-        const xsLocal = mergeSplitEdges(xa0, xb0, parallelSplitXs);
-        if (xsLocal.length === 2) {
-          const tMid = (it.t0 + it.t1) / 2;
-          const { mats } = wallFaceMaterialsAtT(tMid);
-          const geo = new THREE.BoxGeometry(lenWorld * (it.t1 - it.t0), hM, thickM);
-          remapWallBoxUvToWallSpan(geo, it.t0, it.t1, 0, 1);
-          const suppress = wallSideSuppressForRange(xa0, xb0);
-          suppressWallBoxFaces(geo, {
-            skipStartCap: skipWallStartCap,
-            skipEndCap: skipWallEndCap,
-            skipFaceA: suppress.skipFaceA,
-            skipFaceB: suppress.skipFaceB,
-          });
-          const mesh = new THREE.Mesh(geo, mats || makeWallMaterial());
-          mesh.castShadow = true;
-          mesh.receiveShadow = false;
-          const tm = (it.t0 + it.t1) / 2;
-          mesh.position.set((x1 + tm * (x2 - x1) - cx) * (s / 100), hM / 2, (y1 + tm * (y2 - y1) - cy) * (s / 100));
-          mesh.rotation.y = rotY;
-          mesh.userData.floorplanPick = true;
-          mesh.userData.floorplanWallFace = true;
-          mesh.userData.floorplanWallId = wallIdStr;
-          mesh.userData.floorplanFloorLevelId = floorIdStr;
-          mesh.userData.floorplanSurfaceOpacity = op;
-          return mesh;
-        }
-      }
-      const group = new THREE.Group();
-      group.userData.floorplanPick = true;
-      const baseMat = makeWallMaterial();
-      function matsForInterval(roomPosZ, roomNegZ) {
-        function faceMatForRoom(room) {
-          if (!room) return baseMat;
-          const rk = resolveRoomWallMaterialKey(style, room);
-          if (!rk) return baseMat;
-          const m = getMaterialForKey(rk);
-          return m || baseMat;
-        }
-        return [baseMat, baseMat, baseMat, baseMat, faceMatForRoom(roomPosZ), faceMatForRoom(roomNegZ)];
-      }
-      for (const it of intervals) {
-        const dt = it.t1 - it.t0;
-        if (dt < 1e-8) continue;
-        const xa0 = -lenWorld / 2 + lenWorld * it.t0;
-        const xb0 = -lenWorld / 2 + lenWorld * it.t1;
-        const xsLocal = mergeSplitEdges(xa0, xb0, parallelSplitXs);
-        for (let i = 0; i < xsLocal.length - 1; i++) {
-          const xa = xsLocal[i];
-          const xb = xsLocal[i + 1];
-          const segLen = xb - xa;
-          if (segLen < 0.015) continue;
-          const t0 = (xa + lenWorld / 2) / lenWorld;
-          const t1 = (xb + lenWorld / 2) / lenWorld;
-          const tMid = (t0 + t1) / 2;
-          const suppress = wallSideSuppressForRange(xa, xb);
-          pushWallSegmentMesh(group, segLen, tMid, t0, t1, matsForInterval(it.roomPosZ, it.roomNegZ), {
-            skipStartCap: i > 0 || it.t0 > WALL_HOLE_EPS || skipWallStartCap,
-            skipEndCap: i < xsLocal.length - 2 || it.t1 < 1 - WALL_HOLE_EPS || skipWallEndCap,
-            skipFaceA: suppress.skipFaceA,
-            skipFaceB: suppress.skipFaceB,
-          });
-        }
-      }
-      return group.children.length ? group : null;
-    }
-
-    const halfSpan = lenWorld / 2;
-    const xs = mergeSplitEdges(-halfSpan, halfSpan, holes.flatMap((h) => [h.x0, h.x1]).concat(parallelSplitXs));
-    const ys = mergeSplitEdges(0, hM, holes.flatMap((h) => [h.y0, h.y1]));
-    const group = new THREE.Group();
-    group.position.set(((x1 + x2) / 2 - cx) * (s / 100), 0, ((y1 + y2) / 2 - cy) * (s / 100));
-    group.rotation.y = rotY;
-    group.userData.floorplanPick = true;
-
-    for (let i = 0; i < xs.length - 1; i++) {
-      const xa = xs[i];
-      const xb = xs[i + 1];
-      if (xb - xa < WALL_HOLE_EPS) continue;
-      for (let j = 0; j < ys.length - 1; j++) {
-        const ya = ys[j];
-        const yb = ys[j + 1];
-        if (yb - ya < WALL_HOLE_EPS) continue;
-        if (cellFullyInsideAnyHole(xa, xb, ya, yb, holes)) continue;
-        const cxLocal = (xa + xb) / 2;
-        const cyLocal = (ya + yb) / 2;
-        const gw = xb - xa;
-        const gh = yb - ya;
-        const geo = new THREE.BoxGeometry(gw, gh, thickM);
-        const u0 = (xa + halfSpan) / lenWorld;
-        const u1 = (xb + halfSpan) / lenWorld;
-        const v0 = ya / hM;
-        const v1 = yb / hM;
-        remapWallBoxUvToWallSpan(geo, u0, u1, v0, v1);
-        const hasLeftSolidNeighbor = i > 0 && !cellFullyInsideAnyHole(xs[i - 1], xa, ya, yb, holes);
-        const hasRightSolidNeighbor = i < xs.length - 2 && !cellFullyInsideAnyHole(xb, xs[i + 2], ya, yb, holes);
-        const hasBottomSolidNeighbor = j > 0 && !cellFullyInsideAnyHole(xa, xb, ys[j - 1], ya, holes);
-        const hasTopSolidNeighbor = j < ys.length - 2 && !cellFullyInsideAnyHole(xa, xb, yb, ys[j + 2], holes);
-        const suppress = wallSideSuppressForRange(xa, xb);
-        suppressWallBoxFaces(geo, {
-          skipStartCap: hasLeftSolidNeighbor || (skipWallStartCap && Math.abs(xa + halfSpan) <= WALL_HOLE_EPS),
-          skipEndCap: hasRightSolidNeighbor || (skipWallEndCap && Math.abs(xb - halfSpan) <= WALL_HOLE_EPS),
-          skipBottomCap: hasBottomSolidNeighbor,
-          skipTopCap: hasTopSolidNeighbor,
-          skipFaceA: suppress.skipFaceA,
-          skipFaceB: suppress.skipFaceB,
-        });
-        const tAlong = (cxLocal + halfSpan) / lenWorld;
-        const { mats } = wallFaceMaterialsAtT(tAlong);
-        const mat = mats || makeWallMaterial();
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.castShadow = true;
-        mesh.receiveShadow = false;
-        mesh.position.set(cxLocal, cyLocal, 0);
-        mesh.userData.floorplanPick = true;
-        mesh.userData.floorplanWallFace = true;
-        mesh.userData.floorplanWallId = wallIdStr;
-        mesh.userData.floorplanFloorLevelId = floorIdStr;
-        mesh.userData.floorplanSurfaceOpacity = op;
-        group.add(mesh);
-      }
-    }
-    return group.children.length ? group : null;
   }
 
   /**
    * 门洞填充材质（ns 来自 normalizeDoorStyle，缺省为白）
    */
   function doorFillMaterialFromNs(ns, floorOpacity) {
-    let color;
-    try {
-      color = new THREE.Color(ns.color);
-    } catch {
-      return null;
-    }
-    const op = floorOpacity ?? 1;
-    const mat = new THREE.MeshStandardMaterial({
-      color,
-      roughness: ns.roughness,
-      metalness: ns.metalness,
-      envMapIntensity: 0.35,
-      emissive: new THREE.Color(0x000000),
-    });
-    if (ns.isGlass) {
-      applyFloorplanSurfaceAlpha(mat, Math.min(1, 0.42 * op));
-    } else {
-      applyFloorplanSurfaceAlpha(mat, op);
-    }
-    tagFloorplanLayerOpacity(mat, op);
-    mat.side = THREE.FrontSide;
-    return mat;
+    return doorFillMaterialFromMeshBuilder(ns, floorOpacity);
   }
 
   /** 与 doorFillMaterialFromNs 中门扇 alpha 一致，供执手同步透明度 */
@@ -5150,121 +3711,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function buildDoorFillGroup(door, wall, floorWalls, cx, cy, s, defaultHeightCm, floorOpacity, styleDoorMat, floorLevelIdStr) {
-    if (!door || !wall) return null;
-    const ns =
-      door.style != null && typeof door.style === "object" && !Array.isArray(door.style)
-        ? normalizeDoorStyle(door.style)
-        : defaultDoorStyleWhite();
-    const pos = Number(door.pos);
-    const wcm = Number(door.width);
-    const hcm = Number(door.height);
-    if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) return null;
-    const x1Raw = snap(Number(wall.start[0]));
-    const y1Raw = snap(Number(wall.start[1]));
-    const x2Raw = snap(Number(wall.end[0]));
-    const y2Raw = snap(Number(wall.end[1]));
-    const dxcRaw = x2Raw - x1Raw;
-    const dycRaw = y2Raw - y1Raw;
-    const lenCmRaw = Math.hypot(dxcRaw, dycRaw);
-    if (lenCmRaw < 1e-9) return null;
-    const ux = dxcRaw / lenCmRaw;
-    const uy = dycRaw / lenCmRaw;
-    const { startExtCm, endExtCm } = computeWallEndpointExtensionsCm(wall, floorWalls || []);
-    const x1 = x1Raw - ux * startExtCm;
-    const y1 = y1Raw - uy * startExtCm;
-    const x2 = x2Raw + ux * endExtCm;
-    const y2 = y2Raw + uy * endExtCm;
-    const dx = (x2 - x1) * (s / 100);
-    const dz = (y2 - y1) * (s / 100);
-    const lenWorld = Math.hypot(dx, dz);
-    if (lenWorld < 1e-9) return null;
-    const lenCm = lenCmRaw + startExtCm + endExtCm;
-    if (!Number.isFinite(lenCm) || lenCm < 1e-9) return null;
-    const hM = defaultHeightCm / 100;
-    const wM = (wcm * s) / 100;
-    const hDoor = Math.min((hcm * s) / 100, hM);
-    if (hDoor < WALL_HOLE_EPS) return null;
-    const th = Number(wall.thickness);
-    const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
-    const thickM = Math.max(0.03, thickMRaw);
-    const halfLen = lenWorld / 2;
-    const centerX = -halfLen + ((startExtCm + pos) / lenCm) * lenWorld;
-    const mx = ((x1 + x2) / 2 - cx) * (s / 100);
-    const mz = ((y1 + y2) / 2 - cy) * (s / 100);
-    const rotY = Math.atan2(dz, dx);
-    const group = new THREE.Group();
-    group.position.set(mx, 0, mz);
-    group.rotation.y = rotY;
-    group.userData.floorplanDoorFill = true;
-    group.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
-    const geo = new THREE.BoxGeometry(wM, hDoor, thickM * 0.22);
-    const mat = styleDoorMat || doorFillMaterialFromNs(ns, floorOpacity);
-    if (!mat) {
-      geo.dispose();
-      return null;
-    }
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(centerX, hDoor / 2, 0);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.userData.floorplanPick = true;
-    mesh.userData.floorplanDoorFill = true;
-    mesh.userData.floorplanDoor = true; // 用于快速切换
-    mesh.userData.doorId = String(door?.id ?? "").trim(); // 用于快速切换
-    mesh.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
-    mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
-    mesh.userData.floorplanDoorStyle = ns;
-    mesh.userData.floorplanDoorId = String(door?.id ?? "").trim();
-    if (!styleDoorMat) queueDoorFillTextures(mesh, ns);
-    group.add(mesh);
-    const doorDepth = thickM * 0.22;
-    addDoorHandleMeshes(
-      group,
-      centerX,
-      wM,
-      hDoor,
-      doorDepth,
-      styleDoorMat ? (floorOpacity ?? 1) : effectiveDoorPanelOpacity(ns, floorOpacity),
-      floorOpacity ?? 1,
+    return buildDoorFillGroupFromMeshBuilder(
+      door,
+      wall,
+      floorWalls,
+      cx,
+      cy,
+      s,
+      defaultHeightCm,
+      floorOpacity,
+      styleDoorMat,
       floorLevelIdStr,
     );
-    return group;
   }
 
   function windowGlassMaterialFromNs(ns, floorOpacity) {
-    let color;
-    try {
-      color = new THREE.Color(ns.color);
-    } catch {
-      return null;
-    }
-    const floorOp = floorOpacity ?? 1;
-    const op = Math.max(0, Math.min(1, ns.opacity * floorOp));
-    let roughness = 0.14;
-    let envMapIntensity = 0.55;
-    if (ns.type === "clear") {
-      roughness = 0.04;
-      envMapIntensity = 0.95;
-    } else if (ns.type === "frosted") {
-      roughness = 0.92;
-      envMapIntensity = 0.28;
-    } else if (ns.type === "tinted") {
-      roughness = 0.12;
-      envMapIntensity = 0.5;
-    }
-    const mat = new THREE.MeshStandardMaterial({
-      color,
-      roughness,
-      metalness: 0.02,
-      transparent: true,
-      opacity: op,
-      envMapIntensity,
-      emissive: new THREE.Color(0x000000),
-    });
-    applyFloorplanSurfaceAlpha(mat, op);
-    tagFloorplanLayerOpacity(mat, floorOp);
-    mat.side = THREE.FrontSide;
-    return mat;
+    return windowGlassMaterialFromMeshBuilder(ns, floorOpacity);
   }
 
   /** 窗玻璃贴图（与门洞逻辑一致） */
@@ -5333,519 +3795,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * 窗洞玻璃片（与墙体洞口一致）；无 style 时 normalizeWindowStyle 为白 clear
    */
   function buildWindowGlassGroup(win, wall, floorWalls, cx, cy, s, defaultHeightCm, floorOpacity, styleWinMat, floorLevelIdStr) {
-    if (!win || !wall) return null;
-    const ns =
-      win.style != null && typeof win.style === "object" && !Array.isArray(win.style)
-        ? normalizeWindowStyle(win.style)
-        : defaultWindowStyleWhite();
-    const pos = Number(win.pos);
-    const wcm = Number(win.width);
-    const hcm = Number(win.height);
-    const altCm = Number(win.altitude ?? win.alt ?? win.sillHeightCm ?? 0);
-    if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) return null;
-    if (!Number.isFinite(altCm)) return null;
-    const x1Raw = snap(Number(wall.start[0]));
-    const y1Raw = snap(Number(wall.start[1]));
-    const x2Raw = snap(Number(wall.end[0]));
-    const y2Raw = snap(Number(wall.end[1]));
-    const dxcRaw = x2Raw - x1Raw;
-    const dycRaw = y2Raw - y1Raw;
-    const lenCmRaw = Math.hypot(dxcRaw, dycRaw);
-    if (lenCmRaw < 1e-9) return null;
-    const ux = dxcRaw / lenCmRaw;
-    const uy = dycRaw / lenCmRaw;
-    const { startExtCm, endExtCm } = computeWallEndpointExtensionsCm(wall, floorWalls || []);
-    const x1 = x1Raw - ux * startExtCm;
-    const y1 = y1Raw - uy * startExtCm;
-    const x2 = x2Raw + ux * endExtCm;
-    const y2 = y2Raw + uy * endExtCm;
-    const dx = (x2 - x1) * (s / 100);
-    const dz = (y2 - y1) * (s / 100);
-    const lenWorld = Math.hypot(dx, dz);
-    if (lenWorld < 1e-9) return null;
-    const lenCm = lenCmRaw + startExtCm + endExtCm;
-    if (!Number.isFinite(lenCm) || lenCm < 1e-9) return null;
-    const hM = defaultHeightCm / 100;
-    const wM = (wcm * s) / 100;
-    const y0 = (altCm * s) / 100;
-    const hWin = (hcm * s) / 100;
-    const hWinClamped = Math.max(0, Math.min(hWin, hM - y0));
-    if (hWinClamped < WALL_HOLE_EPS) return null;
-    const th = Number(wall.thickness);
-    const thickMRaw = ((Number.isFinite(th) && th > 0 ? th : 10) * s) / 100;
-    const thickM = Math.max(0.03, thickMRaw);
-    const halfLen = lenWorld / 2;
-    const centerX = -halfLen + ((startExtCm + pos) / lenCm) * lenWorld;
-    const mx = ((x1 + x2) / 2 - cx) * (s / 100);
-    const mz = ((y1 + y2) / 2 - cy) * (s / 100);
-    const rotY = Math.atan2(dz, dx);
-    const group = new THREE.Group();
-    group.position.set(mx, 0, mz);
-    group.rotation.y = rotY;
-    group.userData.floorplanWindowFill = true;
-    group.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
-    const geo = new THREE.BoxGeometry(wM, hWinClamped, thickM * 0.22);
-    const mat = styleWinMat || windowGlassMaterialFromNs(ns, floorOpacity);
-    if (!mat) {
-      geo.dispose();
-      return null;
-    }
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.renderOrder = 12;
-    mesh.position.set(centerX, y0 + hWinClamped / 2, 0);
-    mesh.castShadow = false;
-    mesh.receiveShadow = true;
-    mesh.userData.floorplanPick = true;
-    mesh.userData.floorplanWindowFill = true;
-    mesh.userData.floorplanWindow = true; // 用于快速切换
-    mesh.userData.windowId = String(win?.id ?? "").trim(); // 用于快速切换
-    mesh.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
-    mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
-    mesh.userData.floorplanWindowStyle = ns;
-    mesh.userData.floorplanWindowId = String(win?.id ?? "").trim();
-    if (!styleWinMat) queueWindowFillTextures(mesh, ns);
-    group.add(mesh);
-    return group;
-  }
-
-  // ============================================================
-  // 尺寸标注辅助函数
-  // ============================================================
-
-  /** 画带圆角的矩形路径（canvas 2d ctx） */
-  function _dimRoundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.arcTo(x + w, y, x + w, y + r, r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-    ctx.lineTo(x + r, y + h);
-    ctx.arcTo(x, y + h, x, y + h - r, r);
-    ctx.lineTo(x, y + r);
-    ctx.arcTo(x, y, x + r, y, r);
-    ctx.closePath();
-  }
-
-  /** 创建始终面向相机的文字 Sprite，用于尺寸标注 */
-  function makeDimSprite(text, opts = {}) {
-    const fontSize = opts.fontSize ?? 24;
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const font = `bold ${fontSize}px sans-serif`;
-    ctx.font = font;
-    const tw = Math.ceil(ctx.measureText(text).width);
-    const pad = 9;
-    canvas.width = tw + pad * 2;
-    canvas.height = fontSize + pad * 2;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = opts.bgColor ?? "rgba(8,14,40,0.80)";
-    _dimRoundRect(ctx, 0, 0, canvas.width, canvas.height, 6);
-    ctx.fill();
-    ctx.font = font;
-    ctx.fillStyle = opts.textColor ?? "#cce0ff";
-    ctx.fillText(text, pad, fontSize + pad * 0.45);
-    const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: dimDepthTest, depthWrite: false });
-    const sprite = new THREE.Sprite(mat);
-    const PX = opts.pxPerM ?? 180;
-    sprite.scale.set(canvas.width / PX, canvas.height / PX, 1);
-    return sprite;
-  }
-
-  /** 创建虚线 Line（LineDashedMaterial），depthTest=false 始终可见 */
-  function makeDimLine(pts, color = 0x5599ee, dash = 0.14, gap = 0.0001) {
-    const geo = new THREE.BufferGeometry().setFromPoints(pts);
-    const mat = new THREE.LineDashedMaterial({ color, dashSize: dash, gapSize: gap, transparent: true, opacity: 0.92, depthTest: dimDepthTest });
-    const ln = new THREE.Line(geo, mat);
-    ln.computeLineDistances();
-    return ln;
-  }
-
-  /** 格式化 cm 为可读字符串（>=100cm 显示 m） */
-  function fmtDimCm(cm) {
-    return cm >= 100 ? `${(cm / 100).toFixed(2)}m` : `${Math.round(cm)}cm`;
-  }
-
-  /**
-  /** 为指定楼层每个房间在中心放置名称标签 */
-  function buildFloorNameAnnotations(fl, cx, cy, s) {
-    const g = new THREE.Group();
-    g.userData.isNameAnnotation = true;
-    const LY = 0.12;
-    for (const room of fl.rooms ?? []) {
-      const poly = room?.polygon;
-      const st = room?.style;
-      const styleFallback =
-        st != null && typeof st === "object" && !Array.isArray(st) ? st.floor ?? st.wall : st;
-      const name = String(room?.name ?? room?.type ?? styleFallback ?? "").trim();
-      if (!Array.isArray(poly) || poly.length < 3 || !name) continue;
-      const pts2d = poly
-        .filter((p) => Array.isArray(p) && p.length >= 2)
-        .map((p) => [(snap(Number(p[0])) - cx) * (s / 100), (snap(Number(p[1])) - cy) * (s / 100)]);
-      if (pts2d.length < 3) continue;
-      let cx2 = 0, cz2 = 0;
-      for (const [x, z] of pts2d) { cx2 += x; cz2 += z; }
-      cx2 /= pts2d.length; cz2 /= pts2d.length;
-      const sp = makeDimSprite(name, { fontSize: 22, pxPerM: 160 });
-      sp.position.set(cx2, LY, cz2);
-      g.add(sp);
-    }
-
-    // 墙体名称标注：显示在墙体顶面中心
-    const fh = Number(fl.height);
-    const wallHeightCm = Number.isFinite(fh) && fh > 0 ? fh : 280;
-    const wallTopY = (wallHeightCm * s) / 100 + 0.06;
-    for (const wall of fl.walls ?? []) {
-      const name = String(wall?.name ?? wall?.id ?? "").trim();
-      if (!name) continue;
-      if (!Array.isArray(wall?.start) || !Array.isArray(wall?.end)) continue;
-      const x1 = snap(Number(wall.start[0])), y1 = snap(Number(wall.start[1]));
-      const x2 = snap(Number(wall.end[0])),   y2 = snap(Number(wall.end[1]));
-      const mx = ((x1 + x2) / 2 - cx) * (s / 100);
-      const mz = ((y1 + y2) / 2 - cy) * (s / 100);
-      const sp = makeDimSprite(name, { fontSize: 16, pxPerM: 200, bgColor: "rgba(40,20,0,0.75)", textColor: "#ffe8a0" });
-      sp.position.set(mx, wallTopY, mz);
-      sp.userData.isWallNameAnnotation = true;
-      g.add(sp);
-    }
-
-    return g;
-  }
-
-  /**
-   * 为指定楼层构建尺寸标注 Group（作为 floorG 的子节点）。
-   * 每个房间：虚线轮廓 + 宽/深标注线 + 文字 Sprite。
-   */
-  function buildFloorDimensions(fl, cx, cy, s) {
-    const g = new THREE.Group();
-    g.userData.isDimAnnotation = true;
-    const LY   = 0.07;  // 略高于楼板
-    const EXT1 = 0.18;  // 分段标注线延伸量（内层）
-    const EXT2 = 0.50;  // 总标注线延伸量（外层）
-    const TK   = 0.07;  // 刻度线半长
-    const SNAP_TOL = 0.001; // 去重容差（米）
-
-    // 收集楼层包围盒，以及每侧边界上紧贴的房间断点
-    let fminX = Infinity, fminZ = Infinity, fmaxX = -Infinity, fmaxZ = -Infinity;
-
-    /** 将浮点坐标归一化到 SNAP_TOL 精度 */
-    const key = (v) => Math.round(v / SNAP_TOL) * SNAP_TOL;
-
-    // 先第一遍：仅算楼层包围盒
-    for (const room of fl.rooms ?? []) {
-      const poly = room?.polygon;
-      if (!Array.isArray(poly) || poly.length < 3) continue;
-      for (const p of poly) {
-        if (!Array.isArray(p) || p.length < 2) continue;
-        const x = (snap(Number(p[0])) - cx) * (s / 100);
-        const z = (snap(Number(p[1])) - cy) * (s / 100);
-        fminX = Math.min(fminX, x); fmaxX = Math.max(fmaxX, x);
-        fminZ = Math.min(fminZ, z); fmaxZ = Math.max(fmaxZ, z);
-      }
-    }
-
-    if (!Number.isFinite(fminX)) return g;
-
-    // 每侧各自的断点集合（只含紧贴该侧边界的房间端点）
-    const EDGE_TOL = 0.05; // 判断"紧贴"的容差（米）
-    const xSouth = new Set(); // 紧贴南侧（bmaxZ ≈ fmaxZ）的房间 X 端点
-    const xNorth = new Set(); // 紧贴北侧（bminZ ≈ fminZ）的房间 X 端点
-    const zEast  = new Set(); // 紧贴东侧（bmaxX ≈ fmaxX）的房间 Z 端点
-    const zWest  = new Set(); // 紧贴西侧（bminX ≈ fminX）的房间 Z 端点
-
-    // 确保端点包含楼层整体边界
-    xSouth.add(key(fminX)); xSouth.add(key(fmaxX));
-    xNorth.add(key(fminX)); xNorth.add(key(fmaxX));
-    zEast.add(key(fminZ));  zEast.add(key(fmaxZ));
-    zWest.add(key(fminZ));  zWest.add(key(fmaxZ));
-
-    // 第二遍：绘制轮廓、面积，并按侧收集断点
-    for (const room of fl.rooms ?? []) {
-      const poly = room?.polygon;
-      if (!Array.isArray(poly) || poly.length < 3) continue;
-      const pts2d = poly
-        .filter((p) => Array.isArray(p) && p.length >= 2)
-        .map((p) => [(snap(Number(p[0])) - cx) * (s / 100), (snap(Number(p[1])) - cy) * (s / 100)]);
-      if (pts2d.length < 3) continue;
-
-      // 房间虚线轮廓
-      const outPts = [...pts2d, pts2d[0]].map(([x, z]) => new THREE.Vector3(x, LY, z));
-      g.add(makeDimLine(outPts, 0x7799cc, 0.07, 0.05));
-
-      let bminX = Infinity, bminZ = Infinity, bmaxX = -Infinity, bmaxZ = -Infinity;
-      for (const [x, z] of pts2d) {
-        bminX = Math.min(bminX, x); bmaxX = Math.max(bmaxX, x);
-        bminZ = Math.min(bminZ, z); bmaxZ = Math.max(bmaxZ, z);
-      }
-
-      // 按侧边收集该房间的端点
-      if (bmaxZ >= fmaxZ - EDGE_TOL) { xSouth.add(key(bminX)); xSouth.add(key(bmaxX)); }
-      if (bminZ <= fminZ + EDGE_TOL) { xNorth.add(key(bminX)); xNorth.add(key(bmaxX)); }
-      if (bmaxX >= fmaxX - EDGE_TOL) { zEast.add(key(bminZ));  zEast.add(key(bmaxZ)); }
-      if (bminX <= fminX + EDGE_TOL) { zWest.add(key(bminZ));  zWest.add(key(bmaxZ)); }
-
-      // 用 Shoelace 公式计算真实面积
-      let areaCm2 = 0;
-      const rawPts = poly.filter((p) => Array.isArray(p) && p.length >= 2).map((p) => [snap(Number(p[0])), snap(Number(p[1]))]);
-      for (let _i = 0; _i < rawPts.length; _i++) {
-        const [ax, ay] = rawPts[_i];
-        const [bx, by] = rawPts[(_i + 1) % rawPts.length];
-        areaCm2 += ax * by - bx * ay;
-      }
-      const areaM2 = Math.abs(areaCm2) / 2 / 10000;
-
-      // 面积标签置于下边中间（X 居中，Z 靠近南侧边），略往北（plan 上）移一点
-      const INSET_Z = 0.18;
-      const AREA_LABEL_UP = 0.46;
-      const aSp = makeDimSprite(`${areaM2.toFixed(2)}㎡`, { fontSize: 20, pxPerM: 155 });
-      aSp.position.set((bminX + bmaxX) / 2, LY + 0.1, bmaxZ - INSET_Z - AREA_LABEL_UP);
-      g.add(aSp);
-    }
-
-    // 各侧断点排序
-    const xs_south = [...xSouth].sort((a, b) => a - b);
-    const xs_north = [...xNorth].sort((a, b) => a - b);
-    const zs_east  = [...zEast].sort((a, b) => a - b);
-    const zs_west  = [...zWest].sort((a, b) => a - b);
-
-    /**
-     * 画一组分段尺寸线。
-     * side: 'south' | 'north' | 'east' | 'west'
-     *   south/north → 沿 X 轴分段，固定 Z 位置
-     *   east/west   → 沿 Z 轴分段，固定 X 位置
-     */
-    function drawSegments(breaks, side, fixedVal) {
-      const tickH = TK * 0.8;
-      // 向外偏移方向：south/east 为正，north/west 为负
-      const sign = (side === 'south' || side === 'east') ? 1 : -1;
-      const lineOff = sign * EXT1;
-      const isHoriz = side === 'south' || side === 'north'; // 沿 X 轴方向
-
-      for (let i = 0; i < breaks.length - 1; i++) {
-        const a = breaks[i], b = breaks[i + 1];
-        const segCm = (b - a) / (s / 100);
-        if (segCm < 1) continue;
-
-        const mid = (a + b) / 2;
-        let p1, p2, pLead1, pLead2, pTick1a, pTick1b, pTick2a, pTick2b, pLabel;
-
-        if (isHoriz) {
-          // south / north：标注线沿 X，固定在 Z = fixedVal + lineOff
-          const lineZ = fixedVal + lineOff;
-          p1 = new THREE.Vector3(a, LY, lineZ);
-          p2 = new THREE.Vector3(b, LY, lineZ);
-          pLead1 = [new THREE.Vector3(a, LY, fixedVal), new THREE.Vector3(a, LY, lineZ + sign * tickH)];
-          pLead2 = [new THREE.Vector3(b, LY, fixedVal), new THREE.Vector3(b, LY, lineZ + sign * tickH)];
-          pTick1a = new THREE.Vector3(a, LY, lineZ - tickH); pTick1b = new THREE.Vector3(a, LY, lineZ + tickH);
-          pTick2a = new THREE.Vector3(b, LY, lineZ - tickH); pTick2b = new THREE.Vector3(b, LY, lineZ + tickH);
-          pLabel = new THREE.Vector3(mid, LY + 0.15, lineZ);
-        } else {
-          // east / west：标注线沿 Z，固定在 X = fixedVal + lineOff
-          const lineX = fixedVal + lineOff;
-          p1 = new THREE.Vector3(lineX, LY, a);
-          p2 = new THREE.Vector3(lineX, LY, b);
-          pLead1 = [new THREE.Vector3(fixedVal, LY, a), new THREE.Vector3(lineX + sign * tickH, LY, a)];
-          pLead2 = [new THREE.Vector3(fixedVal, LY, b), new THREE.Vector3(lineX + sign * tickH, LY, b)];
-          pTick1a = new THREE.Vector3(lineX - tickH, LY, a); pTick1b = new THREE.Vector3(lineX + tickH, LY, a);
-          pTick2a = new THREE.Vector3(lineX - tickH, LY, b); pTick2b = new THREE.Vector3(lineX + tickH, LY, b);
-          pLabel = new THREE.Vector3(lineX, LY + 0.15, mid);
-        }
-
-        g.add(makeDimLine([p1, p2]));
-        g.add(makeDimLine(pLead1, 0x5599ee, 0.05, 0.04));
-        g.add(makeDimLine(pLead2, 0x5599ee, 0.05, 0.04));
-        g.add(makeDimLine([pTick1a, pTick1b]));
-        g.add(makeDimLine([pTick2a, pTick2b]));
-        const sp = makeDimSprite(fmtDimCm(segCm), { fontSize: 18, pxPerM: 140 });
-        sp.position.copy(pLabel);
-        g.add(sp);
-      }
-    }
-
-    // 分段标注（内层，各侧只用紧贴该侧的房间断点）
-    drawSegments(xs_south, 'south', fmaxZ); // 南
-    drawSegments(xs_north, 'north', fminZ); // 北
-    drawSegments(zs_east,  'east',  fmaxX); // 东
-    drawSegments(zs_west,  'west',  fminX); // 西
-
-    // 总尺寸（外层，更远一圈）
-    const totalWCm = (fmaxX - fminX) / (s / 100);
-    const totalDCm = (fmaxZ - fminZ) / (s / 100);
-
-    // 总宽（南侧外层）
-    const wZ = fmaxZ + EXT2;
-    g.add(makeDimLine([new THREE.Vector3(fminX, LY, wZ), new THREE.Vector3(fmaxX, LY, wZ)]));
-    g.add(makeDimLine([new THREE.Vector3(fminX, LY, fmaxZ), new THREE.Vector3(fminX, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
-    g.add(makeDimLine([new THREE.Vector3(fmaxX, LY, fmaxZ), new THREE.Vector3(fmaxX, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
-    g.add(makeDimLine([new THREE.Vector3(fminX, LY, wZ - TK), new THREE.Vector3(fminX, LY, wZ + TK)]));
-    g.add(makeDimLine([new THREE.Vector3(fmaxX, LY, wZ - TK), new THREE.Vector3(fmaxX, LY, wZ + TK)]));
-    const wSp = makeDimSprite(fmtDimCm(totalWCm));
-    wSp.position.set((fminX + fmaxX) / 2, LY + 0.18, wZ);
-    g.add(wSp);
-
-    // 总深（东侧外层）
-    const dX = fmaxX + EXT2;
-    g.add(makeDimLine([new THREE.Vector3(dX, LY, fminZ), new THREE.Vector3(dX, LY, fmaxZ)]));
-    g.add(makeDimLine([new THREE.Vector3(fmaxX, LY, fminZ), new THREE.Vector3(dX + TK, LY, fminZ)], 0x5599ee, 0.05, 0.04));
-    g.add(makeDimLine([new THREE.Vector3(fmaxX, LY, fmaxZ), new THREE.Vector3(dX + TK, LY, fmaxZ)], 0x5599ee, 0.05, 0.04));
-    g.add(makeDimLine([new THREE.Vector3(dX, LY, fminZ - TK), new THREE.Vector3(dX, LY, fminZ + TK)]));
-    g.add(makeDimLine([new THREE.Vector3(dX, LY, fmaxZ - TK), new THREE.Vector3(dX, LY, fmaxZ + TK)]));
-    const dSp = makeDimSprite(fmtDimCm(totalDCm));
-    dSp.position.set(dX, LY + 0.18, (fminZ + fmaxZ) / 2);
-    g.add(dSp);
-
-    // —— 层高标注（西侧，竖向）——
-    const flH = (Number.isFinite(Number(fl.height)) && fl.height > 0 ? Number(fl.height) : 280) / 100;
-    const VEXT = EXT2;         // 与总宽/深一致，放在外层
-    const VTK  = TK;
-    const vX   = fminX - VEXT; // 西侧偏移位置
-    const midZ = (fminZ + fmaxZ) / 2;
-
-    // 竖向主标注线（从楼板面到墙顶）
-    g.add(makeDimLine([new THREE.Vector3(vX, 0, midZ), new THREE.Vector3(vX, flH, midZ)]));
-    // 底部引出线
-    g.add(makeDimLine([new THREE.Vector3(fminX, 0, midZ), new THREE.Vector3(vX - VTK, 0, midZ)], 0x5599ee, 0.05, 0.04));
-    // 顶部引出线
-    g.add(makeDimLine([new THREE.Vector3(fminX, flH, midZ), new THREE.Vector3(vX - VTK, flH, midZ)], 0x5599ee, 0.05, 0.04));
-    // 底部刻度线
-    g.add(makeDimLine([new THREE.Vector3(vX - VTK, 0, midZ), new THREE.Vector3(vX + VTK, 0, midZ)]));
-    // 顶部刻度线
-    g.add(makeDimLine([new THREE.Vector3(vX - VTK, flH, midZ), new THREE.Vector3(vX + VTK, flH, midZ)]));
-    // 层高标签
-    const hSp = makeDimSprite(fmtDimCm(fl.height || 280));
-    hSp.position.set(vX, flH / 2 + 0.15, midZ);
-    g.add(hSp);
-
-    return g;
-  }
-
-  /**
-   * 为单个家具 Group 创建本地坐标系下的尺寸标注 Group。
-   * 标注随家具旋转一起变化。
-   */
-  function buildFurnitureDimAnnotation(group) {
-    const item = byId.get(group.userData.modelType);
-    const fp = extractFurnitureFootprintCm(item);
-    const hw = fp.hw / 100; // 半宽（米）
-    const hh = fp.hh / 100; // 半深（米）
-    const fh = fp.h  / 100; // 家具高度（米）
-
-    const LY  = fh + 0.03; // 略高于家具顶面
-    const EXT = 0.18; // 标注线外伸量
-    const TK  = 0.06; // 刻度线半长
-
-    const g = new THREE.Group();
-    g.userData.isFurnitureDimAnnotation = true;
-
-    // 虚线轮廓
-    const corners = [
-      new THREE.Vector3(-hw, LY, -hh),
-      new THREE.Vector3( hw, LY, -hh),
-      new THREE.Vector3( hw, LY,  hh),
-      new THREE.Vector3(-hw, LY,  hh),
-      new THREE.Vector3(-hw, LY, -hh),
-    ];
-    g.add(makeDimLine(corners, 0x7799cc, 0.07, 0.05));
-
-    // 宽度标注（南侧）
-    const wZ = hh + EXT;
-    g.add(makeDimLine([new THREE.Vector3(-hw, LY, wZ), new THREE.Vector3(hw, LY, wZ)]));
-    g.add(makeDimLine([new THREE.Vector3(-hw, LY, hh), new THREE.Vector3(-hw, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
-    g.add(makeDimLine([new THREE.Vector3( hw, LY, hh), new THREE.Vector3( hw, LY, wZ + TK)], 0x5599ee, 0.05, 0.04));
-    g.add(makeDimLine([new THREE.Vector3(-hw, LY, wZ - TK), new THREE.Vector3(-hw, LY, wZ + TK)]));
-    g.add(makeDimLine([new THREE.Vector3( hw, LY, wZ - TK), new THREE.Vector3( hw, LY, wZ + TK)]));
-    const wSp = makeDimSprite(fmtDimCm(fp.w), { fontSize: 18, pxPerM: 140 });
-    wSp.position.set(0, LY + 0.15, wZ);
-    g.add(wSp);
-
-    // 深度标注（东侧）
-    const dX = hw + EXT;
-    g.add(makeDimLine([new THREE.Vector3(dX, LY, -hh), new THREE.Vector3(dX, LY, hh)]));
-    g.add(makeDimLine([new THREE.Vector3(hw, LY, -hh), new THREE.Vector3(dX + TK, LY, -hh)], 0x5599ee, 0.05, 0.04));
-    g.add(makeDimLine([new THREE.Vector3(hw, LY,  hh), new THREE.Vector3(dX + TK, LY,  hh)], 0x5599ee, 0.05, 0.04));
-    g.add(makeDimLine([new THREE.Vector3(dX - TK, LY, -hh), new THREE.Vector3(dX + TK, LY, -hh)]));
-    g.add(makeDimLine([new THREE.Vector3(dX - TK, LY,  hh), new THREE.Vector3(dX + TK, LY,  hh)]));
-    const dSp = makeDimSprite(fmtDimCm(fp.d), { fontSize: 18, pxPerM: 140 });
-    dSp.position.set(dX, LY + 0.15, 0);
-    g.add(dSp);
-
-    // 高度标注（西侧，竖向，从地面到顶面）
-    const midZ = 0;
-    const vX = -hw - EXT;
-    g.add(makeDimLine([new THREE.Vector3(vX, 0, midZ), new THREE.Vector3(vX, fh, midZ)]));
-    g.add(makeDimLine([new THREE.Vector3(-hw, 0, midZ), new THREE.Vector3(vX - TK, 0, midZ)], 0x5599ee, 0.05, 0.04));
-    g.add(makeDimLine([new THREE.Vector3(-hw, fh, midZ), new THREE.Vector3(vX - TK, fh, midZ)], 0x5599ee, 0.05, 0.04));
-    g.add(makeDimLine([new THREE.Vector3(vX - TK, 0, midZ), new THREE.Vector3(vX + TK, 0, midZ)]));
-    g.add(makeDimLine([new THREE.Vector3(vX - TK, fh, midZ), new THREE.Vector3(vX + TK, fh, midZ)]));
-    const hSp = makeDimSprite(fmtDimCm(fp.h), { fontSize: 18, pxPerM: 140 });
-    hSp.position.set(vX, fh / 2 + 0.15, midZ);
-    g.add(hSp);
-
-    return g;
-  }
-
-  /** 刷新所有家具的尺寸标注（showDimensions 切换或楼层切换时调用）。 */
-  function rebuildFurnitureDimAnnotations() {
-    furnitureRoot.children.forEach((group) => {
-      if (!group.userData?.isFurniture) return;
-      // 移除旧标注
-      const old = group.children.filter((c) => c.userData?.isFurnitureDimAnnotation);
-      old.forEach((c) => { group.remove(c); disposeObject3D(c); });
-      // 仅当 showDimensions 且该楼层可选中时显示
-      if (showDimensions && group.visible && group.userData.isFloorActive !== false) {
-        group.add(buildFurnitureDimAnnotation(group));
-      }
-    });
-  }
-
-  function setDimensionsVisible(v) {
-    showDimensions = Boolean(v);
-    const btn = document.getElementById("svgDimToggleBtn");
-    if (btn) {
-      btn.classList.toggle("is-active", showDimensions);
-      btn.setAttribute("aria-pressed", String(showDimensions));
-    }
-    if (showDimensions && !hasFloorplanDimAnnotationGroups()) {
-      void rebuildFloorplan3D();
-    } else {
-      syncFloorAnnotationVisibility();
-    }
-    updateFurnitureFloorVisibility();
-  }
-
-  /** 刷新所有家具的名称标注 */
-  function rebuildFurnitureNameAnnotations() {
-    furnitureRoot.children.forEach((group) => {
-      if (!group.userData?.isFurniture) return;
-      const old = group.children.filter((c) => c.userData?.isFurnitureNameAnnotation);
-      old.forEach((c) => { group.remove(c); disposeObject3D(c); });
-      if (showNames && group.visible && group.userData.isFloorActive !== false) {
-        const item = byId.get(group.userData.modelType);
-        const name = item ? getFurnitureDisplayName(item) : (group.userData.modelType || "家具");
-        const fp = extractFurnitureFootprintCm(item);
-        const fh = fp.h / 100;
-        const sp = makeDimSprite(name, { fontSize: 22, pxPerM: 160 });
-        sp.position.set(0, fh + 0.08, 0);
-        sp.userData.isFurnitureNameAnnotation = true;
-        group.add(sp);
-      }
-    });
-  }
-
-  function setNamesVisible(v) {
-    showNames = Boolean(v);
-    const btn = document.getElementById("svgNameToggleBtn");
-    if (btn) {
-      btn.classList.toggle("is-active", showNames);
-      btn.setAttribute("aria-pressed", String(showNames));
-    }
-    if (showNames && !hasFloorplanNameAnnotationGroups()) {
-      void rebuildFloorplan3D();
-    } else {
-      syncFloorAnnotationVisibility();
-    }
-    updateFurnitureFloorVisibility();
+    return buildWindowGlassGroupFromMeshBuilder(
+      win,
+      wall,
+      floorWalls,
+      cx,
+      cy,
+      s,
+      defaultHeightCm,
+      floorOpacity,
+      styleWinMat,
+      floorLevelIdStr,
+    );
   }
 
   function setWallSnapEnabled(v) {
@@ -5876,162 +3837,21 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * 避免层透明度或 opacity 曾为 0 时 ratio 失效；无有效 perUnit 且无法推断时退回 rebuild。
    */
   function applyFloorplanLayerOpacityToScene() {
-    const entry = currentFloorplanEntry;
-    if (!entry) return false;
-    const gWorld = floorplanRoot.children[0];
-    if (!gWorld?.userData?.floorplanGWorld) return false;
-    const floors = getFloorsFromEntry(entry);
-    const floorGroups = [];
-    for (const c of gWorld.children) {
-      if (c.userData?.floorplanFloorGroup) floorGroups.push(c);
-    }
-    if (floorGroups.length !== floors.length) return false;
-
-    const floorIdxActive = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
-    let needFullRebuild = false;
-
-    for (let fi = 0; fi < floorGroups.length; fi++) {
-      const newLayerOp =
-        floorIdxActive < 0 ? 0.2 : fi === floorIdxActive ? activeLayerOpacity : otherLayersOpacity;
-
-      floorGroups[fi].traverse((obj) => {
-        const mats = [];
-        if (obj.material) {
-          if (Array.isArray(obj.material)) mats.push(...obj.material);
-          else mats.push(obj.material);
-        }
-        for (const mat of mats) {
-          if (!mat) continue;
-          let perUnit = mat.userData.__floorplanOpacityPerUnitLayer;
-          if (!Number.isFinite(perUnit)) {
-            const oldLayerOp = mat.userData.__floorplanLayerOpacity;
-            if (oldLayerOp == null || !Number.isFinite(oldLayerOp)) continue;
-            if (oldLayerOp > 1e-9 && mat.opacity > 1e-9) {
-              perUnit = mat.opacity / oldLayerOp;
-              mat.userData.__floorplanOpacityPerUnitLayer = perUnit;
-            } else {
-              needFullRebuild = true;
-              continue;
-            }
-          }
-          const newOp = Math.max(0, Math.min(1, perUnit * newLayerOp));
-          mat.userData.__floorplanLayerOpacity = newLayerOp;
-          applyFloorplanSurfaceAlpha(mat, newOp);
-          mat.needsUpdate = true;
-        }
-      });
-    }
-    return !needFullRebuild;
+    return applyFloorplanLayerOpacityToSceneFromCore();
   }
 
   /**
    * 「仅当前层」开关：只更新各楼层 floor group 的 visible，不 rebuild（避免重复贴图加载）。
    */
   function syncHideOtherFloorsFloorplanVisibility() {
-    const entry = currentFloorplanEntry;
-    if (!entry) return;
-    const gWorld = floorplanRoot.children[0];
-    if (!gWorld?.userData?.floorplanGWorld) return;
-    const floors = getFloorsFromEntry(entry);
-    const floorGroups = [];
-    for (const c of gWorld.children) {
-      if (c.userData?.floorplanFloorGroup) floorGroups.push(c);
-    }
-    if (floorGroups.length !== floors.length) return;
-    const floorIndex = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
-    for (let i = 0; i < floorGroups.length; i++) {
-      const isActive = floorIndex >= 0 && i === floorIndex;
-      floorGroups[i].visible = !hideOtherFloors || floorIndex < 0 || isActive;
-    }
-  }
-
-  /** 楼层选中切换时：只改尺寸/名称标注子 Group 的 visible（各层均已生成，避免 rebuild 贴图） */
-  function syncFloorAnnotationVisibility() {
-    const entry = currentFloorplanEntry;
-    if (!entry) return;
-    const gWorld = floorplanRoot.children[0];
-    if (!gWorld?.userData?.floorplanGWorld) return;
-    const floors = getFloorsFromEntry(entry);
-    const floorGroups = [];
-    for (const c of gWorld.children) {
-      if (c.userData?.floorplanFloorGroup) floorGroups.push(c);
-    }
-    if (floorGroups.length !== floors.length) return;
-    const floorIndex = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
-    for (let i = 0; i < floorGroups.length; i++) {
-      const isActive = floorIndex >= 0 && i === floorIndex;
-      const showAnnot = !floorSelectionEnabled || isActive;
-      const fg = floorGroups[i];
-      for (const ch of fg.children) {
-        if (ch.userData?.isDimAnnotation) {
-          ch.visible = showDimensions && showAnnot;
-        } else if (ch.userData?.isNameAnnotation) {
-          ch.visible = showNames && showAnnot;
-        }
-      }
-    }
-  }
-
-  /** 场景里是否已有户型尺寸标注 Group（旧版仅在开启时生成；首次开启需 rebuild） */
-  function hasFloorplanDimAnnotationGroups() {
-    const entry = currentFloorplanEntry;
-    if (!entry) return false;
-    const gWorld = floorplanRoot.children[0];
-    if (!gWorld?.userData?.floorplanGWorld) return false;
-    for (const c of gWorld.children) {
-      if (!c.userData?.floorplanFloorGroup) continue;
-      for (const ch of c.children) {
-        if (ch.userData?.isDimAnnotation) return true;
-      }
-    }
-    return false;
-  }
-
-  function hasFloorplanNameAnnotationGroups() {
-    const entry = currentFloorplanEntry;
-    if (!entry) return false;
-    const gWorld = floorplanRoot.children[0];
-    if (!gWorld?.userData?.floorplanGWorld) return false;
-    for (const c of gWorld.children) {
-      if (!c.userData?.floorplanFloorGroup) continue;
-      for (const ch of c.children) {
-        if (ch.userData?.isNameAnnotation) return true;
-      }
-    }
-    return false;
+    return syncHideOtherFloorsFloorplanVisibilityFromCore();
   }
 
   /**
    * 点击楼层 Tab：更新 activeFloor、透明度、仅当前层与标注显隐；仅在 cheap 路径失败时全量 rebuild。
    */
   function applyFloorLevelSelectionChange() {
-    const entry = currentFloorplanEntry;
-    if (!entry) return;
-    const floorIdx = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
-    const floor = floorIdx >= 0 ? getCurrentFloorFromEntry(entry, floorIdx) : null;
-    activeFloorId = floor?.id != null && String(floor.id).trim() ? String(floor.id).trim() : null;
-    rebuildWallSnapData(entry);
-    updateBottomUI();
-    window.dispatchEvent(
-      new CustomEvent("visionhome:floorplan-applied-to-svg", {
-        detail: {
-          id: entry?.id != null ? String(entry.id) : "",
-          floorIndex: floorIdx,
-          floorId: String(floor?.id ?? ""),
-        },
-      }),
-    );
-
-    if (!applyFloorplanLayerOpacityToScene()) {
-      void rebuildFloorplan3D();
-      updateFurnitureFloorVisibility();
-      selectFurniture(null);
-      return;
-    }
-    syncHideOtherFloorsFloorplanVisibility();
-    syncFloorAnnotationVisibility();
-    updateFurnitureFloorVisibility();
-    selectFurniture(null);
+    return applyFloorLevelSelectionChangeFromCore();
   }
 
   function effectiveFloorplanStyleKeyFromEntryAndOverride(entry, overrideVal) {
@@ -6071,198 +3891,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @returns {Promise<boolean>} 是否成功切换
    */
   async function fastStyleSwitch(newStyleKey) {
-    if (!currentFloorplanEntry) return false;
-    
-    const entry = currentFloorplanEntry;
-    const fpId = String(entry?.id ?? "").trim();
-    if (!fpId) return false;
-    
-    // 加载新风格配置
-    let newStyle = null;
-    try {
-      newStyle = await loadStyleConfig(fpId, newStyleKey);
-    } catch (e) {
-      console.warn("[VisionHome] 快速切换风格失败:", newStyleKey, e);
-      return false;
-    }
-    
-    if (!newStyle) return false;
-    
-    // 预加载纹理（后台进行）
-    preloadStyleTextures(newStyle).catch(e => console.warn('[VisionHome] 纹理预加载失败:', e));
-    
-    // 更新光照
-    const lightingMerged = mergeSceneLighting(newStyle?.sceneLighting ?? null);
-    applySceneLightingConfig(renderer, ambientLight, hemiLight, dirLight, lightingMerged);
-    sceneLightingEnvMapIntensity = lightingMerged.envMapIntensity;
-    
-    // 更新材质
-    const floorIndex = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
-    const opacity = floorIndex >= 0 ? activeLayerOpacity : 0.2;
-    
-    // 标记是否需要完全重建（遇到多材质墙体时）
-    let needFullRebuild = false;
-
-    // 检查新风格是否包含房间专属墙面材质（key 以 _wall 结尾）
-    // 若是，则单材质墙体（被全局覆盖替换过数组材质）也需要完全重建
-    const newStyleHasRoomWalls = Object.keys(newStyle?.materials || {}).some((k) => k.endsWith("_wall"));
-    
-    // 遍历场景中的所有 mesh，更新材质
-    floorplanRoot.traverse((obj) => {
-      if (!obj.isMesh) return;
-      
-      const userData = obj.userData;
-      
-      // 房间地板
-      if (userData.floorplanRoomFloor && userData.roomId) {
-        const room = { id: userData.roomId };
-        const fk = resolveRoomFloorMaterialKey(newStyle, room);
-        const def = fk ? getMaterialDef(newStyle, fk) : null;
-        if (def) {
-          const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
-            forGlass: false,
-            envMapIntensity: sceneLightingEnvMapIntensity,
-            side: THREE.DoubleSide,
-          });
-          newMat.userData.__floorplanRoomFloorDepthWrite = true;
-          applyFloorplanSurfaceAlpha(newMat, opacity);
-          queueStylePackTextures(newMat, def, { applyUvScale: true });
-          disposeMaterialSafely(obj.material);
-          obj.material = newMat;
-        } else {
-          // 新风格未为该房间定义地板材质 → 重置为默认地板材质
-          disposeMaterialSafely(obj.material);
-          const defaultMat = floorplanStdMat();
-          defaultMat.userData.__floorplanRoomFloorDepthWrite = true;
-          defaultMat.side = THREE.DoubleSide;
-          applyFloorplanSurfaceAlpha(defaultMat, opacity);
-          obj.material = defaultMat;
-        }
-      }
-      
-      // 墙体（跳过多材质墙体，因为需要房间信息才能正确更新）
-      else if (userData.floorplanWall && userData.wallId) {
-        if (Array.isArray(obj.material)) {
-          // 多材质数组 → 需要完全重建才能正确处理房间墙面
-          needFullRebuild = true;
-        } else if (newStyleHasRoomWalls) {
-          // 单材质墙体（被全局覆盖替换过），但新风格需要房间专属墙面 → 需要完全重建
-          needFullRebuild = true;
-        } else {
-          // 单材质墙体，新风格使用单一墙体材质 → 快速更新
-          const wall = { id: userData.wallId };
-          const wk = resolveWallMaterialKey(newStyle, wall);
-          const def = wk ? getMaterialDef(newStyle, wk) : null;
-          if (def) {
-            const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
-              forGlass: false,
-              envMapIntensity: sceneLightingEnvMapIntensity,
-              side: THREE.FrontSide,
-            });
-            queueStylePackTextures(newMat, def, { applyUvScale: false });
-            disposeMaterialSafely(obj.material);
-            obj.material = newMat;
-          } else {
-            // 新风格未为该墙体定义材质 → 重置为默认墙体材质
-            disposeMaterialSafely(obj.material);
-            const defaultMat = floorplanStdMat();
-            applyFloorplanSurfaceAlpha(defaultMat, opacity);
-            defaultMat.side = THREE.FrontSide;
-            tagFloorplanLayerOpacity(defaultMat, opacity);
-            obj.material = defaultMat;
-          }
-        }
-      }
-      
-      // 门
-      else if (userData.floorplanDoor && userData.doorId) {
-        const door = { id: userData.doorId };
-        const dk = resolveDoorMaterialKey(newStyle, door);
-        const def = dk ? getMaterialDef(newStyle, dk) : null;
-        if (def) {
-          const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
-            forGlass: false,
-            envMapIntensity: sceneLightingEnvMapIntensity,
-            side: THREE.FrontSide,
-          });
-          queueStylePackTextures(newMat, def, { applyUvScale: false });
-          disposeMaterialSafely(obj.material);
-          obj.material = newMat;
-        } else {
-          // 新风格未为该门定义材质 → 重置为门的自身风格材质
-          const ns = userData.floorplanDoorStyle;
-          if (ns) {
-            disposeMaterialSafely(obj.material);
-            obj.material = doorFillMaterialFromNs(ns, opacity);
-          }
-        }
-      }
-      
-      // 窗户
-      else if (userData.floorplanWindow && userData.windowId) {
-        const win = { id: userData.windowId };
-        const wink = resolveWindowMaterialKey(newStyle, win);
-        const def = wink ? getMaterialDef(newStyle, wink) : null;
-        if (def) {
-          const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
-            forGlass: true,
-            envMapIntensity: 0.9,
-            side: THREE.FrontSide,
-          });
-          queueStylePackTextures(newMat, def, { applyUvScale: false });
-          disposeMaterialSafely(obj.material);
-          obj.material = newMat;
-        } else {
-          // 新风格未为该窗户定义材质 → 重置为窗户的自身风格玻璃材质
-          const ns = userData.floorplanWindowStyle;
-          if (ns) {
-            disposeMaterialSafely(obj.material);
-            obj.material = windowGlassMaterialFromNs(ns, opacity);
-          }
-        }
-      }
-    });
-    
-    lastMergedFloorplanStyle = newStyle;
-    
-    // 加载风格包中的覆盖数据（需要深拷贝以避免污染缓存）
-    const sk = newStyleKey;
-    const skKey = normalizeStyleKeyForSurfaceOverrides(sk);
-    
-    const roomFloorMats = newStyle?.roomFloorMaterials;
-    if (roomFloorMats && typeof roomFloorMats === 'object') {
-      roomFloorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(roomFloorMats));
-    } else {
-      if (!roomFloorOverridesByStyleKey[skKey]) {
-        roomFloorOverridesByStyleKey[skKey] = {};
-      }
-    }
-    
-    const doorMats = newStyle?.doorOverrides;
-    if (doorMats && typeof doorMats === 'object') {
-      doorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(doorMats));
-    } else {
-      if (!doorOverridesByStyleKey[skKey]) {
-        doorOverridesByStyleKey[skKey] = {};
-      }
-    }
-    
-    const windowMats = newStyle?.windowOverrides;
-    if (windowMats && typeof windowMats === 'object') {
-      windowOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(windowMats));
-    } else {
-      if (!windowOverridesByStyleKey[skKey]) {
-        windowOverridesByStyleKey[skKey] = {};
-      }
-    }
-    
-    // 需要完全重建（多材质墙体 / 风格含房间专属墙面材质），返回 false 触发重建
-    if (needFullRebuild) {
-      console.log('[VisionHome] 快速切换需要完全重建（多材质墙体或房间专属墙面材质）');
-      return false;
-    }
-    
-    return true;
+    return fastStyleSwitchFromCore(newStyleKey);
   }
 
   /**
@@ -6270,255 +3899,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    *        applyDecorFromStyle：用当前风格 JSON 中的装饰替换场景装饰（切换风格、首次加载户型时）；undo/设计恢复时不要开启。
    */
   async function rebuildFloorplan3D(opts = {}) {
-    const applyDecorFromStyle = Boolean(opts.applyDecorFromStyle);
-    const gen = ++floorplanRebuildGen;
-    clearInteractiveList();
-    disposeObject3D(floorplanRoot);
-    floorplanRoot.clear();
-    floorplanSelected = false;
-    if (!currentFloorplanEntry) {
-      lastMergedFloorplanStyle = null;
-      floorYOffsetById.clear();
-      floorElevationBaseCm = 0;
-      rebuildWallSnapData(null);
-      const fallbackLight = mergeSceneLighting(null);
-      applySceneLightingConfig(renderer, ambientLight, hemiLight, dirLight, fallbackLight);
-      sceneLightingEnvMapIntensity = fallbackLight.envMapIntensity;
-      return;
-    }
-
-    const entry = currentFloorplanEntry;
-    const fpId = String(entry?.id ?? "").trim();
-    if (fpId) {
-      const packIndex = await loadStylePackIndex(fpId);
-      // 预加载前3个风格的纹理（后台进行）
-      if (packIndex?.styles?.length) {
-        const topStyles = packIndex.styles.slice(0, 3);
-        for (const styleInfo of topStyles) {
-          const preloadKey = `${fpId}::${styleInfo.key}`;
-          if (!stylePreloadPromises.has(preloadKey)) {
-            const promise = loadStyleConfig(fpId, styleInfo.key)
-              .then(s => preloadStyleTextures(s))
-              .catch(e => console.warn('[VisionHome] 风格预加载失败:', styleInfo.key, e));
-            stylePreloadPromises.set(preloadKey, promise);
-          }
-        }
-      }
-    }
-    const skEffective = getEffectiveFloorplanStyleKey();
-    let style = null;
-    try {
-      style = await loadStyleConfig(fpId, skEffective);
-      // 预加载纹理（后台进行，不阻塞）
-      if (style) {
-        preloadStyleTextures(style).catch(e => console.warn('[VisionHome] 纹理预加载失败:', e));
-      }
-    } catch (e) {
-      console.warn("[VisionHome] 风格包加载失败:", skEffective, e);
-    }
-    if (!style && entry) {
-      const skFallback = String(entry?.styleKey ?? entry?.styleId ?? "").trim();
-      if (skFallback && skFallback !== skEffective) {
-        try {
-          style = await loadStyleConfig(fpId, skFallback);
-          if (style) {
-            floorplanStyleKeyOverride = null;
-            window.dispatchEvent(
-              new CustomEvent("visionhome:floorplan-applied-to-svg", {
-                detail: {
-                  id: fpId,
-                  floorIndex: floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1,
-                  floorId: String(activeFloorId ?? ""),
-                  styleFallbackFrom: skEffective,
-                  styleFallbackTo: skFallback,
-                },
-              }),
-            );
-          }
-        } catch (e2) {
-          console.warn("[VisionHome] 风格包回退加载失败:", skFallback, e2);
-        }
-      }
-    }
-    lastMergedFloorplanStyle = style;
-    if (gen !== floorplanRebuildGen) return;
-
-    // 从风格包加载房间地板覆盖到内存
-    // 注意：不清空所有风格键，切换项目时 applyFromDesignProject 会覆盖特定键
-    // undo/redo 恢复时已写入 room/door/window 覆盖，此处不得覆盖，否则撤销后材质仍错
-    const sk = skEffective;
-    const skKey = normalizeStyleKeyForSurfaceOverrides(sk);
-    if (!isRestoring) {
-      const roomFloorMats = style?.roomFloorMaterials;
-      if (roomFloorMats && typeof roomFloorMats === "object") {
-        roomFloorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(roomFloorMats));
-      } else {
-        if (!roomFloorOverridesByStyleKey[skKey]) {
-          roomFloorOverridesByStyleKey[skKey] = {};
-        }
-      }
-
-      // 从风格包加载门覆盖到内存
-      const doorMats = style?.doorOverrides;
-      if (doorMats && typeof doorMats === "object") {
-        doorOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(doorMats));
-      } else {
-        if (!doorOverridesByStyleKey[skKey]) {
-          doorOverridesByStyleKey[skKey] = {};
-        }
-      }
-
-      // 从风格包加载窗户覆盖到内存
-      const windowMats = style?.windowOverrides;
-      if (windowMats && typeof windowMats === "object") {
-        windowOverridesByStyleKey[skKey] = JSON.parse(JSON.stringify(windowMats));
-      } else {
-        if (!windowOverridesByStyleKey[skKey]) {
-          windowOverridesByStyleKey[skKey] = {};
-        }
-      }
-    }
-
-    const lightingMerged = mergeSceneLighting(style?.sceneLighting ?? null);
-    applySceneLightingConfig(renderer, ambientLight, hemiLight, dirLight, lightingMerged);
-    sceneLightingEnvMapIntensity = lightingMerged.envMapIntensity;
-
-    const floorIndex = floorSelectionEnabled ? normalizeFloorIndex(entry, currentFloorIndex) : -1;
-    const floor = floorIndex >= 0 ? getCurrentFloorFromEntry(entry, floorIndex) : null;
-    if (floorIndex >= 0 && !floor) return;
-    const placement = computeFloorplanCanvasPlacement(entry);
-    if (!placement) return;
-    const { worldX, worldY, s, cx, cy } = placement;
-    const bbox = getEntryBBoxCm(entry);
-    if (!bbox) return;
-    const gWorld = new THREE.Group();
-    gWorld.userData.floorplanGWorld = true;
-    const pos = canvasCmToSceneXZ(worldX, worldY);
-    gWorld.position.set(pos.x, 0, pos.z);
-    floorplanRoot.add(gWorld);
-
-    const floors = getFloorsFromEntry(entry);
-    // floors[].elevation 是 cm，转换到 Three.js Y 轴：/100
-    const elevationsCm = floors
-      .map((fl) => (Number.isFinite(Number(fl?.elevation)) ? Number(fl.elevation) : 0))
-      .filter((n) => Number.isFinite(n));
-    floorElevationBaseCm = elevationsCm.length ? Math.min(...elevationsCm) : 0;
-    floorYOffsetById = new Map();
-    floors.forEach((fl, i) => {
-      const keyRaw = String(fl?.id ?? "").trim() || `floor${i + 1}`;
-      const key = normalizeFloorKey(keyRaw);
-      const eCm = Number.isFinite(Number(fl?.elevation)) ? Number(fl.elevation) : 0;
-      floorYOffsetById.set(key, (eCm - floorElevationBaseCm) / 100);
-    });
-    floors.forEach((fl, i) => {
-      const floorG = new THREE.Group();
-      floorG.userData.floorplanFloorGroup = true;
-      const isActive = floorIndex >= 0 && i === floorIndex;
-      // 选中层更深、更清晰：提高不透明度
-      // 未选中层更淡：降低透明度
-      const opacity = floorIndex >= 0 ? (isActive ? activeLayerOpacity : otherLayersOpacity) : 0.2;
-
-      const styleMatCache = new Map();
-      /** @param {string} key @param {{ forGlass?: boolean, floorUv?: boolean }} [opts] */
-      function getMaterialForKey(key, opts = {}) {
-        if (!style || !key) return null;
-        const ck = `${key}|${opts.forGlass ? "g" : ""}|${opts.floorUv ? "f" : ""}`;
-        if (styleMatCache.has(ck)) return styleMatCache.get(ck);
-        const def = getMaterialDef(style, key);
-        if (!def) return null;
-        const side = opts.floorUv ? THREE.DoubleSide : THREE.FrontSide;
-        const mat = createFloorplanMaterialFromStyleDef(def, opacity, {
-          forGlass: opts.forGlass,
-          envMapIntensity: opts.forGlass ? 0.9 : sceneLightingEnvMapIntensity,
-          side,
-        });
-        if (opts.floorUv) {
-          mat.userData.__floorplanRoomFloorDepthWrite = true;
-          applyFloorplanSurfaceAlpha(mat, opacity);
-        }
-        styleMatCache.set(ck, mat);
-        queueStylePackTextures(mat, def, { applyUvScale: !!opts.floorUv });
-        return mat;
-      }
-
-      const fidRaw = String(fl?.id ?? "").trim() || `floor${i + 1}`;
-      (fl.rooms || []).forEach((room, roomIdx) => {
-        const fk = resolveRoomFloorMaterialKey(style, room);
-        const floorMat = fk ? getMaterialForKey(fk, { floorUv: true }) : null;
-        const m = buildRoomMesh(room, cx, cy, s, opacity, floorMat, fidRaw);
-        if (m) {
-          // 凹多边形 / 共边时避免与地面 z-fighting：后建房间略抬高（毫米级）
-          m.position.y = 0.02 + roomIdx * 0.0002;
-          floorG.add(m);
-        }
-      });
-      const fh = Number(fl.height);
-      const defaultH = Number.isFinite(fh) && fh > 0 ? fh : 280;
-      for (const w of fl.walls || []) {
-        const wk = resolveWallMaterialKey(style, w);
-        const wallMat = wk ? getMaterialForKey(wk) : null;
-        const m = buildWallMesh(w, fl, cx, cy, s, defaultH, opacity, wallMat, style, getMaterialForKey, fidRaw);
-        if (m) floorG.add(m);
-      }
-      for (const d of fl.doors || []) {
-        const wid = String(d.wallId ?? "").trim();
-        const w = wid ? (fl.walls || []).find((x) => String(x?.id ?? "") === wid) : null;
-        if (!w) continue;
-        const dk = resolveDoorMaterialKey(style, d);
-        const doorMat = dk ? getMaterialForKey(dk) : null;
-        const fillG = buildDoorFillGroup(d, w, fl.walls || [], cx, cy, s, defaultH, opacity, doorMat, fidRaw);
-        if (fillG) floorG.add(fillG);
-      }
-      for (const win of fl.windows || []) {
-        const wid = String(win.wallId ?? "").trim();
-        const w = wid ? (fl.walls || []).find((x) => String(x?.id ?? "") === wid) : null;
-        if (!w) continue;
-        const wink = resolveWindowMaterialKey(style, win);
-        const winMat = wink ? getMaterialForKey(wink, { forGlass: true }) : null;
-        const winG = buildWindowGlassGroup(win, w, fl.walls || [], cx, cy, s, defaultH, opacity, winMat, fidRaw);
-        if (winG) floorG.add(winG);
-      }
-            // 尺寸/名称：每层都生成，用 visible 控制开关与「仅选中楼层时只显示当前层」（点击开关不 rebuild）
-      const dimG = buildFloorDimensions(fl, cx, cy, s);
-      if (dimG) {
-        dimG.visible = showDimensions && (!floorSelectionEnabled || isActive);
-        floorG.add(dimG);
-      }
-      const nameG = buildFloorNameAnnotations(fl, cx, cy, s);
-      if (nameG) {
-        nameG.visible = showNames && (!floorSelectionEnabled || isActive);
-        floorG.add(nameG);
-      }
-      // 每层楼的垂直高度（避免所有层重叠在 y=0）
-      floorG.position.y = floorYOffsetById.get(normalizeFloorKey(fidRaw)) ?? 0;
-      // 未开启“仅当前层”时：所有楼层都绘制（未选中透明弱化）
-      // 开启“仅当前层”时：只显示当前楼层
-      floorG.visible = !hideOtherFloors || floorIndex < 0 || isActive;
-      gWorld.add(floorG);
-    });
-
-    const hitW = (Math.max(bbox.w, 1) * s) / 100;
-    const hitD = (Math.max(bbox.h, 1) * s) / 100;
-    const hit = new THREE.Mesh(new THREE.PlaneGeometry(hitW, hitD), new THREE.MeshBasicMaterial({ visible: false }));
-    hit.rotation.x = -Math.PI / 2;
-    hit.userData.floorplanPick = true;
-    gWorld.add(hit);
-
-    activeFloorId = floor?.id != null && String(floor.id).trim() ? String(floor.id).trim() : null;
-    await applySurfaceOverridesToFloorplan();
-    rebuildWallSnapData(entry);
-    updateBottomUI();
-
-    if (applyDecorFromStyle && style && gen === floorplanRebuildGen) {
-      await mergeLayoutWithStyleDecorations(style);
-      if (gen !== floorplanRebuildGen) return;
-    }
-
-    window.dispatchEvent(
-      new CustomEvent("visionhome:floorplan-applied-to-svg", {
-        detail: { id: entry?.id != null ? String(entry.id) : "", floorIndex, floorId: String(floor?.id ?? "") },
-      }),
-    );
+    return rebuildFloorplan3DFromCore(opts);
   }
 
 
@@ -6579,98 +3960,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function clearFloorplan() {
-    currentFloorplanEntry = null;
-    floorplanStyleKeyOverride = null;
-    floorplanSurfaceOverridesByStyleKey = {};
-    currentFloorIndex = 0;
-    floorSelectionEnabled = true;
-    syncOtherOpacityUi();
-    rebuildFloorplan3D();
-    setFloorLevelsVisible();
-    updateFurnitureFloorVisibility();
-    if (historyReady && !isRestoring) pushHistorySnapshot();
+    return clearFloorplanFromCore();
   }
 
   /** @param {{ preserveSurfaceOverrides?: boolean, preserveStyleKeyOverride?: boolean, floorIndex?: number, skipDecorFromStyleMerge?: boolean }} [options] */
   async function applyFloorplanEntryAtWorld(entry, _wx, _wy, options = {}) {
-    if (!entry) return;
-    /** 从户型库拖入/替换户型时清空；从设计文件或 undo 恢复时已先写入 overrides 时需传 preserveSurfaceOverrides: true */
-    if (!options.preserveSurfaceOverrides) {
-      floorplanSurfaceOverridesByStyleKey = {};
-      roomFloorOverridesByStyleKey = {};
-      doorOverridesByStyleKey = {};
-      windowOverridesByStyleKey = {};
-      wallFaceOverridesByStyleKey = {};
-    }
-    currentFloorplanEntry = entry;
-    currentFloorIndex = normalizeFloorIndex(entry, options.floorIndex);
-    if (!options.preserveStyleKeyOverride) floorplanStyleKeyOverride = null;
-    floorSelectionEnabled = true;
-    syncOtherOpacityUi();
-    await rebuildFloorplan3D({ applyDecorFromStyle: !options.skipDecorFromStyleMerge });
-    setFloorLevelsVisible();
-    updateFurnitureFloorVisibility();
-    if (historyReady && !isRestoring) {
-      pushHistorySnapshot();
-      // 更新 baseline，避免切换风格时误报有未保存的更改
-      window.__designLayoutBaseline = serializeDesignBaseline();
-      window.__designSaveBaseline = serializeDesignForSave();
-    }
-  }
-
-  async function createFurnitureMesh(furnitureId) {
-    const item = byId.get(furnitureId);
-    const fp = extractFurnitureFootprintCm(item);
-    const w = fp.w / 100, d = fp.d / 100, h = fp.h / 100;
-    const g = new THREE.Group();
-    g.userData.modelType = furnitureId;
-    const modelPath = item?.model != null ? String(item.model).trim() : "";
-    if (modelPath) {
-      try {
-        const loader = new GLTFLoader();
-        const gltf = await loader.loadAsync(resolveModelUrl(modelPath));
-        const root = gltf.scene;
-        fitGltfToFootprint(root, w, h, d);
-        root.traverse((o) => {
-          if (o.isMesh) {
-            o.castShadow = true;
-            o.receiveShadow = false;
-          }
-        });
-        g.add(root);
-        g.userData.gltfRoot = root;
-        if (hasFurnitureMaterialConfig(item)) {
-          g.userData.furnitureSelection = normalizeFurnitureSelection(item, null);
-          await applyFurnitureGltfPbrMaps(THREE, root, item, g.userData.furnitureSelection);
-          applyFurnitureAppearanceToGroup(THREE, g, item);
-        }
-        return g;
-      } catch (err) {
-        console.warn("[VisionHome] 家具模型加载失败:", furnitureId, err);
-      }
-    }
-    const geo = new THREE.BoxGeometry(w, h, d);
-    const mat = stdMat(0x8c7cff);
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = true;
-    mesh.receiveShadow = false;
-    mesh.position.y = h / 2;
-    g.add(mesh);
-    if (hasFurnitureMaterialConfig(item)) {
-      g.userData.furnitureSelection = normalizeFurnitureSelection(item, null);
-      applyFurnitureAppearanceToGroup(THREE, g, item);
-    }
-    return g;
-  }
-
-  /** 属性面板切换材质/面料/颜色后：重新套 PBR 贴图（GLB）并应用 hex/粗糙度 */
-  async function refreshFurnitureVisualForConfig(group, item) {
-    if (!group || !item || !hasFurnitureMaterialConfig(item)) return;
-    const root = group.userData.gltfRoot;
-    if (root) {
-      await applyFurnitureGltfPbrMaps(THREE, root, item, group.userData.furnitureSelection);
-    }
-    applyFurnitureAppearanceToGroup(THREE, group, item);
+    return applyFloorplanEntryAtWorldFromCore(entry, _wx, _wy, options);
   }
 
   /** x,y 为以编辑区中心为原点的 cm（约 [-1500,1500]） */
@@ -6688,45 +3983,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     group.rotation.y = (-rotDeg * Math.PI) / 180;
   }
 
-  async function appendFurnitureItem(modelId, xCm, yCm, rotationDeg = 0, floorId = null, opts = {}) {
-    if (!byId.has(modelId)) return null;
-    const item = byId.get(modelId);
-    const fp = extractFurnitureFootprintCm(item);
-    const group = await createFurnitureMesh(modelId);
-    group.userData.isFurniture = true;
-    group.userData.footprint = { hw: fp.hw, hh: fp.hh, h: fp.h };
-    group.userData.floorId = String(floorId ?? getActiveFloorIdForFurniture()).trim() || "floor1";
-    let rot = Math.round(Number(rotationDeg) || 0) % 360;
-    if (rot < 0) rot += 360;
-    group.userData.rotDeg = rot;
-    setFurnitureFromLayoutCm(group, xCm, yCm, rot, opts);
-    // 所有家具和装饰都支持垂直抬升
-    const cm = opts.decorationLiftCm != null ? Number(opts.decorationLiftCm) : 0;
-    const liftM = Number.isFinite(cm) ? cm / 100 : 0;
-    group.userData.decorationLiftM = clampDecorationLiftMForGroup(group, liftM);
-    furnitureRoot.add(group);
-    registerFurnitureMeshes(group);
-    shadowCacheDirty = true;
-    return group;
-  }
-
   async function rebuildFromLayout(layout) {
-    furnitureRoot.children.slice().forEach((ch) => {
-      if (ch.userData?.isFurniture) {
-        unregisterFurnitureGroup(ch);
-        furnitureRoot.remove(ch);
-        disposeObject3D(ch);
-      }
-    });
-    shadowCacheDirty = true;
-    for (const row of layout) {
-      await appendFurnitureItem(row.model, row.x, row.y, row.rotation ?? 0, row.floorId ?? null, {
-        wallSnap: false,
-        decorationLiftCm: row.decorationLiftCm,
-      });
-    }
-    updateFurnitureFloorVisibility();
-    updateBottomUI();
+    return rebuildFromLayoutFromCore(layout);
   }
 
   /**
@@ -6734,456 +3992,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * @param {object | null | undefined} style loadStyleConfig 的合并结果
    */
   async function mergeLayoutWithStyleDecorations(style) {
-    const layout = getLayout();
-    const furnitureOnly = layout.filter((row) => !modelIdIsDecoration(row.model));
-    const decRows = decorationPlacementsToLayoutRows(style);
-    await rebuildFromLayout([...furnitureOnly, ...decRows]);
+    return mergeLayoutWithStyleDecorationsFromCore(style);
   }
-
-  // ── 底部实时预算 & 空间利用率 ──────────────────────────────────────
-  /** 单件：条目 `price` + 当前 SKU `markup`（有材质配置时） */
-  function getFurnitureLinePrice(item, group) {
-    const base = Number(item?.price ?? 0);
-    if (!item || base <= 0) return 0;
-    if (!hasFurnitureMaterialConfig(item)) return base;
-    const sel = normalizeFurnitureSelection(item, group?.userData?.furnitureSelection);
-    const det = resolveFurnitureSelectionDetail(item, sel);
-    const m = det.skuMarkup != null ? det.skuMarkup : 0;
-    return base + (Number.isFinite(m) ? m : 0);
-  }
-
-  /** 计算户型总建筑面积（平方厘米） */
-  function calcFloorAreaCm2() {
-    let floorAreaCm2 = 0;
-    const floors = getFloorsFromEntry(currentFloorplanEntry);
-    for (const fl of floors) {
-      for (const room of fl.rooms ?? []) {
-        const poly = room?.polygon;
-        if (!Array.isArray(poly) || poly.length < 3) continue;
-        let area = 0;
-        for (let i = 0; i < poly.length; i++) {
-          const [ax, ay] = poly[i];
-          const [bx, by] = poly[(i + 1) % poly.length];
-          area += ax * by - bx * ay;
-        }
-        floorAreaCm2 += Math.abs(area) / 2;
-      }
-    }
-    return floorAreaCm2;
-  }
-
-  function updateBottomUI() {
-    const priceEl   = document.getElementById("bottomUiPrice");
-    const pctEl     = document.getElementById("bottomUiRatePercent");
-    const levelEl   = document.getElementById("bottomUiRateLevel");
-    if (!priceEl && !pctEl) return;
-
-    // 1. 家具总价（含 SKU 加价）
-    let totalPrice = 0;
-    let furnitureAreaCm2 = 0;
-    const decCatalog = window.__decorationCatalog;
-    furnitureRoot.children.forEach((g) => {
-      if (!g.userData?.isFurniture) return;
-      const modelType = g.userData.modelType;
-      const isDecoration = decCatalog?.byId instanceof Map && decCatalog.byId.has(modelType);
-
-      // 价格：只计入家具，装饰库组件不计入
-      if (!isDecoration) {
-        const item = byId.get(modelType);
-        const price = getFurnitureLinePrice(item, g);
-        if (price > 0) totalPrice += price;
-      }
-
-      // 面积：家具和装饰库都计入，各自从对应 catalog 取 footprint
-      if (isDecoration) {
-        const decItem = decCatalog.byId.get(modelType);
-        const fp = extractFurnitureFootprintCm(decItem);
-        furnitureAreaCm2 += fp.hw * fp.hh * 4;
-      } else {
-        const hw = g.userData.footprint?.hw ?? 0;
-        const hh = g.userData.footprint?.hh ?? 0;
-        furnitureAreaCm2 += hw * hh * 4;
-      }
-    });
-
-    if (priceEl) {
-      priceEl.textContent = `¥${totalPrice.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-
-    // 2. 空间利用率 = 家具总面积 / 户型总房间面积
-    const floorAreaCm2 = calcFloorAreaCm2();
-
-    if (pctEl || levelEl) {
-      const pct = floorAreaCm2 > 0 ? Math.min(100, Math.round((furnitureAreaCm2 / floorAreaCm2) * 100)) : 0;
-      if (pctEl) pctEl.textContent = `${pct}%`;
-      if (levelEl) {
-        let level = "-";
-        if (floorAreaCm2 > 0) {
-          if      (pct >= 60) level = "拥挤";
-          else if (pct >= 40) level = "紧凑";
-          else if (pct >= 20) level = "优秀";
-          else if (pct >= 8)  level = "适中";
-          else                level = "稀疏";
-        }
-        levelEl.textContent = level;
-      }
-    }
-
-    refreshBomPopupIfOpen();
-    refreshSpacePopupIfOpen();
-  }
-
-  // ── 预算明细弹出窗 ────────────────────────────────────────────────
-  /**
-   * 从预算/空间弹窗条目选中对应 3D 家具/装饰；若目标在其他楼层，先切到该层再选中
-   * @param {THREE.Group | null | undefined} group
-   */
-  function selectFurnitureFromPopupItem(group) {
-    if (!group || !group.userData?.isFurniture) return;
-    const fid = String(group.userData.floorId ?? "").trim();
-    if (fid && currentFloorplanEntry) {
-      const floors = getFloorsFromEntry(currentFloorplanEntry);
-      const idx = floors.findIndex((fl) => normalizeFloorKey(fl?.id ?? "") === normalizeFloorKey(fid));
-      if (idx >= 0) {
-        const cur = floorSelectionEnabled ? normalizeFloorIndex(currentFloorplanEntry, currentFloorIndex) : -1;
-        if (!floorSelectionEnabled || cur !== idx) {
-          floorSelectionEnabled = true;
-          currentFloorIndex = idx;
-          syncOtherOpacityUi();
-          setFloorLevelsVisible();
-          applyFloorLevelSelectionChange();
-        }
-      }
-    }
-    selectFurniture(group);
-  }
-
-  /**
-   * @param {HTMLElement} rowEl
-   * @param {THREE.Group | null | undefined} group
-   */
-  function bindPopupRowSelectToFurniture(rowEl, group) {
-    if (!rowEl || !group?.userData?.isFurniture) return;
-    rowEl.classList.add("is-selectable");
-    rowEl.tabIndex = 0;
-    rowEl.setAttribute("role", "button");
-    rowEl.addEventListener("click", () => {
-      selectFurnitureFromPopupItem(group);
-    });
-    rowEl.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter" && e.key !== " ") return;
-      e.preventDefault();
-      selectFurnitureFromPopupItem(group);
-    });
-  }
-
-  function setBomArrow(open) {
-    const arrow = document.getElementById("bomArrow");
-    if (arrow) arrow.textContent = open ? "▼" : "▲";
-  }
-
-  /** 重填 BOM 列表与合计（与底部总价口径一致：base + SKU markup） */
-  function fillBomPopupContent() {
-    const list = document.getElementById("bomPopupList");
-    const total = document.getElementById("bomPopupTotal");
-    if (!list) return 0;
-    list.replaceChildren();
-    let sum = 0;
-
-    const tally = new Map(); // key → { name, line, count, skuName, markup, baseUnit }
-    furnitureRoot.children.forEach((g) => {
-      if (!g.userData?.isFurniture) return;
-      const modelType = g.userData.modelType;
-      // 装饰库组件不计入预算明细
-      const decCatalog = window.__decorationCatalog;
-      if (decCatalog?.byId instanceof Map && decCatalog.byId.has(modelType)) return;
-      const item = byId.get(modelType);
-      const name = item ? getFurnitureDisplayName(item) : (modelType || "家具");
-      const line = getFurnitureLinePrice(item, g);
-      const baseUnit = Number(item?.price ?? 0);
-      let key = modelType;
-      let skuName = "";
-      let markup = 0;
-      if (item && hasFurnitureMaterialConfig(item)) {
-        const sel = normalizeFurnitureSelection(item, g.userData.furnitureSelection);
-        key = `${modelType}\0${sel?.skuId ? String(sel.skuId) : ""}`;
-        const det = resolveFurnitureSelectionDetail(item, sel);
-        skuName = String(det.skuName ?? "").trim();
-        markup = det.skuMarkup != null && Number.isFinite(det.skuMarkup) ? det.skuMarkup : 0;
-      }
-      if (tally.has(key)) {
-        const hit = tally.get(key);
-        hit.count += 1;
-        hit.groups.push(g);
-      } else {
-        tally.set(key, { name, line, count: 1, skuName, markup, baseUnit, groups: [g] });
-      }
-    });
-
-    if (tally.size === 0) {
-      const empty = document.createElement("li");
-      empty.className = "bom-popup__item";
-      empty.style.justifyContent = "center";
-      empty.style.color = "rgba(255,255,255,0.35)";
-      empty.textContent = "暂无家具";
-      list.appendChild(empty);
-      if (total) total.textContent = "¥0.00";
-      return 0;
-    }
-
-    const fmtBomYuan = (n) =>
-      `¥${n.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-    for (const { name, line, count, skuName, markup, baseUnit, groups } of tally.values()) {
-      const li = document.createElement("li");
-      li.className = "bom-popup__item";
-      const label = skuName
-        ? count > 1
-          ? `${name}（${skuName}）×${count}`
-          : `${name}（${skuName}）`
-        : count > 1
-          ? `${name} ×${count}`
-          : name;
-      const subtotal = line * count;
-      sum += subtotal;
-      const baseTotal = (Number.isFinite(baseUnit) ? baseUnit : 0) * count;
-      const hasMk = Number.isFinite(markup) && markup !== 0;
-
-      const nameCol = document.createElement("div");
-      nameCol.className = "bom-popup__item-name";
-      const titleEl = document.createElement("div");
-      titleEl.className = "bom-popup__item-title";
-      titleEl.textContent = label;
-      nameCol.appendChild(titleEl);
-
-      const priceCol = document.createElement("div");
-      priceCol.className = "bom-popup__item-prices";
-
-      if (hasMk) {
-        const mkEl = document.createElement("div");
-        mkEl.className = "bom-popup__item-markup" + (markup < 0 ? " is-negative" : "");
-        const mkTotal = markup * count;
-        mkEl.textContent =
-          count <= 1
-            ? `加价 ${formatSkuMarkupLabel(markup)}`
-            : `加价 ${formatSkuMarkupLabel(markup)}/件，合计 ${formatSkuMarkupLabel(mkTotal)}`;
-        nameCol.appendChild(mkEl);
-
-        const strike = document.createElement("span");
-        strike.className = "bom-popup__item-price bom-popup__item-price--strike";
-        strike.textContent = baseTotal > 0 ? fmtBomYuan(baseTotal) : "—";
-        const finalEl = document.createElement("span");
-        finalEl.className = "bom-popup__item-price bom-popup__item-price--final";
-        finalEl.textContent = subtotal > 0 ? fmtBomYuan(subtotal) : "—";
-        priceCol.appendChild(strike);
-        priceCol.appendChild(finalEl);
-      } else {
-        const p = document.createElement("span");
-        p.className = "bom-popup__item-price";
-        p.textContent = subtotal > 0 ? fmtBomYuan(subtotal) : "—";
-        priceCol.appendChild(p);
-      }
-
-      li.appendChild(nameCol);
-      li.appendChild(priceCol);
-      bindPopupRowSelectToFurniture(li, Array.isArray(groups) && groups.length ? groups[0] : null);
-      list.appendChild(li);
-    }
-
-    if (total) {
-      total.textContent = `¥${sum.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    return sum;
-  }
-
-  function refreshBomPopupIfOpen() {
-    const popup = document.getElementById("bomPopup");
-    if (!popup || popup.hidden) return;
-    fillBomPopupContent();
-  }
-
-  function openBomPopup() {
-    const popup = document.getElementById("bomPopup");
-    if (!popup) return;
-    fillBomPopupContent();
-    popup.hidden = false;
-    setBomArrow(true);
-  }
-
-  function closeBomPopup() {
-    const popup = document.getElementById("bomPopup");
-    if (popup) popup.hidden = true;
-    setBomArrow(false);
-  }
-
-  document.getElementById("bottomUiBudgetTrigger")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const popup = document.getElementById("bomPopup");
-    if (popup?.hidden) openBomPopup();
-  });
-  document.getElementById("bomPopupClose")?.addEventListener("click", closeBomPopup);
-
-  // ── 空间利用率详情弹出窗 ───────────────────────────────────────────────
-  function setSpaceArrow(open) {
-    const arrow = document.getElementById("spaceArrow");
-    if (arrow) arrow.textContent = open ? "▼" : "▲";
-  }
-
-  /** 重填空间利用率详情列表（家具和装饰的尺寸、占用比例） */
-  function fillSpacePopupContent() {
-    const list = document.getElementById("spacePopupList");
-    const totalAreaEl = document.getElementById("spacePopupTotalArea");
-    if (!list) return;
-
-    list.replaceChildren();
-
-    // 计算户型总面积
-    const floorAreaCm2 = calcFloorAreaCm2();
-
-    // 收集所有家具和装饰的面积信息
-    const items = [];
-    const decCatalog = window.__decorationCatalog;
-
-    furnitureRoot.children.forEach((g) => {
-      if (!g.userData?.isFurniture) return;
-      const modelType = g.userData.modelType;
-      const isDecoration = decCatalog?.byId instanceof Map && decCatalog.byId.has(modelType);
-
-      let name, hw, hh;
-      if (isDecoration) {
-        const decItem = decCatalog.byId.get(modelType);
-        name = decItem ? (decItem.name || modelType || "装饰") : (modelType || "装饰");
-        const fp = extractFurnitureFootprintCm(decItem);
-        hw = fp.hw;
-        hh = fp.hh;
-      } else {
-        const item = byId.get(modelType);
-        name = item ? getFurnitureDisplayName(item) : (modelType || "家具");
-        hw = g.userData.footprint?.hw ?? 0;
-        hh = g.userData.footprint?.hh ?? 0;
-      }
-
-      const areaCm2 = hw * hh * 4; // footprint 是半尺寸，乘 4 才是实际平方厘米
-      const pct = floorAreaCm2 > 0 ? (areaCm2 / floorAreaCm2) * 100 : 0;
-
-      items.push({ name, hw, hh, areaCm2, pct, isDecoration, group: g });
-    });
-
-    // 更新总面积显示
-    if (totalAreaEl) {
-      totalAreaEl.textContent = `${(floorAreaCm2 / 10000).toFixed(2)} m²`;
-    }
-
-    if (items.length === 0) {
-      const empty = document.createElement("li");
-      empty.className = "space-popup__item";
-      empty.style.justifyContent = "center";
-      empty.style.color = "rgba(255,255,255,0.35)";
-      empty.textContent = "暂无家具或装饰";
-      list.appendChild(empty);
-      return;
-    }
-
-    // 按面积降序排列
-    items.sort((a, b) => b.areaCm2 - a.areaCm2);
-
-    for (const { name, hw, hh, areaCm2, pct, isDecoration, group } of items) {
-      const li = document.createElement("li");
-      li.className = "space-popup__item";
-
-      const nameCol = document.createElement("div");
-      nameCol.className = "space-popup__item-name";
-
-      const titleEl = document.createElement("div");
-      titleEl.className = "space-popup__item-title";
-      titleEl.textContent = name;
-      nameCol.appendChild(titleEl);
-
-      const dimEl = document.createElement("div");
-      dimEl.className = "space-popup__item-dim";
-      dimEl.textContent = `${(hw * 2).toFixed(0)}×${(hh * 2).toFixed(0)} cm  |  ${(areaCm2 / 10000).toFixed(4)} m²`;
-      nameCol.appendChild(dimEl);
-
-      const percentCol = document.createElement("div");
-      percentCol.className = "space-popup__item-percent";
-
-      const pctValue = document.createElement("div");
-      pctValue.className = "space-popup__item-percent-value";
-      pctValue.textContent = `${pct.toFixed(2)}%`;
-      percentCol.appendChild(pctValue);
-
-      li.appendChild(nameCol);
-      li.appendChild(percentCol);
-      bindPopupRowSelectToFurniture(li, group);
-      list.appendChild(li);
-    }
-  }
-
-  function refreshSpacePopupIfOpen() {
-    const popup = document.getElementById("spacePopup");
-    if (!popup || popup.hidden) return;
-    fillSpacePopupContent();
-  }
-
-  function openSpacePopup() {
-    const popup = document.getElementById("spacePopup");
-    if (!popup) return;
-    fillSpacePopupContent();
-    popup.hidden = false;
-    setSpaceArrow(true);
-    closeBomPopup(); // 确保预算弹窗关闭
-  }
-
-  function closeSpacePopup() {
-    const popup = document.getElementById("spacePopup");
-    if (popup) popup.hidden = true;
-    setSpaceArrow(false);
-  }
-
-  // 点击空间利用率区域打开详情弹窗
-  document.getElementById("bottomUiSpaceTrigger")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const popup = document.getElementById("spacePopup");
-    if (popup?.hidden) openSpacePopup();
-    else closeSpacePopup();
-  });
-
-  document.getElementById("spacePopupClose")?.addEventListener("click", closeSpacePopup);
 
   function updateFurnitureFloorVisibility() {
-    const hasFloor = Boolean(activeFloorId);
-    const activeKey = activeFloorId != null ? normalizeFloorKey(activeFloorId) : null;
-    activeFloorPickMeshes.length = 0;
-    furnitureRoot.children.forEach((g) => {
-      if (!g.userData?.isFurniture) return;
-      const fid = String(g.userData.floorId || "").trim();
-      const key = normalizeFloorKey(fid);
-      const yOff = floorYOffsetById.get(key) ?? 0;
-      // 所有家具和装饰都支持垂直抬升
-      let liftM = clampDecorationLiftMForGroup(g, g.userData.decorationLiftM ?? 0);
-      g.userData.decorationLiftM = liftM;
-      // group.position.y：楼板高度 + 垂直偏移；mesh 本地 y 不变
-      g.position.y = yOff + FLOOR_SURFACE_Y_M + liftM;
-      const isActiveFloor = !hasFloor || !fid || key === activeKey;
-      g.userData.isFloorActive = isActiveFloor;
-      // 未开启“仅当前层”：其它楼层弱化且不可选中
-      // 开启“仅当前层”：其它楼层隐藏（不可见且不可选）
-      g.visible = !hideOtherFloors || isActiveFloor;
-      g.traverse((o) => {
-        if (!o.isMesh || !o.material) return;
-        if (isActiveFloor) activeFloorPickMeshes.push(o);
-        const op = isActiveFloor ? 1 : Math.min(1, otherLayersOpacity * 2);
-        const mats = Array.isArray(o.material) ? o.material : [o.material];
-        mats.forEach((m) => {
-          if (!m) return;
-          applyFloorplanSurfaceAlpha(m, op);
-          m.needsUpdate = true;
-        });
-      });
-    });
-    if (selectedGroup && selectedGroup.userData?.isFloorActive === false) selectFurniture(null);
-    rebuildFurnitureDimAnnotations();
-    rebuildFurnitureNameAnnotations();
+    return updateFurnitureFloorVisibilityFromCore();
   }
 
   function getLayout() {
@@ -7206,336 +4019,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       out.push(row);
     });
     return out;
-  }
-
-  function serializeEditorSnapshot() {
-    return JSON.stringify({
-      v: 1,
-      furniture: getLayout(),
-      floorPlanId: getCurrentFloorplanId(),
-      floorLevelIndex: getCurrentFloorLevelIndex(),
-      floorplanStyleKey: getEffectiveFloorplanStyleKey(),
-      // 兼容旧版：surfaceOverrides 仅当前风格 bucket；新版优先使用 surfaceOverridesByStyleKey。
-      surfaceOverrides: JSON.parse(JSON.stringify(getCurrentSurfaceOverridesBucket())),
-      surfaceOverridesByStyleKey: JSON.parse(JSON.stringify(floorplanSurfaceOverridesByStyleKey)),
-      roomFloorOverridesByStyleKey: JSON.parse(JSON.stringify(roomFloorOverridesByStyleKey)),
-      doorOverridesByStyleKey: JSON.parse(JSON.stringify(doorOverridesByStyleKey)),
-      windowOverridesByStyleKey: JSON.parse(JSON.stringify(windowOverridesByStyleKey)),
-      wallFaceOverridesByStyleKey: JSON.parse(JSON.stringify(wallFaceOverridesByStyleKey)),
-    });
-  }
-
-  function cloneSurfaceOverridesPayload(raw) {
-    if (!raw || typeof raw !== "object") return undefined;
-    try {
-      return JSON.parse(JSON.stringify(raw));
-    } catch {
-      return undefined;
-    }
-  }
-
-  function normalizeHistorySnapshot(parsed) {
-    if (Array.isArray(parsed)) {
-      return { furniture: parsed, floorPlanId: undefined, floorLevelIndex: undefined, surfaceOverrides: undefined };
-    }
-    if (parsed && typeof parsed === "object" && Array.isArray(parsed.furniture)) {
-      const id = parsed.floorPlanId;
-      let floorLevelIndex = undefined;
-      if (parsed.floorLevelIndex === null) floorLevelIndex = null;
-      else if (parsed.floorLevelIndex !== undefined) {
-        const n = Math.trunc(Number(parsed.floorLevelIndex));
-        floorLevelIndex = Number.isFinite(n) && n >= 0 ? n : 0;
-      }
-      let floorplanStyleKey = undefined;
-      if (Object.prototype.hasOwnProperty.call(parsed, "floorplanStyleKey")) {
-        const sk = parsed.floorplanStyleKey;
-        floorplanStyleKey = sk != null && String(sk).trim() ? String(sk).trim() : null;
-      }
-      const surfaceOverrides = Object.prototype.hasOwnProperty.call(parsed, "surfaceOverrides")
-        ? cloneSurfaceOverridesPayload(parsed.surfaceOverrides)
-        : undefined;
-      const surfaceOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "surfaceOverridesByStyleKey")
-        ? cloneSurfaceOverridesPayload(parsed.surfaceOverridesByStyleKey)
-        : undefined;
-      const roomFloorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "roomFloorOverridesByStyleKey")
-        ? cloneSurfaceOverridesPayload(parsed.roomFloorOverridesByStyleKey)
-        : undefined;
-      const doorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "doorOverridesByStyleKey")
-        ? cloneSurfaceOverridesPayload(parsed.doorOverridesByStyleKey)
-        : undefined;
-      const windowOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "windowOverridesByStyleKey")
-        ? cloneSurfaceOverridesPayload(parsed.windowOverridesByStyleKey)
-        : undefined;
-      const wallFaceOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "wallFaceOverridesByStyleKey")
-        ? cloneSurfaceOverridesPayload(parsed.wallFaceOverridesByStyleKey)
-        : undefined;
-      if (id === undefined) {
-        return {
-          furniture: parsed.furniture,
-          floorPlanId: undefined,
-          floorLevelIndex,
-          floorplanStyleKey,
-          surfaceOverrides,
-          surfaceOverridesByStyleKey,
-          roomFloorOverridesByStyleKey,
-          doorOverridesByStyleKey,
-          windowOverridesByStyleKey,
-          wallFaceOverridesByStyleKey,
-        };
-      }
-      if (id === null || String(id).trim() === "") {
-        return {
-          furniture: parsed.furniture,
-          floorPlanId: null,
-          floorLevelIndex,
-          floorplanStyleKey,
-          surfaceOverrides,
-          surfaceOverridesByStyleKey,
-          roomFloorOverridesByStyleKey,
-          doorOverridesByStyleKey,
-          windowOverridesByStyleKey,
-          wallFaceOverridesByStyleKey,
-        };
-      }
-      return {
-        furniture: parsed.furniture,
-        floorPlanId: String(id).trim(),
-        floorLevelIndex,
-        floorplanStyleKey,
-        surfaceOverrides,
-        surfaceOverridesByStyleKey,
-        roomFloorOverridesByStyleKey,
-        doorOverridesByStyleKey,
-        windowOverridesByStyleKey,
-        wallFaceOverridesByStyleKey,
-      };
-    }
-    return null;
-  }
-
-  function floorLevelIndexEqualsForHistory(stateIdx, currentIdx) {
-    if (stateIdx === undefined && currentIdx === undefined) return true;
-    if (stateIdx === null && currentIdx === null) return true;
-    if (stateIdx === undefined || currentIdx === undefined) return false;
-    if (stateIdx === null || currentIdx === null) return stateIdx === currentIdx;
-    return Math.trunc(Number(stateIdx)) === Math.trunc(Number(currentIdx));
-  }
-
-  function layoutRowKeyForHistory(row) {
-    if (!row || typeof row !== "object") return "";
-    return JSON.stringify({
-      m: row.model,
-      x: row.x,
-      y: row.y,
-      r: row.rotation ?? 0,
-      f: row.floorId ?? null,
-      l: row.decorationLiftCm,
-    });
-  }
-
-  function layoutsEqualForHistory(a, b) {
-    if (!Array.isArray(a) || !Array.isArray(b)) return false;
-    if (a.length !== b.length) return false;
-    const sa = a.map(layoutRowKeyForHistory).sort();
-    const sb = b.map(layoutRowKeyForHistory).sort();
-    for (let i = 0; i < sa.length; i++) {
-      if (sa[i] !== sb[i]) return false;
-    }
-    return true;
-  }
-
-  async function applyHistorySnapshotState(state) {
-    if (!state) return;
-    /** @type {Record<string, any>} */
-    let restoredSurfaceByStyleKey = {};
-    if (Object.prototype.hasOwnProperty.call(state, "surfaceOverridesByStyleKey")) {
-      const raw = state.surfaceOverridesByStyleKey && typeof state.surfaceOverridesByStyleKey === "object"
-        ? JSON.parse(JSON.stringify(state.surfaceOverridesByStyleKey))
-        : {};
-      const next = {};
-      for (const [sk, bucket] of Object.entries(raw)) {
-        if (!bucket || typeof bucket !== "object") continue;
-        next[normalizeStyleKeyForSurfaceOverrides(sk)] = migrateFloorplanSurfaceOverridesBucket(bucket);
-      }
-      restoredSurfaceByStyleKey = next;
-    } else if (Object.prototype.hasOwnProperty.call(state, "surfaceOverrides")) {
-      const legacy = migrateFloorplanSurfaceOverridesBucket(
-        state.surfaceOverrides && typeof state.surfaceOverrides === "object"
-          ? JSON.parse(JSON.stringify(state.surfaceOverrides))
-          : {},
-      );
-      const sk = normalizeStyleKeyForSurfaceOverrides(state.floorplanStyleKey);
-      restoredSurfaceByStyleKey = { [sk]: legacy };
-    } else {
-      restoredSurfaceByStyleKey = {};
-    }
-    floorplanSurfaceOverridesByStyleKey = restoredSurfaceByStyleKey;
-
-    const readStyleBucketMap = (payload) => {
-      const out = {};
-      if (!payload || typeof payload !== "object") return out;
-      for (const [sk, bucket] of Object.entries(payload)) {
-        if (!bucket || typeof bucket !== "object") continue;
-        out[normalizeStyleKeyForSurfaceOverrides(sk)] = JSON.parse(JSON.stringify(bucket));
-      }
-      return out;
-    };
-    const extractNestedByStyle = (surfaceByStyle, nestedKey) => {
-      const out = {};
-      for (const [sk, bucket] of Object.entries(surfaceByStyle || {})) {
-        if (!bucket || typeof bucket !== "object") continue;
-        const nested = bucket[nestedKey];
-        out[normalizeStyleKeyForSurfaceOverrides(sk)] = nested && typeof nested === "object"
-          ? JSON.parse(JSON.stringify(nested))
-          : {};
-      }
-      return out;
-    };
-    roomFloorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(state, "roomFloorOverridesByStyleKey")
-      ? readStyleBucketMap(state.roomFloorOverridesByStyleKey)
-      : extractNestedByStyle(restoredSurfaceByStyleKey, "roomFloors");
-    doorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(state, "doorOverridesByStyleKey")
-      ? readStyleBucketMap(state.doorOverridesByStyleKey)
-      : extractNestedByStyle(restoredSurfaceByStyleKey, "doorOverrides");
-    windowOverridesByStyleKey = Object.prototype.hasOwnProperty.call(state, "windowOverridesByStyleKey")
-      ? readStyleBucketMap(state.windowOverridesByStyleKey)
-      : extractNestedByStyle(restoredSurfaceByStyleKey, "windowOverrides");
-    wallFaceOverridesByStyleKey = Object.prototype.hasOwnProperty.call(state, "wallFaceOverridesByStyleKey")
-      ? readStyleBucketMap(state.wallFaceOverridesByStyleKey)
-      : extractNestedByStyle(restoredSurfaceByStyleKey, "wallFaceOverrides");
-
-    let floorplanSurfacesRefreshed = false;
-    const targetFurn = Array.isArray(state.furniture) ? state.furniture : [];
-    const skipFurnitureRebuild = layoutsEqualForHistory(targetFurn, getLayout());
-
-    if (state.floorPlanId !== undefined) {
-      if (state.floorPlanId) {
-        const cat = window.__floorPlanCatalog;
-        const entry = cat?.byId instanceof Map ? cat.byId.get(state.floorPlanId) : null;
-        if (entry) {
-          let nextStyleOverride;
-          if (Object.prototype.hasOwnProperty.call(state, "floorplanStyleKey")) {
-            const sk = state.floorplanStyleKey;
-            nextStyleOverride = sk != null && String(sk).trim() ? String(sk).trim() : null;
-          } else {
-            nextStyleOverride = null;
-          }
-          const canSkipFloorplanRebuild =
-            getCurrentFloorplanId() === state.floorPlanId
-            && currentFloorplanEntry
-            && String(currentFloorplanEntry.id ?? "").trim() === String(entry.id ?? "").trim()
-            && floorLevelIndexEqualsForHistory(state.floorLevelIndex, getCurrentFloorLevelIndex())
-            && normalizeStyleKeyForSurfaceOverrides(
-              effectiveFloorplanStyleKeyFromEntryAndOverride(currentFloorplanEntry, nextStyleOverride),
-            ) === normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
-
-          if (canSkipFloorplanRebuild) {
-            floorplanStyleKeyOverride = nextStyleOverride;
-            // 仅 applySurfaceOverrides 无法撤销「去掉覆盖」时的 mesh 状态；轻量路径仍须重建挤出几何再套覆盖（不碰家具）
-            await rebuildFloorplan3D({ applyDecorFromStyle: false });
-            floorplanSurfacesRefreshed = true;
-          } else {
-            floorplanStyleKeyOverride = nextStyleOverride;
-            await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
-              floorIndex: state.floorLevelIndex,
-              preserveStyleKeyOverride: true,
-              preserveSurfaceOverrides: true,
-              skipDecorFromStyleMerge: true,
-            });
-            floorplanSurfacesRefreshed = true;
-          }
-        } else {
-          clearFloorplan();
-          floorplanSurfacesRefreshed = true;
-        }
-      } else if (getCurrentFloorplanId()) {
-        clearFloorplan();
-        floorplanSurfacesRefreshed = true;
-      }
-    } else if (floorplanRoot.children.length && currentFloorplanEntry) {
-      await rebuildFloorplan3D({ applyDecorFromStyle: false });
-      floorplanSurfacesRefreshed = true;
-    } else if (floorplanRoot.children.length) {
-      await applySurfaceOverridesToFloorplan();
-      floorplanSurfacesRefreshed = true;
-    }
-
-    if (!skipFurnitureRebuild) {
-      await rebuildFromLayout(targetFurn);
-    } else {
-      if (!floorplanSurfacesRefreshed && floorplanRoot.children.length) {
-        if (currentFloorplanEntry) {
-          await rebuildFloorplan3D({ applyDecorFromStyle: false });
-        } else {
-          await applySurfaceOverridesToFloorplan();
-        }
-      }
-      updateBottomUI();
-    }
-  }
-
-  function pushHistorySnapshot() {
-    if (!historyReady || isRestoring) return;
-    const s = serializeEditorSnapshot();
-    if (history.length && history[historyIndex] === s) return;
-    history.splice(historyIndex + 1);
-    history.push(s);
-    historyIndex = history.length - 1;
-    while (history.length > MAX_HISTORY) { history.shift(); historyIndex--; }
-    if (undoBtn) undoBtn.disabled = historyIndex <= 0;
-    if (redoBtn) redoBtn.disabled = historyIndex >= history.length - 1;
-    emitLayoutChanged();
-  }
-
-  function schedulePushHistory() {
-    if (!historyReady || isRestoring) return;
-    clearTimeout(historyDebounceTimer);
-    historyDebounceTimer = setTimeout(() => { historyDebounceTimer = null; pushHistorySnapshot(); }, 300);
-  }
-
-  function flushHistoryDebounce() {
-    if (historyDebounceTimer) {
-      clearTimeout(historyDebounceTimer);
-      historyDebounceTimer = null;
-      pushHistorySnapshot();
-    }
-  }
-
-  function initHistory() {
-    history.splice(0, history.length, serializeEditorSnapshot());
-    historyIndex = 0;
-    if (undoBtn) undoBtn.disabled = true;
-    if (redoBtn) redoBtn.disabled = true;
-  }
-
-  async function applyHistoryIndex(i) {
-    let state;
-    try { state = normalizeHistorySnapshot(JSON.parse(history[i])); } catch { state = null; }
-    if (!state) return;
-    isRestoring = true;
-    try {
-      await applyHistorySnapshotState(state);
-    } finally {
-      isRestoring = false;
-    }
-    selectFurniture(null);
-    if (undoBtn) undoBtn.disabled = historyIndex <= 0;
-    if (redoBtn) redoBtn.disabled = historyIndex >= history.length - 1;
-    emitLayoutChanged();
-  }
-
-  async function undo() {
-    if (historyIndex <= 0) return;
-    if (historyReady) flushHistoryDebounce();
-    historyIndex--;
-    await applyHistoryIndex(historyIndex);
-  }
-
-  async function redo() {
-    if (historyIndex >= history.length - 1) return;
-    if (historyReady) flushHistoryDebounce();
-    historyIndex++;
-    await applyHistoryIndex(historyIndex);
   }
 
   function setGridVisible(visible) {
@@ -9609,305 +6092,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     true,
   );
 
-  function projectToSvgLayout(project) {
-    const inst = project?.furnitureInstances;
-    if (!Array.isArray(inst)) return [];
-    return inst
-      .map((fi) => {
-        const pc = Array.isArray(fi.positionCm) && fi.positionCm.length >= 2 ? fi.positionCm : null;
-        return {
-          model: String(fi.furnitureId ?? fi.modelId ?? "").trim(),
-          floorId: fi?.floorId != null && String(fi.floorId).trim() ? String(fi.floorId).trim() : "floor1",
-          x: pc ? Math.round(Number(pc[0]) || 0) : 0,
-          y: pc ? Math.round(Number(pc[1]) || 0) : 0,
-          rotation: Math.round(Number(fi.rotationDeg ?? fi.rotation ?? 0) || 0),
-        };
-      })
-      .filter((row) => row.model);
-  }
-
-  function normalizeSavedFurnitureLayout(arr) {
-    if (!Array.isArray(arr)) return [];
-    return arr
-      .map((row) => ({
-        model: String(row?.model ?? row?.furnitureId ?? "").trim(),
-        floorId: row?.floorId != null && String(row.floorId).trim() ? String(row.floorId).trim() : "floor1",
-        x: Math.round(Number(row?.x)),
-        y: Math.round(Number(row?.y)),
-        rotation: Math.round(Number(row?.rotation ?? row?.rotationDeg ?? 0) || 0),
-      }))
-      .filter((r) => r.model && Number.isFinite(r.x) && Number.isFinite(r.y));
-  }
-
-  async function applyFromDesignProject(project) {
-    if (!project || typeof project !== "object") return;
-    const gridWasVisible = gridVisible;
-    const se = project.svgEditor;
-    const hasSvgEditor = se && typeof se === "object" && Number(se.version) === 1;
-    const layout = hasSvgEditor && Array.isArray(se.furniture)
-      ? normalizeSavedFurnitureLayout(se.furniture)
-      : projectToSvgLayout(project);
-
-    let fpId = null;
-    let floorLevelIndex = 0;
-    if (hasSvgEditor && Object.prototype.hasOwnProperty.call(se, "floorPlanId")) {
-      const v = se.floorPlanId;
-      fpId = v != null && String(v).trim() ? String(v).trim() : null;
-      const lv = Math.trunc(Number(se.floorLevelIndex));
-      if (Number.isFinite(lv) && lv >= 0) floorLevelIndex = lv;
-    } else {
-      const t = project.templateId;
-      fpId = t != null && String(t).trim() ? String(t).trim() : null;
-      const floorIdToIndex = new Map(
-        getFloorsFromEntry(window.__floorPlanCatalog?.byId instanceof Map ? window.__floorPlanCatalog.byId.get(fpId) : null).map(
-          (f, i) => [String(f?.id || ""), i],
-        ),
-      );
-      const fromActive = String(project?.activeFloorId ?? "").trim();
-      if (fromActive && floorIdToIndex.has(fromActive)) floorLevelIndex = floorIdToIndex.get(fromActive) ?? 0;
-    }
-
-    isRestoring = true;
-    try {
-      // 恢复风格键（若有）；再恢复各风格的 surfaceOverrides
-      if (hasSvgEditor && Object.prototype.hasOwnProperty.call(se, "floorplanStyleKey")) {
-        const sk = se.floorplanStyleKey;
-        floorplanStyleKeyOverride = sk != null && String(sk).trim() ? String(sk).trim() : null;
-      } else {
-        floorplanStyleKeyOverride = null;
-      }
-      // 判断是否为按风格键分组的格式（新格式）：值为对象且包含 roomFloors/doorOverrides/windowOverrides 字段
-      function isStyleKeyedFormat(obj) {
-        if (!obj || typeof obj !== "object") return false;
-        const vals = Object.values(obj);
-        if (!vals.length) return false;
-        return vals.every((v) => v && typeof v === "object" && (
-          "roomFloors" in v || "doorOverrides" in v || "windowOverrides" in v
-        ));
-      }
-
-      const rawByStyleKey = hasSvgEditor && se.surfaceOverridesByStyleKey && typeof se.surfaceOverridesByStyleKey === "object"
-        ? se.surfaceOverridesByStyleKey
-        : (hasSvgEditor && se.surfaceOverrides && isStyleKeyedFormat(se.surfaceOverrides))
-          ? se.surfaceOverrides
-          : null;
-
-      if (rawByStyleKey) {
-        const raw = JSON.parse(JSON.stringify(rawByStyleKey));
-        const next = {};
-        for (const [sk, bucket] of Object.entries(raw)) {
-          if (!bucket || typeof bucket !== "object") continue;
-          next[normalizeStyleKeyForSurfaceOverrides(sk)] = migrateFloorplanSurfaceOverridesBucket(bucket);
-        }
-        floorplanSurfaceOverridesByStyleKey = next;
-      } else {
-        const legacyBucket = migrateFloorplanSurfaceOverridesBucket(
-          hasSvgEditor && se.surfaceOverrides && typeof se.surfaceOverrides === "object"
-            ? JSON.parse(JSON.stringify(se.surfaceOverrides))
-            : {},
-        );
-        const sk = normalizeStyleKeyForSurfaceOverrides(floorplanStyleKeyOverride);
-        floorplanSurfaceOverridesByStyleKey = Object.keys(legacyBucket).length ? { [sk]: legacyBucket } : {};
-      }
-      if (fpId) {
-        const cat = window.__floorPlanCatalog;
-        const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
-        if (entry) {
-          await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
-            floorIndex: floorLevelIndex,
-            preserveStyleKeyOverride: true,
-            preserveSurfaceOverrides: true,
-            skipDecorFromStyleMerge: true,
-          });
-        } else clearFloorplan();
-      } else clearFloorplan();
-      // 风格加载完成后再从项目的 surfaceOverrides 恢复 roomFloorOverrides
-      const skForRoom = normalizeStyleKeyForSurfaceOverrides(floorplanStyleKeyOverride);
-      const roomFloorsData = floorplanSurfaceOverridesByStyleKey[skForRoom]?.roomFloors;
-      if (roomFloorsData && typeof roomFloorsData === "object") {
-        roomFloorOverridesByStyleKey[skForRoom] = JSON.parse(JSON.stringify(roomFloorsData));
-      } else {
-        roomFloorOverridesByStyleKey[skForRoom] = {};
-      }
-      // 恢复门覆盖
-      const doorData = floorplanSurfaceOverridesByStyleKey[skForRoom]?.doorOverrides;
-      if (doorData && typeof doorData === "object") {
-        doorOverridesByStyleKey[skForRoom] = JSON.parse(JSON.stringify(doorData));
-      } else {
-        doorOverridesByStyleKey[skForRoom] = {};
-      }
-      // 恢复窗户覆盖
-      const windowData = floorplanSurfaceOverridesByStyleKey[skForRoom]?.windowOverrides;
-      if (windowData && typeof windowData === "object") {
-        windowOverridesByStyleKey[skForRoom] = JSON.parse(JSON.stringify(windowData));
-      } else {
-        windowOverridesByStyleKey[skForRoom] = {};
-      }
-      // 恢复墙面覆盖
-      const wallFaceDataLoaded = floorplanSurfaceOverridesByStyleKey[skForRoom]?.wallFaceOverrides;
-      if (wallFaceDataLoaded && typeof wallFaceDataLoaded === "object") {
-        wallFaceOverridesByStyleKey[skForRoom] = JSON.parse(JSON.stringify(wallFaceDataLoaded));
-      } else {
-        wallFaceOverridesByStyleKey[skForRoom] = {};
-      }
-
-      // 应用恢复的材质覆盖到场景中
-      if (fpId && floorplanRoot.children.length > 0) {
-        await applyAllOverridesToScene();
-      }
-      
-      await rebuildFromLayout(layout);
-      resetCameraView();
-      setGridVisible(gridWasVisible);
-      if (hasSvgEditor && se.lightingConfig && typeof se.lightingConfig === "object") {
-        window.svgEditorApplyLightingConfig(se.lightingConfig);
-      }
-      if (hasSvgEditor && typeof se.renderQualityMode === "string") {
-        setRenderQualityMode(se.renderQualityMode, { rerender: false });
-        syncRenderQualityToolbarUi();
-      }
-    } finally {
-      isRestoring = false;
-    }
-    selectFurniture(null);
-    initHistory();
-    historyReady = true;
-    window.__designLayoutBaseline = serializeDesignBaseline();
-    window.__designSaveBaseline = serializeDesignForSave();
-    emitLayoutChanged();
-    window.__selectFloorplanLibraryCardById?.(fpId || "");
-  }
-
-  async function applyExternalLayout(layout, options = {}) {
-    isRestoring = true;
-    try {
-      await rebuildFromLayout(Array.isArray(layout) ? layout : []);
-    } finally {
-      isRestoring = false;
-    }
-    selectFurniture(null);
-    initHistory();
-    historyReady = true;
-    window.__designLayoutBaseline =
-      typeof options.designLayoutBaseline === "string" ? options.designLayoutBaseline : serializeDesignBaseline();
-    window.__designSaveBaseline = serializeDesignForSave();
-    emitLayoutChanged();
-  }
-
-  function isValidUndoHistoryPayload(uh) {
-    if (!uh || typeof uh !== "object") return false;
-    const { entries, index } = uh;
-    if (!Array.isArray(entries) || entries.length === 0 || !Number.isFinite(Number(index))) return false;
-    const idx = Math.trunc(Number(index));
-    if (idx < 0 || idx >= entries.length) return false;
-    for (const s of entries) {
-      if (typeof s !== "string") return false;
-      try {
-        if (normalizeHistorySnapshot(JSON.parse(s)) == null) return false;
-      } catch {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  async function restoreEditorSession(payload) {
-    async function applyFloorplanByPayload() {
-      const fpId = payload.floorPlanId != null ? String(payload.floorPlanId).trim() : "";
-      const floorLevelIndex = Math.max(0, Math.trunc(Number(payload.floorLevelIndex) || 0));
-      if (fpId) {
-        const cat = window.__floorPlanCatalog;
-        const entry = cat?.byId instanceof Map ? cat.byId.get(fpId) : null;
-        if (entry) {
-          await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
-            floorIndex: floorLevelIndex,
-            skipDecorFromStyleMerge: true,
-          });
-          return;
-        }
-      }
-      clearFloorplan();
-    }
-
-    if (!payload || Number(payload.version) !== 1) return;
-    if (typeof payload.renderQualityMode === "string") {
-      setRenderQualityMode(payload.renderQualityMode, { rerender: false });
-      syncRenderQualityToolbarUi();
-    }
-
-    const v = payload.view;
-    if (v && Number.isFinite(Number(v.tx)) && Number.isFinite(Number(v.ty)) && Number.isFinite(Number(v.scale))) {
-      setViewTransform(v);
-    }
-    if (typeof payload.gridVisible === "boolean") setGridVisible(payload.gridVisible);
-
-    clearTimeout(historyDebounceTimer);
-    historyDebounceTimer = null;
-
-    const layout = Array.isArray(payload.furnitureLayout) ? payload.furnitureLayout : [];
-    const uh = payload.undoHistory;
-
-    if (isValidUndoHistoryPayload(uh)) {
-      let entries = uh.entries.slice();
-      let idx = Math.trunc(Number(uh.index));
-      if (entries.length > MAX_HISTORY) {
-        const drop = entries.length - MAX_HISTORY;
-        entries = entries.slice(drop);
-        idx -= drop;
-      }
-      if (idx < 0 || idx >= entries.length) {
-        isRestoring = true;
-        try {
-          await applyFloorplanByPayload();
-        } finally {
-          isRestoring = false;
-        }
-        await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
-        if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
-        return;
-      }
-      historyReady = false;
-      isRestoring = true;
-      history.splice(0, history.length, ...entries);
-      historyIndex = idx;
-      try {
-        const state = normalizeHistorySnapshot(JSON.parse(history[historyIndex]));
-        if (!state) throw new Error("bad");
-        await applyHistorySnapshotState(state);
-      } catch {
-        historyReady = true;
-        isRestoring = true;
-        try {
-          await applyFloorplanByPayload();
-        } finally {
-          isRestoring = false;
-        }
-        await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
-        if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
-        return;
-      }
-      isRestoring = false;
-      selectFurniture(null);
-      historyReady = true;
-      window.__designLayoutBaseline =
-        typeof payload.designLayoutBaseline === "string" ? payload.designLayoutBaseline : serializeDesignBaseline();
-      window.__designSaveBaseline = serializeDesignForSave();
-      if (undoBtn) undoBtn.disabled = historyIndex <= 0;
-      if (redoBtn) redoBtn.disabled = historyIndex >= history.length - 1;
-      if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
-      emitLayoutChanged();
-    } else {
-      isRestoring = true;
-      try {
-        await applyFloorplanByPayload();
-      } finally {
-        isRestoring = false;
-      }
-      await applyExternalLayout(layout, { designLayoutBaseline: payload.designLayoutBaseline });
-      if (payload.lightingConfig) window.svgEditorApplyLightingConfig(payload.lightingConfig);
-    }
-  }
-
   window.addEventListener("visionhome:design-select", (e) => {
     const project = e.detail?.project;
     if (project) void applyFromDesignProject(project);
@@ -9917,1227 +6101,42 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     void applyExternalLayout([]);
   });
 
-  /**
-   * 是否存在「户型需按半透明处理」的楼层（非 1 不透明）：此时用分层渲染（深度预写入 + 颜色）稳定遮挡。
-   * 注意：多遍合成会让整幅画面偏暗，易被误认为环境光变弱。以下情况不要走多遍：
-   * - 仅调当前层透明度（见上条提交）；
-   * - 再次点击当前楼层 Tab 取消选中（floorSelectionEnabled=false）：单层户型时全层 0.2 透明度，若再用「非楼层选中」单独触发多遍，会不必要地压暗画面；多层叠显且其它层半透明由下一条判断覆盖。
-   * 多遍仅保留：多层同时可见且其它层为半透明（与 hideOtherFloors / otherLayersOpacity 一致）等真正需要稳定排序的情形。
-   */
-  function floorplanNeedsTranslucentPass() {
-    if (!floorplanRoot.children.length) return false;
-    const floors = getFloorsFromEntry(currentFloorplanEntry);
-    const n = floors?.length ?? 0;
-    if (n > 1 && !hideOtherFloors && otherLayersOpacity < 1 - 1e-4) return true;
-    return false;
-  }
+  const ctx = {
+    state: editorState,
+    camera,
+    controls,
+    dirLight,
+    fitDirectionalShadowFrustum,
+    floorplanDepthPrepassMat,
+    floorplanRoot,
+    furnitureRoot,
+    getFloorsFromEntry,
+    grid,
+    renderer,
+    scene,
+    tmpVecA,
+    tmpVecB,
+    tmpVecC,
+  };
 
-  /**
-   * 窗玻璃、玻璃门扇等「应透视后方」的 mesh 不参与深度预写入：否则 MeshDepthMaterial 在玻璃表面写入深度，
-   * 第三遍里室内墙等更远半透明片深度测试失败，透过窗洞看不见室内。
-   */
-  function skipFloorplanDepthPrepassMesh(obj) {
-    if (obj.userData.floorplanWindowFill) return true;
-    if (obj.userData.floorplanDoorFill && obj.userData.floorplanDoorStyle?.isGlass) return true;
-    const m = obj.material;
-    const mats = Array.isArray(m) ? m : m ? [m] : [];
-    for (let i = 0; i < mats.length; i++) {
-      const sub = mats[i];
-      if (sub?.isMeshPhysicalMaterial && Number(sub.transmission) > 0.02) return true;
-    }
-    return false;
-  }
-
-  /**
-   * 分层渲染：先画家具+网格（不含户型），再仅对户型做深度预写入（不写颜色），最后画户型半透明颜色。
-   * 用 visible 排除户型/家具；多遍 render 时须暂时去掉 scene.background（Color）：
-   * Three.js WebGLBackground 在 background 为 Color 时会 forceClear，无视 autoClear=false，会整屏清空抹掉第一遍。
-   */
-  function renderEditorScene() {
-    const prevAutoClear = renderer.autoClear;
-    const prevBackground = scene.background;
-    try {
-      if (!floorplanNeedsTranslucentPass()) {
-        renderer.autoClear = true;
-        renderer.render(scene, camera);
-        return;
-      }
-      const saved = [];
-      renderer.autoClear = true;
-      floorplanRoot.visible = false;
-      renderer.render(scene, camera);
-      floorplanRoot.visible = true;
-      furnitureRoot.visible = false;
-      grid.visible = false;
-      renderer.autoClear = false;
-      scene.background = null;
-      floorplanRoot.traverse((obj) => {
-        if (!obj.isMesh || obj.isSkinnedMesh) return;
-        if (skipFloorplanDepthPrepassMesh(obj)) return;
-        saved.push({ obj, material: obj.material });
-        obj.material = floorplanDepthPrepassMat;
-      });
-      renderer.render(scene, camera);
-      for (let i = 0; i < saved.length; i++) {
-        saved[i].obj.material = saved[i].material;
-      }
-      renderer.render(scene, camera);
-    } finally {
-      renderer.autoClear = prevAutoClear;
-      scene.background = prevBackground;
-      furnitureRoot.visible = true;
-      grid.visible = gridVisible;
-      floorplanRoot.visible = true;
-    }
-  }
-
-  function animate() {
-    requestAnimationFrame(animate);
-    controls.update();
-    // 让主光随相机方位变化：用户旋转视角时，墙体/家具阴影也会有明显变化
-    tmpVecA.copy(controls.target);
-    tmpVecB.copy(camera.position).sub(tmpVecA);
-    // 仅使用水平朝向，避免俯仰导致光线跳变
-    const lenXZ = Math.hypot(tmpVecB.x, tmpVecB.z);
-    if (lenXZ > 1e-6) {
-      tmpVecC.set(tmpVecB.x / lenXZ, 0, tmpVecB.z / lenXZ);
-      const LIGHT_RADIUS = 26;
-      const LIGHT_HEIGHT = 30;
-      // 从相机前方斜射向目标，旋转视角时阴影方向跟随变化
-      dirLight.position.set(
-        tmpVecA.x + tmpVecC.x * LIGHT_RADIUS,
-        LIGHT_HEIGHT,
-        tmpVecA.z + tmpVecC.z * LIGHT_RADIUS,
-      );
-      dirLight.target.position.set(tmpVecA.x, 0, tmpVecA.z);
-      dirLight.target.updateMatrixWorld();
-    }
-    dirLight.updateMatrixWorld(true);
-    fitDirectionalShadowFrustum();
-    renderEditorScene();
-  }
+  const { animate, renderEditorScene } = createRenderLoop(ctx);
 
   window.addEventListener("resize", resizeRenderer);
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(resizeRenderer).observe(container);
 
-  function threeColorToHexForStylePack(c) {
-    if (!c?.getHexString) return "#ffffff";
-    return `#${c.getHexString()}`;
-  }
-
-  function getSceneLightingForStylePack() {
-    return {
-      toneMappingExposure: renderer.toneMappingExposure,
-      ambient: {
-        color: threeColorToHexForStylePack(ambientLight.color),
-        intensity: ambientLight.intensity,
-      },
-      hemisphere: {
-        sky: threeColorToHexForStylePack(hemiLight.color),
-        ground: threeColorToHexForStylePack(hemiLight.groundColor),
-        intensity: hemiLight.intensity,
-      },
-      directional: {
-        color: threeColorToHexForStylePack(dirLight.color),
-        intensity: dirLight.intensity,
-      },
-      envMapIntensity: sceneLightingEnvMapIntensity,
-    };
-  }
-
-  function stripLibraryMetaFromMaterials(materials) {
-    if (!materials || typeof materials !== "object") return {};
-    const out = JSON.parse(JSON.stringify(materials));
-    for (const k of Object.keys(out)) {
-      const m = out[k];
-      if (m && typeof m === "object" && !Array.isArray(m)) delete m.__libraryMaterialId;
-    }
-    return out;
-  }
-
-  function slugStyleKeyFromName(name) {
-    let s = String(name ?? "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^a-z0-9_-]/g, "");
-    if (!s) s = `style_${Date.now()}`;
-    if (!/^[a-z_]/.test(s)) s = `s_${s}`;
-    return s.slice(0, 48);
-  }
-
-  function ensureUniqueStyleKeyInPack(base, stylesObj) {
-    if (!stylesObj || typeof stylesObj !== "object") return base;
-    let k = base;
-    let n = 0;
-    while (stylesObj[k]) {
-      n += 1;
-      k = `${base}_${n}`;
-    }
-    return k;
-  }
-
-  function jsonEqual(a, b) {
-    try {
-      return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
-    } catch {
-      return false;
-    }
-  }
-
-  function diffMappingAgainstBase(nextMapping, baseMapping) {
-    const next = nextMapping && typeof nextMapping === "object" ? nextMapping : {};
-    const base = baseMapping && typeof baseMapping === "object" ? baseMapping : {};
-    const out = {};
-    for (const bucketKey of ["rooms", "walls", "doors", "windows"]) {
-      const n = next[bucketKey] && typeof next[bucketKey] === "object" ? next[bucketKey] : {};
-      const b = base[bucketKey] && typeof base[bucketKey] === "object" ? base[bucketKey] : {};
-      const diff = {};
-      for (const [k, v] of Object.entries(n)) {
-        if (!jsonEqual(v, b[k])) diff[k] = v;
-      }
-      if (Object.keys(diff).length) out[bucketKey] = diff;
-    }
-    return Object.keys(out).length ? out : null;
-  }
-
-  function collectMaterialKeysFromMapping(mapping) {
-    const keys = new Set();
-    if (!mapping || typeof mapping !== "object") return keys;
-    const walls = mapping.walls && typeof mapping.walls === "object" ? mapping.walls : {};
-    const doors = mapping.doors && typeof mapping.doors === "object" ? mapping.doors : {};
-    const windows = mapping.windows && typeof mapping.windows === "object" ? mapping.windows : {};
-    for (const v of Object.values(walls)) if (typeof v === "string" && v.trim()) keys.add(v.trim());
-    for (const v of Object.values(doors)) if (typeof v === "string" && v.trim()) keys.add(v.trim());
-    for (const v of Object.values(windows)) if (typeof v === "string" && v.trim()) keys.add(v.trim());
-    const rooms = mapping.rooms && typeof mapping.rooms === "object" ? mapping.rooms : {};
-    for (const rv of Object.values(rooms)) {
-      if (!rv || typeof rv !== "object") continue;
-      if (typeof rv.floor === "string" && rv.floor.trim()) keys.add(rv.floor.trim());
-      if (typeof rv.wall === "string" && rv.wall.trim()) keys.add(rv.wall.trim());
-    }
-    return keys;
-  }
-
-  function diffMaterialsForMapping(nextMaterials, baseMaterials, mappingDiff) {
-    const next = nextMaterials && typeof nextMaterials === "object" && !Array.isArray(nextMaterials) ? nextMaterials : {};
-    const base = baseMaterials && typeof baseMaterials === "object" && !Array.isArray(baseMaterials) ? baseMaterials : {};
-    const need = collectMaterialKeysFromMapping(mappingDiff);
-    const out = {};
-    for (const k of need) {
-      if (next[k] === undefined) continue;
-      if (!jsonEqual(next[k], base[k])) out[k] = next[k];
-    }
-    return Object.keys(out).length ? stripLibraryMetaFromMaterials(out) : null;
-  }
-
-  function buildStyleBlockDiffFromBaseForPack(styleKey, displayName, styleObj, baseStyleObj, baseKey) {
-    // 新格式：不再使用 extends 和 mapping，直接复制完整的材质定义
-    return buildStyleBlockFromSceneForPack(styleKey, displayName, styleObj);
-  }
-
-  function buildStyleBlockFromSceneForPack(styleKey, displayName, styleObj) {
-    const materials = stripLibraryMetaFromMaterials(styleObj?.materials);
-    const layout = getLayout();
-    const placements = [];
-    for (const row of layout) {
-      if (!modelIdIsDecoration(row.model)) continue;
-      const p = {
-        model: row.model,
-        x: row.x,
-        y: row.y,
-        rotation: row.rotation ?? 0,
-      };
-      if (row.floorId) p.floorId = row.floorId;
-      if (row.decorationLiftCm != null) p.decorationLiftCm = row.decorationLiftCm;
-      placements.push(p);
-    }
-
-    // 获取房间地板覆盖并写入 roomFloorMaterials
-    const roomFloorMaterials = {};
-    const roomFloorBucket = roomFloorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
-    if (roomFloorBucket && typeof roomFloorBucket === "object") {
-      for (const [floorId, rooms] of Object.entries(roomFloorBucket)) {
-        if (!rooms || typeof rooms !== "object") continue;
-        for (const [roomId, override] of Object.entries(rooms)) {
-          if (!override || typeof override !== "object" || !Object.keys(override).length) continue;
-          if (!roomFloorMaterials[floorId]) roomFloorMaterials[floorId] = {};
-          roomFloorMaterials[floorId][roomId] = JSON.parse(JSON.stringify(override));
-        }
-      }
-    }
-
-    // 获取门覆盖并写入 doorOverrides
-    const doorOverridesData = {};
-    const doorBucket = doorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
-    if (doorBucket && typeof doorBucket === "object") {
-      for (const [floorId, doors] of Object.entries(doorBucket)) {
-        if (!doors || typeof doors !== "object") continue;
-        for (const [doorId, override] of Object.entries(doors)) {
-          if (!override || typeof override !== "object" || !Object.keys(override).length) continue;
-          if (!doorOverridesData[floorId]) doorOverridesData[floorId] = {};
-          doorOverridesData[floorId][doorId] = JSON.parse(JSON.stringify(override));
-        }
-      }
-    }
-
-    // 获取窗户覆盖并写入 windowOverrides
-    const windowOverridesData = {};
-    const windowBucket = windowOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
-    if (windowBucket && typeof windowBucket === "object") {
-      for (const [floorId, windows] of Object.entries(windowBucket)) {
-        if (!windows || typeof windows !== "object") continue;
-        for (const [windowId, override] of Object.entries(windows)) {
-          if (!override || typeof override !== "object" || !Object.keys(override).length) continue;
-          if (!windowOverridesData[floorId]) windowOverridesData[floorId] = {};
-          windowOverridesData[floorId][windowId] = JSON.parse(JSON.stringify(override));
-        }
-      }
-    }
-
-    const block = {
-      id: styleKey,
-      name: displayName,
-      sceneLighting: getSceneLightingForStylePack(),
-      materials,
-      decorations: { placements },
-    };
-    if (Object.keys(roomFloorMaterials).length) block.roomFloorMaterials = roomFloorMaterials;
-    if (Object.keys(doorOverridesData).length) block.doorOverrides = doorOverridesData;
-    if (Object.keys(windowOverridesData).length) block.windowOverrides = windowOverridesData;
-    return block;
-  }
-
-  /**
-   * 将「面板覆盖」烘焙进风格包：直接更新 style.materials 中对应的材质定义（新格式，不再使用 mapping）。
-   * 不在风格包中存 surfaceOverrides 字段，避免与 style 本体重复表达。
-   * @param {object | null} styleObj loadStyleConfig 返回的单套风格
-   * @param {Record<string, any> | null | undefined} overridesBucket 当前风格下的 surfaceOverrides bucket（按楼层 id）
-   * @param {object | null} entry 当前户型 entry（含 floors/rooms/walls/doors/windows）
-   * @param {Record<string, object>} libraryBag 材质库（含 style.materials 合并后的 bag）
-   */
-  function bakeSurfaceOverridesIntoStyle(styleObj, overridesBucket, entry, libraryBag) {
-    if (!styleObj || typeof styleObj !== "object") return styleObj;
-    if (!overridesBucket || typeof overridesBucket !== "object") return styleObj;
-    if (!entry || typeof entry !== "object") return styleObj;
-    const floors = getFloorsFromEntry(entry);
-    if (!floors.length) return styleObj;
-
-    let next;
-    try {
-      next = JSON.parse(JSON.stringify(styleObj));
-    } catch {
-      next = { ...styleObj };
-    }
-
-    if (!next.materials || typeof next.materials !== "object" || Array.isArray(next.materials)) {
-      next.materials = {};
-    }
-
-    /**
-     * 烘焙单个元素的覆盖到材质定义
-     * @param {string} materialKey 材质 key（元素 ID）
-     * @param {SurfaceScopeOverride} ovRaw 覆盖数据
-     * @param {string} scope 作用域类型
-     */
-    function bakeOneMaterialOverride(materialKey, ovRaw, scope) {
-      if (!surfaceOverrideIsActive(ovRaw)) return;
-      const ov = scope === "allWindows" ? windowSurfaceOverrideForApply(ovRaw) : ovRaw;
-      if (!ov || !surfaceOverrideIsActive(ov)) return;
-
-      let baseDef = null;
-      if (ov.materialId) {
-        baseDef = resolveMaterialDefFromLibrary(libraryBag, ov.materialId);
-      } else {
-        // 使用当前材质定义作为基准
-        const def = next.materials[materialKey];
-        if (def) {
-          try {
-            baseDef = JSON.parse(JSON.stringify(def));
-          } catch {
-            baseDef = { ...def };
-          }
-        }
-      }
-      if (!baseDef) return;
-
-      const mergedDef = mergeMaterialOverrideIntoDef(baseDef, ov);
-      next.materials[materialKey] = mergedDef;
-    }
-
-    // 处理全局覆盖（allFloors, allWalls, allDoors, allWindows）
-    for (const [fidRaw, bag] of Object.entries(overridesBucket)) {
-      if (!bag || typeof bag !== "object") continue;
-      const fid = String(fidRaw ?? "").trim();
-      if (!fid) continue;
-      const want = normalizeFloorKey(fid);
-      const fl = floors.find((f) => normalizeFloorKey(f?.id ?? "") === want) ?? null;
-      if (!fl) continue;
-
-      // 全局地板覆盖：应用到所有房间地板
-      if (bag.allFloors) {
-        for (const room of fl.rooms || []) {
-          const rid = String(room?.id ?? "").trim();
-          if (!rid) continue;
-          bakeOneMaterialOverride(rid, bag.allFloors, "allFloors");
-        }
-      }
-
-      // 全局墙体覆盖：应用到所有墙体和房间墙体
-      if (bag.allWalls) {
-        for (const w of fl.walls || []) {
-          const wid = String(w?.id ?? "").trim();
-          if (!wid) continue;
-          bakeOneMaterialOverride(wid, bag.allWalls, "allWalls");
-        }
-        for (const room of fl.rooms || []) {
-          const rid = String(room?.id ?? "").trim();
-          if (!rid) continue;
-          bakeOneMaterialOverride(`${rid}_wall`, bag.allWalls, "allWalls");
-        }
-      }
-
-      // 全局门覆盖：应用到所有门
-      if (bag.allDoors) {
-        for (const d of fl.doors || []) {
-          const did = String(d?.id ?? "").trim();
-          if (!did) continue;
-          bakeOneMaterialOverride(did, bag.allDoors, "allDoors");
-        }
-      }
-
-      // 全局窗户覆盖：应用到所有窗户
-      if (bag.allWindows) {
-        for (const win of fl.windows || []) {
-          const wid = String(win?.id ?? "").trim();
-          if (!wid) continue;
-          bakeOneMaterialOverride(wid, bag.allWindows, "allWindows");
-        }
-      }
-    }
-
-    // 处理墙面（按面）覆盖：烘焙为 wallId__face_a / wallId__face_b 材质键
-    // 注意：这些覆盖存在 wallFaceOverridesByStyleKey 中，格式为 {floorLevelId: {wallId: {face_a?, face_b?}}}
-    const wallFaceData = overridesBucket.__wallFaceOverrides;
-    if (wallFaceData && typeof wallFaceData === "object") {
-      for (const [fidRaw, wallsData] of Object.entries(wallFaceData)) {
-        if (!wallsData || typeof wallsData !== "object") continue;
-        for (const [wallId, faces] of Object.entries(wallsData)) {
-          if (!faces || typeof faces !== "object") continue;
-          const wid = String(wallId ?? "").trim();
-          if (!wid) continue;
-          if (faces.face_a && surfaceOverrideIsActive(faces.face_a)) {
-            bakeOneMaterialOverride(`${wid}__face_a`, faces.face_a, "allWalls");
-          }
-          if (faces.face_b && surfaceOverrideIsActive(faces.face_b)) {
-            bakeOneMaterialOverride(`${wid}__face_b`, faces.face_b, "allWalls");
-          }
-        }
-      }
-    }
-
-    return next;
-  }
-
-  /**
-   * 读取 `./assets/floorplans/style/{floorplanId}.json` 全量内容。
-   * 当前编辑 apt 户型时即 `apt_2b1l_compact_01.json`。
-   * @param {string} fpId 户型 id（与 JSON 文件名一致）
-   */
-  async function fetchRawFloorplanStylePack(fpId) {
-    const url = `./${DATA_PATHS.stylesDir}/${fpId}.json`;
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`无法读取风格包 (${res.status})`);
-    return res.json();
-  }
-
-  /** 保存前深拷贝整包，避免与运行时缓存等共享引用；仅改 styles[当前键] 时不应影响其它风格条目 */
-  function cloneStylePackDeep(pack) {
-    try {
-      return JSON.parse(JSON.stringify(pack));
-    } catch {
-      return pack;
-    }
-  }
-
-  /**
-   * 写回前保证根级 floorplanId 与 JSON 文件名一致；保留 styles 中其它条目。
-   * @param {string} fpId
-   * @param {object} pack
-   */
-  function normalizeStylePackRootForDisk(fpId, pack) {
-    if (!pack || typeof pack !== "object") return;
-    pack.floorplanId = fpId;
-    if (!pack.styles || typeof pack.styles !== "object") pack.styles = {};
-  }
-
-  /**
-   * POST 整文件写入 `assets/floorplans/style/{floorplanId}.json`（需 dev_server）。
-   * @param {string} fpId
-   * @param {object} pack 完整装饰包（含 styles 等）
-   */
-  async function postFloorplanStylePackSave(fpId, pack) {
-    normalizeStylePackRootForDisk(fpId, pack);
-    const res = await fetch(DATA_PATHS.floorplanStyleSaveApi, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ floorplanId: fpId, pack }),
-    });
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      throw new Error(t || `保存失败 (${res.status})，请使用 python3 dev_server.py 启动本地服务`);
-    }
-    return res.json();
-  }
-
-  function initStylePackSaveDialogs() {
-    const overwriteBtn = document.getElementById("svgStyleOverwriteBtn");
-    const newBtn = document.getElementById("svgStyleNewBtn");
-    const dlgOver = document.getElementById("styleOverwriteDialog");
-    const dlgNew = document.getElementById("styleNewDialog");
-    const msgOver = document.getElementById("styleOverwriteMessage");
-    const inpName = document.getElementById("styleNewNameInput");
-    const errNew = document.getElementById("styleNewNameError");
-
-    function syncOverwriteBtnLockState() {
-      if (!overwriteBtn) return;
-      const fpId = getCurrentFloorplanId();
-      const cur = getEffectiveFloorplanStyleKey();
-      const def = fpId ? getDefaultStyleKeyForFloorplan(fpId) : "";
-      const locked = !!(fpId && cur && def && cur === def);
-      overwriteBtn.disabled = locked;
-      overwriteBtn.title = locked ? "默认风格不可覆盖" : "覆盖当前风格";
-      overwriteBtn.setAttribute("aria-label", overwriteBtn.title);
-    }
-
-    async function resolveStyleDisplayName(fpId, sk) {
-      try {
-        const idx = await loadStylePackIndex(fpId);
-        const hit = idx.styles.find((s) => s.key === sk);
-        if (hit?.name) return String(hit.name).trim();
-      } catch {
-        /* ignore */
-      }
-      return sk;
-    }
-
-    overwriteBtn?.addEventListener("click", async () => {
-      const fpId = getCurrentFloorplanId();
-      if (!fpId || !currentFloorplanEntry) {
-        alert("请先加载户型。");
-        return;
-      }
-      if (!lastMergedFloorplanStyle) {
-        alert("当前风格包未成功加载，无法覆盖。");
-        return;
-      }
-      const sk = getEffectiveFloorplanStyleKey();
-      try {
-        const pack = await fetchRawFloorplanStylePack(fpId);
-        const defKey = resolveDefaultStyleKeyFromPack(pack);
-        if (defKey && sk === defKey) {
-          alert("默认风格不可覆盖。请新建风格后再保存。");
-          syncOverwriteBtnLockState();
-          return;
-        }
-      } catch {
-        // ignore: 仅用于阻止默认风格覆盖；读取失败则继续走现有覆盖流程
-      }
-      const name = await resolveStyleDisplayName(fpId, sk);
-      if (msgOver) msgOver.textContent = `将用当前场景的光照、材质与装饰覆盖风格「${name}」（${sk}）。确定吗？`;
-      dlgOver?.showModal();
-    });
-
-    document.getElementById("styleOverwriteCancel")?.addEventListener("click", () => dlgOver?.close());
-    document.getElementById("styleOverwriteConfirm")?.addEventListener("click", async () => {
-      dlgOver?.close();
-      const fpId = getCurrentFloorplanId();
-      const sk = getEffectiveFloorplanStyleKey();
-      if (!fpId || !lastMergedFloorplanStyle) return;
-      try {
-        const pack = cloneStylePackDeep(await fetchRawFloorplanStylePack(fpId));
-        const defKey = resolveDefaultStyleKeyFromPack(pack);
-        if (defKey && sk === defKey) {
-          alert("默认风格不可覆盖。请使用“新建”创建一个新风格后再保存。");
-          syncOverwriteBtnLockState();
-          return;
-        }
-        const displayName = await resolveStyleDisplayName(fpId, sk);
-        const surfaceOverridesBucket = getSurfaceOverridesBucketForStyle(sk, { create: false });
-        const skKey = normalizeStyleKeyForSurfaceOverrides(sk);
-        const wallFaceData = wallFaceOverridesByStyleKey[skKey];
-        const bucketWithWallFace = {
-          ...surfaceOverridesBucket,
-          ...(wallFaceData && Object.keys(wallFaceData).length ? { __wallFaceOverrides: wallFaceData } : {}),
-        };
-        const libraryBag = await getFloorplanMaterialsLibraryBag();
-        const bakedStyle = bakeSurfaceOverridesIntoStyle(lastMergedFloorplanStyle, bucketWithWallFace, currentFloorplanEntry, libraryBag);
-        const block = buildStyleBlockFromSceneForPack(sk, displayName, bakedStyle);
-        if (!pack.styles || typeof pack.styles !== "object") pack.styles = {};
-        // 仅替换当前键；其它 styles.* 保持从文件读出时的快照
-        pack.styles[sk] = block;
-        await postFloorplanStylePackSave(fpId, pack);
-
-        // 已写入磁盘：覆盖语义也不应继续叠加旧的临时 overrides
-        clearSurfaceOverridesForStyle(sk);
-
-        clearStyleConfigCache();
-        await loadStylePackIndex(fpId);
-        await rebuildFloorplan3D();
-        window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
-        if (historyReady) schedulePushHistory();
-        syncOverwriteBtnLockState();
-        // 更新 baseline，避免切换风格时误报有未保存的更改
-        window.__designLayoutBaseline = serializeDesignBaseline();
-        window.__designSaveBaseline = serializeDesignForSave();
-      } catch (e) {
-        console.error(e);
-        alert(e?.message || String(e));
-      }
-    });
-
-    newBtn?.addEventListener("click", () => {
-      const fpId = getCurrentFloorplanId();
-      if (!fpId || !currentFloorplanEntry) {
-        alert("请先加载户型。");
-        return;
-      }
-      if (!lastMergedFloorplanStyle) {
-        alert("当前风格包未成功加载，无法新建。");
-        return;
-      }
-      if (inpName) inpName.value = "";
-      if (errNew) {
-        errNew.hidden = true;
-        errNew.textContent = "";
-      }
-      dlgNew?.showModal();
-      inpName?.focus();
-    });
-
-    document.getElementById("styleNewCancel")?.addEventListener("click", () => dlgNew?.close());
-    document.getElementById("styleNewConfirm")?.addEventListener("click", async () => {
-      const raw = String(inpName?.value ?? "").trim();
-      if (!raw) {
-        if (errNew) {
-          errNew.textContent = "请输入风格名称";
-          errNew.hidden = false;
-        }
-        return;
-      }
-      if (errNew) errNew.hidden = true;
-      dlgNew?.close();
-      const fpId = getCurrentFloorplanId();
-      if (!fpId || !lastMergedFloorplanStyle) return;
-      try {
-        const sourceStyleKey = getEffectiveFloorplanStyleKey();
-        const pack = cloneStylePackDeep(await fetchRawFloorplanStylePack(fpId));
-        const styles = pack.styles && typeof pack.styles === "object" ? pack.styles : {};
-        const base = slugStyleKeyFromName(raw);
-        const newKey = ensureUniqueStyleKeyInPack(base, styles);
-        const defKey = resolveDefaultStyleKeyFromPack(pack) || (fpId ? getDefaultStyleKeyForFloorplan(fpId) : "") || "default";
-
-        // 将当前的 roomFloorOverridesByStyleKey 复制到新风格键下
-        const sourceRoomFloorBucket = roomFloorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(sourceStyleKey)];
-        if (sourceRoomFloorBucket && typeof sourceRoomFloorBucket === "object") {
-          roomFloorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(newKey)] = JSON.parse(JSON.stringify(sourceRoomFloorBucket));
-        }
-
-        // 将当前的 doorOverridesByStyleKey 复制到新风格键下
-        const sourceDoorBucket = doorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(sourceStyleKey)];
-        if (sourceDoorBucket && typeof sourceDoorBucket === "object") {
-          doorOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(newKey)] = JSON.parse(JSON.stringify(sourceDoorBucket));
-        }
-
-        // 将当前的 windowOverridesByStyleKey 复制到新风格键下
-        const sourceWindowBucket = windowOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(sourceStyleKey)];
-        if (sourceWindowBucket && typeof sourceWindowBucket === "object") {
-          windowOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(newKey)] = JSON.parse(JSON.stringify(sourceWindowBucket));
-        }
-
-        const baseStyleObj = await loadStyleConfig(fpId, defKey);
-        const surfaceOverridesBucket = getCurrentSurfaceOverridesBucket();
-        const curSkKey = normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
-        const wallFaceDataNew = wallFaceOverridesByStyleKey[curSkKey];
-        const bucketWithWallFaceNew = {
-          ...surfaceOverridesBucket,
-          ...(wallFaceDataNew && Object.keys(wallFaceDataNew).length ? { __wallFaceOverrides: wallFaceDataNew } : {}),
-        };
-        const libraryBag = await getFloorplanMaterialsLibraryBag();
-        const bakedStyle = bakeSurfaceOverridesIntoStyle(lastMergedFloorplanStyle, bucketWithWallFaceNew, currentFloorplanEntry, libraryBag);
-        const block = buildStyleBlockDiffFromBaseForPack(newKey, raw, bakedStyle, baseStyleObj, defKey);
-        styles[newKey] = block;
-        pack.styles = styles;
-        // 在已有 styles 上追加新键，不改动其它风格条目
-        await postFloorplanStylePackSave(fpId, pack);
-
-        // “新建”语义：把当前场景保存为新风格，但不应污染源风格的临时 overrides。
-        // 新风格已写入磁盘，因此也不需要把旧 overrides 继续叠加到新风格上。
-        clearSurfaceOverridesForStyle(sourceStyleKey);
-        clearSurfaceOverridesForStyle(newKey);
-
-        floorplanStyleKeyOverride = newKey;
-        clearStyleConfigCache();
-        await loadStylePackIndex(fpId);
-        await rebuildFloorplan3D();
-        window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
-        if (historyReady) schedulePushHistory();
-        syncOverwriteBtnLockState();
-        // 更新 baseline，避免切换风格时误报有未保存的更改
-        window.__designLayoutBaseline = serializeDesignBaseline();
-        window.__designSaveBaseline = serializeDesignForSave();
-      } catch (e) {
-        console.error(e);
-        alert(e?.message || String(e));
-      }
-    });
-
-    window.addEventListener("visionhome:floorplan-applied-to-svg", () => syncOverwriteBtnLockState());
-    syncOverwriteBtnLockState();
-  }
-
-  function initFloorplanStyleToolbar() {
-    const btn = document.getElementById("svgStyleRecommendBtn");
-    const dropdown = document.getElementById("svgStyleDropdown");
-    if (!btn || !dropdown) return;
-
-    /** 防止多次并发 refresh 在 await 后重复 append 风格按钮 */
-    let styleDropdownRefreshGen = 0;
-
-    function openDropdown() {
-      dropdown.hidden = false;
-      btn.setAttribute("aria-expanded", "true");
-      btn.classList.add("is-active");
-    }
-    function closeDropdown() {
-      dropdown.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-      btn.classList.remove("is-active");
-    }
-
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      dropdown.hidden ? openDropdown() : closeDropdown();
-    });
-    document.addEventListener("click", (e) => {
-      if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) closeDropdown();
-    });
-
-    const STYLE_BTN_DEFAULT = "风格";
-
-    function setStyleToolbarButtonLabel(list) {
-      const cur = getEffectiveFloorplanStyleKey();
-      if (!list || !list.length) {
-        btn.textContent = STYLE_BTN_DEFAULT;
-        btn.title = "装饰风格";
-        btn.setAttribute("aria-label", "装饰风格");
-        return;
-      }
-      const hit = list.find((s) => s.key === cur);
-      const label = hit?.name ? String(hit.name).trim() : cur || STYLE_BTN_DEFAULT;
-      btn.textContent = label || STYLE_BTN_DEFAULT;
-      const tip = `装饰风格：${btn.textContent}`;
-      btn.title = tip;
-      btn.setAttribute("aria-label", tip);
-    }
-
-    async function refreshStyleDropdown() {
-      const gen = ++styleDropdownRefreshGen;
-      dropdown.replaceChildren();
-      const fpId = getCurrentFloorplanId();
-      if (!fpId) {
-        setStyleToolbarButtonLabel(null);
-        const hint = document.createElement("div");
-        hint.className = "svg-style-dropdown-hint";
-        hint.textContent = "请先加载户型";
-        dropdown.appendChild(hint);
-        return;
-      }
-      let list;
-      try {
-        const idx = await loadStylePackIndex(fpId);
-        if (gen !== styleDropdownRefreshGen) return;
-        list = idx.styles;
-      } catch (err) {
-        console.warn("[VisionHome] 风格列表加载失败:", err);
-        if (gen !== styleDropdownRefreshGen) return;
-        setStyleToolbarButtonLabel(null);
-        const hint = document.createElement("div");
-        hint.className = "svg-style-dropdown-hint";
-        hint.textContent = "风格列表加载失败";
-        dropdown.appendChild(hint);
-        return;
-      }
-      if (!list.length) {
-        if (gen !== styleDropdownRefreshGen) return;
-        setStyleToolbarButtonLabel(null);
-        const hint = document.createElement("div");
-        hint.className = "svg-style-dropdown-hint";
-        hint.textContent = "暂无装饰风格";
-        dropdown.appendChild(hint);
-        return;
-      }
-      const seenKeys = new Set();
-      const deduped = [];
-      for (const s of list) {
-        const k = String(s?.key ?? "").trim();
-        if (!k || seenKeys.has(k)) continue;
-        seenKeys.add(k);
-        deduped.push(s);
-      }
-      if (gen !== styleDropdownRefreshGen) return;
-      const cur = getEffectiveFloorplanStyleKey();
-      for (const s of deduped) {
-        const tag = document.createElement("button");
-        tag.type = "button";
-        tag.className = "svg-style-tag";
-        tag.setAttribute("role", "menuitem");
-        tag.dataset.styleKey = s.key;
-        tag.textContent = s.name;
-        if (s.key === cur) tag.classList.add("is-active");
-        dropdown.appendChild(tag);
-      }
-      setStyleToolbarButtonLabel(deduped);
-    }
-
-    function hasUnsavedChanges() {
-      // 检查是否有未保存的更改（不要求必须有家具）
-      const cur = serializeDesignBaseline();
-      const baseline = window.__designLayoutBaseline;
-      return baseline !== undefined && cur !== baseline;
-    }
-
-    async function executeStyleSwitch(key, tag) {
-      floorplanStyleKeyOverride = key;
-
-      // 切换风格时清空所有内存覆盖，显示目标风格的默认材质
-      // 注意：设计文件中保存的覆盖数据不会在切换风格时自动应用
-      // 只有在加载设计文件时才会恢复覆盖数据
-      floorplanSurfaceOverridesByStyleKey = {};
-      roomFloorOverridesByStyleKey = {};
-      doorOverridesByStyleKey = {};
-      windowOverridesByStyleKey = {};
-      wallFaceOverridesByStyleKey = {};
-
-      clearFloorplanSurfaceSelection();
-      selectFurniture(null);
-      floorplanSelected = false;
-      propertiesPanel?.classList.remove("is-visible");
-
-      // 清除风格配置缓存，确保加载最新的风格数据
-      clearStyleConfigCache();
-
-      // 更新下拉菜单中的选中状态
-      dropdown.querySelectorAll(".svg-style-tag").forEach((t) => {
-        if (String(t.dataset.styleKey ?? "").trim() === key) {
-          t.classList.add("is-active");
-        } else {
-          t.classList.remove("is-active");
-        }
-      });
-
-      // 更新按钮文本
-      const picked = String(tag?.textContent ?? "").trim();
-      if (picked) {
-        btn.textContent = picked;
-        const tip = `装饰风格：${picked}`;
-        btn.title = tip;
-        btn.setAttribute("aria-label", tip);
-      } else {
-        // 如果没有 tag（异步调用时），从下拉菜单中查找对应的风格名称
-        const targetTag = dropdown.querySelector(`.svg-style-tag[data-style-key="${key}"]`);
-        if (targetTag) {
-          const name = String(targetTag.textContent ?? "").trim();
-          if (name) {
-            btn.textContent = name;
-            const tip = `装饰风格：${name}`;
-            btn.title = tip;
-            btn.setAttribute("aria-label", tip);
-          }
-        }
-      }
-
-      // 尝试快速切换（只更新材质，不重建几何体）
-      const fastSwitchSuccess = await fastStyleSwitch(key);
-
-      if (fastSwitchSuccess) {
-        // 快速切换成功，延迟加载装饰物
-        setTimeout(async () => {
-          if (floorplanStyleKeyOverride === key && lastMergedFloorplanStyle) {
-            await mergeLayoutWithStyleDecorations(lastMergedFloorplanStyle);
-          }
-        }, 100);
-      } else {
-        // 快速切换失败，回退到完全重建
-        await rebuildFloorplan3D({ applyDecorFromStyle: true });
-      }
-
-      pushHistorySnapshot();
-      // 更新 baseline，避免下次切换时再次提示
-      window.__designLayoutBaseline = serializeDesignBaseline();
-      window.__designSaveBaseline = serializeDesignForSave();
-    }
-
-    dropdown.addEventListener("click", (e) => {
-      const tag = e.target.closest(".svg-style-tag");
-      if (!tag) return;
-      const key = String(tag.dataset.styleKey ?? "").trim();
-      if (!key || !currentFloorplanEntry) return;
-      const prevKey = getEffectiveFloorplanStyleKey();
-      
-      // 如果点击的是当前风格，不做任何操作
-      if (key === prevKey) {
-        closeDropdown();
-        return;
-      }
-      
-      // 检查是否有未保存的更改
-      if (hasUnsavedChanges()) {
-        // 有未保存的更改，显示确认对话框
-        const switchStyleDialog = document.getElementById("switchStyleUnsavedDialog");
-        if (switchStyleDialog) {
-          window.__pendingStyleSwitch = { key, tag };
-          if (typeof switchStyleDialog.showModal === "function") {
-            switchStyleDialog.showModal();
-          } else {
-            switchStyleDialog.setAttribute("open", "");
-          }
-          closeDropdown();
-          return;
-        }
-      }
-      
-      // 没有未保存的更改，直接切换
-      void executeStyleSwitch(key, tag);
-      closeDropdown();
-    });
-
-    window.addEventListener("visionhome:floorplan-applied-to-svg", () => {
-      void refreshStyleDropdown();
-    });
-    void refreshStyleDropdown();
-    
-    // 处理风格切换确认对话框
-    const switchStyleDialog = document.getElementById("switchStyleUnsavedDialog");
-    const switchStyleCancelBtn = document.getElementById("switchStyleUnsavedCancel");
-    const switchStyleDiscardBtn = document.getElementById("switchStyleUnsavedDiscard");
-    const switchStyleSaveBtn = document.getElementById("switchStyleUnsavedSave");
-    
-    function closeSwitchStyleDialog() {
-      if (switchStyleDialog && typeof switchStyleDialog.close === "function") {
-        switchStyleDialog.close();
-      } else if (switchStyleDialog) {
-        switchStyleDialog.removeAttribute("open");
-      }
-    }
-    
-    switchStyleCancelBtn?.addEventListener("click", () => {
-      window.__pendingStyleSwitch = null;
-      closeSwitchStyleDialog();
-    });
-    
-    switchStyleDialog?.addEventListener("cancel", () => {
-      window.__pendingStyleSwitch = null;
-    });
-    
-    switchStyleDiscardBtn?.addEventListener("click", () => {
-      const pending = window.__pendingStyleSwitch;
-      window.__pendingStyleSwitch = null;
-      closeSwitchStyleDialog();
-      if (pending) {
-        void executeStyleSwitch(pending.key, pending.tag);
-      }
-    });
-    
-    switchStyleSaveBtn?.addEventListener("click", async () => {
-      const pending = window.__pendingStyleSwitch;
-      if (!pending) return;
-      closeSwitchStyleDialog();
-      
-      // 先保存
-      const hasResolvedName = Boolean(String(window.__activeDesignProject?.name ?? "").trim());
-      if (hasResolvedName) {
-        const executeSave = window.executeSaveWithName;
-        if (typeof executeSave === "function") {
-          await executeSave(String(window.__activeDesignProject?.name ?? "").trim());
-        }
-        // 保存完成后切换风格
-        await executeStyleSwitch(pending.key, pending.tag);
-        window.__pendingStyleSwitch = null;
-      } else {
-        // 没有文件名，需要用户输入
-        // 监听保存完成事件
-        const handleSaveComplete = async () => {
-          window.removeEventListener("visionhome:design-saved", handleSaveComplete);
-          if (window.__pendingStyleSwitch) {
-            const p = window.__pendingStyleSwitch;
-            window.__pendingStyleSwitch = null;
-            // 保存完成后切换风格
-            await executeStyleSwitch(p.key, p.tag);
-          }
-        };
-        
-        // 监听保存取消事件
-        const handleSaveCancel = () => {
-          window.removeEventListener("visionhome:design-saved", handleSaveComplete);
-          window.removeEventListener("visionhome:save-design-cancelled", handleSaveCancel);
-          window.__pendingStyleSwitch = null;
-        };
-        
-        window.addEventListener("visionhome:design-saved", handleSaveComplete, { once: true });
-        window.addEventListener("visionhome:save-design-cancelled", handleSaveCancel, { once: true });
-        
-        // 打开保存对话框
-        window.dispatchEvent(new CustomEvent("visionhome:open-save-design"));
-      }
-    });
-  }
-
-  initFloorplanStyleToolbar();
-  initStylePackSaveDialogs();
-
   function getCurrentLightingConfig() {
-    return {
-      toneMappingExposure: renderer.toneMappingExposure,
-      ambient: { intensity: ambientLight.intensity },
-      hemisphere: { intensity: hemiLight.intensity },
-      directional: { intensity: dirLight.intensity },
-      envMapIntensity: sceneLightingEnvMapIntensity,
-    };
+    return getCurrentLightingConfigFromToolbar();
   }
 
-  function applyLightingFromSliders() {
-    const exposure = parseFloat(document.getElementById("svgLightingExposure")?.value ?? "1.0");
-    const ambient = parseFloat(document.getElementById("svgLightingAmbient")?.value ?? "0.26");
-    const hemi = parseFloat(document.getElementById("svgLightingHemi")?.value ?? "0.36");
-    const dir = parseFloat(document.getElementById("svgLightingDir")?.value ?? "1.0");
-    const env = parseFloat(document.getElementById("svgLightingEnv")?.value ?? "0.35");
-
-    renderer.toneMappingExposure = exposure;
-    ambientLight.intensity = ambient;
-    hemiLight.intensity = hemi;
-    dirLight.intensity = dir;
-    sceneLightingEnvMapIntensity = env;
-
-    document.getElementById("svgLightingExposureVal").textContent = exposure.toFixed(2);
-    document.getElementById("svgLightingAmbientVal").textContent = ambient.toFixed(2);
-    document.getElementById("svgLightingHemiVal").textContent = hemi.toFixed(2);
-    document.getElementById("svgLightingDirVal").textContent = dir.toFixed(2);
-    document.getElementById("svgLightingEnvVal").textContent = env.toFixed(2);
-  }
-
-  function getCurrentRenderQualityLabel() {
-    return (RENDER_QUALITY_CONFIGS[renderQualityMode] || RENDER_QUALITY_CONFIGS.standard).label;
-  }
-
-  /**
-   * @param {"standard" | "high" | "ultra"} mode
-   * @param {{ rerender?: boolean }} [opts]
-   */
   function setRenderQualityMode(mode, opts = {}) {
-    const next = mode === "ultra" ? "ultra" : mode === "high" ? "high" : "standard";
-    renderQualityMode = next;
-    applyRendererPixelRatio();
-    applyRendererQualityDetails();
-    resizeRenderer();
-    if (opts.rerender !== false) renderEditorScene();
+    return setRenderQualityModeFromToolbar(mode, opts);
   }
 
   function syncRenderQualityToolbarUi() {
-    const btn = document.getElementById("svgRenderQualityBtn");
-    const dropdown = document.getElementById("svgRenderQualityDropdown");
-    if (btn) btn.textContent = `渲染·${getCurrentRenderQualityLabel()}`;
-    if (!dropdown) return;
-    dropdown.querySelectorAll(".svg-render-quality-option").forEach((el) => {
-      const mode = String(el.getAttribute("data-render-quality") || "");
-      el.classList.toggle("is-active", mode === renderQualityMode);
-    });
+    return syncRenderQualityToolbarUiFromToolbar();
   }
 
-  function initLightingToolbar() {
-    const btn = document.getElementById("svgLightingBtn");
-    const dropdown = document.getElementById("svgLightingDropdown");
-    if (!btn || !dropdown) return;
-
-    function openDropdown() {
-      const cfg = getCurrentLightingConfig();
-      const expEl = document.getElementById("svgLightingExposure");
-      const ambEl = document.getElementById("svgLightingAmbient");
-      const hemiEl = document.getElementById("svgLightingHemi");
-      const dirEl = document.getElementById("svgLightingDir");
-      const envEl = document.getElementById("svgLightingEnv");
-
-      if (expEl) expEl.value = cfg.toneMappingExposure;
-      if (ambEl) ambEl.value = cfg.ambient.intensity;
-      if (hemiEl) hemiEl.value = cfg.hemisphere.intensity;
-      if (dirEl) dirEl.value = cfg.directional.intensity;
-      if (envEl) envEl.value = cfg.envMapIntensity;
-
-      applyLightingFromSliders();
-
-      dropdown.hidden = false;
-      btn.setAttribute("aria-expanded", "true");
-      btn.classList.add("is-active");
-    }
-    function closeDropdown() {
-      dropdown.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-      btn.classList.remove("is-active");
-    }
-
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      dropdown.hidden ? openDropdown() : closeDropdown();
-    });
-    document.addEventListener("click", (e) => {
-      if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) closeDropdown();
-    });
-
-    const sliders = ["svgLightingExposure", "svgLightingAmbient", "svgLightingHemi", "svgLightingDir", "svgLightingEnv"];
-    for (const id of sliders) {
-      document.getElementById(id)?.addEventListener("input", () => {
-        applyLightingFromSliders();
-        renderEditorScene();
-      });
-    }
-
-    document.getElementById("svgLightingReset")?.addEventListener("click", () => {
-      const fallback = mergeSceneLighting(null);
-
-      document.getElementById("svgLightingExposure").value = fallback.toneMappingExposure;
-      document.getElementById("svgLightingAmbient").value = fallback.ambient.intensity;
-      document.getElementById("svgLightingHemi").value = fallback.hemisphere.intensity;
-      document.getElementById("svgLightingDir").value = fallback.directional.intensity;
-      document.getElementById("svgLightingEnv").value = fallback.envMapIntensity;
-
-      applyLightingFromSliders();
-      renderEditorScene();
-    });
-  }
-
-  initLightingToolbar();
-
-  function initRenderQualityToolbar() {
-    const btn = document.getElementById("svgRenderQualityBtn");
-    const dropdown = document.getElementById("svgRenderQualityDropdown");
-    if (!btn || !dropdown) return;
-
-    function openDropdown() {
-      syncRenderQualityToolbarUi();
-      dropdown.hidden = false;
-      btn.setAttribute("aria-expanded", "true");
-      btn.classList.add("is-active");
-    }
-    function closeDropdown() {
-      dropdown.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-      btn.classList.remove("is-active");
-    }
-
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      dropdown.hidden ? openDropdown() : closeDropdown();
-    });
-    document.addEventListener("click", (e) => {
-      if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) closeDropdown();
-    });
-    dropdown.addEventListener("click", (e) => {
-      const option = e.target.closest(".svg-render-quality-option");
-      if (!option || !dropdown.contains(option)) return;
-      const mode = String(option.getAttribute("data-render-quality") || "");
-      if (mode !== "standard" && mode !== "high" && mode !== "ultra") return;
-      setRenderQualityMode(mode);
-      syncRenderQualityToolbarUi();
-      closeDropdown();
-    });
-
-    syncRenderQualityToolbarUi();
-  }
-
-  initRenderQualityToolbar();
-
-  window.svgEditorAddFurniture = addFurniture;
-  window.svgEditorGetLayout = getLayout;
-  window.svgEditorApplyFloorplanAtWorld = applyFloorplanEntryAtWorld;
-  window.svgEditorClearFloorplan = clearFloorplan;
-  window.svgEditorCommitSavedBaseline = () => {
-    window.__designLayoutBaseline = serializeDesignBaseline();
-    window.__designSaveBaseline = serializeDesignForSave();
-    emitLayoutChanged();
-  };
-  // 保存按钮状态检测使用包含家具的完整序列化
-  window.svgEditorGetDesignBaselineFingerprint = serializeDesignForSave;
-  window.svgEditorGetViewSize = () => ({ width: VIEW_W, height: VIEW_H });
-  window.svgEditorResetView = resetCameraView;
-  window.svgEditorGetViewTransform = getViewTransform;
-  window.svgEditorSetViewTransform = setViewTransform;
-  window.svgEditorToggleGrid = () => setGridVisible(!gridVisible);
-  window.svgEditorGetGridVisible = () => gridVisible;
-  window.svgEditorSetGridVisible = setGridVisible;
-  window.svgEditorToggleDimensions = () => setDimensionsVisible(!showDimensions);
-  window.svgEditorSetDimensionsVisible = setDimensionsVisible;
-  window.svgEditorToggleWallSnap = () => setWallSnapEnabled(!wallSnapEnabled);
-  window.svgEditorSetWallSnapEnabled = setWallSnapEnabled;
-  window.svgEditorGetWallSnapEnabled = () => wallSnapEnabled;
-  window.svgEditorToggleShadows = () => setShadowsEnabled(!shadowsEnabled);
-  window.svgEditorSetShadowsEnabled = setShadowsEnabled;
-  window.svgEditorGetShadowsEnabled = () => shadowsEnabled;
-  window.svgEditorGetRenderQualityMode = () => renderQualityMode;
-  window.svgEditorSetRenderQualityMode = (mode) => {
-    setRenderQualityMode(mode, { rerender: true });
-    syncRenderQualityToolbarUi();
-  };
-  window.svgEditorGetLightingConfig = () => getCurrentLightingConfig();
-  window.svgEditorApplyLightingConfig = (cfg) => {
-    if (!cfg || typeof cfg !== "object") return;
-    if (Number.isFinite(cfg.toneMappingExposure)) renderer.toneMappingExposure = cfg.toneMappingExposure;
-    if (cfg.ambient && Number.isFinite(cfg.ambient.intensity)) ambientLight.intensity = cfg.ambient.intensity;
-    if (cfg.hemisphere && Number.isFinite(cfg.hemisphere.intensity)) hemiLight.intensity = cfg.hemisphere.intensity;
-    if (cfg.directional && Number.isFinite(cfg.directional.intensity)) dirLight.intensity = cfg.directional.intensity;
-    if (Number.isFinite(cfg.envMapIntensity)) sceneLightingEnvMapIntensity = cfg.envMapIntensity;
-    renderEditorScene();
-  };
-
-  document.getElementById("svgDimToggleBtn")?.addEventListener("click", () => setDimensionsVisible(!showDimensions));
-  document.getElementById("svgWallSnapToggleBtn")?.addEventListener("click", () => setWallSnapEnabled(!wallSnapEnabled));
-  document.getElementById("svgShadowToggleBtn")?.addEventListener("click", () => setShadowsEnabled(!shadowsEnabled));
-  document.getElementById("svgNameToggleBtn")?.addEventListener("click", () => setNamesVisible(!showNames));
-  window.svgEditorGetCurrentFloorplanId = getCurrentFloorplanId;
-  window.svgEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
-  window.svgEditorGetCurrentFloorId = getCurrentFloorId;
-  window.svgEditorGetFloorplanStyleKey = getEffectiveFloorplanStyleKey;
-  window.svgEditorRestoreSession = restoreEditorSession;
-  window.svgEditorGetUndoHistory = () => ({ entries: [...history], index: historyIndex });
-  window.svgEditorFlushHistoryDebounce = flushHistoryDebounce;
-  // 新版：返回“按 styleKey 分桶”的覆盖（兼容多风格切换互不污染）
-  window.svgEditorGetSurfaceOverrides = () => {
-    // 返回所有风格键的覆盖数据，用于保存和比较
-    const result = {};
-    const allKeys = new Set([
-      ...Object.keys(floorplanSurfaceOverridesByStyleKey),
-      ...Object.keys(roomFloorOverridesByStyleKey),
-      ...Object.keys(doorOverridesByStyleKey),
-      ...Object.keys(windowOverridesByStyleKey),
-      ...Object.keys(wallFaceOverridesByStyleKey),
-    ]);
-    for (const key of allKeys) {
-      result[key] = {
-        ...JSON.parse(JSON.stringify(floorplanSurfaceOverridesByStyleKey[key] || {})),
-        roomFloors: JSON.parse(JSON.stringify(roomFloorOverridesByStyleKey[key] || {})),
-        doorOverrides: JSON.parse(JSON.stringify(doorOverridesByStyleKey[key] || {})),
-        windowOverrides: JSON.parse(JSON.stringify(windowOverridesByStyleKey[key] || {})),
-        wallFaceOverrides: JSON.parse(JSON.stringify(wallFaceOverridesByStyleKey[key] || {})),
-      };
-    }
-    return result;
-  };
-  window.svgEditorDeselect = () => {
-    deselectVisualOnly();
-    clearFloorplanSurfaceSelection();
-    syncPropertiesPanelForSelection(null);
-    floorplanSelected = false;
-  };
-  window.svgEditorApplyPropertiesFromPanel = applyPropertiesFromPanel;
+  initializeToolbarsAndApis();
 
   ensureFloorLevelControls();
   setGridVisible(false);
