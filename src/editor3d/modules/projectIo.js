@@ -31,6 +31,7 @@ export function createProjectIoModule(ctx) {
     if (!Array.isArray(arr)) return [];
     return arr
       .map((row) => ({
+        instanceId: row?.instanceId != null && String(row.instanceId).trim() ? String(row.instanceId).trim() : null,
         model: String(row?.model ?? row?.furnitureId ?? "").trim(),
         floorId: row?.floorId != null && String(row.floorId).trim() ? String(row.floorId).trim() : "floor1",
         x: Math.round(Number(row?.x)),

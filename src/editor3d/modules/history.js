@@ -146,6 +146,7 @@ export function createHistoryModule(ctx) {
   function layoutRowKeyForHistory(row) {
     if (!row || typeof row !== "object") return "";
     return JSON.stringify({
+      i: row.instanceId ?? null,
       m: row.model,
       x: row.x,
       y: row.y,
@@ -168,6 +169,27 @@ export function createHistoryModule(ctx) {
 
   async function applyHistorySnapshotState(snapshotState) {
     if (!snapshotState) return;
+    const surfaceStateKeyForHistory = (payload) => {
+      const sortStable = (value) => {
+        if (Array.isArray(value)) return value.map(sortStable);
+        if (!value || typeof value !== "object") return value;
+        const out = {};
+        for (const key of Object.keys(value).sort()) out[key] = sortStable(value[key]);
+        return out;
+      };
+      try {
+        return JSON.stringify(sortStable(payload || {}));
+      } catch {
+        return "";
+      }
+    };
+    const currentSurfaceStateKey = surfaceStateKeyForHistory({
+      floorplanSurfaceOverridesByStyleKey: state.floorplanSurfaceOverridesByStyleKey,
+      roomFloorOverridesByStyleKey: state.roomFloorOverridesByStyleKey,
+      doorOverridesByStyleKey: state.doorOverridesByStyleKey,
+      windowOverridesByStyleKey: state.windowOverridesByStyleKey,
+      wallFaceOverridesByStyleKey: state.wallFaceOverridesByStyleKey,
+    });
     let restoredSurfaceByStyleKey = {};
     if (Object.prototype.hasOwnProperty.call(snapshotState, "surfaceOverridesByStyleKey")) {
       const raw = snapshotState.surfaceOverridesByStyleKey && typeof snapshotState.surfaceOverridesByStyleKey === "object"
@@ -188,8 +210,6 @@ export function createHistoryModule(ctx) {
       const sk = normalizeStyleKeyForSurfaceOverrides(snapshotState.floorplanStyleKey);
       restoredSurfaceByStyleKey = { [sk]: legacy };
     }
-    state.floorplanSurfaceOverridesByStyleKey = restoredSurfaceByStyleKey;
-
     const readStyleBucketMap = (payload) => {
       const out = {};
       if (!payload || typeof payload !== "object") return out;
@@ -210,34 +230,74 @@ export function createHistoryModule(ctx) {
       }
       return out;
     };
-    state.roomFloorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(snapshotState, "roomFloorOverridesByStyleKey")
+    const nextRoomFloorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(snapshotState, "roomFloorOverridesByStyleKey")
       ? readStyleBucketMap(snapshotState.roomFloorOverridesByStyleKey)
       : extractNestedByStyle(restoredSurfaceByStyleKey, "roomFloors");
-    state.doorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(snapshotState, "doorOverridesByStyleKey")
+    const nextDoorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(snapshotState, "doorOverridesByStyleKey")
       ? readStyleBucketMap(snapshotState.doorOverridesByStyleKey)
       : extractNestedByStyle(restoredSurfaceByStyleKey, "doorOverrides");
-    state.windowOverridesByStyleKey = Object.prototype.hasOwnProperty.call(snapshotState, "windowOverridesByStyleKey")
+    const nextWindowOverridesByStyleKey = Object.prototype.hasOwnProperty.call(snapshotState, "windowOverridesByStyleKey")
       ? readStyleBucketMap(snapshotState.windowOverridesByStyleKey)
       : extractNestedByStyle(restoredSurfaceByStyleKey, "windowOverrides");
-    state.wallFaceOverridesByStyleKey = Object.prototype.hasOwnProperty.call(snapshotState, "wallFaceOverridesByStyleKey")
+    const nextWallFaceOverridesByStyleKey = Object.prototype.hasOwnProperty.call(snapshotState, "wallFaceOverridesByStyleKey")
       ? readStyleBucketMap(snapshotState.wallFaceOverridesByStyleKey)
       : extractNestedByStyle(restoredSurfaceByStyleKey, "wallFaceOverrides");
+    const nextSurfaceStateKey = surfaceStateKeyForHistory({
+      floorplanSurfaceOverridesByStyleKey: restoredSurfaceByStyleKey,
+      roomFloorOverridesByStyleKey: nextRoomFloorOverridesByStyleKey,
+      doorOverridesByStyleKey: nextDoorOverridesByStyleKey,
+      windowOverridesByStyleKey: nextWindowOverridesByStyleKey,
+      wallFaceOverridesByStyleKey: nextWallFaceOverridesByStyleKey,
+    });
+    const surfaceStateChanged = currentSurfaceStateKey !== nextSurfaceStateKey;
+
+    state.floorplanSurfaceOverridesByStyleKey = restoredSurfaceByStyleKey;
+    state.roomFloorOverridesByStyleKey = nextRoomFloorOverridesByStyleKey;
+    state.doorOverridesByStyleKey = nextDoorOverridesByStyleKey;
+    state.windowOverridesByStyleKey = nextWindowOverridesByStyleKey;
+    state.wallFaceOverridesByStyleKey = nextWallFaceOverridesByStyleKey;
 
     let floorplanSurfacesRefreshed = false;
     const targetFurn = Array.isArray(snapshotState.furniture) ? snapshotState.furniture : [];
     const skipFurnitureRebuild = layoutsEqualForHistory(targetFurn, getLayout());
+    let targetStyleOverride = state.floorplanStyleKeyOverride ?? null;
+    if (Object.prototype.hasOwnProperty.call(snapshotState, "floorplanStyleKey")) {
+      const sk = snapshotState.floorplanStyleKey;
+      targetStyleOverride = sk != null && String(sk).trim() ? String(sk).trim() : null;
+    }
+    const currentFloorplanId = getCurrentFloorplanId();
+    const targetFloorLevelIndex =
+      snapshotState.floorLevelIndex === undefined ? getCurrentFloorLevelIndex() : snapshotState.floorLevelIndex;
+    const targetFloorplanId =
+      snapshotState.floorPlanId === undefined
+        ? currentFloorplanId
+        : snapshotState.floorPlanId
+          ? String(snapshotState.floorPlanId).trim()
+          : null;
+    const currentStyleKey = normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
+    const targetStyleKey = normalizeStyleKeyForSurfaceOverrides(
+      state.currentFloorplanEntry
+        ? effectiveFloorplanStyleKeyFromEntryAndOverride(state.currentFloorplanEntry, targetStyleOverride)
+        : targetStyleOverride,
+    );
+    const floorplanStateChanged =
+      snapshotState.floorPlanId !== undefined && (currentFloorplanId || null) !== (targetFloorplanId || null)
+      || !floorLevelIndexEqualsForHistory(targetFloorLevelIndex, getCurrentFloorLevelIndex())
+      || currentStyleKey !== targetStyleKey
+      || surfaceStateChanged;
+
+    if (!floorplanStateChanged) {
+      state.floorplanStyleKeyOverride = targetStyleOverride;
+      if (!skipFurnitureRebuild) await rebuildFromLayout(targetFurn);
+      else updateBottomUI();
+      return;
+    }
 
     if (snapshotState.floorPlanId !== undefined) {
       if (snapshotState.floorPlanId) {
         const entry = resolveFloorplanCatalogEntry?.(snapshotState.floorPlanId) ?? null;
         if (entry) {
-          let nextStyleOverride;
-          if (Object.prototype.hasOwnProperty.call(snapshotState, "floorplanStyleKey")) {
-            const sk = snapshotState.floorplanStyleKey;
-            nextStyleOverride = sk != null && String(sk).trim() ? String(sk).trim() : null;
-          } else {
-            nextStyleOverride = null;
-          }
+          const nextStyleOverride = targetStyleOverride;
           const canSkipFloorplanRebuild =
             getCurrentFloorplanId() === snapshotState.floorPlanId
             && state.currentFloorplanEntry
@@ -249,8 +309,10 @@ export function createHistoryModule(ctx) {
 
           if (canSkipFloorplanRebuild) {
             state.floorplanStyleKeyOverride = nextStyleOverride;
-            await rebuildFloorplan3D({ applyDecorFromStyle: false });
-            floorplanSurfacesRefreshed = true;
+            if (surfaceStateChanged) {
+              await rebuildFloorplan3D({ applyDecorFromStyle: false });
+              floorplanSurfacesRefreshed = true;
+            }
           } else {
             state.floorplanStyleKeyOverride = nextStyleOverride;
             await applyFloorplanEntryAtWorld(entry, undefined, undefined, {
@@ -280,7 +342,7 @@ export function createHistoryModule(ctx) {
     if (!skipFurnitureRebuild) {
       await rebuildFromLayout(targetFurn);
     } else {
-      if (!floorplanSurfacesRefreshed && floorplanRoot.children.length) {
+      if (surfaceStateChanged && !floorplanSurfacesRefreshed && floorplanRoot.children.length) {
         if (state.currentFloorplanEntry) {
           await rebuildFloorplan3D({ applyDecorFromStyle: false });
         } else {

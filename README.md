@@ -48,7 +48,7 @@ python3 dev_server.py
 - **设计文件（方案）**：`assets/design/*.json` 表示在**户型库某一模板**上的**布局编辑会话**，不重复存整套户型几何。
   - **`schemaVersion`**：当前为 **`"1.1"`**。
   - **`templateId`**：对应 `assets/floorplans/<id>.json` 中条目的 **`id`**；保存时若画布上有户型，会与当前 **`layoutEditor.floorPlanId`** 对齐。
-  - **`layoutEditor`**（`version: 1`）：**`floorPlanId`**、**`floorLevelIndex`**、**`floorplanStyleKey`**、**`furniture`**（`model` / `floorId` / `x` / `y` / `rotation`）、**`surfaceOverridesByStyleKey`**、**`lightingConfig`**、**`renderQualityMode`**。
+  - **`layoutEditor`**（`version: 1`）：**`floorPlanId`**、**`floorLevelIndex`**、**`floorplanStyleKey`**、**`furniture`**（`instanceId` / `model` / `floorId` / `x` / `y` / `rotation`）、**`surfaceOverridesByStyleKey`**、**`lightingConfig`**、**`renderQualityMode`**。
   - **`floorplanSnapshot`**：可选；若用户对墙线等做了覆盖，可存于此（当前可为 `null`）。
   - 未选户型时 **`templateId`** / **`layoutEditor.floorPlanId`** 可为 `null`（空方案）。
   - 侧栏列表：读 **`assets/design/manifest.json`** 的 **`files`**，再 `fetch assets/design/<文件名>`。

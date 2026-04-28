@@ -29,6 +29,12 @@ export function createFurnitureMeshModule(ctx) {
     setFurnitureFromLayoutCm,
   } = ctx;
 
+  let nextLayoutInstanceSeq = 1;
+  function createLayoutInstanceId() {
+    const n = nextLayoutInstanceSeq++;
+    return `li_${Date.now().toString(36)}_${n.toString(36)}`;
+  }
+
   async function createFurnitureMesh(furnitureId) {
     const item = byId.get(furnitureId);
     const fp = extractFurnitureFootprintCm(item);
@@ -91,6 +97,10 @@ export function createFurnitureMeshModule(ctx) {
     const fp = extractFurnitureFootprintCm(item);
     const group = await createFurnitureMesh(modelId);
     group.userData.isFurniture = true;
+    group.userData.layoutInstanceId =
+      opts.layoutInstanceId != null && String(opts.layoutInstanceId).trim()
+        ? String(opts.layoutInstanceId).trim()
+        : createLayoutInstanceId();
     group.userData.footprint = { hw: fp.hw, hh: fp.hh, h: fp.h };
     group.userData.floorId = String(floorId ?? getActiveFloorIdForFurniture()).trim() || "floor1";
     let rot = Math.round(Number(rotationDeg) || 0) % 360;

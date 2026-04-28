@@ -377,6 +377,7 @@ function collectLayoutEditorState(layout) {
   const floorLevelIndex = typeof getFloorLevel === "function" ? getFloorLevel() : null;
   const floorplanStyleKey = typeof getStyleKey === "function" ? getStyleKey() : null;
   const furniture = (Array.isArray(layout) ? layout : []).map((item) => ({
+    instanceId: item?.instanceId != null && String(item.instanceId).trim() ? String(item.instanceId).trim() : null,
     model: String(item.model ?? "").trim(),
     floorId: item?.floorId != null && String(item.floorId).trim() ? String(item.floorId).trim() : null,
     x: Math.round(Number(item.x) || 0),

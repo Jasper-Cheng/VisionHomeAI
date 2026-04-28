@@ -4006,6 +4006,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!g.userData?.isFurniture) return;
       const cm = sceneXZToCenteredCm(g.position.x, g.position.z);
       const row = {
+        instanceId: String(g.userData.layoutInstanceId || "").trim() || null,
         model: g.userData.modelType,
         floorId: String(g.userData.floorId || "").trim() || null,
         x: Math.round(cm.x),

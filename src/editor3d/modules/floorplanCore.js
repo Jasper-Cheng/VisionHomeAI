@@ -631,12 +631,14 @@ export function createFloorplanCore(ctx) {
     const currentGroups = furnitureRoot.children.filter((child) => child.userData?.isFurniture);
     const exactBuckets = new Map();
     const unused = new Set(currentGroups);
+    let needsFurnitureFloorSync = false;
 
     const normalizeRow = (row) => {
       let rot = Math.round(Number(row?.rotation ?? 0) || 0) % 360;
       if (rot < 0) rot += 360;
       const lift = row?.decorationLiftCm != null ? Math.round(Number(row.decorationLiftCm) || 0) : 0;
       return {
+        instanceId: row?.instanceId != null && String(row.instanceId).trim() ? String(row.instanceId).trim() : null,
         model: String(row?.model ?? "").trim(),
         floorId: String(row?.floorId ?? "").trim() || null,
         x: Math.round(Number(row?.x) || 0),
@@ -648,6 +650,7 @@ export function createFloorplanCore(ctx) {
     const keyForRow = (row) => {
       const r = normalizeRow(row);
       return JSON.stringify({
+        i: r.instanceId,
         m: r.model,
         f: r.floorId,
         x: r.x,
@@ -659,6 +662,7 @@ export function createFloorplanCore(ctx) {
     const rowForGroup = (group) => {
       const cm = sceneXZToCenteredCm(group.position.x, group.position.z);
       return {
+        instanceId: String(group.userData.layoutInstanceId || "").trim() || null,
         model: group.userData.modelType,
         floorId: String(group.userData.floorId || "").trim() || null,
         x: Math.round(cm.x),
@@ -675,7 +679,21 @@ export function createFloorplanCore(ctx) {
     });
 
     const assignments = targetRows.map((row) => ({ row, group: null }));
+    const groupsByInstanceId = new Map();
+    currentGroups.forEach((group) => {
+      const id = String(group.userData.layoutInstanceId || "").trim();
+      if (id) groupsByInstanceId.set(id, group);
+    });
     assignments.forEach((entry) => {
+      const id = normalizeRow(entry.row).instanceId;
+      if (!id) return;
+      const group = groupsByInstanceId.get(id);
+      if (!group || !unused.has(group)) return;
+      entry.group = group;
+      unused.delete(group);
+    });
+    assignments.forEach((entry) => {
+      if (entry.group) return;
       const bucket = exactBuckets.get(keyForRow(entry.row));
       while (bucket?.length) {
         const group = bucket.shift();
@@ -718,19 +736,28 @@ export function createFloorplanCore(ctx) {
         group = await appendFurnitureItem(row.model, row.x, row.y, row.rotation, row.floorId, {
           wallSnap: false,
           decorationLiftCm: row.decorationLiftCm,
+          layoutInstanceId: row.instanceId,
         });
         entry.group = group;
+        needsFurnitureFloorSync = true;
         continue;
       }
-      if (keyForRow(rowForGroup(group)) !== keyForRow(row)) state.shadowCacheDirty = true;
+      if (row.instanceId) group.userData.layoutInstanceId = row.instanceId;
+      const beforeRow = normalizeRow(rowForGroup(group));
+      const changed = keyForRow(beforeRow) !== keyForRow(row);
+      if (!changed) continue;
+      state.shadowCacheDirty = true;
+      if (beforeRow.floorId !== row.floorId || beforeRow.decorationLiftCm !== row.decorationLiftCm) {
+        needsFurnitureFloorSync = true;
+      }
       group.userData.floorId = row.floorId || "floor1";
       group.userData.rotDeg = row.rotation;
       setFurnitureFromLayoutCm(group, row.x, row.y, row.rotation, { wallSnap: false });
       group.userData.decorationLiftM = clampDecorationLiftMForGroup(group, row.decorationLiftCm / 100);
-      furnitureRoot.add(group);
+      if (group.parent !== furnitureRoot) furnitureRoot.add(group);
     }
 
-    updateFurnitureFloorVisibility();
+    if (needsFurnitureFloorSync) updateFurnitureFloorVisibility();
     updateBottomUI();
   }
 
