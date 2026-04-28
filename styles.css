@@ -504,8 +504,7 @@ a.avatar:hover {
 
 .layout-editor-toolbar {
   position: relative;
-  /* 须低于 .side-panel(5)；右侧 .properties-panel(6) 叠在工具栏上，不再为属性面板预留 padding */
-  z-index: 3;
+  z-index: 8;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -522,6 +521,10 @@ a.avatar:hover {
 /* 左侧库（户型/家具/文件）叠在左侧时，顶部栏向右让出宽度 */
 .app-view--edit .app-content:has(.side-panel.is-visible) .layout-editor-toolbar {
   padding-left: calc(var(--side-panel-width, 320px) + 14px);
+}
+
+.app-view--edit .app-content:has(#propertiesPanel.is-visible) .layout-editor-toolbar {
+  padding-right: calc(var(--side-panel-width, 320px) + 14px);
 }
 
 .layout-editor-toolbar-left {

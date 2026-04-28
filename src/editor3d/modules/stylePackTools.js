@@ -531,6 +531,7 @@ export function createStylePackTools(ctx) {
     let styleDropdownRefreshGen = 0;
 
     function openDropdown() {
+      void refreshStyleDropdown();
       dropdown.hidden = false;
       btn.setAttribute("aria-expanded", "true");
       btn.classList.add("is-active");
