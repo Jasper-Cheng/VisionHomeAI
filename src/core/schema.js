@@ -8,9 +8,7 @@ export const DATA_PATHS = {
   /** 家具库：manifest.json 与同目录下各 <id>.json（可选 tags: string[] 供属性面板展示） */
   furnitureManifest: "assets/furniture/furnitureLibrary.json",
   furnitureDir: "assets/furniture",
-  /**
-   * 用户方案目录：每条 JSON = 选定户型模板（templateId → floorplans）+ 家具编辑层（furnitureInstances 等）
-   */
+  /** 用户方案目录：每条 JSON = 选定户型模板（templateId → floorplans）+ layoutEditor 编辑状态 */
   design: "assets/design",
   /** 方案清单（静态站无法枚举目录；新方案请把文件名写入 files） */
   designManifest: "assets/design/manifest.json",

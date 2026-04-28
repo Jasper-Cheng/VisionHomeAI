@@ -488,7 +488,7 @@ export function createAnnotations(ctx) {
 
   function setDimensionsVisible(v) {
     state.showDimensions = Boolean(v);
-    const btn = document.getElementById("svgDimToggleBtn");
+    const btn = document.getElementById("layoutDimToggleBtn");
     if (btn) {
       btn.classList.toggle("is-active", state.showDimensions);
       btn.setAttribute("aria-pressed", String(state.showDimensions));
@@ -525,7 +525,7 @@ export function createAnnotations(ctx) {
 
   function setNamesVisible(v) {
     state.showNames = Boolean(v);
-    const btn = document.getElementById("svgNameToggleBtn");
+    const btn = document.getElementById("layoutNameToggleBtn");
     if (btn) {
       btn.classList.toggle("is-active", state.showNames);
       btn.setAttribute("aria-pressed", String(state.showNames));

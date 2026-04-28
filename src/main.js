@@ -17,17 +17,17 @@ import { initThreeEditor } from "./editor3d/editEditor.js";
 const EDIT_SESSION_STORAGE_KEY = "visionhome:editSession:v1";
 
 function captureEditSessionForStorage() {
-  const getLayout = window.svgEditorGetLayout;
+  const getLayout = window.layoutEditorGetLayout;
   if (typeof getLayout !== "function") return null;
   try {
     const layout = getLayout();
-    const getFp = window.svgEditorGetCurrentFloorplanId;
-    const getFloorLevel = window.svgEditorGetCurrentFloorLevelIndex;
-    const getView = window.svgEditorGetViewTransform;
-    const getGrid = window.svgEditorGetGridVisible;
-    const getLighting = window.svgEditorGetLightingConfig;
-    const getRenderQuality = window.svgEditorGetRenderQualityMode;
-    const getUndo = window.svgEditorGetUndoHistory;
+    const getFp = window.layoutEditorGetCurrentFloorplanId;
+    const getFloorLevel = window.layoutEditorGetCurrentFloorLevelIndex;
+    const getView = window.layoutEditorGetViewTransform;
+    const getGrid = window.layoutEditorGetGridVisible;
+    const getLighting = window.layoutEditorGetLightingConfig;
+    const getRenderQuality = window.layoutEditorGetRenderQualityMode;
+    const getUndo = window.layoutEditorGetUndoHistory;
     const undoHistory =
       typeof getUndo === "function"
         ? (() => {
@@ -65,8 +65,8 @@ function captureEditSessionForStorage() {
 }
 
 function persistEditSession() {
-  if (typeof window.svgEditorFlushHistoryDebounce === "function") {
-    window.svgEditorFlushHistoryDebounce();
+  if (typeof window.layoutEditorFlushHistoryDebounce === "function") {
+    window.layoutEditorFlushHistoryDebounce();
   }
   const data = captureEditSessionForStorage();
   if (!data) return;
@@ -91,7 +91,7 @@ function tryRestoreEditSession() {
   } catch {
     return;
   }
-  if (!data || Number(data.version) !== 1 || typeof window.svgEditorRestoreSession !== "function") return;
+  if (!data || Number(data.version) !== 1 || typeof window.layoutEditorRestoreSession !== "function") return;
 
   const des = data.design;
   if (des && typeof des === "object") {
@@ -100,7 +100,7 @@ function tryRestoreEditSession() {
     window.__activeDesignProject = des.project ?? null;
   }
 
-  void window.svgEditorRestoreSession(data).catch((err) => console.warn("[VisionHome] restore session:", err));
+  void window.layoutEditorRestoreSession(data).catch((err) => console.warn("[VisionHome] restore session:", err));
 
   window.dispatchEvent(new CustomEvent("visionhome:design-metadata-updated"));
 
@@ -168,7 +168,7 @@ async function boot() {
     initThreeEditor(mergedCatalog);
   } catch (err) {
     console.error(err);
-    window.__visionHomeSvgEditor = { ok: false, reason: "threw", error: String(err) };
+    window.__visionHomeLayoutEditor = { ok: false, reason: "threw", error: String(err) };
   }
   /* 须在恢复会话之前挂载：恢复时会 emit layout-changed，保存按钮才能同步 */
   mountSaveDesignFlow();

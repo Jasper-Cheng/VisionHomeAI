@@ -315,8 +315,8 @@ export function createStylePackTools(ctx) {
   }
 
   function initStylePackSaveDialogs() {
-    const overwriteBtn = document.getElementById("svgStyleOverwriteBtn");
-    const newBtn = document.getElementById("svgStyleNewBtn");
+    const overwriteBtn = document.getElementById("layoutStyleOverwriteBtn");
+    const newBtn = document.getElementById("layoutStyleNewBtn");
     const dlgOver = document.getElementById("styleOverwriteDialog");
     const dlgNew = document.getElementById("styleNewDialog");
     const msgOver = document.getElementById("styleOverwriteMessage");
@@ -411,7 +411,7 @@ export function createStylePackTools(ctx) {
         clearStyleConfigCache();
         await loadStylePackIndexFromMain(fpId);
         await rebuildFloorplan3D();
-        window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
+        window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-layout"));
         schedulePushHistory();
         syncOverwriteBtnLockState();
         window.__designLayoutBaseline = serializeDesignBaseline();
@@ -508,7 +508,7 @@ export function createStylePackTools(ctx) {
         clearStyleConfigCache();
         await loadStylePackIndexFromMain(fpId);
         await rebuildFloorplan3D();
-        window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-svg"));
+        window.dispatchEvent(new CustomEvent("visionhome:floorplan-applied-to-layout"));
         schedulePushHistory();
         syncOverwriteBtnLockState();
         window.__designLayoutBaseline = serializeDesignBaseline();
@@ -519,13 +519,13 @@ export function createStylePackTools(ctx) {
       }
     });
 
-    window.addEventListener("visionhome:floorplan-applied-to-svg", () => syncOverwriteBtnLockState());
+    window.addEventListener("visionhome:floorplan-applied-to-layout", () => syncOverwriteBtnLockState());
     syncOverwriteBtnLockState();
   }
 
   function initFloorplanStyleToolbar() {
-    const btn = document.getElementById("svgStyleRecommendBtn");
-    const dropdown = document.getElementById("svgStyleDropdown");
+    const btn = document.getElementById("layoutStyleRecommendBtn");
+    const dropdown = document.getElementById("layoutStyleDropdown");
     if (!btn || !dropdown) return;
 
     let styleDropdownRefreshGen = 0;
@@ -574,7 +574,7 @@ export function createStylePackTools(ctx) {
       if (!fpId) {
         setStyleToolbarButtonLabel(null);
         const hint = document.createElement("div");
-        hint.className = "svg-style-dropdown-hint";
+        hint.className = "layout-style-dropdown-hint";
         hint.textContent = "请先加载户型";
         dropdown.appendChild(hint);
         return;
@@ -589,7 +589,7 @@ export function createStylePackTools(ctx) {
         if (gen !== styleDropdownRefreshGen) return;
         setStyleToolbarButtonLabel(null);
         const hint = document.createElement("div");
-        hint.className = "svg-style-dropdown-hint";
+        hint.className = "layout-style-dropdown-hint";
         hint.textContent = "风格列表加载失败";
         dropdown.appendChild(hint);
         return;
@@ -598,7 +598,7 @@ export function createStylePackTools(ctx) {
         if (gen !== styleDropdownRefreshGen) return;
         setStyleToolbarButtonLabel(null);
         const hint = document.createElement("div");
-        hint.className = "svg-style-dropdown-hint";
+        hint.className = "layout-style-dropdown-hint";
         hint.textContent = "暂无装饰风格";
         dropdown.appendChild(hint);
         return;
@@ -616,7 +616,7 @@ export function createStylePackTools(ctx) {
       for (const s of deduped) {
         const tag = document.createElement("button");
         tag.type = "button";
-        tag.className = "svg-style-tag";
+        tag.className = "layout-style-tag";
         tag.setAttribute("role", "menuitem");
         tag.dataset.styleKey = s.key;
         tag.textContent = s.name;
@@ -647,7 +647,7 @@ export function createStylePackTools(ctx) {
 
       clearStyleConfigCache();
 
-      dropdown.querySelectorAll(".svg-style-tag").forEach((t) => {
+      dropdown.querySelectorAll(".layout-style-tag").forEach((t) => {
         if (String(t.dataset.styleKey ?? "").trim() === key) {
           t.classList.add("is-active");
         } else {
@@ -662,7 +662,7 @@ export function createStylePackTools(ctx) {
         btn.title = tip;
         btn.setAttribute("aria-label", tip);
       } else {
-        const targetTag = dropdown.querySelector(`.svg-style-tag[data-style-key="${key}"]`);
+        const targetTag = dropdown.querySelector(`.layout-style-tag[data-style-key="${key}"]`);
         if (targetTag) {
           const name = String(targetTag.textContent ?? "").trim();
           if (name) {
@@ -692,7 +692,7 @@ export function createStylePackTools(ctx) {
     }
 
     dropdown.addEventListener("click", (e) => {
-      const tag = e.target.closest(".svg-style-tag");
+      const tag = e.target.closest(".layout-style-tag");
       if (!tag) return;
       const key = String(tag.dataset.styleKey ?? "").trim();
       if (!key || !state.currentFloorplanEntry) return;
@@ -718,7 +718,7 @@ export function createStylePackTools(ctx) {
       closeDropdown();
     });
 
-    window.addEventListener("visionhome:floorplan-applied-to-svg", () => {
+    window.addEventListener("visionhome:floorplan-applied-to-layout", () => {
       void refreshStyleDropdown();
     });
     void refreshStyleDropdown();

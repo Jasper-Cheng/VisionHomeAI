@@ -1,6 +1,6 @@
 /**
  * 设计文件（方案）：在户型模板（templateId → assets/floorplans）基础上的家具编辑会话 JSON。
- * 侧栏仅罗列 manifest；打开/应用方案时应合并模板几何与本文件的 furnitureInstances 等。
+ * 侧栏仅罗列 manifest；打开/应用方案时使用 layoutEditor 还原户型、风格与家具布局。
  */
 import { DATA_PATHS } from "../core/schema.js";
 
@@ -184,7 +184,7 @@ export function mountDesignFileList(entries, options = {}) {
 
     for (const { file, project } of entries) {
       const stem = file.replace(/\.json$/i, "").trim();
-      const did = String(project?.id ?? project?.projectId ?? stem).trim();
+      const did = String(project?.id ?? stem).trim();
       /** 侧栏仅展示 name；搜索仍可按 id / 文件名 / 模板匹配 */
       const displayName = String(project?.name ?? "").trim() || "（未命名）";
       const templateId = project?.templateId != null ? String(project.templateId) : "";
@@ -229,7 +229,7 @@ export function mountDesignFileList(entries, options = {}) {
         window.__activeDesignId = did;
         window.dispatchEvent(
           new CustomEvent("visionhome:design-select", {
-            detail: { file, id: did, projectId: did, project },
+            detail: { file, id: did, project },
           }),
         );
       };
@@ -264,11 +264,11 @@ let newSceneAfterSavePending = false;
 let pendingDesignFileSwitch = null;
 
 function currentDesignBaselineFingerprint() {
-  if (typeof window.svgEditorGetDesignBaselineFingerprint === "function") {
-    return window.svgEditorGetDesignBaselineFingerprint();
+  if (typeof window.layoutEditorGetDesignBaselineFingerprint === "function") {
+    return window.layoutEditorGetDesignBaselineFingerprint();
   }
-  const getLayout = window.svgEditorGetLayout;
-  const getFloorLevel = window.svgEditorGetCurrentFloorLevelIndex;
+  const getLayout = window.layoutEditorGetLayout;
+  const getFloorLevel = window.layoutEditorGetCurrentFloorLevelIndex;
   const layout = typeof getLayout === "function" ? getLayout() : [];
   return JSON.stringify({
     furniture: layout,
@@ -278,7 +278,7 @@ function currentDesignBaselineFingerprint() {
 }
 
 export function canSaveCurrentDesign() {
-  const getLayout = window.svgEditorGetLayout;
+  const getLayout = window.layoutEditorGetLayout;
   const layout = typeof getLayout === "function" ? getLayout() : [];
   const hasItems = Array.isArray(layout) && layout.length > 0;
   const cur = currentDesignBaselineFingerprint();
@@ -358,32 +358,21 @@ export function mountHeaderCurrentDesignLabel() {
 
 let saveDesignFlowMounted = false;
 
-function layoutToFurnitureInstances(layout, floorId) {
-  const fid = floorId || "floor1";
-  return (Array.isArray(layout) ? layout : []).map((item, i) => ({
-    instanceId: `fi_${i + 1}`,
-    furnitureId: item.model,
-    floorId: item?.floorId != null && String(item.floorId).trim() ? String(item.floorId).trim() : fid,
-    positionCm: [Math.round(Number(item.x) || 0), Math.round(Number(item.y) || 0)],
-    rotationDeg: Math.round(Number(item.rotation ?? 0) || 0),
-  }));
-}
-
 function isoNow() {
   return new Date().toISOString();
 }
 
 /**
- * 写入设计文件的 SVG 编辑态：户型、楼层索引、家具列表。
+ * 写入设计文件的布局编辑态：户型、楼层索引、家具列表。
  * 视图平移/缩放、网格、逻辑画布尺寸不持久化；打开方案时使用编辑器默认视图与网格。
  */
-function collectSvgEditorState(layout) {
-  const getFp = window.svgEditorGetCurrentFloorplanId;
-  const getFloorLevel = window.svgEditorGetCurrentFloorLevelIndex;
-  const getSurf = window.svgEditorGetSurfaceOverrides;
-  const getStyleKey = window.svgEditorGetFloorplanStyleKey;
-  const getLighting = window.svgEditorGetLightingConfig;
-  const getRenderQuality = window.svgEditorGetRenderQualityMode;
+function collectLayoutEditorState(layout) {
+  const getFp = window.layoutEditorGetCurrentFloorplanId;
+  const getFloorLevel = window.layoutEditorGetCurrentFloorLevelIndex;
+  const getSurf = window.layoutEditorGetSurfaceOverrides;
+  const getStyleKey = window.layoutEditorGetFloorplanStyleKey;
+  const getLighting = window.layoutEditorGetLightingConfig;
+  const getRenderQuality = window.layoutEditorGetRenderQualityMode;
   const floorPlanId = typeof getFp === "function" ? getFp() : null;
   const floorLevelIndex = typeof getFloorLevel === "function" ? getFloorLevel() : null;
   const floorplanStyleKey = typeof getStyleKey === "function" ? getStyleKey() : null;
@@ -426,17 +415,16 @@ function buildProjectPayload(name, layout) {
   const isExisting = Boolean(activeFile && prev && typeof prev === "object");
   const id = isExisting ? String(prev.id ?? activeFile.replace(/\.json$/i, "")).trim() : `project_${Date.now()}`;
   const floorIdFromCanvas =
-    typeof window.svgEditorGetCurrentFloorId === "function" ? window.svgEditorGetCurrentFloorId() : null;
+    typeof window.layoutEditorGetCurrentFloorId === "function" ? window.layoutEditorGetCurrentFloorId() : null;
   const floorId =
     floorIdFromCanvas != null && String(floorIdFromCanvas).trim()
       ? String(floorIdFromCanvas).trim()
       : prev?.activeFloorId != null
         ? String(prev.activeFloorId)
         : "floor1";
-  const furnitureInstances = layoutToFurnitureInstances(layout, floorId);
   const base = isExisting ? { ...prev } : {};
   const fpFromCanvas =
-    typeof window.svgEditorGetCurrentFloorplanId === "function" ? window.svgEditorGetCurrentFloorplanId() : null;
+    typeof window.layoutEditorGetCurrentFloorplanId === "function" ? window.layoutEditorGetCurrentFloorplanId() : null;
   const templateId =
     fpFromCanvas != null && String(fpFromCanvas).trim()
       ? String(fpFromCanvas).trim()
@@ -453,8 +441,7 @@ function buildProjectPayload(name, layout) {
     templateId,
     activeFloorId: floorId,
     floorplanSnapshot: base.floorplanSnapshot ?? null,
-    furnitureInstances,
-    svgEditor: collectSvgEditorState(layout),
+    layoutEditor: collectLayoutEditorState(layout),
   };
 }
 
@@ -522,7 +509,7 @@ export async function executeSaveWithName(name) {
 
   const trimmed = String(name ?? "").trim();
   if (!trimmed) return;
-  const getLayout = window.svgEditorGetLayout;
+  const getLayout = window.layoutEditorGetLayout;
   const layout = typeof getLayout === "function" ? getLayout() : [];
   if (!layout.length) {
     openSaveDialog();
@@ -554,8 +541,8 @@ export async function executeSaveWithName(name) {
   window.__activeDesignProject = project;
   window.__activeDesignFile = saved.ok ? saved.file : filename;
   window.__activeDesignId = String(project.id);
-  if (typeof window.svgEditorCommitSavedBaseline === "function") {
-    window.svgEditorCommitSavedBaseline();
+  if (typeof window.layoutEditorCommitSavedBaseline === "function") {
+    window.layoutEditorCommitSavedBaseline();
   }
   newSceneAfterSavePending = false;
   window.dispatchEvent(new CustomEvent("visionhome:design-metadata-updated"));
@@ -629,7 +616,7 @@ function updateSaveButtonState() {
   if (!btn) return;
   const can = canSaveCurrentDesign();
   btn.disabled = !can;
-  const getLayout = window.svgEditorGetLayout;
+  const getLayout = window.layoutEditorGetLayout;
   const layout = typeof getLayout === "function" ? getLayout() : [];
   const hasItems = Array.isArray(layout) && layout.length > 0;
   const cur = currentDesignBaselineFingerprint();
@@ -741,6 +728,6 @@ export function mountSaveDesignFlow() {
     await executeSaveWithName(name);
   });
 
-  window.addEventListener("visionhome:svg-layout-changed", updateSaveButtonState);
+  window.addEventListener("visionhome:layout-editor-changed", updateSaveButtonState);
   updateSaveButtonState();
 }

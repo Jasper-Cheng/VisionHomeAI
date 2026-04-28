@@ -475,8 +475,8 @@ a.avatar:hover {
   min-height: 0;
 }
 
-/* 编辑模式：SVG 户型编辑区（吃掉左右栏之间的剩余宽度并撑满高度） */
-.svg-editor-slot {
+/* 编辑模式：3D 布局编辑区（吃掉左右栏之间的剩余宽度并撑满高度） */
+.layout-editor-slot {
   position: relative;
   z-index: 0;
   flex: 1 1 0%;
@@ -488,7 +488,7 @@ a.avatar:hover {
   align-self: stretch;
 }
 
-.svg-editor {
+.layout-editor {
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
@@ -502,7 +502,7 @@ a.avatar:hover {
   overflow: hidden;
 }
 
-.svg-editor-toolbar {
+.layout-editor-toolbar {
   position: relative;
   /* 须低于 .side-panel(5)；右侧 .properties-panel(6) 叠在工具栏上，不再为属性面板预留 padding */
   z-index: 3;
@@ -520,25 +520,25 @@ a.avatar:hover {
 }
 
 /* 左侧库（户型/家具/文件）叠在左侧时，顶部栏向右让出宽度 */
-.app-view--edit .app-content:has(.side-panel.is-visible) .svg-editor-toolbar {
+.app-view--edit .app-content:has(.side-panel.is-visible) .layout-editor-toolbar {
   padding-left: calc(var(--side-panel-width, 320px) + 14px);
 }
 
-.svg-editor-toolbar-left {
+.layout-editor-toolbar-left {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
 }
 
-.svg-editor-title {
+.layout-editor-title {
   font-size: 13px;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.9);
   letter-spacing: 0.2px;
 }
 
-.svg-editor-hint {
+.layout-editor-hint {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -552,22 +552,22 @@ a.avatar:hover {
   user-select: none;
 }
 
-.svg-editor-hint__line {
+.layout-editor-hint__line {
   display: block;
   white-space: nowrap;
 }
 
-.svg-editor-hint__nowrap {
+.layout-editor-hint__nowrap {
   white-space: nowrap;
 }
 
-.svg-editor-hint strong {
+.layout-editor-hint strong {
   color: rgba(200, 190, 255, 0.85);
   font-weight: 800;
 }
 
 /* 画布缩放 / 平移 */
-.svg-editor-view-controls {
+.layout-editor-view-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -577,7 +577,7 @@ a.avatar:hover {
   padding: 0 4px;
 }
 
-.svg-view-btn {
+.layout-view-btn {
   min-width: 30px;
   height: 28px;
   padding: 0 8px;
@@ -596,38 +596,38 @@ a.avatar:hover {
     color 120ms ease;
 }
 
-.svg-view-btn:hover {
+.layout-view-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.16);
   color: rgba(255, 255, 255, 0.95);
 }
 
-.svg-view-btn--wide {
+.layout-view-btn--wide {
   min-width: 48px;
   padding: 0 10px;
   font-size: 11.5px;
   font-weight: 800;
 }
 
-.svg-view-btn.is-active {
+.layout-view-btn.is-active {
   border-color: rgba(109, 92, 255, 0.55);
   background: rgba(109, 92, 255, 0.2);
   color: rgba(235, 233, 255, 0.98);
 }
 
-.svg-view-btn:disabled {
+.layout-view-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
   pointer-events: none;
 }
 
-/* 网格层（主次 1cm/10cm，#svgEditorGridStack；由 JS 切换 .svg-grid-hidden） */
-.svg-editor-grid-layer.svg-grid-hidden {
+/* 网格层（主次 1cm/10cm，#layoutEditorGridStack；由 JS 切换 .layout-grid-hidden） */
+.layout-editor-grid-layer.layout-grid-hidden {
   visibility: hidden;
   pointer-events: none;
 }
 
-.svg-view-sep {
+.layout-view-sep {
   width: 1px;
   height: 18px;
   margin: 0 2px;
@@ -635,7 +635,7 @@ a.avatar:hover {
   flex-shrink: 0;
 }
 
-.svg-other-opacity-wrap {
+.layout-other-opacity-wrap {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -646,18 +646,18 @@ a.avatar:hover {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.svg-other-opacity-wrap input[type="range"] {
+.layout-other-opacity-wrap input[type="range"] {
   width: 120px;
   accent-color: rgba(109, 92, 255, 0.85);
 }
 
 /* 装饰风格按钮 + 下拉菜单 */
-.svg-style-recommend-wrap {
+.layout-style-recommend-wrap {
   position: relative;
   display: inline-flex;
 }
 
-.svg-style-dropdown {
+.layout-style-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   left: 50%;
@@ -676,7 +676,7 @@ a.avatar:hover {
   backdrop-filter: blur(12px);
 }
 
-.svg-style-dropdown[hidden] {
+.layout-style-dropdown[hidden] {
   display: none;
 }
 
@@ -685,7 +685,7 @@ a.avatar:hover {
   display: none !important;
 }
 
-.svg-style-dropdown-hint {
+.layout-style-dropdown-hint {
   padding: 6px 4px;
   font-size: 12px;
   line-height: 1.35;
@@ -695,7 +695,7 @@ a.avatar:hover {
   grid-column: 1 / -1;
 }
 
-.svg-style-tag {
+.layout-style-tag {
   padding: 4px 10px;
   border-radius: 20px;
   border: 1px solid rgba(109, 92, 255, 0.45);
@@ -710,25 +710,25 @@ a.avatar:hover {
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.svg-style-tag:hover {
+.layout-style-tag:hover {
   background: rgba(109, 92, 255, 0.32);
   border-color: rgba(109, 92, 255, 0.8);
   color: #fff;
 }
 
-.svg-style-tag.is-active {
+.layout-style-tag.is-active {
   background: rgba(109, 92, 255, 0.55);
   border-color: #6d5cff;
   color: #fff;
 }
 
 /* 环境光调节按钮 + 下拉菜单 */
-.svg-lighting-wrap {
+.layout-lighting-wrap {
   position: relative;
   display: inline-flex;
 }
 
-.svg-lighting-dropdown {
+.layout-lighting-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
@@ -745,16 +745,16 @@ a.avatar:hover {
   backdrop-filter: blur(12px);
 }
 
-.svg-lighting-dropdown[hidden] {
+.layout-lighting-dropdown[hidden] {
   display: none;
 }
 
-.svg-render-quality-wrap {
+.layout-render-quality-wrap {
   position: relative;
   display: inline-flex;
 }
 
-.svg-render-quality-dropdown {
+.layout-render-quality-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
@@ -771,11 +771,11 @@ a.avatar:hover {
   backdrop-filter: blur(12px);
 }
 
-.svg-render-quality-dropdown[hidden] {
+.layout-render-quality-dropdown[hidden] {
   display: none;
 }
 
-.svg-render-quality-option {
+.layout-render-quality-option {
   height: 28px;
   padding: 0 10px;
   border-radius: 8px;
@@ -788,44 +788,44 @@ a.avatar:hover {
   text-align: center;
 }
 
-.svg-render-quality-option:hover {
+.layout-render-quality-option:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.svg-render-quality-option.is-active {
+.layout-render-quality-option.is-active {
   border-color: rgba(109, 92, 255, 0.55);
   background: rgba(109, 92, 255, 0.2);
   color: rgba(235, 233, 255, 0.98);
 }
 
-.svg-lighting-section {
+.layout-lighting-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.svg-lighting-row {
+.layout-lighting-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.svg-lighting-label {
+.layout-lighting-label {
   flex: 0 0 60px;
   font-size: 12px;
   color: rgba(200, 190, 255, 0.85);
   white-space: nowrap;
 }
 
-.svg-lighting-range {
+.layout-lighting-range {
   flex: 1;
   height: 4px;
   accent-color: rgba(109, 92, 255, 0.85);
   cursor: pointer;
 }
 
-.svg-lighting-value {
+.layout-lighting-value {
   flex: 0 0 36px;
   font-size: 11px;
   color: rgba(180, 170, 220, 0.7);
@@ -833,14 +833,14 @@ a.avatar:hover {
   font-variant-numeric: tabular-nums;
 }
 
-.svg-lighting-actions {
+.layout-lighting-actions {
   display: flex;
   justify-content: flex-end;
   padding-top: 4px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.svg-lighting-reset {
+.layout-lighting-reset {
   padding: 4px 10px;
   border-radius: 6px;
   border: 1px solid rgba(109, 92, 255, 0.4);
@@ -851,19 +851,19 @@ a.avatar:hover {
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.svg-lighting-reset:hover {
+.layout-lighting-reset:hover {
   background: rgba(109, 92, 255, 0.3);
   border-color: rgba(109, 92, 255, 0.7);
   color: #fff;
 }
 
-.svg-floor-level-dock {
+.layout-floor-level-dock {
   position: absolute;
   right: 12px;
   bottom: 12px;
   top: auto;
   transform: none;
-  /* 高于 .properties-panel(6)，且挂到 .svg-editor-slot 内，避免被属性面板盖住 */
+  /* 高于 .properties-panel(6)，且挂到 .layout-editor-slot 内，避免被属性面板盖住 */
   z-index: 22;
   width: min(22vw, 140px);
   padding: 0;
@@ -876,18 +876,18 @@ a.avatar:hover {
 }
 
 /* 属性面板打开时：停靠在画布右下角（面板左侧），不叠在面板内容区上 */
-.svg-editor-slot:has(#propertiesPanel.is-visible) .svg-floor-level-dock {
+.layout-editor-slot:has(#propertiesPanel.is-visible) .layout-floor-level-dock {
   right: calc(var(--side-panel-width, 320px) + 12px);
 }
 
-.svg-floor-level-row {
+.layout-floor-level-row {
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: stretch;
 }
 
-.svg-floor-level-tab {
+.layout-floor-level-tab {
   flex: 0 0 auto;
   width: 100%;
   max-width: 100%;
@@ -910,18 +910,18 @@ a.avatar:hover {
     color 120ms ease;
 }
 
-.svg-floor-level-tab:hover {
+.layout-floor-level-tab:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.svg-floor-level-tab.is-active {
+.layout-floor-level-tab.is-active {
   border-color: rgba(109, 92, 255, 0.55);
   background: rgba(109, 92, 255, 0.22);
   color: rgba(245, 244, 255, 0.98);
 }
 
-.svg-editor-canvas-wrap {
+.layout-editor-canvas-wrap {
   flex: 1 1 0%;
   min-width: 0;
   /* 避免父级 flex/min-height:0 链在个别浏览器里把画布高度算成 0，导致「看得见条但点不到」 */
@@ -934,11 +934,11 @@ a.avatar:hover {
 }
 
 /* WebKit：家具 g 与 viewRoot 的 transform 叠加时偶发横向错线，独立堆叠上下文可缓解 */
-#svgEditorViewRoot {
+#layoutEditorViewRoot {
   isolation: isolate;
 }
 
-.svg-editor-canvas {
+.layout-editor-canvas {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
@@ -953,12 +953,12 @@ a.avatar:hover {
   -webkit-user-drag: none;
 }
 
-.svg-editor-canvas.is-middle-panning {
+.layout-editor-canvas.is-middle-panning {
   cursor: grabbing;
 }
 
 /* 户型在独立层；家具层在上，重叠区域优先点家具 */
-.svg-editor-floorplan-layer {
+.layout-editor-floorplan-layer {
   pointer-events: auto;
 }
 
@@ -1118,7 +1118,7 @@ a.avatar:hover {
 }
 
 /* 家具层本身是空 <g> 时，勿设 pointer-events:auto，否则部分浏览器会吞掉整块画布事件（滚轮/点击全无反应） */
-.svg-editor-furniture-layer {
+.layout-editor-furniture-layer {
   pointer-events: none;
 }
 
@@ -1597,8 +1597,8 @@ a.avatar:hover {
   z-index: 2;
 }
 
-/* 叠在 2D SVG 画布底部（.svg-editor-canvas-wrap 为 position:relative） */
-.svg-editor-canvas-wrap .viewer-bottom-ui {
+/* 叠在 3D 布局画布底部（.layout-editor-canvas-wrap 为 position:relative） */
+.layout-editor-canvas-wrap .viewer-bottom-ui {
   z-index: 4;
 }
 
@@ -1764,7 +1764,7 @@ a.avatar:hover {
   box-shadow: none;
 }
 
-/* 叠在编辑区右侧：不占 flex 宽度，显示/隐藏时中间 SVG 区域宽度不变、不随面板重排缩放 */
+/* 叠在编辑区右侧：不占 flex 宽度，显示/隐藏时中间 3D 区域宽度不变、不随面板重排缩放 */
 .properties-panel {
   position: absolute;
   top: 0;
@@ -3916,4 +3916,3 @@ a.icon-btn {
   height: 12px;
   color: #f59e0b;
 }
-

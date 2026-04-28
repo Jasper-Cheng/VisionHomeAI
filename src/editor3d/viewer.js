@@ -175,7 +175,7 @@ import {
   const state = {
     currentModel: catalog?.items?.[0]?.id || "sofa_03",
     dragging: false,
-    mode: null, // "move"（家具仅从侧栏拖到 2D SVG，不在此场景从卡片置入 3D）
+    mode: null, // "move"（家具从侧栏拖入布局编辑器，不在此场景从卡片置入 3D）
     draggedRoot: null,
     lastPointerInViewer: false,
     selectedRoot: null,
@@ -541,7 +541,7 @@ import {
   };
 
   const selectRoot = (root) => {
-    if (typeof window.svgEditorDeselect === "function") window.svgEditorDeselect();
+    if (typeof window.layoutEditorDeselect === "function") window.layoutEditorDeselect();
     state.selectedRoot = root;
     if (propertiesPanel) propertiesPanel.classList.add("is-visible");
 
@@ -555,7 +555,7 @@ import {
   };
 
   const clearSelection = () => {
-    if (typeof window.svgEditorDeselect === "function") window.svgEditorDeselect();
+    if (typeof window.layoutEditorDeselect === "function") window.layoutEditorDeselect();
     state.selectedRoot = null;
     if (propertiesPanel) propertiesPanel.classList.remove("is-visible");
     if (propertiesName) propertiesName.textContent = "未选择";
@@ -730,9 +730,9 @@ import {
   gridBtn?.addEventListener("click", toggleGrid);
   groundBtn?.addEventListener("click", toggleGround);
 
-  // 属性面板：优先写回 SVG 平面图选中家具，否则写回 3D 选中物体
+  // 属性面板：优先写回布局编辑器选中家具，否则写回全景 3D 选中物体
   const applyPropsFromInputs = () => {
-    if (typeof window.svgEditorApplyPropertiesFromPanel === "function" && window.svgEditorApplyPropertiesFromPanel()) {
+    if (typeof window.layoutEditorApplyPropertiesFromPanel === "function" && window.layoutEditorApplyPropertiesFromPanel()) {
       return;
     }
     if (state.selectedRoot) {
@@ -776,4 +776,3 @@ import {
   resize();
   animate();
 })();
-

@@ -7,7 +7,6 @@ export function createProjectIoModule(ctx) {
     clearFloorplan,
     emitLayoutChanged,
     floorplanRoot,
-    getFloorsFromEntry,
     initHistory,
     maxHistory = 80,
     migrateFloorplanSurfaceOverridesBucket,
@@ -28,23 +27,6 @@ export function createProjectIoModule(ctx) {
     syncUndoRedoButtons,
   } = ctx;
 
-  function projectToSvgLayout(project) {
-    const inst = project?.furnitureInstances;
-    if (!Array.isArray(inst)) return [];
-    return inst
-      .map((fi) => {
-        const pc = Array.isArray(fi.positionCm) && fi.positionCm.length >= 2 ? fi.positionCm : null;
-        return {
-          model: String(fi.furnitureId ?? fi.modelId ?? "").trim(),
-          floorId: fi?.floorId != null && String(fi.floorId).trim() ? String(fi.floorId).trim() : "floor1",
-          x: pc ? Math.round(Number(pc[0]) || 0) : 0,
-          y: pc ? Math.round(Number(pc[1]) || 0) : 0,
-          rotation: Math.round(Number(fi.rotationDeg ?? fi.rotation ?? 0) || 0),
-        };
-      })
-      .filter((row) => row.model);
-  }
-
   function normalizeSavedFurnitureLayout(arr) {
     if (!Array.isArray(arr)) return [];
     return arr
@@ -64,15 +46,6 @@ export function createProjectIoModule(ctx) {
     } catch {
       return fallback;
     }
-  }
-
-  function isStyleKeyedFormat(obj) {
-    if (!obj || typeof obj !== "object") return false;
-    const vals = Object.values(obj);
-    if (!vals.length) return false;
-    return vals.every((v) => v && typeof v === "object" && (
-      "roomFloors" in v || "doorOverrides" in v || "windowOverrides" in v
-    ));
   }
 
   function syncNestedOverridesBuckets(styleKey) {
@@ -111,43 +84,32 @@ export function createProjectIoModule(ctx) {
   async function applyFromDesignProject(project) {
     if (!project || typeof project !== "object") return;
     const gridWasVisible = state.gridVisible;
-    const se = project.svgEditor;
-    const hasSvgEditor = se && typeof se === "object" && Number(se.version) === 1;
-    const layout = hasSvgEditor && Array.isArray(se.furniture)
-      ? normalizeSavedFurnitureLayout(se.furniture)
-      : projectToSvgLayout(project);
+    const se = project.layoutEditor;
+    const hasLayoutEditor = se && typeof se === "object" && Number(se.version) === 1;
+    if (!hasLayoutEditor) return;
+    const layout = normalizeSavedFurnitureLayout(se.furniture);
 
     let fpId = null;
     let floorLevelIndex = 0;
-    if (hasSvgEditor && Object.prototype.hasOwnProperty.call(se, "floorPlanId")) {
+    if (Object.prototype.hasOwnProperty.call(se, "floorPlanId")) {
       const v = se.floorPlanId;
       fpId = v != null && String(v).trim() ? String(v).trim() : null;
       const lv = Math.trunc(Number(se.floorLevelIndex));
       if (Number.isFinite(lv) && lv >= 0) floorLevelIndex = lv;
-    } else {
-      const t = project.templateId;
-      fpId = t != null && String(t).trim() ? String(t).trim() : null;
-      const floorIdToIndex = new Map(
-        getFloorsFromEntry(resolveFloorplanCatalogEntry(fpId)).map((f, i) => [String(f?.id || ""), i]),
-      );
-      const fromActive = String(project?.activeFloorId ?? "").trim();
-      if (fromActive && floorIdToIndex.has(fromActive)) floorLevelIndex = floorIdToIndex.get(fromActive) ?? 0;
     }
 
     state.isRestoring = true;
     try {
-      if (hasSvgEditor && Object.prototype.hasOwnProperty.call(se, "floorplanStyleKey")) {
+      if (Object.prototype.hasOwnProperty.call(se, "floorplanStyleKey")) {
         const sk = se.floorplanStyleKey;
         state.floorplanStyleKeyOverride = sk != null && String(sk).trim() ? String(sk).trim() : null;
       } else {
         state.floorplanStyleKeyOverride = null;
       }
 
-      const rawByStyleKey = hasSvgEditor && se.surfaceOverridesByStyleKey && typeof se.surfaceOverridesByStyleKey === "object"
+      const rawByStyleKey = se.surfaceOverridesByStyleKey && typeof se.surfaceOverridesByStyleKey === "object"
         ? se.surfaceOverridesByStyleKey
-        : (hasSvgEditor && se.surfaceOverrides && isStyleKeyedFormat(se.surfaceOverrides))
-          ? se.surfaceOverrides
-          : null;
+        : null;
 
       if (rawByStyleKey) {
         const raw = cloneByJson(rawByStyleKey, {});
@@ -158,13 +120,7 @@ export function createProjectIoModule(ctx) {
         }
         state.floorplanSurfaceOverridesByStyleKey = next;
       } else {
-        const legacyBucket = migrateFloorplanSurfaceOverridesBucket(
-          hasSvgEditor && se.surfaceOverrides && typeof se.surfaceOverrides === "object"
-            ? cloneByJson(se.surfaceOverrides, {})
-            : {},
-        );
-        const sk = normalizeStyleKeyForSurfaceOverrides(state.floorplanStyleKeyOverride);
-        state.floorplanSurfaceOverridesByStyleKey = Object.keys(legacyBucket).length ? { [sk]: legacyBucket } : {};
+        state.floorplanSurfaceOverridesByStyleKey = {};
       }
 
       if (fpId) {
@@ -192,10 +148,10 @@ export function createProjectIoModule(ctx) {
       await rebuildFromLayout(layout);
       resetCameraView();
       setGridVisible(gridWasVisible);
-      if (hasSvgEditor && se.lightingConfig && typeof se.lightingConfig === "object") {
+      if (se.lightingConfig && typeof se.lightingConfig === "object") {
         applyLightingConfig?.(se.lightingConfig);
       }
-      if (hasSvgEditor && typeof se.renderQualityMode === "string") {
+      if (typeof se.renderQualityMode === "string") {
         setRenderQualityMode(se.renderQualityMode, { rerender: false });
         syncRenderQualityToolbarUi();
       }

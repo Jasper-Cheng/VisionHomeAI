@@ -1,5 +1,5 @@
 /**
- * 编辑模式 Three.js：户型挤出 + 家具交互，兼容 window.svgEditor* API
+ * 编辑模式 Three.js：户型挤出 + 家具交互，并暴露 window.layoutEditor* API
  */
 import * as THREE from "three";
 import { OrbitControls } from "../../assets/vendor/OrbitControls.js";
@@ -95,11 +95,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   const container = document.getElementById("threeEditorViewport");
   if (!container) {
     const r = { ok: false, reason: "missing-threeEditorViewport" };
-    window.__visionHomeSvgEditor = r;
+    window.__visionHomeLayoutEditor = r;
     return r;
   }
   const byId = catalog.byId instanceof Map ? catalog.byId : new Map();
-  const canvasWrap = container.closest(".svg-editor-canvas-wrap") ?? container.parentElement;
+  const canvasWrap = container.closest(".layout-editor-canvas-wrap") ?? container.parentElement;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0d0d0d);
@@ -549,15 +549,15 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   function syncNestedSurfaceOverridesToActiveDesignProject(nestedKey, payload) {
     const proj = window.__activeDesignProject;
     if (!proj || typeof proj !== "object") return;
-    if (!proj.svgEditor || typeof proj.svgEditor !== "object") proj.svgEditor = {};
+    if (!proj.layoutEditor || typeof proj.layoutEditor !== "object") proj.layoutEditor = {};
     const key = normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
-    if (!proj.svgEditor.surfaceOverridesByStyleKey || typeof proj.svgEditor.surfaceOverridesByStyleKey !== "object") {
-      proj.svgEditor.surfaceOverridesByStyleKey = {};
+    if (!proj.layoutEditor.surfaceOverridesByStyleKey || typeof proj.layoutEditor.surfaceOverridesByStyleKey !== "object") {
+      proj.layoutEditor.surfaceOverridesByStyleKey = {};
     }
-    if (!proj.svgEditor.surfaceOverridesByStyleKey[key] || typeof proj.svgEditor.surfaceOverridesByStyleKey[key] !== "object") {
-      proj.svgEditor.surfaceOverridesByStyleKey[key] = {};
+    if (!proj.layoutEditor.surfaceOverridesByStyleKey[key] || typeof proj.layoutEditor.surfaceOverridesByStyleKey[key] !== "object") {
+      proj.layoutEditor.surfaceOverridesByStyleKey[key] = {};
     }
-    proj.svgEditor.surfaceOverridesByStyleKey[key][nestedKey] = JSON.parse(JSON.stringify(payload || {}));
+    proj.layoutEditor.surfaceOverridesByStyleKey[key][nestedKey] = JSON.parse(JSON.stringify(payload || {}));
   }
 
   /**
@@ -570,7 +570,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * 从 Design JSON 加载房间地板覆盖（加载项目时调用）
-   * @param {object} designSurfaceOverrides - svgEditor.surfaceOverrides
+   * @param {object} designSurfaceOverrides - layoutEditor.surfaceOverridesByStyleKey 中当前风格的覆盖桶
    */
   function loadRoomFloorOverridesFromDesignJson(designSurfaceOverrides) {
     if (!designSurfaceOverrides || typeof designSurfaceOverrides !== "object") return;
@@ -1290,6 +1290,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     selectFurniture,
     serializeDesignBaseline,
     serializeDesignForSave,
+    setFurnitureFromLayoutCm,
     setFloorLevelsVisible,
     setFloorplanSelected: (v) => {
       floorplanSelected = Boolean(v);
@@ -1349,7 +1350,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     applyFloorplanEntryAtWorld,
     applyHistorySnapshotState,
     applyLightingConfig: (cfg) => {
-      window.svgEditorApplyLightingConfig?.(cfg);
+      window.layoutEditorApplyLightingConfig?.(cfg);
     },
     clearFloorplan,
     emitLayoutChanged,
@@ -1796,12 +1797,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (propDimH) propDimH.textContent = String(Math.round(fp.h));
     syncPropPanelTagsFromItem(item);
   }
-  const undoBtn = document.querySelector("[data-svg-undo]");
-  const redoBtn = document.querySelector("[data-svg-redo]");
+  const undoBtn = document.querySelector("[data-layout-undo]");
+  const redoBtn = document.querySelector("[data-layout-redo]");
   undoRedoButtons.undo = undoBtn;
   undoRedoButtons.redo = redoBtn;
-  const gridToggleBtn = document.getElementById("svgGridToggleBtn");
-  const floorHideOthersToggleBtn = document.querySelector("[data-svg-floor-hide-others-toggle]");
+  const gridToggleBtn = document.getElementById("layoutGridToggleBtn");
+  const floorHideOthersToggleBtn = document.querySelector("[data-layout-floor-hide-others-toggle]");
   // 快速操作：只显示当前楼层，其它楼层/家具隐藏
   let hideOtherFloors = false;
   const otherLayersOpacityWrap = document.getElementById("otherLayersOpacityWrap");
@@ -1838,7 +1839,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   });
 
   function emitLayoutChanged() {
-    window.dispatchEvent(new CustomEvent("visionhome:svg-layout-changed"));
+    window.dispatchEvent(new CustomEvent("visionhome:layout-editor-changed"));
   }
   function getActiveFloorIdForFurniture() {
     if (activeFloorId && String(activeFloorId).trim()) return String(activeFloorId).trim();
@@ -3811,7 +3812,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   function setWallSnapEnabled(v) {
     wallSnapEnabled = Boolean(v);
-    const btn = document.getElementById("svgWallSnapToggleBtn");
+    const btn = document.getElementById("layoutWallSnapToggleBtn");
     if (btn) {
       btn.classList.toggle("is-active", wallSnapEnabled);
       btn.setAttribute("aria-pressed", String(wallSnapEnabled));
@@ -3822,7 +3823,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     shadowsEnabled = Boolean(v);
     renderer.shadowMap.enabled = shadowsEnabled;
     dirLight.castShadow = shadowsEnabled;
-    const btn = document.getElementById("svgShadowToggleBtn");
+    const btn = document.getElementById("layoutShadowToggleBtn");
     if (btn) {
       btn.classList.toggle("is-active", shadowsEnabled);
       btn.setAttribute("aria-pressed", String(shadowsEnabled));
@@ -3917,7 +3918,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const fl = floors[i];
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "svg-floor-level-tab";
+      btn.className = "layout-floor-level-tab";
       btn.setAttribute("role", "tab");
       btn.setAttribute("aria-selected", i === active ? "true" : "false");
       const name = String(fl?.name || "").trim() || `第 ${i + 1} 层`;
@@ -3941,14 +3942,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   }
 
   function ensureFloorLevelControls() {
-    const slot = document.getElementById("svgEditorSlot");
+    const slot = document.getElementById("layoutEditorSlot");
     if (!slot || floorLevelDock) return;
     const dock = document.createElement("div");
-    dock.className = "svg-floor-level-dock";
+    dock.className = "layout-floor-level-dock";
     dock.hidden = true;
     dock.setAttribute("aria-label", "楼层");
     const row = document.createElement("div");
-    row.className = "svg-floor-level-row";
+    row.className = "layout-floor-level-row";
     row.setAttribute("role", "tablist");
     row.setAttribute("aria-label", "选择楼层");
     floorLevelDock = dock;
@@ -5178,7 +5179,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * 只包含装饰物和材质覆盖，不包含家具
    */
   function serializeDesignBaseline() {
-    const getSurf = window.svgEditorGetSurfaceOverrides;
+    const getSurf = window.layoutEditorGetSurfaceOverrides;
     const surfaceOverrides = typeof getSurf === "function" ? getSurf() : null;
     
     // 只包含装饰物，不包含家具（家具的变化不影响风格切换提示）
@@ -5198,7 +5199,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    * 包含家具、装饰物和材质覆盖
    */
   function serializeDesignForSave() {
-    const getSurf = window.svgEditorGetSurfaceOverrides;
+    const getSurf = window.layoutEditorGetSurfaceOverrides;
     const surfaceOverrides = typeof getSurf === "function" ? getSurf() : null;
     
     return JSON.stringify({
@@ -5777,21 +5778,21 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
   });
 
-  document.querySelectorAll("[data-svg-zoom]").forEach((btn) => {
+  document.querySelectorAll("[data-layout-zoom]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const d = camera.position.distanceTo(controls.target);
-      const f = btn.dataset.svgZoom === "in" ? 0.88 : 1.12;
+      const f = btn.dataset.layoutZoom === "in" ? 0.88 : 1.12;
       const nd = Math.min(controls.maxDistance, Math.max(controls.minDistance, d * f));
       camera.position.sub(controls.target).setLength(nd).add(controls.target);
       controls.update();
     });
   });
 
-  document.querySelectorAll("[data-svg-pan]").forEach((btn) => {
+  document.querySelectorAll("[data-layout-pan]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const step = 0.35;
       const pan = new THREE.Vector3();
-      const dir = btn.dataset.svgPan;
+      const dir = btn.dataset.layoutPan;
       if (dir === "left") pan.x = -step;
       else if (dir === "right") pan.x = step;
       else if (dir === "up") pan.z = -step;
@@ -5802,7 +5803,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     });
   });
 
-  document.querySelectorAll("[data-svg-reset]").forEach((btn) => btn.addEventListener("click", () => resetCameraView()));
+  document.querySelectorAll("[data-layout-reset]").forEach((btn) => btn.addEventListener("click", () => resetCameraView()));
   gridToggleBtn?.addEventListener("click", () => setGridVisible(!gridVisible));
   floorHideOthersToggleBtn?.addEventListener("click", () => {
     hideOtherFloors = !hideOtherFloors;
@@ -5814,7 +5815,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   });
   undoBtn?.addEventListener("click", () => { void undo(); });
   redoBtn?.addEventListener("click", () => { void redo(); });
-  document.querySelectorAll("[data-svg-floorplan-clear]").forEach((btn) => {
+  document.querySelectorAll("[data-layout-floorplan-clear]").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (currentFloorplanEntry) void tryClearCurrentFloorplanWithConfirm();
     });
@@ -6152,6 +6153,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   animate();
 
   const okResult = { ok: true, reason: null, catalogSize: byId.size };
-  window.__visionHomeSvgEditor = okResult;
+  window.__visionHomeLayoutEditor = okResult;
   return okResult;
 }

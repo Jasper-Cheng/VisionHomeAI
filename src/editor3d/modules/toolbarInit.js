@@ -65,11 +65,11 @@ export function createToolbarInit(ctx) {
   }
 
   function applyLightingFromSliders() {
-    const exposure = parseFloat(document.getElementById("svgLightingExposure")?.value ?? "1.0");
-    const ambient = parseFloat(document.getElementById("svgLightingAmbient")?.value ?? "0.26");
-    const hemi = parseFloat(document.getElementById("svgLightingHemi")?.value ?? "0.36");
-    const dir = parseFloat(document.getElementById("svgLightingDir")?.value ?? "1.0");
-    const env = parseFloat(document.getElementById("svgLightingEnv")?.value ?? "0.35");
+    const exposure = parseFloat(document.getElementById("layoutLightingExposure")?.value ?? "1.0");
+    const ambient = parseFloat(document.getElementById("layoutLightingAmbient")?.value ?? "0.26");
+    const hemi = parseFloat(document.getElementById("layoutLightingHemi")?.value ?? "0.36");
+    const dir = parseFloat(document.getElementById("layoutLightingDir")?.value ?? "1.0");
+    const env = parseFloat(document.getElementById("layoutLightingEnv")?.value ?? "0.35");
 
     renderer.toneMappingExposure = exposure;
     ambientLight.intensity = ambient;
@@ -77,11 +77,11 @@ export function createToolbarInit(ctx) {
     dirLight.intensity = dir;
     setSceneLightingEnvMapIntensity(env);
 
-    document.getElementById("svgLightingExposureVal").textContent = exposure.toFixed(2);
-    document.getElementById("svgLightingAmbientVal").textContent = ambient.toFixed(2);
-    document.getElementById("svgLightingHemiVal").textContent = hemi.toFixed(2);
-    document.getElementById("svgLightingDirVal").textContent = dir.toFixed(2);
-    document.getElementById("svgLightingEnvVal").textContent = env.toFixed(2);
+    document.getElementById("layoutLightingExposureVal").textContent = exposure.toFixed(2);
+    document.getElementById("layoutLightingAmbientVal").textContent = ambient.toFixed(2);
+    document.getElementById("layoutLightingHemiVal").textContent = hemi.toFixed(2);
+    document.getElementById("layoutLightingDirVal").textContent = dir.toFixed(2);
+    document.getElementById("layoutLightingEnvVal").textContent = env.toFixed(2);
   }
 
   function getCurrentRenderQualityLabel() {
@@ -98,11 +98,11 @@ export function createToolbarInit(ctx) {
   }
 
   function syncRenderQualityToolbarUi() {
-    const btn = document.getElementById("svgRenderQualityBtn");
-    const dropdown = document.getElementById("svgRenderQualityDropdown");
+    const btn = document.getElementById("layoutRenderQualityBtn");
+    const dropdown = document.getElementById("layoutRenderQualityDropdown");
     if (btn) btn.textContent = `渲染·${getCurrentRenderQualityLabel()}`;
     if (!dropdown) return;
-    dropdown.querySelectorAll(".svg-render-quality-option").forEach((el) => {
+    dropdown.querySelectorAll(".layout-render-quality-option").forEach((el) => {
       const mode = String(el.getAttribute("data-render-quality") || "");
       el.classList.toggle("is-active", mode === getRenderQualityMode());
     });
@@ -119,17 +119,17 @@ export function createToolbarInit(ctx) {
   }
 
   function initLightingToolbar() {
-    const btn = document.getElementById("svgLightingBtn");
-    const dropdown = document.getElementById("svgLightingDropdown");
+    const btn = document.getElementById("layoutLightingBtn");
+    const dropdown = document.getElementById("layoutLightingDropdown");
     if (!btn || !dropdown) return;
 
     function openDropdown() {
       const cfg = getCurrentLightingConfig();
-      const expEl = document.getElementById("svgLightingExposure");
-      const ambEl = document.getElementById("svgLightingAmbient");
-      const hemiEl = document.getElementById("svgLightingHemi");
-      const dirEl = document.getElementById("svgLightingDir");
-      const envEl = document.getElementById("svgLightingEnv");
+      const expEl = document.getElementById("layoutLightingExposure");
+      const ambEl = document.getElementById("layoutLightingAmbient");
+      const hemiEl = document.getElementById("layoutLightingHemi");
+      const dirEl = document.getElementById("layoutLightingDir");
+      const envEl = document.getElementById("layoutLightingEnv");
 
       if (expEl) expEl.value = cfg.toneMappingExposure;
       if (ambEl) ambEl.value = cfg.ambient.intensity;
@@ -156,28 +156,28 @@ export function createToolbarInit(ctx) {
       if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) closeDropdown();
     });
 
-    for (const id of ["svgLightingExposure", "svgLightingAmbient", "svgLightingHemi", "svgLightingDir", "svgLightingEnv"]) {
+    for (const id of ["layoutLightingExposure", "layoutLightingAmbient", "layoutLightingHemi", "layoutLightingDir", "layoutLightingEnv"]) {
       document.getElementById(id)?.addEventListener("input", () => {
         applyLightingFromSliders();
         renderEditorScene();
       });
     }
 
-    document.getElementById("svgLightingReset")?.addEventListener("click", () => {
+    document.getElementById("layoutLightingReset")?.addEventListener("click", () => {
       const fallback = mergeSceneLighting(null);
-      document.getElementById("svgLightingExposure").value = fallback.toneMappingExposure;
-      document.getElementById("svgLightingAmbient").value = fallback.ambient.intensity;
-      document.getElementById("svgLightingHemi").value = fallback.hemisphere.intensity;
-      document.getElementById("svgLightingDir").value = fallback.directional.intensity;
-      document.getElementById("svgLightingEnv").value = fallback.envMapIntensity;
+      document.getElementById("layoutLightingExposure").value = fallback.toneMappingExposure;
+      document.getElementById("layoutLightingAmbient").value = fallback.ambient.intensity;
+      document.getElementById("layoutLightingHemi").value = fallback.hemisphere.intensity;
+      document.getElementById("layoutLightingDir").value = fallback.directional.intensity;
+      document.getElementById("layoutLightingEnv").value = fallback.envMapIntensity;
       applyLightingFromSliders();
       renderEditorScene();
     });
   }
 
   function initRenderQualityToolbar() {
-    const btn = document.getElementById("svgRenderQualityBtn");
-    const dropdown = document.getElementById("svgRenderQualityDropdown");
+    const btn = document.getElementById("layoutRenderQualityBtn");
+    const dropdown = document.getElementById("layoutRenderQualityDropdown");
     if (!btn || !dropdown) return;
 
     function openDropdown() {
@@ -200,7 +200,7 @@ export function createToolbarInit(ctx) {
       if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) closeDropdown();
     });
     dropdown.addEventListener("click", (e) => {
-      const option = e.target.closest(".svg-render-quality-option");
+      const option = e.target.closest(".layout-render-quality-option");
       if (!option || !dropdown.contains(option)) return;
       const mode = String(option.getAttribute("data-render-quality") || "");
       if (mode !== "standard" && mode !== "high" && mode !== "ultra") return;
@@ -213,59 +213,59 @@ export function createToolbarInit(ctx) {
   }
 
   function bindWindowApis() {
-    window.svgEditorAddFurniture = addFurniture;
-    window.svgEditorGetLayout = getLayout;
-    window.svgEditorApplyFloorplanAtWorld = ctx.applyFloorplanEntryAtWorld;
-    window.svgEditorClearFloorplan = clearFloorplan;
-    window.svgEditorCommitSavedBaseline = () => {
+    window.layoutEditorAddFurniture = addFurniture;
+    window.layoutEditorGetLayout = getLayout;
+    window.layoutEditorApplyFloorplanAtWorld = ctx.applyFloorplanEntryAtWorld;
+    window.layoutEditorClearFloorplan = clearFloorplan;
+    window.layoutEditorCommitSavedBaseline = () => {
       window.__designLayoutBaseline = serializeDesignBaseline();
       window.__designSaveBaseline = serializeDesignForSave();
       emitLayoutChanged();
     };
-    window.svgEditorGetDesignBaselineFingerprint = serializeDesignForSave;
-    window.svgEditorGetViewSize = () => ({ width: VIEW_W, height: VIEW_H });
-    window.svgEditorResetView = resetCameraView;
-    window.svgEditorGetViewTransform = getViewTransform;
-    window.svgEditorSetViewTransform = setViewTransform;
-    window.svgEditorToggleGrid = () => setGridVisible(!getGridVisible());
-    window.svgEditorGetGridVisible = getGridVisible;
-    window.svgEditorSetGridVisible = setGridVisible;
-    window.svgEditorToggleDimensions = () => setDimensionsVisible(!getShowDimensions());
-    window.svgEditorSetDimensionsVisible = setDimensionsVisible;
-    window.svgEditorToggleWallSnap = () => setWallSnapEnabled(!getWallSnapEnabled());
-    window.svgEditorSetWallSnapEnabled = setWallSnapEnabled;
-    window.svgEditorGetWallSnapEnabled = getWallSnapEnabled;
-    window.svgEditorToggleShadows = () => setShadowsEnabled(!getShadowsEnabled());
-    window.svgEditorSetShadowsEnabled = setShadowsEnabled;
-    window.svgEditorGetShadowsEnabled = getShadowsEnabled;
-    window.svgEditorGetRenderQualityMode = getRenderQualityMode;
-    window.svgEditorSetRenderQualityMode = (mode) => {
+    window.layoutEditorGetDesignBaselineFingerprint = serializeDesignForSave;
+    window.layoutEditorGetViewSize = () => ({ width: VIEW_W, height: VIEW_H });
+    window.layoutEditorResetView = resetCameraView;
+    window.layoutEditorGetViewTransform = getViewTransform;
+    window.layoutEditorSetViewTransform = setViewTransform;
+    window.layoutEditorToggleGrid = () => setGridVisible(!getGridVisible());
+    window.layoutEditorGetGridVisible = getGridVisible;
+    window.layoutEditorSetGridVisible = setGridVisible;
+    window.layoutEditorToggleDimensions = () => setDimensionsVisible(!getShowDimensions());
+    window.layoutEditorSetDimensionsVisible = setDimensionsVisible;
+    window.layoutEditorToggleWallSnap = () => setWallSnapEnabled(!getWallSnapEnabled());
+    window.layoutEditorSetWallSnapEnabled = setWallSnapEnabled;
+    window.layoutEditorGetWallSnapEnabled = getWallSnapEnabled;
+    window.layoutEditorToggleShadows = () => setShadowsEnabled(!getShadowsEnabled());
+    window.layoutEditorSetShadowsEnabled = setShadowsEnabled;
+    window.layoutEditorGetShadowsEnabled = getShadowsEnabled;
+    window.layoutEditorGetRenderQualityMode = getRenderQualityMode;
+    window.layoutEditorSetRenderQualityMode = (mode) => {
       setRenderQualityMode(mode, { rerender: true });
       syncRenderQualityToolbarUi();
     };
-    window.svgEditorGetLightingConfig = getCurrentLightingConfig;
-    window.svgEditorApplyLightingConfig = applyLightingConfig;
+    window.layoutEditorGetLightingConfig = getCurrentLightingConfig;
+    window.layoutEditorApplyLightingConfig = applyLightingConfig;
 
-    document.getElementById("svgDimToggleBtn")?.addEventListener("click", () => setDimensionsVisible(!getShowDimensions()));
-    document.getElementById("svgWallSnapToggleBtn")?.addEventListener("click", () => setWallSnapEnabled(!getWallSnapEnabled()));
-    document.getElementById("svgShadowToggleBtn")?.addEventListener("click", () => setShadowsEnabled(!getShadowsEnabled()));
-    document.getElementById("svgNameToggleBtn")?.addEventListener("click", () => setNamesVisible(!getShowNames()));
+    document.getElementById("layoutDimToggleBtn")?.addEventListener("click", () => setDimensionsVisible(!getShowDimensions()));
+    document.getElementById("layoutWallSnapToggleBtn")?.addEventListener("click", () => setWallSnapEnabled(!getWallSnapEnabled()));
+    document.getElementById("layoutShadowToggleBtn")?.addEventListener("click", () => setShadowsEnabled(!getShadowsEnabled()));
+    document.getElementById("layoutNameToggleBtn")?.addEventListener("click", () => setNamesVisible(!getShowNames()));
 
-    window.svgEditorGetCurrentFloorplanId = getCurrentFloorplanId;
-    window.svgEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
-    window.svgEditorGetCurrentFloorId = getCurrentFloorId;
-    window.svgEditorGetFloorplanStyleKey = getEffectiveFloorplanStyleKey;
-    window.svgEditorRestoreSession = getWindowRestoreSession();
-    window.svgEditorGetUndoHistory = getUndoHistory;
-    window.svgEditorFlushHistoryDebounce = flushHistoryDebounce;
-    window.svgEditorGetSurfaceOverrides = getGetSurfaceOverrides();
-    window.svgEditorDeselect = () => {
+    window.layoutEditorGetCurrentFloorplanId = getCurrentFloorplanId;
+    window.layoutEditorGetCurrentFloorLevelIndex = getCurrentFloorLevelIndex;
+    window.layoutEditorGetCurrentFloorId = getCurrentFloorId;
+    window.layoutEditorGetFloorplanStyleKey = getEffectiveFloorplanStyleKey;
+    window.layoutEditorRestoreSession = getWindowRestoreSession();
+    window.layoutEditorGetUndoHistory = getUndoHistory;
+    window.layoutEditorFlushHistoryDebounce = flushHistoryDebounce;
+    window.layoutEditorGetSurfaceOverrides = getGetSurfaceOverrides();
+    window.layoutEditorDeselect = () => {
       deselectVisualOnly();
       clearFloorplanSurfaceSelection();
       syncPropertiesPanelForSelection(null);
       setFloorplanSelected(false);
     };
-    window.svgEditorApplyPropertiesFromPanel = ctx.applyPropertiesFromPanel;
+    window.layoutEditorApplyPropertiesFromPanel = ctx.applyPropertiesFromPanel;
   }
 
   function initializeToolbarsAndApis() {

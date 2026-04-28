@@ -224,25 +224,25 @@
           </div>
           <div class="file-list" id="designFileList" aria-label="设计文件列表"></div>
         </section>
-        <div class="svg-editor-slot" id="svgEditorSlot">
-          <div class="svg-editor" aria-label="户型3D编辑区">
-            <header class="svg-editor-toolbar">
-              <div class="svg-editor-toolbar-left">
-                <span class="svg-editor-hint">
-                  <span class="svg-editor-hint__line"><strong>拖拽</strong> 放置家具/户型 &nbsp;·&nbsp; <strong>双击</strong> 旋转家具 &nbsp;·&nbsp; <strong>Delete</strong> 删除户型 &nbsp;·&nbsp; <strong>Shift+点击</strong> 快速放置</span>
-                  <span class="svg-editor-hint__line"><strong>方向键</strong> 移动家具 &nbsp;·&nbsp; <strong>滚轮</strong> 缩放 &nbsp;·&nbsp; <strong>左键拖</strong> 旋转视角 &nbsp;·&nbsp; <strong>中键拖</strong> 平移 &nbsp;·&nbsp; <strong>Ctrl+Z</strong> 撤销 &nbsp;·&nbsp; <strong>Ctrl+Shift+Z</strong> 重做</span>
+        <div class="layout-editor-slot" id="layoutEditorSlot">
+          <div class="layout-editor" aria-label="户型3D编辑区">
+            <header class="layout-editor-toolbar">
+              <div class="layout-editor-toolbar-left">
+                <span class="layout-editor-hint">
+                  <span class="layout-editor-hint__line"><strong>拖拽</strong> 放置家具/户型 &nbsp;·&nbsp; <strong>双击</strong> 旋转家具 &nbsp;·&nbsp; <strong>Delete</strong> 删除户型 &nbsp;·&nbsp; <strong>Shift+点击</strong> 快速放置</span>
+                  <span class="layout-editor-hint__line"><strong>方向键</strong> 移动家具 &nbsp;·&nbsp; <strong>滚轮</strong> 缩放 &nbsp;·&nbsp; <strong>左键拖</strong> 旋转视角 &nbsp;·&nbsp; <strong>中键拖</strong> 平移 &nbsp;·&nbsp; <strong>Ctrl+Z</strong> 撤销 &nbsp;·&nbsp; <strong>Ctrl+Shift+Z</strong> 重做</span>
                 </span>
               </div>
               <div
-                class="svg-editor-view-controls"
+                class="layout-editor-view-controls"
                 role="toolbar"
                 aria-label="画布平移与缩放"
               >
-                <div class="svg-style-recommend-wrap" id="svgStyleRecommendWrap">
+                <div class="layout-style-recommend-wrap" id="layoutStyleRecommendWrap">
                   <button
                     type="button"
-                    class="svg-view-btn svg-view-btn--wide"
-                    id="svgStyleRecommendBtn"
+                    class="layout-view-btn layout-view-btn--wide"
+                    id="layoutStyleRecommendBtn"
                     title="装饰风格"
                     aria-label="装饰风格"
                     aria-haspopup="true"
@@ -250,19 +250,19 @@
                   >
                     风格
                   </button>
-                  <div class="svg-style-dropdown" id="svgStyleDropdown" hidden role="menu" aria-label="装饰风格列表"></div>
-                  <button type="button" class="svg-view-btn" id="svgStyleOverwriteBtn" title="覆盖当前风格" aria-label="覆盖当前风格">
+                  <div class="layout-style-dropdown" id="layoutStyleDropdown" hidden role="menu" aria-label="装饰风格列表"></div>
+                  <button type="button" class="layout-view-btn" id="layoutStyleOverwriteBtn" title="覆盖当前风格" aria-label="覆盖当前风格">
                     覆盖
                   </button>
-                  <button type="button" class="svg-view-btn" id="svgStyleNewBtn" title="新建风格" aria-label="新建风格">
+                  <button type="button" class="layout-view-btn" id="layoutStyleNewBtn" title="新建风格" aria-label="新建风格">
                     新建
                   </button>
                 </div>
-                <div class="svg-lighting-wrap" id="svgLightingWrap">
+                <div class="layout-lighting-wrap" id="layoutLightingWrap">
                   <button
                     type="button"
-                    class="svg-view-btn svg-view-btn--wide"
-                    id="svgLightingBtn"
+                    class="layout-view-btn layout-view-btn--wide"
+                    id="layoutLightingBtn"
                     title="环境光调节"
                     aria-label="环境光调节"
                     aria-haspopup="true"
@@ -270,44 +270,44 @@
                   >
                     环境光
                   </button>
-                  <div class="svg-lighting-dropdown" id="svgLightingDropdown" hidden role="menu" aria-label="环境光调节">
-                    <div class="svg-lighting-section">
-                      <div class="svg-lighting-row">
-                        <label class="svg-lighting-label">曝光</label>
-                        <input type="range" class="svg-lighting-range" id="svgLightingExposure" min="0.1" max="2" step="0.01" value="1.0">
-                        <span class="svg-lighting-value" id="svgLightingExposureVal">1.00</span>
+                  <div class="layout-lighting-dropdown" id="layoutLightingDropdown" hidden role="menu" aria-label="环境光调节">
+                    <div class="layout-lighting-section">
+                      <div class="layout-lighting-row">
+                        <label class="layout-lighting-label">曝光</label>
+                        <input type="range" class="layout-lighting-range" id="layoutLightingExposure" min="0.1" max="2" step="0.01" value="1.0">
+                        <span class="layout-lighting-value" id="layoutLightingExposureVal">1.00</span>
                       </div>
-                      <div class="svg-lighting-row">
-                        <label class="svg-lighting-label">环境光</label>
-                        <input type="range" class="svg-lighting-range" id="svgLightingAmbient" min="0" max="1" step="0.01" value="0.26">
-                        <span class="svg-lighting-value" id="svgLightingAmbientVal">0.26</span>
+                      <div class="layout-lighting-row">
+                        <label class="layout-lighting-label">环境光</label>
+                        <input type="range" class="layout-lighting-range" id="layoutLightingAmbient" min="0" max="1" step="0.01" value="0.26">
+                        <span class="layout-lighting-value" id="layoutLightingAmbientVal">0.26</span>
                       </div>
-                      <div class="svg-lighting-row">
-                        <label class="svg-lighting-label">半球光</label>
-                        <input type="range" class="svg-lighting-range" id="svgLightingHemi" min="0" max="1" step="0.01" value="0.36">
-                        <span class="svg-lighting-value" id="svgLightingHemiVal">0.36</span>
+                      <div class="layout-lighting-row">
+                        <label class="layout-lighting-label">半球光</label>
+                        <input type="range" class="layout-lighting-range" id="layoutLightingHemi" min="0" max="1" step="0.01" value="0.36">
+                        <span class="layout-lighting-value" id="layoutLightingHemiVal">0.36</span>
                       </div>
-                      <div class="svg-lighting-row">
-                        <label class="svg-lighting-label">主光源</label>
-                        <input type="range" class="svg-lighting-range" id="svgLightingDir" min="0" max="2" step="0.01" value="1.0">
-                        <span class="svg-lighting-value" id="svgLightingDirVal">1.00</span>
+                      <div class="layout-lighting-row">
+                        <label class="layout-lighting-label">主光源</label>
+                        <input type="range" class="layout-lighting-range" id="layoutLightingDir" min="0" max="2" step="0.01" value="1.0">
+                        <span class="layout-lighting-value" id="layoutLightingDirVal">1.00</span>
                       </div>
-                      <div class="svg-lighting-row">
-                        <label class="svg-lighting-label">环境贴图</label>
-                        <input type="range" class="svg-lighting-range" id="svgLightingEnv" min="0" max="1.5" step="0.01" value="0.35">
-                        <span class="svg-lighting-value" id="svgLightingEnvVal">0.35</span>
+                      <div class="layout-lighting-row">
+                        <label class="layout-lighting-label">环境贴图</label>
+                        <input type="range" class="layout-lighting-range" id="layoutLightingEnv" min="0" max="1.5" step="0.01" value="0.35">
+                        <span class="layout-lighting-value" id="layoutLightingEnvVal">0.35</span>
                       </div>
                     </div>
-                    <div class="svg-lighting-actions">
-                      <button type="button" class="svg-lighting-reset" id="svgLightingReset">恢复默认</button>
+                    <div class="layout-lighting-actions">
+                      <button type="button" class="layout-lighting-reset" id="layoutLightingReset">恢复默认</button>
                     </div>
                   </div>
                 </div>
-                <div class="svg-render-quality-wrap" id="svgRenderQualityWrap">
+                <div class="layout-render-quality-wrap" id="layoutRenderQualityWrap">
                   <button
                     type="button"
-                    class="svg-view-btn svg-view-btn--wide"
-                    id="svgRenderQualityBtn"
+                    class="layout-view-btn layout-view-btn--wide"
+                    id="layoutRenderQualityBtn"
                     title="渲染效果"
                     aria-label="渲染效果"
                     aria-haspopup="true"
@@ -315,15 +315,15 @@
                   >
                     渲染·标准
                   </button>
-                  <div class="svg-render-quality-dropdown" id="svgRenderQualityDropdown" hidden role="menu" aria-label="渲染效果">
-                    <button type="button" class="svg-render-quality-option is-active" data-render-quality="standard">标准（流畅）</button>
-                    <button type="button" class="svg-render-quality-option" data-render-quality="high">高精度（推荐）</button>
-                    <button type="button" class="svg-render-quality-option" data-render-quality="ultra">超清（高负载）</button>
+                  <div class="layout-render-quality-dropdown" id="layoutRenderQualityDropdown" hidden role="menu" aria-label="渲染效果">
+                    <button type="button" class="layout-render-quality-option is-active" data-render-quality="standard">标准（流畅）</button>
+                    <button type="button" class="layout-render-quality-option" data-render-quality="high">高精度（推荐）</button>
+                    <button type="button" class="layout-render-quality-option" data-render-quality="ultra">超清（高负载）</button>
                   </div>
                 </div>
                 <div
                   id="otherLayersOpacityWrap"
-                  class="svg-other-opacity-wrap"
+                  class="layout-other-opacity-wrap"
                   hidden
                   aria-hidden="true"
                 >
@@ -340,8 +340,8 @@
                 </div>
                 <button
                   type="button"
-                  class="svg-view-btn svg-view-btn--wide"
-                  data-svg-floor-hide-others-toggle
+                  class="layout-view-btn layout-view-btn--wide"
+                  data-layout-floor-hide-others-toggle
                   title="仅显示当前楼层（隐藏其他层）"
                   aria-label="仅显示当前楼层（隐藏其他层）"
                   aria-pressed="false"
@@ -350,8 +350,8 @@
                 </button>
                 <button
                   type="button"
-                  class="svg-view-btn svg-view-btn--wide"
-                  id="svgDimToggleBtn"
+                  class="layout-view-btn layout-view-btn--wide"
+                  id="layoutDimToggleBtn"
                   title="显示/隐藏尺寸标注"
                   aria-label="显示或隐藏尺寸标注"
                   aria-pressed="false"
@@ -360,8 +360,8 @@
                 </button>
                 <button
                   type="button"
-                  class="svg-view-btn svg-view-btn--wide is-active"
-                  id="svgWallSnapToggleBtn"
+                  class="layout-view-btn layout-view-btn--wide is-active"
+                  id="layoutWallSnapToggleBtn"
                   title="开启/关闭家具拖曳时沿墙磁吸"
                   aria-label="开启或关闭墙体磁吸"
                   aria-pressed="true"
@@ -370,8 +370,8 @@
                 </button>
                 <button
                   type="button"
-                  class="svg-view-btn svg-view-btn--wide is-active"
-                  id="svgShadowToggleBtn"
+                  class="layout-view-btn layout-view-btn--wide is-active"
+                  id="layoutShadowToggleBtn"
                   title="开启/关闭实时阴影"
                   aria-label="开启或关闭阴影"
                   aria-pressed="true"
@@ -380,8 +380,8 @@
                 </button>
                 <button
                   type="button"
-                  class="svg-view-btn svg-view-btn--wide"
-                  id="svgNameToggleBtn"
+                  class="layout-view-btn layout-view-btn--wide"
+                  id="layoutNameToggleBtn"
                   title="显示/隐藏名称标注"
                   aria-label="显示或隐藏名称标注"
                   aria-pressed="false"
@@ -390,30 +390,30 @@
                 </button>
                 <button
                   type="button"
-                  class="svg-view-btn svg-view-btn--wide is-active"
-                  id="svgGridToggleBtn"
-                  data-svg-grid-toggle
+                  class="layout-view-btn layout-view-btn--wide is-active"
+                  id="layoutGridToggleBtn"
+                  data-layout-grid-toggle
                   title="显示/隐藏网格"
                   aria-label="显示或隐藏网格"
                   aria-pressed="true"
                 >
                   网格
                 </button>
-                <button type="button" class="svg-view-btn svg-view-btn--wide" data-svg-undo title="上一步 (Ctrl+Z)" aria-label="上一步">
+                <button type="button" class="layout-view-btn layout-view-btn--wide" data-layout-undo title="上一步 (Ctrl+Z)" aria-label="上一步">
                   上一步
                 </button>
-                <button type="button" class="svg-view-btn svg-view-btn--wide" data-svg-redo title="下一步 (Ctrl+Shift+Z)" aria-label="下一步">
+                <button type="button" class="layout-view-btn layout-view-btn--wide" data-layout-redo title="下一步 (Ctrl+Shift+Z)" aria-label="下一步">
                   下一步
                 </button>
-                <button type="button" class="svg-view-btn svg-view-btn--wide" data-svg-reset="1" title="复位视图" aria-label="复位视图">
+                <button type="button" class="layout-view-btn layout-view-btn--wide" data-layout-reset="1" title="复位视图" aria-label="复位视图">
                   复位
                 </button>
               </div>
             </header>
-            <div class="svg-editor-canvas-wrap">
+            <div class="layout-editor-canvas-wrap">
               <div
                 id="threeEditorViewport"
-                class="viewer svg-editor-canvas"
+                class="viewer layout-editor-canvas"
                 aria-label="户型 Three.js 3D 编辑区（布局保存仍为平面 cm）"
               ></div>
               <!-- 预算明细弹出列表 -->

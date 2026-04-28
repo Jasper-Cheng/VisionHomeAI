@@ -61,6 +61,7 @@ export function createFloorplanCore(ctx) {
     selectFurniture,
     serializeDesignBaseline,
     serializeDesignForSave,
+    setFurnitureFromLayoutCm,
     setFloorLevelsVisible,
     state,
     syncFloorAnnotationVisibility,
@@ -173,7 +174,7 @@ export function createFloorplanCore(ctx) {
     rebuildWallSnapData(entry);
     updateBottomUI();
     window.dispatchEvent(
-      new CustomEvent("visionhome:floorplan-applied-to-svg", {
+      new CustomEvent("visionhome:floorplan-applied-to-layout", {
         detail: {
           id: entry?.id != null ? String(entry.id) : "",
           floorIndex: floorIdx,
@@ -400,7 +401,7 @@ export function createFloorplanCore(ctx) {
           if (style) {
             state.floorplanStyleKeyOverride = null;
             window.dispatchEvent(
-              new CustomEvent("visionhome:floorplan-applied-to-svg", {
+              new CustomEvent("visionhome:floorplan-applied-to-layout", {
                 detail: {
                   id: floorplanId,
                   floorIndex: state.floorSelectionEnabled ? normalizeFloorIndex(entry, state.currentFloorIndex) : -1,
@@ -578,7 +579,7 @@ export function createFloorplanCore(ctx) {
     }
 
     window.dispatchEvent(
-      new CustomEvent("visionhome:floorplan-applied-to-svg", {
+      new CustomEvent("visionhome:floorplan-applied-to-layout", {
         detail: {
           id: entry?.id != null ? String(entry.id) : "",
           floorIndex,
@@ -626,20 +627,109 @@ export function createFloorplanCore(ctx) {
   }
 
   async function rebuildFromLayout(layout) {
-    furnitureRoot.children.slice().forEach((child) => {
-      if (child.userData?.isFurniture) {
-        unregisterFurnitureGroup(child);
-        furnitureRoot.remove(child);
-        disposeObject3D(child);
+    const targetRows = Array.isArray(layout) ? layout.filter((row) => row && row.model) : [];
+    const currentGroups = furnitureRoot.children.filter((child) => child.userData?.isFurniture);
+    const exactBuckets = new Map();
+    const unused = new Set(currentGroups);
+
+    const normalizeRow = (row) => {
+      let rot = Math.round(Number(row?.rotation ?? 0) || 0) % 360;
+      if (rot < 0) rot += 360;
+      const lift = row?.decorationLiftCm != null ? Math.round(Number(row.decorationLiftCm) || 0) : 0;
+      return {
+        model: String(row?.model ?? "").trim(),
+        floorId: String(row?.floorId ?? "").trim() || null,
+        x: Math.round(Number(row?.x) || 0),
+        y: Math.round(Number(row?.y) || 0),
+        rotation: rot,
+        decorationLiftCm: lift,
+      };
+    };
+    const keyForRow = (row) => {
+      const r = normalizeRow(row);
+      return JSON.stringify({
+        m: r.model,
+        f: r.floorId,
+        x: r.x,
+        y: r.y,
+        r: r.rotation,
+        l: r.decorationLiftCm,
+      });
+    };
+    const rowForGroup = (group) => {
+      const cm = sceneXZToCenteredCm(group.position.x, group.position.z);
+      return {
+        model: group.userData.modelType,
+        floorId: String(group.userData.floorId || "").trim() || null,
+        x: Math.round(cm.x),
+        y: Math.round(cm.y),
+        rotation: Math.round(group.userData.rotDeg ?? 0),
+        decorationLiftCm: Math.round((Number(group.userData.decorationLiftM) || 0) * 100),
+      };
+    };
+
+    currentGroups.forEach((group) => {
+      const key = keyForRow(rowForGroup(group));
+      if (!exactBuckets.has(key)) exactBuckets.set(key, []);
+      exactBuckets.get(key).push(group);
+    });
+
+    const assignments = targetRows.map((row) => ({ row, group: null }));
+    assignments.forEach((entry) => {
+      const bucket = exactBuckets.get(keyForRow(entry.row));
+      while (bucket?.length) {
+        const group = bucket.shift();
+        if (!unused.has(group)) continue;
+        entry.group = group;
+        unused.delete(group);
+        break;
       }
     });
-    state.shadowCacheDirty = true;
-    for (const row of layout) {
-      await appendFurnitureItem(row.model, row.x, row.y, row.rotation ?? 0, row.floorId ?? null, {
-        wallSnap: false,
-        decorationLiftCm: row.decorationLiftCm,
-      });
+
+    assignments.forEach((entry) => {
+      if (entry.group) return;
+      const target = normalizeRow(entry.row);
+      let fallback = null;
+      for (const group of unused) {
+        if (String(group.userData.modelType || "").trim() !== target.model) continue;
+        if (String(group.userData.floorId || "").trim() === String(target.floorId || "").trim()) {
+          fallback = group;
+          break;
+        }
+        if (!fallback) fallback = group;
+      }
+      if (!fallback) return;
+      entry.group = fallback;
+      unused.delete(fallback);
+    });
+
+    if (unused.has(state.selectedGroup)) selectFurniture(null);
+    unused.forEach((group) => {
+      unregisterFurnitureGroup(group);
+      furnitureRoot.remove(group);
+      disposeObject3D(group);
+      state.shadowCacheDirty = true;
+    });
+
+    for (const entry of assignments) {
+      const row = normalizeRow(entry.row);
+      let group = entry.group;
+      if (!group) {
+        group = await appendFurnitureItem(row.model, row.x, row.y, row.rotation, row.floorId, {
+          wallSnap: false,
+          decorationLiftCm: row.decorationLiftCm,
+        });
+        entry.group = group;
+        continue;
+      }
+      if (keyForRow(rowForGroup(group)) !== keyForRow(row)) state.shadowCacheDirty = true;
+      group.userData.floorId = row.floorId || "floor1";
+      group.userData.rotDeg = row.rotation;
+      setFurnitureFromLayoutCm(group, row.x, row.y, row.rotation, { wallSnap: false });
+      group.userData.decorationLiftM = clampDecorationLiftMForGroup(group, row.decorationLiftCm / 100);
+      furnitureRoot.add(group);
     }
+
     updateFurnitureFloorVisibility();
     updateBottomUI();
   }

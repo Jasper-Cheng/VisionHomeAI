@@ -61,7 +61,7 @@
   const defaultPanel = railButtons.find((b) => b.classList.contains("is-active"))?.dataset.panel;
   if (defaultPanel) setActive(defaultPanel);
 
-  // 主导航：编辑模式（SVG）↔ 全景漫游（3D + 快捷入口）
+  // 主导航：编辑模式（3D 布局编辑）↔ 全景漫游（3D + 快捷入口）
   const appViewEdit = document.getElementById("appViewEdit");
   const appViewPanorama = document.getElementById("appViewPanorama");
   const navViewLinks = document.querySelectorAll(".nav-segment .seg-item[data-app-view]");
@@ -122,4 +122,3 @@
 
   // Undo/redo暂未实现（按钮已 disabled），这里不绑定点击事件。
 })();
-
