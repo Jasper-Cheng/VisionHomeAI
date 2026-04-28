@@ -559,7 +559,19 @@
           "roughness": 0.85,
           "metalness": 0.02
         },
+        "d_main_frame": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
         "d_master_bed": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
+        "d_master_bed_frame": {
           "type": "paint_wood",
           "color": "#ffffff",
           "roughness": 0.85,
@@ -571,7 +583,19 @@
           "roughness": 0.85,
           "metalness": 0.02
         },
+        "d_bed2_frame": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
         "d_bed3": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
+        "d_bed3_frame": {
           "type": "paint_wood",
           "color": "#ffffff",
           "roughness": 0.85,
@@ -583,7 +607,19 @@
           "roughness": 0.85,
           "metalness": 0.02
         },
+        "d_kitchen_frame": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
         "d_bath": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
+        "d_bath_frame": {
           "type": "paint_wood",
           "color": "#ffffff",
           "roughness": 0.85,
@@ -1197,7 +1233,19 @@
           "roughness": 0.85,
           "metalness": 0.02
         },
+        "d_main_frame": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
         "d_master_bed": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
+        "d_master_bed_frame": {
           "type": "paint_wood",
           "color": "#ffffff",
           "roughness": 0.85,
@@ -1209,7 +1257,19 @@
           "roughness": 0.85,
           "metalness": 0.02
         },
+        "d_bed2_frame": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
         "d_bed3": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
+        "d_bed3_frame": {
           "type": "paint_wood",
           "color": "#ffffff",
           "roughness": 0.85,
@@ -1221,7 +1281,19 @@
           "roughness": 0.85,
           "metalness": 0.02
         },
+        "d_kitchen_frame": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
         "d_bath": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
+        "d_bath_frame": {
           "type": "paint_wood",
           "color": "#ffffff",
           "roughness": 0.85,

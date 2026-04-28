@@ -83,6 +83,44 @@ export function createFloorplanCore(ctx) {
     }
   }
 
+  function resolveDoorFrameMaterialKeyLocal(style, door) {
+    if (!door || !style || typeof style !== "object") return null;
+    const materials = style.materials;
+    if (!materials || typeof materials !== "object") return null;
+    const explicit = String(door.id ?? door.frameMaterialId ?? "").trim();
+    if (explicit && Object.prototype.hasOwnProperty.call(materials, explicit)) return explicit;
+    const did = String(door.id ?? "").trim();
+    if (!did) return null;
+    const fallback = `${did}_frame`;
+    return Object.prototype.hasOwnProperty.call(materials, fallback) ? fallback : null;
+  }
+
+  function findDoorFrameSpec(doorFrames, door) {
+    const doorId = String(door?.id ?? "").trim();
+    if (!doorId) return null;
+    if (Array.isArray(doorFrames)) {
+      for (const item of doorFrames) {
+        if (!item || typeof item !== "object") continue;
+        if (String(item.doorId ?? "").trim() === doorId) return item;
+      }
+    }
+    // Legacy fallback while old data may still exist.
+    if (
+      door &&
+      (door.frameStyle != null ||
+        door.frameMaterialId != null ||
+        door.frameThicknessCm != null)
+    ) {
+      return {
+        id: `${doorId}_frame`,
+        doorId,
+        name: `${String(door.name ?? doorId).trim()}门框`,
+        thicknessCm: door.frameThicknessCm,
+      };
+    }
+    return null;
+  }
+
   function effectiveFloorplanStyleKeyFromEntryAndOverride(entry, overrideVal) {
     if (!entry) return "modern_minimal_v1";
     const overrideKey = overrideVal != null ? String(overrideVal).trim() : "";
@@ -276,6 +314,26 @@ export function createFloorplanCore(ctx) {
             tagFloorplanLayerOpacity(defaultMat, opacity);
             obj.material = defaultMat;
           }
+        }
+      } else if (userData.floorplanDoorFrame && userData.doorId) {
+        const door = { id: userData.doorId, frameMaterialId: userData.frameMaterialId };
+        const frameKey = resolveDoorFrameMaterialKeyLocal(newStyle, door);
+        const def = frameKey ? getMaterialDef(newStyle, frameKey) : null;
+        if (def) {
+          const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
+            forGlass: false,
+            envMapIntensity: state.sceneLightingEnvMapIntensity,
+            side: THREE.FrontSide,
+          });
+          queueStylePackTextures(newMat, def, { applyUvScale: false });
+          disposeMaterialSafely(obj.material);
+          obj.material = newMat;
+        } else if (userData.floorplanDoorFrameStyle) {
+          disposeMaterialSafely(obj.material);
+          obj.material = doorFillMaterialFromNs(userData.floorplanDoorFrameStyle, opacity);
+        } else if (userData.floorplanDoorStyle) {
+          disposeMaterialSafely(obj.material);
+          obj.material = doorFillMaterialFromNs(userData.floorplanDoorStyle, opacity);
         }
       } else if (userData.floorplanDoor && userData.doorId) {
         const door = { id: userData.doorId };
@@ -526,9 +584,12 @@ export function createFloorplanCore(ctx) {
         const wallId = String(door.wallId ?? "").trim();
         const wall = wallId ? (fl.walls || []).find((item) => String(item?.id ?? "") === wallId) : null;
         if (!wall) continue;
+        const doorFrame = findDoorFrameSpec(fl.doorFrames, door);
         const doorKey = resolveDoorMaterialKey(style, door);
         const doorMat = doorKey ? getMaterialForKey(doorKey) : null;
-        const fillG = buildDoorFillGroup(door, wall, fl.walls || [], cx, cy, s, defaultH, opacity, doorMat, floorLevelId);
+        const frameKey = resolveDoorFrameMaterialKeyLocal(style, doorFrame || door);
+        const frameMat = frameKey ? getMaterialForKey(frameKey) : null;
+        const fillG = buildDoorFillGroup(door, doorFrame, wall, fl.walls || [], cx, cy, s, defaultH, opacity, doorMat, frameMat, floorLevelId);
         if (fillG) floorG.add(fillG);
       }
       for (const win of fl.windows || []) {

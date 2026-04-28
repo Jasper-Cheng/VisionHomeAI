@@ -500,6 +500,38 @@
           "type": "interior"
         }
       ],
+      "doorFrames": [
+        {
+          "id": "d_main_frame",
+          "doorId": "d_main",
+          "name": "入户门门框",
+          "thicknessCm": 8
+        },
+        {
+          "id": "d_bath_frame",
+          "doorId": "d_bath",
+          "name": "卫生间门门框",
+          "thicknessCm": 6
+        },
+        {
+          "id": "d_kitchen_frame",
+          "doorId": "d_kitchen",
+          "name": "厨房门门框",
+          "thicknessCm": 6
+        },
+        {
+          "id": "d_bed1_frame",
+          "doorId": "d_bed1",
+          "name": "主卧门门框",
+          "thicknessCm": 6
+        },
+        {
+          "id": "d_bed2_frame",
+          "doorId": "d_bed2",
+          "name": "次卧门门框",
+          "thicknessCm": 6
+        }
+      ],
       "windows": [
         {
           "id": "win_left_floor",

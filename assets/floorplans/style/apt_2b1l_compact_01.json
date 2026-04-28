@@ -453,7 +453,27 @@
             "roughness": "textures/dark_wood_rough.jpg"
           }
         },
+        "d_main_frame": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
         "d_bath": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_bath_frame": {
           "type": "paint_wood",
           "color": "#CEC2B4",
           "roughness": 0.8,
@@ -473,6 +493,16 @@
             "roughness": "textures/dark_wood_rough.jpg"
           }
         },
+        "d_kitchen_frame": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
         "d_bed1": {
           "type": "paint_wood",
           "color": "#CEC2B4",
@@ -483,7 +513,27 @@
             "roughness": "textures/dark_wood_rough.jpg"
           }
         },
+        "d_bed1_frame": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
         "d_bed2": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_bed2_frame": {
           "type": "paint_wood",
           "color": "#CEC2B4",
           "roughness": 0.8,
@@ -1054,7 +1104,27 @@
             "roughness": "textures/dark_wood_rough.jpg"
           }
         },
+        "d_main_frame": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
         "d_bath": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_bath_frame": {
           "type": "paint_wood",
           "color": "#CEC2B4",
           "roughness": 0.8,
@@ -1074,6 +1144,16 @@
             "roughness": "textures/dark_wood_rough.jpg"
           }
         },
+        "d_kitchen_frame": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
         "d_bed1": {
           "type": "paint_wood",
           "color": "#CEC2B4",
@@ -1084,7 +1164,27 @@
             "roughness": "textures/dark_wood_rough.jpg"
           }
         },
+        "d_bed1_frame": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
         "d_bed2": {
+          "type": "paint_wood",
+          "color": "#CEC2B4",
+          "roughness": 0.8,
+          "metalness": 0.02,
+          "texture": {
+            "normal": "textures/dark_wood_nor_gl.jpg",
+            "roughness": "textures/dark_wood_rough.jpg"
+          }
+        },
+        "d_bed2_frame": {
           "type": "paint_wood",
           "color": "#CEC2B4",
           "roughness": 0.8,

@@ -225,7 +225,136 @@ export function createMeshBuilder(ctx) {
     })();
   }
 
-  function buildDoorFillGroup(door, wall, floorWalls, cx, cy, s, defaultHeightCm, floorOpacity, styleDoorMat, floorLevelIdStr) {
+  function buildDoorFrameMaterialFromDoorNs(ns, floorOpacity) {
+    const base = doorFillMaterialFromNs(ns, floorOpacity);
+    if (!base || !base.isMeshStandardMaterial) return base;
+    base.color = base.color.clone().multiplyScalar(0.92);
+    base.roughness = Math.min(1, base.roughness + 0.06);
+    base.needsUpdate = true;
+    return base;
+  }
+
+  function buildDerivedDoorFrameStyleFromDoorNs(ns) {
+    if (!ns || typeof ns !== "object") return defaultDoorStyleWhite();
+    return {
+      roughness: Math.min(1, Number(ns.roughness ?? 0.85) + 0.06),
+      metalness: Number.isFinite(Number(ns.metalness)) ? Number(ns.metalness) : 0.02,
+      color: (() => {
+        try {
+          const c = new THREE.Color(ns.color);
+          return `#${c.multiplyScalar(0.92).getHexString()}`;
+        } catch {
+          return "#e0e0e0";
+        }
+      })(),
+      texture: {
+        albedo: String(ns.texture?.albedo ?? ""),
+        roughness: String(ns.texture?.roughness ?? ""),
+        normal: String(ns.texture?.normal ?? ""),
+      },
+      isGlass: ns.isGlass === true,
+    };
+  }
+
+  function buildDoorFrameMaterialFromBase(baseMat) {
+    if (!baseMat || typeof baseMat.clone !== "function") return null;
+    return baseMat.clone();
+  }
+
+  function addDoorFrameMeshes(group, door, doorFrame, centerX, wM, hDoor, wallDepth, floorOpacity, styleDoorFrameMat, ns, floorLevelIdStr) {
+    const rawFrameCm = Number(doorFrame?.thicknessCm ?? doorFrame?.frameThicknessCm);
+    const frameW = Math.max(0.025, (Number.isFinite(rawFrameCm) && rawFrameCm > 0 ? rawFrameCm : 6) / 100);
+    const frameDepth = Math.max(0.018, Math.min(0.04, wallDepth * 0.22));
+    const faceOffset = wallDepth * 0.5 + frameDepth * 0.5 - 0.002;
+    const jambDepth = Math.max(0.02, wallDepth - 0.004);
+    const sideHeight = hDoor + frameW;
+    const topWidth = wM + frameW * 2;
+    const resolvedFrameNs = buildDerivedDoorFrameStyleFromDoorNs(ns);
+    const frameMat = styleDoorFrameMat
+      ? buildDoorFrameMaterialFromBase(styleDoorFrameMat)
+      : buildDoorFrameMaterialFromDoorNs(ns, floorOpacity);
+    if (!frameMat) return;
+    let queuedFrameTexture = false;
+
+    const createFramePiece = (geometry, x, y, zSign) => {
+      const mesh = new THREE.Mesh(geometry, frameMat);
+      mesh.position.set(x, y, zSign * faceOffset);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.userData.floorplanDoorFill = true;
+      mesh.userData.floorplanDoorFrame = true;
+      mesh.userData.floorplanDoor = true;
+      mesh.userData.doorId = String(door?.id ?? "").trim();
+      mesh.userData.floorplanDoorId = String(door?.id ?? "").trim();
+      mesh.userData.frameMaterialId = String(doorFrame?.id ?? "").trim();
+      mesh.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
+      mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
+      mesh.userData.floorplanDoorStyle = ns;
+      mesh.userData.floorplanDoorFrameStyle = resolvedFrameNs;
+      group.add(mesh);
+      if (!styleDoorFrameMat && !queuedFrameTexture) {
+        queueDoorFillTextures(mesh, resolvedFrameNs);
+        queuedFrameTexture = true;
+      }
+    };
+
+    const sideGeo = new THREE.BoxGeometry(frameW, sideHeight, frameDepth);
+    const topGeo = new THREE.BoxGeometry(topWidth, frameW, frameDepth);
+    const jambSideGeo = new THREE.BoxGeometry(frameW, sideHeight, jambDepth);
+    const jambTopGeo = new THREE.BoxGeometry(topWidth, frameW, jambDepth);
+    const sideY = sideHeight / 2;
+    const leftX = centerX - wM / 2 - frameW / 2;
+    const rightX = centerX + wM / 2 + frameW / 2;
+    const topY = hDoor + frameW / 2;
+
+    for (const zSign of [1, -1]) {
+      createFramePiece(sideGeo, leftX, sideY, zSign);
+      createFramePiece(sideGeo, rightX, sideY, zSign);
+      createFramePiece(topGeo, centerX, topY, zSign);
+    }
+
+    // Jamb liners wrap the opening thickness so the wall reveal uses frame material instead of wall paint.
+    const createJambPiece = (geometry, x, y) => {
+      const mesh = new THREE.Mesh(geometry, frameMat);
+      mesh.position.set(x, y, 0);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.userData.floorplanDoorFill = true;
+      mesh.userData.floorplanDoorFrame = true;
+      mesh.userData.floorplanDoor = true;
+      mesh.userData.doorId = String(door?.id ?? "").trim();
+      mesh.userData.floorplanDoorId = String(door?.id ?? "").trim();
+      mesh.userData.frameMaterialId = String(doorFrame?.id ?? "").trim();
+      mesh.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
+      mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
+      mesh.userData.floorplanDoorStyle = ns;
+      mesh.userData.floorplanDoorFrameStyle = resolvedFrameNs;
+      group.add(mesh);
+      if (!styleDoorFrameMat && !queuedFrameTexture) {
+        queueDoorFillTextures(mesh, resolvedFrameNs);
+        queuedFrameTexture = true;
+      }
+    };
+
+    createJambPiece(jambSideGeo, leftX, sideY);
+    createJambPiece(jambSideGeo, rightX, sideY);
+    createJambPiece(jambTopGeo, centerX, topY);
+  }
+
+  function buildDoorFillGroup(
+    door,
+    doorFrame,
+    wall,
+    floorWalls,
+    cx,
+    cy,
+    s,
+    defaultHeightCm,
+    floorOpacity,
+    styleDoorMat,
+    styleDoorFrameMat,
+    floorLevelIdStr,
+  ) {
     if (!door || !wall) return null;
     const ns =
       door.style != null && typeof door.style === "object" && !Array.isArray(door.style)
@@ -294,6 +423,7 @@ export function createMeshBuilder(ctx) {
     if (!styleDoorMat) queueDoorFillTextures(mesh, ns);
     group.add(mesh);
     const doorDepth = thickM * 0.22;
+    addDoorFrameMeshes(group, door, doorFrame, centerX, wM, hDoor, thickM, floorOpacity, styleDoorFrameMat, ns, floorLevelIdStr);
     addDoorHandleMeshes(
       group,
       centerX,

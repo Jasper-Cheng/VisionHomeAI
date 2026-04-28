@@ -549,6 +549,20 @@ export function resolveDoorMaterialKey(style, door) {
 
 /**
  * @param {object | null} style
+ * @param {object} door
+ * @returns {string | null}
+ */
+export function resolveDoorFrameMaterialKey(style, door) {
+  if (!door) return null;
+  const explicit = String(door.frameMaterialId ?? "").trim();
+  if (explicit) return materialKeyIfDefined(style, explicit);
+  const did = String(door.id ?? "").trim();
+  if (!did) return null;
+  return materialKeyIfDefined(style, `${did}_frame`);
+}
+
+/**
+ * @param {object | null} style
  * @param {object} win
  * @returns {string | null}
  */

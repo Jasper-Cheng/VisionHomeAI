@@ -36,11 +36,11 @@ import { mountFloorplanColorPicker } from "../ui/floorplanColorPicker.js";
 import { DATA_PATHS } from "../core/schema.js";
 import { createAnnotations } from "./modules/annotations.js";
 import { createBomPanel } from "./modules/bomPanel.js";
-import { createFloorplanCore } from "./modules/floorplanCore.js";
+import { createFloorplanCore } from "./modules/floorplanCore.js?v=doorframe2";
 import { createFurnitureMeshModule } from "./modules/furnitureMesh.js";
 import { createHistoryModule } from "./modules/history.js";
 import { createMaterialFactory } from "./modules/materialFactory.js";
-import { createMeshBuilder } from "./modules/meshBuilder.js";
+import { createMeshBuilder } from "./modules/meshBuilder.js?v=doorframe2";
 import { createProjectIoModule } from "./modules/projectIo.js";
 import { createRenderLoop } from "./modules/renderLoop.js";
 import { createStylePackTools } from "./modules/stylePackTools.js";
@@ -3715,9 +3715,23 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     })();
   }
 
-  function buildDoorFillGroup(door, wall, floorWalls, cx, cy, s, defaultHeightCm, floorOpacity, styleDoorMat, floorLevelIdStr) {
+  function buildDoorFillGroup(
+    door,
+    doorFrame,
+    wall,
+    floorWalls,
+    cx,
+    cy,
+    s,
+    defaultHeightCm,
+    floorOpacity,
+    styleDoorMat,
+    styleDoorFrameMat,
+    floorLevelIdStr,
+  ) {
     return buildDoorFillGroupFromMeshBuilder(
       door,
+      doorFrame,
       wall,
       floorWalls,
       cx,
@@ -3726,6 +3740,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       defaultHeightCm,
       floorOpacity,
       styleDoorMat,
+      styleDoorFrameMat,
       floorLevelIdStr,
     );
   }
