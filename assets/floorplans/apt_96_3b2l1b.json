@@ -266,7 +266,58 @@
           "type": "interior"
         }
       ],
-      "windows": []
+      "windows": [
+        {
+          "id": "win_master_w",
+          "wallId": "w_ext_west_n",
+          "pos": 190,
+          "width": 180,
+          "height": 210,
+          "altitude": 15,
+          "name": "主卧西窗",
+          "type": "casement"
+        },
+        {
+          "id": "win_living_w",
+          "wallId": "w_ext_west_s",
+          "pos": 240,
+          "width": 260,
+          "height": 210,
+          "altitude": 15,
+          "name": "客厅西窗",
+          "type": "casement"
+        },
+        {
+          "id": "win_bed2_e",
+          "wallId": "w_int_bed2_bed3",
+          "pos": 150,
+          "width": 180,
+          "height": 210,
+          "altitude": 15,
+          "name": "次卧东窗",
+          "type": "casement"
+        },
+        {
+          "id": "win_kitchen_e",
+          "wallId": "w_ext_east_kitchen",
+          "pos": 160,
+          "width": 180,
+          "height": 210,
+          "altitude": 15,
+          "name": "厨房东窗",
+          "type": "casement"
+        },
+        {
+          "id": "win_bath_e",
+          "wallId": "w_ext_east_bath",
+          "pos": 80,
+          "width": 90,
+          "height": 100,
+          "altitude": 130,
+          "name": "卫生间东窗",
+          "type": "casement"
+        }
+      ]
     }
   ]
 }

@@ -588,6 +588,51 @@
           "color": "#ffffff",
           "roughness": 0.85,
           "metalness": 0.02
+        },
+        "win_master_w": {
+          "type": "glass",
+          "color": "#E4E2DA",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
+        },
+        "win_living_w": {
+          "type": "glass",
+          "color": "#E4E2DA",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
+        },
+        "win_bed2_e": {
+          "type": "glass",
+          "color": "#E4E2DA",
+          "opacity": 0.22,
+          "roughness": 0.04,
+          "metalness": 0,
+          "transmission": 0.96,
+          "ior": 1.45
+        },
+        "win_kitchen_e": {
+          "type": "glass",
+          "color": "#C4C2B8",
+          "opacity": 0.38,
+          "roughness": 0.22,
+          "metalness": 0,
+          "transmission": 0.68,
+          "ior": 1.45
+        },
+        "win_bath_e": {
+          "type": "glass",
+          "color": "#DCD8D0",
+          "opacity": 0.55,
+          "roughness": 0.82,
+          "metalness": 0,
+          "transmission": 0.42,
+          "ior": 1.45
         }
       },
       "decorations": {
@@ -1211,6 +1256,34 @@
             ],
             "textureRotation": 90,
             "textureAlbedo": "diagonal_parquet_diff.jpg"
+          }
+        }
+      },
+      "doorOverrides": {
+        "floor1": {
+          "d_bath": {
+            "color": "#e8dcc8",
+            "materialId": "d_main",
+            "roughness": 0.85,
+            "metalness": 0.02,
+            "uvScale": [
+              1,
+              1
+            ],
+            "textureRotation": 0,
+            "textureAlbedo": "clean_asphalt_diff.jpg"
+          },
+          "d_kitchen": {
+            "color": "#e8dcc8",
+            "materialId": "d_main",
+            "roughness": 0.85,
+            "metalness": 0.02,
+            "uvScale": [
+              1,
+              1
+            ],
+            "textureRotation": 0,
+            "textureAlbedo": "brick_wall_001_diff.jpg"
           }
         }
       }
