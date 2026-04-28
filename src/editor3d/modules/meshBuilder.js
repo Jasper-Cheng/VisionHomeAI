@@ -265,7 +265,8 @@ export function createMeshBuilder(ctx) {
     const rawFrameCm = Number(doorFrame?.thicknessCm ?? doorFrame?.frameThicknessCm);
     const frameW = Math.max(0.025, (Number.isFinite(rawFrameCm) && rawFrameCm > 0 ? rawFrameCm : 6) / 100);
     const frameDepth = Math.max(0.018, Math.min(0.04, wallDepth * 0.22));
-    const faceOffset = wallDepth * 0.5 + frameDepth * 0.5 - 0.002;
+    const frameFaceGap = 0.0003;
+    const faceOffset = wallDepth * 0.5 + frameDepth * 0.5 + frameFaceGap;
     const jambDepth = Math.max(0.02, wallDepth - 0.004);
     const sideHeight = hDoor + frameW;
     const topWidth = wM + frameW * 2;
@@ -300,12 +301,17 @@ export function createMeshBuilder(ctx) {
 
     const sideGeo = new THREE.BoxGeometry(frameW, sideHeight, frameDepth);
     const topGeo = new THREE.BoxGeometry(topWidth, frameW, frameDepth);
-    const jambSideGeo = new THREE.BoxGeometry(frameW, sideHeight, jambDepth);
-    const jambTopGeo = new THREE.BoxGeometry(topWidth, frameW, jambDepth);
+    const jambRevealW = Math.min(frameW, 0.008);
+    const jambSideGeo = new THREE.BoxGeometry(jambRevealW, hDoor, jambDepth);
+    const jambTopGeo = new THREE.BoxGeometry(wM, jambRevealW, jambDepth);
     const sideY = sideHeight / 2;
     const leftX = centerX - wM / 2 - frameW / 2;
     const rightX = centerX + wM / 2 + frameW / 2;
     const topY = hDoor + frameW / 2;
+    const jambSideY = hDoor / 2;
+    const leftJambX = centerX - wM / 2 + jambRevealW / 2;
+    const rightJambX = centerX + wM / 2 - jambRevealW / 2;
+    const topJambY = hDoor - jambRevealW / 2;
 
     for (const zSign of [1, -1]) {
       createFramePiece(sideGeo, leftX, sideY, zSign);
@@ -336,9 +342,9 @@ export function createMeshBuilder(ctx) {
       }
     };
 
-    createJambPiece(jambSideGeo, leftX, sideY);
-    createJambPiece(jambSideGeo, rightX, sideY);
-    createJambPiece(jambTopGeo, centerX, topY);
+    createJambPiece(jambSideGeo, leftJambX, jambSideY);
+    createJambPiece(jambSideGeo, rightJambX, jambSideY);
+    createJambPiece(jambTopGeo, centerX, topJambY);
   }
 
   function buildDoorFillGroup(

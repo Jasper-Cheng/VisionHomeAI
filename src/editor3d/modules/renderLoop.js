@@ -94,24 +94,6 @@ export function createRenderLoop(ctx) {
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
-    // 让主光随相机方位变化：用户旋转视角时，墙体/家具阴影也会有明显变化
-    tmpVecA.copy(controls.target);
-    tmpVecB.copy(camera.position).sub(tmpVecA);
-    // 仅使用水平朝向，避免俯仰导致光线跳变
-    const lenXZ = Math.hypot(tmpVecB.x, tmpVecB.z);
-    if (lenXZ > 1e-6) {
-      tmpVecC.set(tmpVecB.x / lenXZ, 0, tmpVecB.z / lenXZ);
-      const LIGHT_RADIUS = 26;
-      const LIGHT_HEIGHT = 30;
-      // 从相机前方斜射向目标，旋转视角时阴影方向跟随变化
-      dirLight.position.set(
-        tmpVecA.x + tmpVecC.x * LIGHT_RADIUS,
-        LIGHT_HEIGHT,
-        tmpVecA.z + tmpVecC.z * LIGHT_RADIUS,
-      );
-      dirLight.target.position.set(tmpVecA.x, 0, tmpVecA.z);
-      dirLight.target.updateMatrixWorld();
-    }
     dirLight.updateMatrixWorld(true);
     fitDirectionalShadowFrustum();
     renderEditorScene();

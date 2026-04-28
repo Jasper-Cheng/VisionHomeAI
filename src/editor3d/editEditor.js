@@ -36,13 +36,13 @@ import { mountFloorplanColorPicker } from "../ui/floorplanColorPicker.js";
 import { DATA_PATHS } from "../core/schema.js";
 import { createAnnotations } from "./modules/annotations.js";
 import { createBomPanel } from "./modules/bomPanel.js";
-import { createFloorplanCore } from "./modules/floorplanCore.js?v=doorframe2";
+import { createFloorplanCore } from "./modules/floorplanCore.js?v=doorframe6";
 import { createFurnitureMeshModule } from "./modules/furnitureMesh.js";
 import { createHistoryModule } from "./modules/history.js";
 import { createMaterialFactory } from "./modules/materialFactory.js";
-import { createMeshBuilder } from "./modules/meshBuilder.js?v=doorframe2";
+import { createMeshBuilder } from "./modules/meshBuilder.js?v=doorframe6";
 import { createProjectIoModule } from "./modules/projectIo.js";
-import { createRenderLoop } from "./modules/renderLoop.js";
+import { createRenderLoop } from "./modules/renderLoop.js?v=doorframe6";
 import { createStylePackTools } from "./modules/stylePackTools.js";
 import { createSurfaceOverrideModule } from "./modules/surfaceOverride.js";
 import { createToolbarInit } from "./modules/toolbarInit.js";
@@ -2711,9 +2711,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const wcm = Number(d.width);
       const hcm = Number(d.height);
       if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) continue;
-      const wM = (wcm * s) / 100;
+      const openingClearanceCm = 0.03;
+      const wM = ((wcm + openingClearanceCm * 2) * s) / 100;
+      const hMWithClearance = Math.min(((hcm + openingClearanceCm) * s) / 100, hM);
       const centerX = -halfLen + ((startOffsetCm + pos) / lenCm) * lenWorld;
-      pushHole(centerX - wM / 2, centerX + wM / 2, 0, Math.min((hcm * s) / 100, hM));
+      pushHole(centerX - wM / 2, centerX + wM / 2, 0, hMWithClearance);
     }
     for (const win of floor?.windows || []) {
       if (String(win?.wallId ?? "").trim() !== wid) continue;
@@ -2852,34 +2854,6 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (opts.skipBottomCap) skip.push(3);
     if (opts.skipFaceA) skip.push(4);
     if (opts.skipFaceB) skip.push(5);
-    removeGeometryGroupsByMaterialIndex(geo, skip);
-  }
-
-  function removeGeometryGroupsByMaterialIndex(geo, materialIndices) {
-    if (!geo?.index || !Array.isArray(geo.groups) || !geo.groups.length) return;
-    const skip = new Set((materialIndices || []).map(Number).filter((v) => Number.isFinite(v)));
-    if (!skip.size) return;
-    const oldIndex = geo.index.array;
-    const kept = [];
-    const groups = [];
-    for (const group of geo.groups) {
-      if (skip.has(group.materialIndex)) continue;
-      const start = kept.length;
-      const end = group.start + group.count;
-      for (let i = group.start; i < end; i++) kept.push(oldIndex[i]);
-      groups.push({ start, count: group.count, materialIndex: group.materialIndex });
-    }
-    geo.setIndex(kept);
-    geo.clearGroups();
-    for (const group of groups) geo.addGroup(group.start, group.count, group.materialIndex);
-  }
-
-  function suppressWallBoxFaces(geo, opts = {}) {
-    const skip = [];
-    if (opts.skipEndCap) skip.push(0);
-    if (opts.skipStartCap) skip.push(1);
-    if (opts.skipTopCap) skip.push(2);
-    if (opts.skipBottomCap) skip.push(3);
     removeGeometryGroupsByMaterialIndex(geo, skip);
   }
 
