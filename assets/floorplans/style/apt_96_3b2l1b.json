@@ -435,6 +435,42 @@
             "roughness": "textures/painted_plaster_wall_rough.jpg"
           },
           "uvScale": [2, 2]
+        },
+        "d_main": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
+        "d_master_bed": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
+        "d_bed2": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
+        "d_bed3": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
+        "d_kitchen": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
+        },
+        "d_bath": {
+          "type": "paint_wood",
+          "color": "#ffffff",
+          "roughness": 0.85,
+          "metalness": 0.02
         }
       },
       "decorations": {

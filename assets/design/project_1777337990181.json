@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1777337990181",
+  "name": "1",
+  "description": "",
+  "createdAt": "2026-04-28T00:59:50.181Z",
+  "updatedAt": "2026-04-28T00:59:50.181Z",
+  "templateId": "apt_2b1l_compact_01",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "layoutEditor": {
+    "version": 1,
+    "floorPlanId": "apt_2b1l_compact_01",
+    "floorLevelIndex": 0,
+    "floorplanStyleKey": "default",
+    "furniture": [
+      {
+        "instanceId": "li_mohx2e5c_1",
+        "model": "potted_plant_02",
+        "floorId": "floor1",
+        "x": -16,
+        "y": 105,
+        "rotation": 0
+      },
+      {
+        "instanceId": "li_mohx2ew1_2",
+        "model": "ArmChair_01",
+        "floorId": "floor1",
+        "x": -486,
+        "y": 366,
+        "rotation": 0
+      },
+      {
+        "instanceId": "li_mohx4v55_5",
+        "model": "BarberShopChair_01",
+        "floorId": "floor1",
+        "x": 26,
+        "y": -352,
+        "rotation": 0
+      },
+      {
+        "instanceId": "li_mohx4vmq_6",
+        "model": "ClassicNightstand_01",
+        "floorId": "floor1",
+        "x": -71,
+        "y": 227,
+        "rotation": 0
+      }
+    ],
+    "surfaceOverridesByStyleKey": {
+      "default": {
+        "roomFloors": {},
+        "doorOverrides": {},
+        "windowOverrides": {},
+        "wallFaceOverrides": {}
+      }
+    },
+    "lightingConfig": {
+      "toneMappingExposure": 1,
+      "ambient": {
+        "intensity": 0.26
+      },
+      "hemisphere": {
+        "intensity": 0.36
+      },
+      "directional": {
+        "intensity": 1
+      },
+      "envMapIntensity": 0.35
+    },
+    "renderQualityMode": "standard"
+  }
+}

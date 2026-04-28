@@ -1878,7 +1878,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!Number.isFinite(v)) return 0;
     return Math.min(maxLift, Math.max(0, v));
   }
-  function clearInteractiveList() { interactiveMeshes.length = 0; }
+  function clearInteractiveList() {
+    for (let i = interactiveMeshes.length - 1; i >= 0; i--) {
+      if (!interactiveMeshes[i]?.userData?.__furnitureRoot) interactiveMeshes.splice(i, 1);
+    }
+  }
   function registerFurnitureMeshes(group) {
     group.traverse((obj) => {
       if (obj.isMesh) {
@@ -4223,6 +4227,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return "";
   }
 
+  function materialTypeMatchesSurfaceScope(type, scope) {
+    const t = String(type ?? "");
+    if (scope === "allFloors") return t === "wood_floor";
+    if (scope === "allWindows") return t === "glass";
+    if (scope === "allDoors") return t === "paint_wood" || t === "paint" || t === "wood_floor" || t === "glass";
+    return t === "paint" || t === "paint_wood" || t === "glass";
+  }
+
   /**
    * 解析当前墙面/地面在库中的基准材质 id（与 sync 面板、渲染一致）。
    * @param {{ floorLevelId: string }} sel
@@ -4253,13 +4265,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             : "";
         const key = libMatId || sk;
         const entryDef = lib[key];
-        const t = String(entryDef?.type ?? "");
-        const matches = isFloor
-          ? t === "wood_floor"
-          : scope === "allWindows"
-            ? t === "glass"
-            : t === "paint" || t === "paint_wood" || t === "glass";
-        if (matches) selectVal = key;
+        if (materialTypeMatchesSurfaceScope(entryDef?.type, scope)) selectVal = key;
       }
     }
     return selectVal;
@@ -5019,6 +5025,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       syncDoorOverridesToDesignJson();
       if (historyReady) pushHistorySnapshot();
       await applyDoorOverridesForMultiple(fid, doorIds);
+      await selectFloorplanSurface(sel);
+      emitLayoutChanged();
+      return;
+    }
+
+    if (sel.kind === "allDoors" && sel.doorId) {
+      setDoorOverride(fid, sel.doorId, hasScopeData ? next : null);
+      syncDoorOverridesToDesignJson();
+      if (historyReady) pushHistorySnapshot();
+      await applyDoorOverridesForMultiple(fid, [sel.doorId]);
       await selectFloorplanSurface(sel);
       emitLayoutChanged();
       return;

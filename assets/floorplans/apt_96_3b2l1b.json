@@ -210,7 +210,62 @@
           "faces": [{ "id": "face_a", "normal": [-1, 0], "roomId": "r_dining" }, { "id": "face_b", "normal": [1, 0], "roomId": "r_bath" }]
         }
       ],
-      "doors": [],
+      "doors": [
+        {
+          "id": "d_main",
+          "wallId": "w_ext_south_c",
+          "pos": 300,
+          "width": 120,
+          "height": 220,
+          "name": "入户门",
+          "type": "entrance"
+        },
+        {
+          "id": "d_master_bed",
+          "wallId": "w_int_master_corridor",
+          "pos": 285,
+          "width": 85,
+          "height": 210,
+          "name": "主卧门",
+          "type": "interior"
+        },
+        {
+          "id": "d_bed2",
+          "wallId": "w_int_corridor_bed2",
+          "pos": 215,
+          "width": 85,
+          "height": 210,
+          "name": "次卧门",
+          "type": "interior"
+        },
+        {
+          "id": "d_bed3",
+          "wallId": "w_int_corridor_bed3_v",
+          "pos": 125,
+          "width": 85,
+          "height": 210,
+          "name": "书房门",
+          "type": "interior"
+        },
+        {
+          "id": "d_kitchen",
+          "wallId": "w_int_dining_kitchen",
+          "pos": 105,
+          "width": 80,
+          "height": 210,
+          "name": "厨房门",
+          "type": "interior"
+        },
+        {
+          "id": "d_bath",
+          "wallId": "w_int_dining_bath",
+          "pos": 85,
+          "width": 80,
+          "height": 210,
+          "name": "卫生间门",
+          "type": "interior"
+        }
+      ],
       "windows": []
     }
   ]
