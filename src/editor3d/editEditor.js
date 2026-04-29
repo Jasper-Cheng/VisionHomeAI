@@ -36,15 +36,15 @@ import { mountFloorplanColorPicker } from "../ui/floorplanColorPicker.js";
 import { DATA_PATHS } from "../core/schema.js";
 import { createAnnotations } from "./modules/annotations.js";
 import { createBomPanel } from "./modules/bomPanel.js";
-import { createFloorplanCore } from "./modules/floorplanCore.js?v=doorframe6";
+import { createFloorplanCore } from "./modules/floorplanCore.js?v=doorframe8";
 import { createFurnitureMeshModule } from "./modules/furnitureMesh.js";
 import { createHistoryModule } from "./modules/history.js";
 import { createMaterialFactory } from "./modules/materialFactory.js";
-import { createMeshBuilder } from "./modules/meshBuilder.js?v=doorframe6";
+import { createMeshBuilder } from "./modules/meshBuilder.js?v=doorframe8";
 import { createProjectIoModule } from "./modules/projectIo.js";
-import { createRenderLoop } from "./modules/renderLoop.js?v=doorframe6";
+import { createRenderLoop } from "./modules/renderLoop.js?v=doorframe8";
 import { createStylePackTools } from "./modules/stylePackTools.js";
-import { createSurfaceOverrideModule } from "./modules/surfaceOverride.js";
+import { createSurfaceOverrideModule } from "./modules/surfaceOverride.js?v=doorframe8";
 import { createToolbarInit } from "./modules/toolbarInit.js";
 import { createWallMeshBuilder } from "./modules/wallMeshBuilder.js";
 import { DEFAULT_SCENE_LIGHTING, applySceneLightingConfig, mergeSceneLighting } from "./utils/lightingUtils.js";
@@ -2711,9 +2711,18 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const wcm = Number(d.width);
       const hcm = Number(d.height);
       if (!Number.isFinite(pos) || !Number.isFinite(wcm) || wcm <= 0 || !Number.isFinite(hcm) || hcm <= 0) continue;
+      const did = String(d?.id ?? "").trim();
+      let doorFrame = null;
+      if (did && Array.isArray(floor?.doorFrames)) {
+        doorFrame = floor.doorFrames.find((item) => String(item?.doorId ?? "").trim() === did) || null;
+      }
+      const rawFrameCm = Number(doorFrame?.thicknessCm ?? doorFrame?.frameThicknessCm);
+      const frameCm = Number.isFinite(rawFrameCm) && rawFrameCm > 0 ? rawFrameCm : 6;
+      const casingAllowanceCm = Math.min(1.4, frameCm * 0.22, wcm * 0.035);
+      const frameCutoutMarginCm = frameCm + casingAllowanceCm;
       const openingClearanceCm = 0.03;
-      const wM = ((wcm + openingClearanceCm * 2) * s) / 100;
-      const hMWithClearance = Math.min(((hcm + openingClearanceCm) * s) / 100, hM);
+      const wM = ((wcm + (frameCutoutMarginCm + openingClearanceCm) * 2) * s) / 100;
+      const hMWithClearance = Math.min(((hcm + frameCutoutMarginCm + openingClearanceCm) * s) / 100, hM);
       const centerX = -halfLen + ((startOffsetCm + pos) / lenCm) * lenWorld;
       pushHole(centerX - wM / 2, centerX + wM / 2, 0, hMWithClearance);
     }

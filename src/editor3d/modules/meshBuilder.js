@@ -265,9 +265,12 @@ export function createMeshBuilder(ctx) {
     const rawFrameCm = Number(doorFrame?.thicknessCm ?? doorFrame?.frameThicknessCm);
     const frameW = Math.max(0.025, (Number.isFinite(rawFrameCm) && rawFrameCm > 0 ? rawFrameCm : 6) / 100);
     const frameDepth = Math.max(0.018, Math.min(0.04, wallDepth * 0.22));
-    const frameFaceGap = 0.0003;
+    const frameFaceGap = 0.0008;
+    const casingEdgeOverlap = Math.min(0.014, frameW * 0.22, wM * 0.035);
+    const jambSeamOverlap = Math.min(0.008, frameDepth * 0.45);
+    const jambEdgeOverlap = Math.min(0.01, frameW * 0.22, wM * 0.03);
     const faceOffset = wallDepth * 0.5 + frameDepth * 0.5 + frameFaceGap;
-    const jambDepth = Math.max(0.02, wallDepth - 0.004);
+    const jambDepth = Math.max(0.02, wallDepth + jambSeamOverlap * 2);
     const sideHeight = hDoor + frameW;
     const topWidth = wM + frameW * 2;
     const resolvedFrameNs = buildDerivedDoorFrameStyleFromDoorNs(ns);
@@ -275,11 +278,19 @@ export function createMeshBuilder(ctx) {
       ? buildDoorFrameMaterialFromBase(styleDoorFrameMat)
       : buildDoorFrameMaterialFromDoorNs(ns, floorOpacity);
     if (!frameMat) return;
+    if (frameMat.isMaterial) {
+      frameMat.side = THREE.DoubleSide;
+      frameMat.polygonOffset = true;
+      frameMat.polygonOffsetFactor = -1;
+      frameMat.polygonOffsetUnits = -1;
+      frameMat.needsUpdate = true;
+    }
     let queuedFrameTexture = false;
 
     const createFramePiece = (geometry, x, y, zSign) => {
       const mesh = new THREE.Mesh(geometry, frameMat);
       mesh.position.set(x, y, zSign * faceOffset);
+      mesh.renderOrder = 4;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.userData.floorplanDoorFill = true;
@@ -299,19 +310,23 @@ export function createMeshBuilder(ctx) {
       }
     };
 
-    const sideGeo = new THREE.BoxGeometry(frameW, sideHeight, frameDepth);
-    const topGeo = new THREE.BoxGeometry(topWidth, frameW, frameDepth);
-    const jambRevealW = Math.min(frameW, 0.008);
-    const jambSideGeo = new THREE.BoxGeometry(jambRevealW, hDoor, jambDepth);
-    const jambTopGeo = new THREE.BoxGeometry(wM, jambRevealW, jambDepth);
+    const sideGeo = new THREE.BoxGeometry(frameW + casingEdgeOverlap * 2, sideHeight, frameDepth);
+    const topGeo = new THREE.BoxGeometry(topWidth + casingEdgeOverlap * 2, frameW + casingEdgeOverlap, frameDepth);
+    const sideCoreGeo = new THREE.BoxGeometry(frameW + casingEdgeOverlap * 2, sideHeight, jambDepth);
+    const topCoreGeo = new THREE.BoxGeometry(topWidth + casingEdgeOverlap * 2, frameW + casingEdgeOverlap, jambDepth);
+    const jambRevealW = Math.min(frameW, Math.max(0.018, frameW * 0.45));
+    const jambSideW = jambRevealW + jambEdgeOverlap;
+    const jambTopH = jambRevealW + jambEdgeOverlap;
+    const jambSideGeo = new THREE.BoxGeometry(jambSideW, hDoor + jambEdgeOverlap, jambDepth);
+    const jambTopGeo = new THREE.BoxGeometry(wM + jambEdgeOverlap * 2, jambTopH, jambDepth);
     const sideY = sideHeight / 2;
     const leftX = centerX - wM / 2 - frameW / 2;
     const rightX = centerX + wM / 2 + frameW / 2;
     const topY = hDoor + frameW / 2;
-    const jambSideY = hDoor / 2;
-    const leftJambX = centerX - wM / 2 + jambRevealW / 2;
-    const rightJambX = centerX + wM / 2 - jambRevealW / 2;
-    const topJambY = hDoor - jambRevealW / 2;
+    const jambSideY = (hDoor + jambEdgeOverlap) / 2;
+    const leftJambX = centerX - wM / 2 + (jambRevealW - jambEdgeOverlap) / 2;
+    const rightJambX = centerX + wM / 2 + (jambEdgeOverlap - jambRevealW) / 2;
+    const topJambY = hDoor + (jambEdgeOverlap - jambRevealW) / 2;
 
     for (const zSign of [1, -1]) {
       createFramePiece(sideGeo, leftX, sideY, zSign);
@@ -323,6 +338,7 @@ export function createMeshBuilder(ctx) {
     const createJambPiece = (geometry, x, y) => {
       const mesh = new THREE.Mesh(geometry, frameMat);
       mesh.position.set(x, y, 0);
+      mesh.renderOrder = 4;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.userData.floorplanDoorFill = true;
@@ -342,6 +358,9 @@ export function createMeshBuilder(ctx) {
       }
     };
 
+    createJambPiece(sideCoreGeo, leftX, sideY);
+    createJambPiece(sideCoreGeo, rightX, sideY);
+    createJambPiece(topCoreGeo, centerX, topY);
     createJambPiece(jambSideGeo, leftJambX, jambSideY);
     createJambPiece(jambSideGeo, rightJambX, jambSideY);
     createJambPiece(jambTopGeo, centerX, topJambY);

@@ -323,7 +323,7 @@ export function createFloorplanCore(ctx) {
           const newMat = createFloorplanMaterialFromStyleDef(def, opacity, {
             forGlass: false,
             envMapIntensity: state.sceneLightingEnvMapIntensity,
-            side: THREE.FrontSide,
+            side: THREE.DoubleSide,
           });
           queueStylePackTextures(newMat, def, { applyUvScale: false });
           disposeMaterialSafely(obj.material);
@@ -331,9 +331,11 @@ export function createFloorplanCore(ctx) {
         } else if (userData.floorplanDoorFrameStyle) {
           disposeMaterialSafely(obj.material);
           obj.material = doorFillMaterialFromNs(userData.floorplanDoorFrameStyle, opacity);
+          if (obj.material?.isMaterial) obj.material.side = THREE.DoubleSide;
         } else if (userData.floorplanDoorStyle) {
           disposeMaterialSafely(obj.material);
           obj.material = doorFillMaterialFromNs(userData.floorplanDoorStyle, opacity);
+          if (obj.material?.isMaterial) obj.material.side = THREE.DoubleSide;
         }
       } else if (userData.floorplanDoor && userData.doorId) {
         const door = { id: userData.doorId };

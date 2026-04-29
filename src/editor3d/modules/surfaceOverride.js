@@ -58,12 +58,12 @@ export function createSurfaceOverrideModule(ctx) {
    * 由库材质 + 面板覆盖生成一份 Three 材质，同一楼层同 scope 下所有 mesh 可共用。
    * @returns {{ mat: import("three").Material, mergedDef: object } | null}
    */
-  function createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity, isRoomFloor) {
+  function createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity, isRoomFloor, forceDoubleSide = false) {
     if (!ov?.materialId) return null;
     const def = resolveMaterialDefFromLibrary(libraryBag, ov.materialId);
     if (!def) return null;
     const mergedDef = mergeMaterialOverrideIntoDef(def, ov);
-    const side = isRoomFloor ? THREE.DoubleSide : THREE.FrontSide;
+    const side = isRoomFloor || forceDoubleSide ? THREE.DoubleSide : THREE.FrontSide;
     const mat = createFloorplanMaterialFromStyleDef(mergedDef, opacity, {
       forGlass: false,
       side,
@@ -203,9 +203,10 @@ export function createSurfaceOverrideModule(ctx) {
       ? mesh.userData.floorplanSurfaceOpacity
       : 1;
     const isRoomFloor = mesh.userData.floorplanRoomFloor === true;
+    const isDoorMesh = mesh.userData.floorplanDoorFill === true && mesh.userData.floorplanDoorHandle !== true;
     if (ov.materialId) {
       disposeFloorplanOverrideMaterial(mesh);
-      const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity, isRoomFloor);
+      const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity, isRoomFloor, isDoorMesh);
       if (!built) return;
       mesh.material = built.mat;
       return;
@@ -264,6 +265,7 @@ export function createSurfaceOverrideModule(ctx) {
         }
         applyFloorplanSurfaceAlpha(c, op);
       }
+      if (isDoorMesh) c.side = THREE.DoubleSide;
       c.needsUpdate = true;
       return c;
     });
@@ -572,7 +574,7 @@ export function createSurfaceOverrideModule(ctx) {
       ) {
         const key = `${fid}\0allDoors`;
         if (!batches.has(key)) {
-          batches.set(key, { ov: bag.allDoors, meshes: [], isRoomFloor: false });
+          batches.set(key, { ov: bag.allDoors, meshes: [], isRoomFloor: false, forceDoubleSide: true });
         }
         batches.get(key).meshes.push(o);
       } else if (o.userData.floorplanWindowFill && bag.allWindows) {
@@ -585,7 +587,7 @@ export function createSurfaceOverrideModule(ctx) {
         batches.get(key).meshes.push(o);
       }
     });
-    for (const { ov, meshes, isRoomFloor } of batches.values()) {
+    for (const { ov, meshes, isRoomFloor, forceDoubleSide } of batches.values()) {
       if (!meshes.length) continue;
       const opacity0 = Number.isFinite(meshes[0].userData.floorplanSurfaceOpacity)
         ? meshes[0].userData.floorplanSurfaceOpacity
@@ -596,7 +598,7 @@ export function createSurfaceOverrideModule(ctx) {
           opacity0,
       );
       if (ov.materialId && !opMismatch) {
-        const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity0, isRoomFloor);
+        const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity0, isRoomFloor, forceDoubleSide);
         if (!built) continue;
         disposeUniqueOverrideMaterialsOnMeshes(meshes);
         for (const mesh of meshes) {
@@ -690,7 +692,7 @@ export function createSurfaceOverrideModule(ctx) {
         (Number.isFinite(m.userData.floorplanSurfaceOpacity) ? m.userData.floorplanSurfaceOpacity : 1) !== opacity0,
     );
     if (ov.materialId && !opMismatch) {
-      const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity0, isRoomFloor);
+      const built = createFloorplanSurfaceOverrideMaterialOnce(ov, libraryBag, opacity0, isRoomFloor, scope === "allDoors");
       if (!built) return;
       disposeUniqueOverrideMaterialsOnMeshes(meshes);
       for (const mesh of meshes) {
