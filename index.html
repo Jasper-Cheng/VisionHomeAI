@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VisionHomeAI</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=properties-close1" />
   </head>
   <body>
     <!-- file:// 打开时提示需本地 HTTP；模块加载失败时由下方脚本写入 -->
@@ -474,6 +474,17 @@
             <div class="properties-title">
               物体属性 - <span class="properties-name">未选择</span>
             </div>
+            <button
+              type="button"
+              class="properties-close"
+              id="propertiesPanelClose"
+              aria-label="关闭属性面板"
+              title="关闭"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
           </div>
 
           <div class="properties-body">
@@ -842,7 +853,7 @@
     </script>
 
     <script type="module">
-      import("./src/main.js?v=doorframe9").catch(function (err) {
+      import("./src/main.js?v=doorframe10").catch(function (err) {
         var el = document.getElementById("visionHomeBootBanner");
         if (el) {
           el.hidden = false;

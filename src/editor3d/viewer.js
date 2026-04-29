@@ -68,6 +68,7 @@ import {
   const interactiveMeshes = [];
 
   const propertiesPanel = document.getElementById("propertiesPanel");
+  const propertiesPanelClose = document.getElementById("propertiesPanelClose");
   const propertiesName = propertiesPanel?.querySelector(".properties-name");
   const propInputX = propertiesPanel?.querySelector('input[data-prop="x"]');
   const propInputZ = propertiesPanel?.querySelector('input[data-prop="z"]');
@@ -566,6 +567,7 @@ import {
     syncPropTagsPanel(null);
     syncViewerAppearancePanel(null);
   };
+  propertiesPanelClose?.addEventListener("click", clearSelection);
 
   const updatePropertiesFromRoot = (root) => {
     if (!root) return;

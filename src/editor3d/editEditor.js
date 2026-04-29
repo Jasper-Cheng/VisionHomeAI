@@ -36,15 +36,15 @@ import { mountFloorplanColorPicker } from "../ui/floorplanColorPicker.js";
 import { DATA_PATHS } from "../core/schema.js";
 import { createAnnotations } from "./modules/annotations.js";
 import { createBomPanel } from "./modules/bomPanel.js";
-import { createFloorplanCore } from "./modules/floorplanCore.js?v=doorframe9";
+import { createFloorplanCore } from "./modules/floorplanCore.js?v=doorframe10";
 import { createFurnitureMeshModule } from "./modules/furnitureMesh.js";
 import { createHistoryModule } from "./modules/history.js";
 import { createMaterialFactory } from "./modules/materialFactory.js";
-import { createMeshBuilder } from "./modules/meshBuilder.js?v=doorframe9";
+import { createMeshBuilder } from "./modules/meshBuilder.js?v=doorframe10";
 import { createProjectIoModule } from "./modules/projectIo.js";
-import { createRenderLoop } from "./modules/renderLoop.js?v=doorframe9";
+import { createRenderLoop } from "./modules/renderLoop.js?v=doorframe10";
 import { createStylePackTools } from "./modules/stylePackTools.js";
-import { createSurfaceOverrideModule } from "./modules/surfaceOverride.js?v=doorframe9";
+import { createSurfaceOverrideModule } from "./modules/surfaceOverride.js?v=doorframe10";
 import { createToolbarInit } from "./modules/toolbarInit.js";
 import { createWallMeshBuilder } from "./modules/wallMeshBuilder.js";
 import { DEFAULT_SCENE_LIGHTING, applySceneLightingConfig, mergeSceneLighting } from "./utils/lightingUtils.js";
@@ -1381,6 +1381,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     syncUndoRedoButtons,
   });
   const propertiesPanel = document.getElementById("propertiesPanel");
+  const propertiesPanelClose = document.getElementById("propertiesPanelClose");
   const {
     initFloorplanStyleToolbar,
     initStylePackSaveDialogs,
@@ -5302,6 +5303,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     selectedGroup = null;
   }
 
+  function closePropertiesPanel() {
+    selectFurniture(null);
+    clearFloorplanSurfaceSelection();
+    floorplanSelected = false;
+    propertiesPanel?.classList.remove("is-visible");
+  }
+
   function applyPropertiesFromPanel() {
     if (selectedFloorplanSurface) return false;
     if (!selectedGroup || !selectedGroup.userData?.isFurniture) return false;
@@ -5679,6 +5687,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   window.addEventListener("pointermove", onPointerMove, { passive: true });
   window.addEventListener("pointerup", onPointerUp);
   window.addEventListener("pointercancel", onPointerUp);
+  propertiesPanelClose?.addEventListener("click", closePropertiesPanel);
 
   propSurfaceColor?.addEventListener("change", () => {
     void commitFloorplanSurfaceEdit();

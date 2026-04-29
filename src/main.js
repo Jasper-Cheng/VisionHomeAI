@@ -11,7 +11,7 @@ import {
   mountSaveDesignFlow,
   mountSwitchDesignUnsavedFlow,
 } from "./files/designFilesManager.js";
-import { initThreeEditor } from "./editor3d/editEditor.js?v=doorframe9";
+import { initThreeEditor } from "./editor3d/editEditor.js?v=doorframe10";
 
 /** 与 user.html 等来回导航时保留当前标签页内的编辑态（关闭标签后清除） */
 const EDIT_SESSION_STORAGE_KEY = "visionhome:editSession:v1";
@@ -181,7 +181,7 @@ async function boot() {
   });
 
   try {
-    await import("./editor3d/viewer.js");
+    await import("./editor3d/viewer.js?v=doorframe10");
   } catch (err) {
     console.error(err);
   }
