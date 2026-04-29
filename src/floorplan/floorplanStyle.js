@@ -324,6 +324,7 @@ const STYLE_ROOT_RESERVED = new Set([
   "sceneLighting",
   "roomFloorMaterials",
   "doorOverrides",
+  "doorFrameOverrides",
   "windowOverrides",
 ]);
 

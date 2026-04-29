@@ -389,6 +389,12 @@ export function createFloorplanCore(ctx) {
         ? JSON.parse(JSON.stringify(doorMats))
         : state.doorOverridesByStyleKey[styleKey] || {};
 
+    const doorFrameMats = newStyle?.doorFrameOverrides;
+    state.doorFrameOverridesByStyleKey[styleKey] =
+      doorFrameMats && typeof doorFrameMats === "object"
+        ? JSON.parse(JSON.stringify(doorFrameMats))
+        : state.doorFrameOverridesByStyleKey[styleKey] || {};
+
     const windowMats = newStyle?.windowOverrides;
     state.windowOverridesByStyleKey[styleKey] =
       windowMats && typeof windowMats === "object"
@@ -493,6 +499,12 @@ export function createFloorplanCore(ctx) {
         doorMats && typeof doorMats === "object"
           ? JSON.parse(JSON.stringify(doorMats))
           : state.doorOverridesByStyleKey[styleBucketKey] || {};
+
+      const doorFrameMats = style?.doorFrameOverrides;
+      state.doorFrameOverridesByStyleKey[styleBucketKey] =
+        doorFrameMats && typeof doorFrameMats === "object"
+          ? JSON.parse(JSON.stringify(doorFrameMats))
+          : state.doorFrameOverridesByStyleKey[styleBucketKey] || {};
 
       const windowMats = style?.windowOverrides;
       state.windowOverridesByStyleKey[styleBucketKey] =
@@ -671,6 +683,7 @@ export function createFloorplanCore(ctx) {
       state.floorplanSurfaceOverridesByStyleKey = {};
       state.roomFloorOverridesByStyleKey = {};
       state.doorOverridesByStyleKey = {};
+      state.doorFrameOverridesByStyleKey = {};
       state.windowOverridesByStyleKey = {};
       state.wallFaceOverridesByStyleKey = {};
     }

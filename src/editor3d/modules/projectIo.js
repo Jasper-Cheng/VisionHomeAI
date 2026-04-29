@@ -67,6 +67,13 @@ export function createProjectIoModule(ctx) {
       state.doorOverridesByStyleKey[sk] = {};
     }
 
+    const doorFrameData = surfaceBag?.doorFrameOverrides;
+    if (doorFrameData && typeof doorFrameData === "object") {
+      state.doorFrameOverridesByStyleKey[sk] = cloneByJson(doorFrameData, {});
+    } else {
+      state.doorFrameOverridesByStyleKey[sk] = {};
+    }
+
     const windowData = surfaceBag?.windowOverrides;
     if (windowData && typeof windowData === "object") {
       state.windowOverridesByStyleKey[sk] = cloneByJson(windowData, {});

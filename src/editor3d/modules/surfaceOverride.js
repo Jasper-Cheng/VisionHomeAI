@@ -8,6 +8,7 @@ export function createSurfaceOverrideModule(ctx) {
     createFloorplanMaterialFromStyleDef,
     floorplanRoot,
     getCurrentSurfaceOverridesBucket,
+    getDoorFrameOverride,
     getDoorOverride,
     getEffectiveFloorplanStyleKey,
     getFloorplanMaterialsLibraryBag,
@@ -111,6 +112,9 @@ export function createSurfaceOverrideModule(ctx) {
     }
     if (raw.doorOverrides && typeof raw.doorOverrides === "object") {
       out.doorOverrides = JSON.parse(JSON.stringify(raw.doorOverrides));
+    }
+    if (raw.doorFrameOverrides && typeof raw.doorFrameOverrides === "object") {
+      out.doorFrameOverrides = JSON.parse(JSON.stringify(raw.doorFrameOverrides));
     }
     if (raw.windowOverrides && typeof raw.windowOverrides === "object") {
       out.windowOverrides = JSON.parse(JSON.stringify(raw.windowOverrides));
@@ -389,7 +393,7 @@ export function createSurfaceOverrideModule(ctx) {
     floorplanRoot.traverse((o) => {
       if (!o.isMesh) return;
       if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
-      if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle) return;
+      if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle || o.userData.floorplanDoorFrame) return;
       const did = String(o.userData.floorplanDoorId ?? "").trim();
       if (!did || !doorIdSet.has(did)) return;
       meshes.push(o);
@@ -398,6 +402,32 @@ export function createSurfaceOverrideModule(ctx) {
     for (const mesh of meshes) {
       const did = String(mesh.userData.floorplanDoorId ?? "").trim();
       const ov = getDoorOverride(fid, did);
+      if (ov && surfaceOverrideIsActive(ov)) {
+        applySurfaceOverrideToMesh(mesh, ov, libraryBag);
+      }
+    }
+  }
+
+  async function applyDoorFrameOverridesForMultiple(floorLevelId, doorIds) {
+    if (!floorplanRoot.children.length) return;
+    if (!Array.isArray(doorIds) || !doorIds.length) return;
+    const fid = String(floorLevelId ?? "").trim();
+    if (!fid) return;
+    const libraryBag = await getFloorplanMaterialsLibraryBag();
+    const doorIdSet = new Set(doorIds.map((d) => String(d).trim()));
+    const meshes = [];
+    floorplanRoot.traverse((o) => {
+      if (!o.isMesh) return;
+      if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
+      if (!o.userData.floorplanDoorFrame) return;
+      const did = String(o.userData.floorplanDoorId ?? "").trim();
+      if (!did || !doorIdSet.has(did)) return;
+      meshes.push(o);
+    });
+    if (!meshes.length) return;
+    for (const mesh of meshes) {
+      const did = String(mesh.userData.floorplanDoorId ?? "").trim();
+      const ov = getDoorFrameOverride(fid, did);
       if (ov && surfaceOverrideIsActive(ov)) {
         applySurfaceOverrideToMesh(mesh, ov, libraryBag);
       }
@@ -513,7 +543,24 @@ export function createSurfaceOverrideModule(ctx) {
           floorplanRoot.traverse((o) => {
             if (!o.isMesh) return;
             if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
-            if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle) return;
+            if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle || o.userData.floorplanDoorFrame) return;
+            if (String(o.userData.floorplanDoorId ?? "").trim() !== doorId) return;
+            applySurfaceOverrideToMesh(o, override, libraryBag);
+          });
+        }
+      }
+    }
+
+    const doorFrameData = state.doorFrameOverridesByStyleKey[key];
+    if (doorFrameData && typeof doorFrameData === "object") {
+      for (const [floorLevelId, framesData] of Object.entries(doorFrameData)) {
+        if (!framesData || typeof framesData !== "object") continue;
+        for (const [doorId, override] of Object.entries(framesData)) {
+          if (!override || !surfaceOverrideIsActive(override)) continue;
+          floorplanRoot.traverse((o) => {
+            if (!o.isMesh) return;
+            if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== floorLevelId) return;
+            if (!o.userData.floorplanDoorFrame) return;
             if (String(o.userData.floorplanDoorId ?? "").trim() !== doorId) return;
             applySurfaceOverrideToMesh(o, override, libraryBag);
           });
@@ -569,6 +616,7 @@ export function createSurfaceOverrideModule(ctx) {
       } else if (
         o.userData.floorplanDoorFill &&
         !o.userData.floorplanDoorHandle &&
+        !o.userData.floorplanDoorFrame &&
         bag.allDoors &&
         surfaceOverrideIsActive(bag.allDoors)
       ) {
@@ -625,13 +673,25 @@ export function createSurfaceOverrideModule(ctx) {
 
     gWorld.traverse((o) => {
       if (!o.isMesh) return;
-      if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle) return;
+      if (!o.userData.floorplanDoorFill || o.userData.floorplanDoorHandle || o.userData.floorplanDoorFrame) return;
       const fid = String(o.userData.floorplanFloorLevelId ?? "").trim();
       const did = String(o.userData.floorplanDoorId ?? "").trim();
       if (!fid || !did) return;
       const doorOv = getDoorOverride(fid, did);
       if (doorOv && surfaceOverrideIsActive(doorOv)) {
         applySurfaceOverrideToMesh(o, doorOv, libraryBag);
+      }
+    });
+
+    gWorld.traverse((o) => {
+      if (!o.isMesh) return;
+      if (!o.userData.floorplanDoorFrame) return;
+      const fid = String(o.userData.floorplanFloorLevelId ?? "").trim();
+      const did = String(o.userData.floorplanDoorId ?? "").trim();
+      if (!fid || !did) return;
+      const frameOv = getDoorFrameOverride(fid, did);
+      if (frameOv && surfaceOverrideIsActive(frameOv)) {
+        applySurfaceOverrideToMesh(o, frameOv, libraryBag);
       }
     });
 
@@ -676,7 +736,7 @@ export function createSurfaceOverrideModule(ctx) {
         meshes.push(o);
       } else if (scope === "allFloors" && o.userData.floorplanRoomFloor) {
         meshes.push(o);
-      } else if (scope === "allDoors" && o.userData.floorplanDoorFill && !o.userData.floorplanDoorHandle) {
+      } else if (scope === "allDoors" && o.userData.floorplanDoorFill && !o.userData.floorplanDoorHandle && !o.userData.floorplanDoorFrame) {
         meshes.push(o);
       } else if (scope === "allWindows" && o.userData.floorplanWindowFill) {
         meshes.push(o);
@@ -707,6 +767,7 @@ export function createSurfaceOverrideModule(ctx) {
 
   return {
     applyAllOverridesToScene,
+    applyDoorFrameOverridesForMultiple,
     applyDoorOverridesForMultiple,
     applyRoomFloorOverridesForMultiple,
     applySurfaceOverrideToMesh,

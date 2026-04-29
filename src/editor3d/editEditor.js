@@ -15,6 +15,7 @@ import {
   resolveRoomFloorMaterialKey,
   resolveRoomWallMaterialKey,
   resolveDoorMaterialKey,
+  resolveDoorFrameMaterialKey,
   resolveWindowMaterialKey,
   findWallSideRoomsAt,
   loadMaterialsLibrary,
@@ -36,15 +37,15 @@ import { mountFloorplanColorPicker } from "../ui/floorplanColorPicker.js";
 import { DATA_PATHS } from "../core/schema.js";
 import { createAnnotations } from "./modules/annotations.js";
 import { createBomPanel } from "./modules/bomPanel.js";
-import { createFloorplanCore } from "./modules/floorplanCore.js?v=doorframe10";
+import { createFloorplanCore } from "./modules/floorplanCore.js?v=doorframe11";
 import { createFurnitureMeshModule } from "./modules/furnitureMesh.js";
-import { createHistoryModule } from "./modules/history.js";
+import { createHistoryModule } from "./modules/history.js?v=doorframe11";
 import { createMaterialFactory } from "./modules/materialFactory.js";
-import { createMeshBuilder } from "./modules/meshBuilder.js?v=doorframe10";
-import { createProjectIoModule } from "./modules/projectIo.js";
-import { createRenderLoop } from "./modules/renderLoop.js?v=doorframe10";
-import { createStylePackTools } from "./modules/stylePackTools.js";
-import { createSurfaceOverrideModule } from "./modules/surfaceOverride.js?v=doorframe10";
+import { createMeshBuilder } from "./modules/meshBuilder.js?v=doorframe11";
+import { createProjectIoModule } from "./modules/projectIo.js?v=doorframe11";
+import { createRenderLoop } from "./modules/renderLoop.js?v=doorframe11";
+import { createStylePackTools } from "./modules/stylePackTools.js?v=doorframe11";
+import { createSurfaceOverrideModule } from "./modules/surfaceOverride.js?v=doorframe11";
 import { createToolbarInit } from "./modules/toolbarInit.js";
 import { createWallMeshBuilder } from "./modules/wallMeshBuilder.js";
 import { DEFAULT_SCENE_LIGHTING, applySceneLightingConfig, mergeSceneLighting } from "./utils/lightingUtils.js";
@@ -376,13 +377,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   let activeFloorId = null;
   let selectedGroup = null;
   let floorplanSelected = false;
-  /** @type {{ kind: "allWalls" | "allFloors" | "allDoors" | "allWindows", floorLevelId: string } | null} */
+  /** @type {{ kind: "allWalls" | "allFloors" | "allDoors" | "doorFrame" | "allWindows" | "wallFace", floorLevelId: string } | null} */
   let selectedFloorplanSurface = null;
 
-  /** @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} kind */
+  /** @param {"allWalls" | "allFloors" | "allDoors" | "doorFrame" | "allWindows" | "wallFace"} kind */
   function floorplanSurfaceScopeFromKind(kind) {
     if (kind === "allFloors") return "allFloors";
     if (kind === "allDoors") return "allDoors";
+    if (kind === "doorFrame") return "doorFrame";
     if (kind === "allWindows") return "allWindows";
     return "allWalls";
   }
@@ -476,6 +478,28 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return [...selectedDoorIds];
   }
 
+  // --- 多选门框 ---
+  /** @type {Set<string>} 当前选中的门框所属门 ID 集合 */
+  let selectedDoorFrameIds = new Set();
+
+  function toggleDoorFrameSelection(doorId) {
+    if (!doorId) return;
+    const id = String(doorId).trim();
+    if (selectedDoorFrameIds.has(id)) {
+      selectedDoorFrameIds.delete(id);
+    } else {
+      selectedDoorFrameIds.add(id);
+    }
+  }
+
+  function clearDoorFrameSelection() {
+    selectedDoorFrameIds.clear();
+  }
+
+  function getSelectedDoorFrameIds() {
+    return [...selectedDoorFrameIds];
+  }
+
   // --- 按房间地板覆盖（内存） ---
   // 格式: { [styleKey]: { [floorLevelId]: { [roomId]: { color, materialId, roughness, metalness, uvScale, textureRotation, textureAlbedo } } } }
   let roomFloorOverridesByStyleKey = {};
@@ -543,7 +567,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * 将材质覆盖同步到当前活跃方案对象，保持与保存文件使用的 surfaceOverridesByStyleKey schema 一致。
-   * @param {"roomFloors" | "doorOverrides" | "windowOverrides" | "wallFaceOverrides"} nestedKey
+   * @param {"roomFloors" | "doorOverrides" | "doorFrameOverrides" | "windowOverrides" | "wallFaceOverrides"} nestedKey
    * @param {object} payload
    */
   function syncNestedSurfaceOverridesToActiveDesignProject(nestedKey, payload) {
@@ -670,6 +694,88 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const doorOverrides = styleBag.doorOverrides;
     if (!doorOverrides || typeof doorOverrides !== "object") return;
     doorOverridesByStyleKey[key] = JSON.parse(JSON.stringify(doorOverrides));
+  }
+
+  // --- 按门框覆盖（内存） ---
+  // 格式: { [styleKey]: { [floorLevelId]: { [doorId]: { color, materialId, roughness, metalness, uvScale, textureRotation, textureAlbedo } } } }
+  let doorFrameOverridesByStyleKey = {};
+
+  function getDoorFrameOverridesBucket(styleKey, opts = {}) {
+    const key = normalizeStyleKeyForSurfaceOverrides(styleKey);
+    const create = Boolean(opts.create);
+    const hit = doorFrameOverridesByStyleKey[key];
+    if (hit && typeof hit === "object") return hit;
+    if (!create) return {};
+    const next = {};
+    doorFrameOverridesByStyleKey[key] = next;
+    return next;
+  }
+
+  function getCurrentDoorFrameOverridesBucket() {
+    return getDoorFrameOverridesBucket(getEffectiveFloorplanStyleKey(), { create: true });
+  }
+
+  /**
+   * @param {string} floorLevelId
+   * @param {string} doorId
+   * @returns {object | null}
+   */
+  function getDoorFrameOverride(floorLevelId, doorId) {
+    const fid = String(floorLevelId ?? "").trim();
+    const did = String(doorId ?? "").trim();
+    if (!fid || !did) return null;
+    const bucket = getCurrentDoorFrameOverridesBucket();
+    const floorBag = bucket[fid];
+    if (!floorBag) return null;
+    return floorBag[did] ?? null;
+  }
+
+  /**
+   * @param {string} floorLevelId
+   * @param {string} doorId
+   * @param {object | null} override
+   */
+  function setDoorFrameOverride(floorLevelId, doorId, override) {
+    const fid = String(floorLevelId ?? "").trim();
+    const did = String(doorId ?? "").trim();
+    if (!fid || !did) return;
+    const bucket = getCurrentDoorFrameOverridesBucket();
+    if (!bucket[fid]) bucket[fid] = {};
+    if (!override || (typeof override === "object" && Object.keys(override).length === 0)) {
+      delete bucket[fid][did];
+      if (Object.keys(bucket[fid]).length === 0) delete bucket[fid];
+    } else {
+      bucket[fid][did] = JSON.parse(JSON.stringify(override));
+    }
+  }
+
+  /**
+   * 对多个门框应用覆盖（不重建几何体）
+   * @param {string} floorLevelId
+   * @param {string[]} doorIds
+   * @param {object} override
+   */
+  function setDoorFrameOverridesForMultiple(floorLevelId, doorIds, override) {
+    if (!Array.isArray(doorIds)) return;
+    for (const did of doorIds) {
+      setDoorFrameOverride(floorLevelId, did, override);
+    }
+  }
+
+  function syncDoorFrameOverridesToDesignJson() {
+    const key = normalizeStyleKeyForSurfaceOverrides(getEffectiveFloorplanStyleKey());
+    syncNestedSurfaceOverridesToActiveDesignProject("doorFrameOverrides", doorFrameOverridesByStyleKey[key] || {});
+  }
+
+  function loadDoorFrameOverridesFromDesignJson(designSurfaceOverrides) {
+    if (!designSurfaceOverrides || typeof designSurfaceOverrides !== "object") return;
+    const sk = getEffectiveFloorplanStyleKey();
+    const key = normalizeStyleKeyForSurfaceOverrides(sk);
+    const styleBag = designSurfaceOverrides[key];
+    if (!styleBag || typeof styleBag !== "object") return;
+    const doorFrameOverrides = styleBag.doorFrameOverrides;
+    if (!doorFrameOverrides || typeof doorFrameOverrides !== "object") return;
+    doorFrameOverridesByStyleKey[key] = JSON.parse(JSON.stringify(doorFrameOverrides));
   }
 
   // --- 多选窗户 ---
@@ -1030,6 +1136,12 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     set doorOverridesByStyleKey(v) {
       doorOverridesByStyleKey = v && typeof v === "object" ? v : {};
     },
+    get doorFrameOverridesByStyleKey() {
+      return doorFrameOverridesByStyleKey;
+    },
+    set doorFrameOverridesByStyleKey(v) {
+      doorFrameOverridesByStyleKey = v && typeof v === "object" ? v : {};
+    },
     get windowOverridesByStyleKey() {
       return windowOverridesByStyleKey;
     },
@@ -1180,6 +1292,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
   });
   const {
     applyAllOverridesToScene,
+    applyDoorFrameOverridesForMultiple,
     applyDoorOverridesForMultiple,
     applyRoomFloorOverridesForMultiple,
     applySurfaceOverrideToMesh,
@@ -1196,6 +1309,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     createFloorplanMaterialFromStyleDef,
     floorplanRoot,
     getCurrentSurfaceOverridesBucket,
+    getDoorFrameOverride,
     getDoorOverride,
     getEffectiveFloorplanStyleKey,
     getFloorplanMaterialsLibraryBag,
@@ -1451,6 +1565,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         ...Object.keys(floorplanSurfaceOverridesByStyleKey),
         ...Object.keys(roomFloorOverridesByStyleKey),
         ...Object.keys(doorOverridesByStyleKey),
+        ...Object.keys(doorFrameOverridesByStyleKey),
         ...Object.keys(windowOverridesByStyleKey),
         ...Object.keys(wallFaceOverridesByStyleKey),
       ]);
@@ -1459,6 +1574,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           ...JSON.parse(JSON.stringify(floorplanSurfaceOverridesByStyleKey[key] || {})),
           roomFloors: JSON.parse(JSON.stringify(roomFloorOverridesByStyleKey[key] || {})),
           doorOverrides: JSON.parse(JSON.stringify(doorOverridesByStyleKey[key] || {})),
+          doorFrameOverrides: JSON.parse(JSON.stringify(doorFrameOverridesByStyleKey[key] || {})),
           windowOverrides: JSON.parse(JSON.stringify(windowOverridesByStyleKey[key] || {})),
           wallFaceOverrides: JSON.parse(JSON.stringify(wallFaceOverridesByStyleKey[key] || {})),
         };
@@ -2166,7 +2282,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (scope === "allWalls" && !o.userData.floorplanWallId) return;
       if (scope === "wallFace" && !o.userData.floorplanWallId) return;
       if (scope === "allFloors" && !o.userData.floorplanRoomFloor) return;
-      if (scope === "allDoors" && !o.userData.floorplanDoorFill) return;
+      if (scope === "allDoors" && (!o.userData.floorplanDoorFill || o.userData.floorplanDoorFrame)) return;
+      if (scope === "doorFrame" && !o.userData.floorplanDoorFrame) return;
       if (scope === "allWindows" && !o.userData.floorplanWindowFill) return;
 
       if (scope === "wallFace") {
@@ -2198,8 +2315,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         if (!meshRoomId || !roomIdFilter.has(meshRoomId)) return;
       }
 
-      // 多选门时，检查是否在选中列表中
-      if (scope === "allDoors" && doorIdFilter && doorIdFilter.size > 0) {
+      // 多选门/门框时，检查是否在选中列表中
+      if ((scope === "allDoors" || scope === "doorFrame") && doorIdFilter && doorIdFilter.size > 0) {
         const meshDoorId = String(o.userData.floorplanDoorId ?? "").trim();
         if (!meshDoorId || !doorIdFilter.has(meshDoorId)) return;
       }
@@ -2225,7 +2342,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors" | "doorFrame" | "allWindows"} scope
    */
   function getFloorplanSurfaceGlobalOverride(floorLevelId, scope) {
     const overrides = getCurrentSurfaceOverridesBucket();
@@ -2240,7 +2357,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors" | "doorFrame" | "allWindows"} scope
    * @param {SurfaceScopeOverride | null} data null 表示删除该条
    */
   function setFloorplanSurfaceGlobalOverride(floorLevelId, scope, data) {
@@ -2268,7 +2385,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
   /**
    * @param {string} floorLevelId
-   * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors" | "doorFrame" | "allWindows"} scope
    * @returns {import("three").Mesh | null}
    */
   function findFirstFloorplanSurfaceMesh(floorLevelId, scope) {
@@ -2279,7 +2396,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (String(o.userData.floorplanFloorLevelId ?? "").trim() !== fid) return;
       if (scope === "allWalls" && o.userData.floorplanWallId) found = o;
       if (scope === "allFloors" && o.userData.floorplanRoomFloor) found = o;
-      if (scope === "allDoors" && o.userData.floorplanDoorFill && !o.userData.floorplanDoorHandle) found = o;
+      if (scope === "allDoors" && o.userData.floorplanDoorFill && !o.userData.floorplanDoorHandle && !o.userData.floorplanDoorFrame) found = o;
+      if (scope === "doorFrame" && o.userData.floorplanDoorFrame) found = o;
       if (scope === "allWindows" && o.userData.floorplanWindowFill) found = o;
     });
     return found;
@@ -4074,6 +4192,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           windowId: wid || null,
         };
       }
+      if (o.userData?.floorplanDoorFrame && fid) {
+        const did = o.userData?.floorplanDoorId;
+        return {
+          kind: "doorFrame",
+          floorLevelId: fid,
+          doorId: did || null,
+        };
+      }
       if (o.userData?.floorplanDoorFill && fid) {
         const did = o.userData?.floorplanDoorId;
         return {
@@ -4111,6 +4237,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     selectedFloorplanSurface = null;
     clearRoomFloorSelection();
     clearDoorSelection();
+    clearDoorFrameSelection();
     clearWindowSelection();
     clearWallFaceSelection();
     if (propSurfaceFields) propSurfaceFields.hidden = true;
@@ -4165,6 +4292,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     return { ...lib, ...mats };
   }
 
+  function getFloorLevelById(floorLevelId) {
+    if (!currentFloorplanEntry) return null;
+    const floors = getFloorsFromEntry(currentFloorplanEntry);
+    const wantFid = normalizeFloorKey(floorLevelId);
+    return floors.find((f) => normalizeFloorKey(f?.id ?? "") === wantFid) ?? null;
+  }
+
+  function findDoorAndFrameSpec(floorLevelId, doorId) {
+    const fl = getFloorLevelById(floorLevelId);
+    const did = String(doorId ?? "").trim();
+    if (!fl || !did) return { door: null, frame: null };
+    const door = (fl.doors || []).find((d) => String(d?.id ?? "").trim() === did) || null;
+    const frame = (fl.doorFrames || []).find((item) => String(item?.doorId ?? "").trim() === did) || null;
+    return { door, frame };
+  }
+
   /**
    * 本层第一个房间地面 / 第一条墙在风格包中对应的材质键（与渲染时 resolve*MaterialKey 一致）。
    * @param {{ floorLevelId: string }} sel
@@ -4198,12 +4341,40 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
    */
   function resolveStyleMaterialKeyForDoorScope(sel, style) {
     if (!style || !currentFloorplanEntry) return "";
-    const floors = getFloorsFromEntry(currentFloorplanEntry);
-    const wantFid = normalizeFloorKey(sel.floorLevelId);
-    const fl = floors.find((f) => normalizeFloorKey(f?.id ?? "") === wantFid) ?? null;
+    const fl = getFloorLevelById(sel.floorLevelId);
     if (!fl) return "";
+    if (sel.doorId) {
+      const { door } = findDoorAndFrameSpec(sel.floorLevelId, sel.doorId);
+      const k = door ? resolveDoorMaterialKey(style, door) : "";
+      if (k) return k;
+    }
     for (const d of fl.doors || []) {
       const k = resolveDoorMaterialKey(style, d);
+      if (k) return k;
+    }
+    return "";
+  }
+
+  function resolveStyleMaterialKeyForDoorFrameScope(sel, style) {
+    if (!style || !currentFloorplanEntry) return "";
+    const fl = getFloorLevelById(sel.floorLevelId);
+    if (!fl) return "";
+    const resolveFrameKey = (door, frame) => {
+      for (const raw of [frame?.frameMaterialId, frame?.materialId, frame?.id]) {
+        const key = String(raw ?? "").trim();
+        if (key && getMaterialDef(style, key)) return key;
+      }
+      const k = resolveDoorFrameMaterialKey(style, door);
+      return k || "";
+    };
+    if (sel.doorId) {
+      const { door, frame } = findDoorAndFrameSpec(sel.floorLevelId, sel.doorId);
+      const k = resolveFrameKey(door, frame);
+      if (k) return k;
+    }
+    for (const d of fl.doors || []) {
+      const frame = (fl.doorFrames || []).find((item) => String(item?.doorId ?? "").trim() === String(d?.id ?? "").trim()) || null;
+      const k = resolveFrameKey(d, frame);
       if (k) return k;
     }
     return "";
@@ -4231,14 +4402,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const t = String(type ?? "");
     if (scope === "allFloors") return t === "wood_floor";
     if (scope === "allWindows") return t === "glass";
-    if (scope === "allDoors") return t === "paint_wood" || t === "paint" || t === "wood_floor" || t === "glass";
+    if (scope === "allDoors" || scope === "doorFrame") return t === "paint_wood" || t === "paint" || t === "wood_floor" || t === "glass";
     return t === "paint" || t === "paint_wood" || t === "glass";
   }
 
   /**
    * 解析当前墙面/地面在库中的基准材质 id（与 sync 面板、渲染一致）。
    * @param {{ floorLevelId: string }} sel
-   * @param {"allWalls" | "allFloors" | "allDoors" | "allWindows"} scope
+   * @param {"allWalls" | "allFloors" | "allDoors" | "doorFrame" | "allWindows"} scope
    * @param {SurfaceScopeOverride | null | undefined} ov
    * @param {Record<string, object>} lib
    * @param {{ ignoreMaterialPresetCleared?: boolean }} [opts] 为 true 时仍按风格包解析默认库 id（用于清除预设后用户点选色板，需有基准材质承载贴图）
@@ -4254,9 +4425,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       const sk =
         scope === "allDoors"
           ? resolveStyleMaterialKeyForDoorScope(sel, style)
-          : scope === "allWindows"
-            ? resolveStyleMaterialKeyForWindowScope(sel, style)
-            : resolveStyleMaterialKeyForSurfaceScope(sel, scope, style);
+          : scope === "doorFrame"
+            ? resolveStyleMaterialKeyForDoorFrameScope(sel, style)
+            : scope === "allWindows"
+              ? resolveStyleMaterialKeyForWindowScope(sel, style)
+              : resolveStyleMaterialKeyForSurfaceScope(sel, scope, style);
       if (sk) {
         const styleMat = getMaterialDef(style, sk);
         const libMatId =
@@ -4336,6 +4509,16 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     }
     propSurfaceMaterialName.textContent = shown;
     propSurfaceMaterialName.title = shown.length > 0 && shown !== "无" ? shown : "";
+  }
+
+  function getSingleSurfaceOverrideForSelection(sel, scope = floorplanSurfaceScopeFromKind(sel?.kind)) {
+    if (!sel) return null;
+    if (sel.kind === "wallFace") return getWallFaceOverride(sel.floorLevelId, sel.wallId, sel.faceId);
+    if (sel.kind === "allFloors" && sel.roomId) return getRoomFloorOverride(sel.floorLevelId, sel.roomId);
+    if (sel.kind === "allDoors" && sel.doorId) return getDoorOverride(sel.floorLevelId, sel.doorId);
+    if (sel.kind === "doorFrame" && sel.doorId) return getDoorFrameOverride(sel.floorLevelId, sel.doorId);
+    if (sel.kind === "allWindows" && sel.windowId) return getWindowOverride(sel.floorLevelId, sel.windowId);
+    return getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
   }
 
   /**
@@ -4463,7 +4646,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       if (!sel || !propSurfaceMaterial || !propSurfaceTextureAlbedo) return;
       const lib = await getFloorplanMaterialsLibraryBag();
       const scope = floorplanSurfaceScopeFromKind(sel.kind);
-      const baseOv = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
+      const baseOv = getSingleSurfaceOverrideForSelection(sel, scope);
       let mid =
         String(propSurfaceMaterial.value ?? "").trim() ||
         (await resolveBaseMaterialIdForSurfacePanel(sel, scope, baseOv, lib, {
@@ -4488,6 +4671,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     if (!sel || !propertiesPanel) return;
     const isFloor = sel.kind === "allFloors";
     const isDoor = sel.kind === "allDoors";
+    const isDoorFrame = sel.kind === "doorFrame";
     const isWin = sel.kind === "allWindows";
     const isWallFace = sel.kind === "wallFace";
     const scope = floorplanSurfaceScopeFromKind(sel.kind);
@@ -4499,6 +4683,10 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     // 多选门处理
     const hasMultiSelectDoor = selectedDoorIds.size > 0 && isDoor && sel.doorId;
     const selectedDoorIdsArr = hasMultiSelectDoor ? getSelectedDoorIds() : [];
+
+    // 多选门框处理
+    const hasMultiSelectDoorFrame = selectedDoorFrameIds.size > 0 && isDoorFrame && sel.doorId;
+    const selectedDoorFrameIdsArr = hasMultiSelectDoorFrame ? getSelectedDoorFrameIds() : [];
 
     // 多选墙面处理
     const hasMultiSelectWallFace = isWallFace && selectedWallFaceIds.size > 0;
@@ -4550,6 +4738,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return null;
     }
 
+    function getDoorFrameName(doorId, floorLevelId) {
+      const { door, frame } = findDoorAndFrameSpec(floorLevelId, doorId);
+      if (frame?.name) return frame.name;
+      const doorName = door?.name || doorId;
+      return doorName ? `${doorName}门框` : null;
+    }
+
     // 获取窗户名称的辅助函数
     function getWindowName(windowId, floorLevelId) {
       if (!windowId || !floorLevelId) return null;
@@ -4589,6 +4784,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } else if (hasMultiSelectDoor) {
         const names = selectedDoorIdsArr.map((did) => getDoorName(did, sel.floorLevelId) || did).join("、");
         propertiesName.textContent = names || `${selectedDoorIdsArr.length} 个门`;
+      } else if (hasMultiSelectDoorFrame) {
+        const names = selectedDoorFrameIdsArr.map((did) => getDoorFrameName(did, sel.floorLevelId) || did).join("、");
+        propertiesName.textContent = names || `${selectedDoorFrameIdsArr.length} 个门框`;
       } else if (hasMultiSelectWindow) {
         const names = selectedWindowIdsArr.map((wid) => getWindowName(wid, sel.floorLevelId) || wid).join("、");
         propertiesName.textContent = names || `${selectedWindowIdsArr.length} 个窗户`;
@@ -4611,11 +4809,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } else if (isDoor && sel.doorId) {
         const doorName = getDoorName(sel.doorId, sel.floorLevelId);
         propertiesName.textContent = doorName || "门";
+      } else if (isDoorFrame && sel.doorId) {
+        const frameName = getDoorFrameName(sel.doorId, sel.floorLevelId);
+        propertiesName.textContent = frameName || "门框";
       } else if (isWin && sel.windowId) {
         const windowName = getWindowName(sel.windowId, sel.floorLevelId);
         propertiesName.textContent = windowName || "窗";
       } else {
-        propertiesName.textContent = isFloor ? "全部地面" : isDoor ? "全部门" : isWin ? "全部窗" : "全部墙体";
+        propertiesName.textContent = isFloor ? "全部地面" : isDoor ? "全部门" : isDoorFrame ? "全部门框" : isWin ? "全部窗" : "全部墙体";
       }
     }
     if (propSurfaceTitle) {
@@ -4624,6 +4825,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         propSurfaceTitle.textContent = `地面属性（${selectedRoomIds.length} 个房间） · ${floorLabel}`;
       } else if (hasMultiSelectDoor) {
         propSurfaceTitle.textContent = `门属性（${selectedDoorIdsArr.length} 个门） · ${floorLabel}`;
+      } else if (hasMultiSelectDoorFrame) {
+        propSurfaceTitle.textContent = `门框属性（${selectedDoorFrameIdsArr.length} 个门框） · ${floorLabel}`;
       } else if (hasMultiSelectWindow) {
         propSurfaceTitle.textContent = `窗户属性（${selectedWindowIdsArr.length} 个窗户） · ${floorLabel}`;
       } else if (isWallFace) {
@@ -4640,6 +4843,9 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       } else if (isDoor && sel.doorId) {
         const doorName = getDoorName(sel.doorId, sel.floorLevelId);
         propSurfaceTitle.textContent = doorName ? `${doorName} 属性 · ${floorLabel}` : `门属性 · ${floorLabel}`;
+      } else if (isDoorFrame && sel.doorId) {
+        const frameName = getDoorFrameName(sel.doorId, sel.floorLevelId);
+        propSurfaceTitle.textContent = frameName ? `${frameName} 属性 · ${floorLabel}` : `门框属性 · ${floorLabel}`;
       } else if (isWin && sel.windowId) {
         const windowName = getWindowName(sel.windowId, sel.floorLevelId);
         propSurfaceTitle.textContent = windowName ? `${windowName} 属性 · ${floorLabel}` : `窗户属性 · ${floorLabel}`;
@@ -4648,9 +4854,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           ? `地面属性（本层所有房间） · ${floorLabel}`
           : isDoor
             ? `门属性（本层全部门） · ${floorLabel}`
-            : isWin
-              ? `窗户属性（本层全部窗洞玻璃） · ${floorLabel}`
-              : `墙体属性（本层全部墙） · ${floorLabel}`;
+            : isDoorFrame
+              ? `门框属性（本层全部门框） · ${floorLabel}`
+              : isWin
+                ? `窗户属性（本层全部窗洞玻璃） · ${floorLabel}`
+                : `墙体属性（本层全部墙） · ${floorLabel}`;
       }
     }
     if (propSurfaceIdHint) {
@@ -4658,6 +4866,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         propSurfaceIdHint.textContent = `已选中 ${selectedRoomIds.length} 个房间地板 · 修改将应用于所有选中房间`;
       } else if (hasMultiSelectDoor) {
         propSurfaceIdHint.textContent = `已选中 ${selectedDoorIdsArr.length} 个门 · 修改将应用于所有选中门`;
+      } else if (hasMultiSelectDoorFrame) {
+        propSurfaceIdHint.textContent = `已选中 ${selectedDoorFrameIdsArr.length} 个门框 · 修改将应用于所有选中门框`;
       } else if (hasMultiSelectWindow) {
         propSurfaceIdHint.textContent = `已选中 ${selectedWindowIdsArr.length} 个窗户 · 修改将应用于所有选中窗户`;
       } else if (isWallFace) {
@@ -4669,7 +4879,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           propSurfaceIdHint.textContent = `修改将应用于 ${wn} ${side}`;
         }
       } else {
-        propSurfaceIdHint.textContent = `修改将应用于该层全部${isFloor ? "地面" : isDoor ? "门" : isWin ? "窗洞玻璃" : "墙体"}`;
+        propSurfaceIdHint.textContent = `修改将应用于该层全部${isFloor ? "地面" : isDoor ? "门" : isDoorFrame ? "门框" : isWin ? "窗洞玻璃" : "墙体"}`;
       }
     }
 
@@ -4729,6 +4939,22 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         }
         if (!Object.keys(ov).length) ov = null;
       }
+    } else if (hasMultiSelectDoorFrame) {
+      const overrides = selectedDoorFrameIdsArr.map((did) => getDoorFrameOverride(sel.floorLevelId, did)).filter(Boolean);
+      if (overrides.length === 1) {
+        ov = overrides[0];
+      } else if (overrides.length > 1) {
+        ov = {};
+        const fields = ["color", "materialId", "roughness", "metalness", "uvScale", "textureRotation", "textureAlbedo"];
+        for (const field of fields) {
+          const vals = overrides.map((o) => JSON.stringify(o?.[field]));
+          const uniqueVals = [...new Set(vals)].filter((v) => v !== "undefined" && v !== "null");
+          if (uniqueVals.length === 1) {
+            ov[field] = JSON.parse(uniqueVals[0]);
+          }
+        }
+        if (!Object.keys(ov).length) ov = null;
+      }
     } else if (hasMultiSelectWindow) {
       const overrides = selectedWindowIdsArr.map((wid) => getWindowOverride(sel.floorLevelId, wid)).filter(Boolean);
       if (overrides.length === 1) {
@@ -4745,11 +4971,17 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
         }
         if (!Object.keys(ov).length) ov = null;
       }
+    } else if (isDoor && sel.doorId) {
+      ov = getDoorOverride(sel.floorLevelId, sel.doorId);
+    } else if (isDoorFrame && sel.doorId) {
+      ov = getDoorFrameOverride(sel.floorLevelId, sel.doorId);
+    } else if (isWin && sel.windowId) {
+      ov = getWindowOverride(sel.floorLevelId, sel.windowId);
     } else {
       ov = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
     }
 
-    const sampleMesh = (isWallFace || hasMultiSelectFloor || hasMultiSelectDoor || hasMultiSelectWindow) ? null : findFirstFloorplanSurfaceMesh(sel.floorLevelId, scope);
+    const sampleMesh = (isWallFace || hasMultiSelectFloor || hasMultiSelectDoor || hasMultiSelectDoorFrame || hasMultiSelectWindow) ? null : findFirstFloorplanSurfaceMesh(sel.floorLevelId, scope);
     const hex = ov?.color || (sampleMesh ? sampleMeshColorHex(sampleMesh) : "#e8dcc8");
     const normalizedHex = hex.length === 7 ? hex : `#${hex.replace(/^#/, "")}`;
     if (propSurfaceColor) propSurfaceColor.value = normalizedHex;
@@ -4837,10 +5069,11 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       );
     }
     selectedFloorplanSurface = sel;
-    // 多选房间地板时传递 roomIdFilter，多选门时传递 doorIdFilter，多选窗户时传递 windowIdFilter，多选墙面时传递 wallFaceFilter
+    // 多选房间地板时传递 roomIdFilter，多选门/门框时传递 doorIdFilter，多选窗户时传递 windowIdFilter，多选墙面时传递 wallFaceFilter
     if (sel) {
       const roomFilter = sel.kind === "allFloors" && selectedRoomFloorIds.size > 0 ? selectedRoomFloorIds : null;
       const doorFilter = sel.kind === "allDoors" && selectedDoorIds.size > 0 ? selectedDoorIds : null;
+      const doorFrameFilter = sel.kind === "doorFrame" && selectedDoorFrameIds.size > 0 ? selectedDoorFrameIds : null;
       const windowFilter = sel.kind === "allWindows" && selectedWindowIds.size > 0 ? selectedWindowIds : null;
       // wallFaceFilter: Map<wallId, Set<faceId | null>>
       let wallFaceFilter = null;
@@ -4854,7 +5087,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           wallFaceFilter.get(wallId).add(faceId);
         }
       }
-      setFloorplanGlobalSurfaceHighlight(sel.floorLevelId, sel.kind, true, roomFilter, doorFilter, windowFilter, wallFaceFilter);
+      setFloorplanGlobalSurfaceHighlight(sel.floorLevelId, sel.kind, true, roomFilter, doorFrameFilter || doorFilter, windowFilter, wallFaceFilter);
     }
     if (propFurnitureFields) propFurnitureFields.hidden = true;
     if (propSurfaceFields) propSurfaceFields.hidden = false;
@@ -4875,12 +5108,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     const scope = floorplanSurfaceScopeFromKind(sel.kind);
     const lib = await getFloorplanMaterialsLibraryBag();
     const fid = sel.floorLevelId;
-    const prevOv = getFloorplanSurfaceGlobalOverride(fid, scope);
+    const prevOv = getSingleSurfaceOverrideForSelection(sel, scope);
 
     // 多选房间地板处理
     const hasMultiSelectFloor = selectedRoomFloorIds.size > 0 && sel.kind === "allFloors" && sel.roomId;
     // 多选门处理
     const hasMultiSelectDoor = selectedDoorIds.size > 0 && sel.kind === "allDoors" && sel.doorId;
+    // 多选门框处理
+    const hasMultiSelectDoorFrame = selectedDoorFrameIds.size > 0 && sel.kind === "doorFrame" && sel.doorId;
     // 多选窗户处理
     const hasMultiSelectWindow = selectedWindowIds.size > 0 && sel.kind === "allWindows" && sel.windowId;
     const selectedWindowIdsArr = hasMultiSelectWindow ? getSelectedWindowIds() : [];
@@ -5040,6 +5275,27 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       return;
     }
 
+    if (hasMultiSelectDoorFrame) {
+      const doorIds = getSelectedDoorFrameIds();
+      setDoorFrameOverridesForMultiple(fid, doorIds, hasScopeData ? next : null);
+      syncDoorFrameOverridesToDesignJson();
+      if (historyReady) pushHistorySnapshot();
+      await applyDoorFrameOverridesForMultiple(fid, doorIds);
+      await selectFloorplanSurface(sel);
+      emitLayoutChanged();
+      return;
+    }
+
+    if (sel.kind === "doorFrame" && sel.doorId) {
+      setDoorFrameOverride(fid, sel.doorId, hasScopeData ? next : null);
+      syncDoorFrameOverridesToDesignJson();
+      if (historyReady) pushHistorySnapshot();
+      await applyDoorFrameOverridesForMultiple(fid, [sel.doorId]);
+      await selectFloorplanSurface(sel);
+      emitLayoutChanged();
+      return;
+    }
+
     // 多选窗户：批量设置覆盖
     if (hasMultiSelectWindow) {
       const windowIds = getSelectedWindowIds();
@@ -5086,6 +5342,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     const hasMultiSelectFloor = selectedRoomFloorIds.size > 0 && sel.kind === "allFloors" && sel.roomId;
     const hasMultiSelectDoor = selectedDoorIds.size > 0 && sel.kind === "allDoors" && sel.doorId;
+    const hasMultiSelectDoorFrame = selectedDoorFrameIds.size > 0 && sel.kind === "doorFrame" && sel.doorId;
     const hasMultiSelectWindow = selectedWindowIds.size > 0 && sel.kind === "allWindows" && sel.windowId;
     const isWallFaceEdit = sel.kind === "wallFace";
 
@@ -5103,6 +5360,13 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     } else if (sel.kind === "allDoors" && sel.doorId) {
       setDoorOverride(fid, sel.doorId, null);
       syncDoorOverridesToDesignJson();
+    } else if (hasMultiSelectDoorFrame) {
+      const doorIds = getSelectedDoorFrameIds();
+      setDoorFrameOverridesForMultiple(fid, doorIds, null);
+      syncDoorFrameOverridesToDesignJson();
+    } else if (sel.kind === "doorFrame" && sel.doorId) {
+      setDoorFrameOverride(fid, sel.doorId, null);
+      syncDoorFrameOverridesToDesignJson();
     } else if (hasMultiSelectWindow) {
       const windowIds = getSelectedWindowIds();
       setWindowOverridesForMultiple(fid, windowIds, null);
@@ -5142,6 +5406,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
 
     const hasMultiSelectFloor = selectedRoomFloorIds.size > 0 && sel.kind === "allFloors" && sel.roomId;
     const hasMultiSelectDoor = selectedDoorIds.size > 0 && sel.kind === "allDoors" && sel.doorId;
+    const hasMultiSelectDoorFrame = selectedDoorFrameIds.size > 0 && sel.kind === "doorFrame" && sel.doorId;
     const hasMultiSelectWindow = selectedWindowIds.size > 0 && sel.kind === "allWindows" && sel.windowId;
     const isWallFaceEdit = sel.kind === "wallFace";
 
@@ -5161,6 +5426,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
     } else if (sel.kind === "allDoors" && sel.doorId) {
       setDoorOverride(fid, sel.doorId, overrideWithoutColor(getDoorOverride(fid, sel.doorId)));
       syncDoorOverridesToDesignJson();
+    } else if (hasMultiSelectDoorFrame) {
+      for (const doorId of getSelectedDoorFrameIds()) {
+        setDoorFrameOverride(fid, doorId, overrideWithoutColor(getDoorFrameOverride(fid, doorId)));
+      }
+      syncDoorFrameOverridesToDesignJson();
+    } else if (sel.kind === "doorFrame" && sel.doorId) {
+      setDoorFrameOverride(fid, sel.doorId, overrideWithoutColor(getDoorFrameOverride(fid, sel.doorId)));
+      syncDoorFrameOverridesToDesignJson();
     } else if (hasMultiSelectWindow) {
       for (const windowId of getSelectedWindowIds()) {
         setWindowOverride(fid, windowId, overrideWithoutColor(getWindowOverride(fid, windowId)));
@@ -5590,6 +5863,8 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           } else {
             clearRoomFloorSelection();
             clearDoorSelection();
+            clearDoorFrameSelection();
+            clearWindowSelection();
             clearWallFaceSelection();
             toggleRoomFloorSelection(surf.roomId);
           }
@@ -5599,12 +5874,25 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             toggleDoorSelection(surf.doorId);
           } else {
             clearDoorSelection();
+            clearDoorFrameSelection();
             clearRoomFloorSelection();
             clearWindowSelection();
             clearWallFaceSelection();
             toggleDoorSelection(surf.doorId);
           }
           if (selectedDoorIds.size === 0) deselected = true;
+        } else if (surf.kind === "doorFrame" && surf.doorId) {
+          if (isCtrl) {
+            toggleDoorFrameSelection(surf.doorId);
+          } else {
+            clearDoorFrameSelection();
+            clearDoorSelection();
+            clearRoomFloorSelection();
+            clearWindowSelection();
+            clearWallFaceSelection();
+            toggleDoorFrameSelection(surf.doorId);
+          }
+          if (selectedDoorFrameIds.size === 0) deselected = true;
         } else if (surf.kind === "allWindows" && surf.windowId) {
           if (isCtrl) {
             toggleWindowSelection(surf.windowId);
@@ -5612,6 +5900,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
             clearWindowSelection();
             clearRoomFloorSelection();
             clearDoorSelection();
+            clearDoorFrameSelection();
             clearWallFaceSelection();
             toggleWindowSelection(surf.windowId);
           }
@@ -5620,12 +5909,14 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           if (isCtrl) {
             clearRoomFloorSelection();
             clearDoorSelection();
+            clearDoorFrameSelection();
             clearWindowSelection();
             toggleWallFaceSelection(surf.wallId, surf.faceId);
           } else {
             clearWallFaceSelection();
             clearRoomFloorSelection();
             clearDoorSelection();
+            clearDoorFrameSelection();
             clearWindowSelection();
             toggleWallFaceSelection(surf.wallId, surf.faceId);
           }
@@ -5638,6 +5929,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
           }
           clearRoomFloorSelection();
           clearDoorSelection();
+          clearDoorFrameSelection();
           clearWindowSelection();
           clearWallFaceSelection();
         }
@@ -5722,7 +6014,7 @@ export function initThreeEditor(catalog = { items: [], byId: new Map() }) {
       });
       const sel = selectedFloorplanSurface;
       const scope = floorplanSurfaceScopeFromKind(sel.kind);
-      const ovRaw = getFloorplanSurfaceGlobalOverride(sel.floorLevelId, scope);
+      const ovRaw = getSingleSurfaceOverrideForSelection(sel, scope);
       const ovNoMat =
         ovRaw && typeof ovRaw === "object" ? { ...ovRaw } : {};
       delete ovNoMat.materialId;

@@ -51,6 +51,7 @@ export function createHistoryModule(ctx) {
       surfaceOverridesByStyleKey: JSON.parse(JSON.stringify(state.floorplanSurfaceOverridesByStyleKey)),
       roomFloorOverridesByStyleKey: JSON.parse(JSON.stringify(state.roomFloorOverridesByStyleKey)),
       doorOverridesByStyleKey: JSON.parse(JSON.stringify(state.doorOverridesByStyleKey)),
+      doorFrameOverridesByStyleKey: JSON.parse(JSON.stringify(state.doorFrameOverridesByStyleKey)),
       windowOverridesByStyleKey: JSON.parse(JSON.stringify(state.windowOverridesByStyleKey)),
       wallFaceOverridesByStyleKey: JSON.parse(JSON.stringify(state.wallFaceOverridesByStyleKey)),
     });
@@ -85,6 +86,9 @@ export function createHistoryModule(ctx) {
       const doorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "doorOverridesByStyleKey")
         ? cloneSurfaceOverridesPayload(parsed.doorOverridesByStyleKey)
         : undefined;
+      const doorFrameOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "doorFrameOverridesByStyleKey")
+        ? cloneSurfaceOverridesPayload(parsed.doorFrameOverridesByStyleKey)
+        : undefined;
       const windowOverridesByStyleKey = Object.prototype.hasOwnProperty.call(parsed, "windowOverridesByStyleKey")
         ? cloneSurfaceOverridesPayload(parsed.windowOverridesByStyleKey)
         : undefined;
@@ -101,6 +105,7 @@ export function createHistoryModule(ctx) {
           surfaceOverridesByStyleKey,
           roomFloorOverridesByStyleKey,
           doorOverridesByStyleKey,
+          doorFrameOverridesByStyleKey,
           windowOverridesByStyleKey,
           wallFaceOverridesByStyleKey,
         };
@@ -115,6 +120,7 @@ export function createHistoryModule(ctx) {
           surfaceOverridesByStyleKey,
           roomFloorOverridesByStyleKey,
           doorOverridesByStyleKey,
+          doorFrameOverridesByStyleKey,
           windowOverridesByStyleKey,
           wallFaceOverridesByStyleKey,
         };
@@ -128,6 +134,7 @@ export function createHistoryModule(ctx) {
         surfaceOverridesByStyleKey,
         roomFloorOverridesByStyleKey,
         doorOverridesByStyleKey,
+        doorFrameOverridesByStyleKey,
         windowOverridesByStyleKey,
         wallFaceOverridesByStyleKey,
       };
@@ -187,6 +194,7 @@ export function createHistoryModule(ctx) {
       floorplanSurfaceOverridesByStyleKey: state.floorplanSurfaceOverridesByStyleKey,
       roomFloorOverridesByStyleKey: state.roomFloorOverridesByStyleKey,
       doorOverridesByStyleKey: state.doorOverridesByStyleKey,
+      doorFrameOverridesByStyleKey: state.doorFrameOverridesByStyleKey,
       windowOverridesByStyleKey: state.windowOverridesByStyleKey,
       wallFaceOverridesByStyleKey: state.wallFaceOverridesByStyleKey,
     });
@@ -236,6 +244,9 @@ export function createHistoryModule(ctx) {
     const nextDoorOverridesByStyleKey = Object.prototype.hasOwnProperty.call(snapshotState, "doorOverridesByStyleKey")
       ? readStyleBucketMap(snapshotState.doorOverridesByStyleKey)
       : extractNestedByStyle(restoredSurfaceByStyleKey, "doorOverrides");
+    const nextDoorFrameOverridesByStyleKey = Object.prototype.hasOwnProperty.call(snapshotState, "doorFrameOverridesByStyleKey")
+      ? readStyleBucketMap(snapshotState.doorFrameOverridesByStyleKey)
+      : extractNestedByStyle(restoredSurfaceByStyleKey, "doorFrameOverrides");
     const nextWindowOverridesByStyleKey = Object.prototype.hasOwnProperty.call(snapshotState, "windowOverridesByStyleKey")
       ? readStyleBucketMap(snapshotState.windowOverridesByStyleKey)
       : extractNestedByStyle(restoredSurfaceByStyleKey, "windowOverrides");
@@ -246,6 +257,7 @@ export function createHistoryModule(ctx) {
       floorplanSurfaceOverridesByStyleKey: restoredSurfaceByStyleKey,
       roomFloorOverridesByStyleKey: nextRoomFloorOverridesByStyleKey,
       doorOverridesByStyleKey: nextDoorOverridesByStyleKey,
+      doorFrameOverridesByStyleKey: nextDoorFrameOverridesByStyleKey,
       windowOverridesByStyleKey: nextWindowOverridesByStyleKey,
       wallFaceOverridesByStyleKey: nextWallFaceOverridesByStyleKey,
     });
@@ -254,6 +266,7 @@ export function createHistoryModule(ctx) {
     state.floorplanSurfaceOverridesByStyleKey = restoredSurfaceByStyleKey;
     state.roomFloorOverridesByStyleKey = nextRoomFloorOverridesByStyleKey;
     state.doorOverridesByStyleKey = nextDoorOverridesByStyleKey;
+    state.doorFrameOverridesByStyleKey = nextDoorFrameOverridesByStyleKey;
     state.windowOverridesByStyleKey = nextWindowOverridesByStyleKey;
     state.wallFaceOverridesByStyleKey = nextWallFaceOverridesByStyleKey;
 

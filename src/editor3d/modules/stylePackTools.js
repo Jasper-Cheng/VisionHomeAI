@@ -144,6 +144,19 @@ export function createStylePackTools(ctx) {
       }
     }
 
+    const doorFrameOverridesData = {};
+    const doorFrameBucket = state.doorFrameOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
+    if (doorFrameBucket && typeof doorFrameBucket === "object") {
+      for (const [floorId, frames] of Object.entries(doorFrameBucket)) {
+        if (!frames || typeof frames !== "object") continue;
+        for (const [doorId, override] of Object.entries(frames)) {
+          if (!override || typeof override !== "object" || !Object.keys(override).length) continue;
+          if (!doorFrameOverridesData[floorId]) doorFrameOverridesData[floorId] = {};
+          doorFrameOverridesData[floorId][doorId] = JSON.parse(JSON.stringify(override));
+        }
+      }
+    }
+
     const windowOverridesData = {};
     const windowBucket = state.windowOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(styleKey)];
     if (windowBucket && typeof windowBucket === "object") {
@@ -166,6 +179,7 @@ export function createStylePackTools(ctx) {
     };
     if (Object.keys(roomFloorMaterials).length) block.roomFloorMaterials = roomFloorMaterials;
     if (Object.keys(doorOverridesData).length) block.doorOverrides = doorOverridesData;
+    if (Object.keys(doorFrameOverridesData).length) block.doorFrameOverrides = doorFrameOverridesData;
     if (Object.keys(windowOverridesData).length) block.windowOverrides = windowOverridesData;
     return block;
   }
@@ -476,6 +490,12 @@ export function createStylePackTools(ctx) {
             JSON.parse(JSON.stringify(sourceDoorBucket));
         }
 
+        const sourceDoorFrameBucket = state.doorFrameOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(sourceStyleKey)];
+        if (sourceDoorFrameBucket && typeof sourceDoorFrameBucket === "object") {
+          state.doorFrameOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(newKey)] =
+            JSON.parse(JSON.stringify(sourceDoorFrameBucket));
+        }
+
         const sourceWindowBucket = state.windowOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(sourceStyleKey)];
         if (sourceWindowBucket && typeof sourceWindowBucket === "object") {
           state.windowOverridesByStyleKey[normalizeStyleKeyForSurfaceOverrides(newKey)] =
@@ -638,6 +658,7 @@ export function createStylePackTools(ctx) {
       state.floorplanSurfaceOverridesByStyleKey = {};
       state.roomFloorOverridesByStyleKey = {};
       state.doorOverridesByStyleKey = {};
+      state.doorFrameOverridesByStyleKey = {};
       state.windowOverridesByStyleKey = {};
       state.wallFaceOverridesByStyleKey = {};
 
