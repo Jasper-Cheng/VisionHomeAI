@@ -4,6 +4,7 @@
  */
 
 import { normalizeDoorStyle, defaultDoorStyleWhite } from "./doorStyle.js";
+import { getDoorTypeDef } from "./doorTypes.js";
 import { normalizeWindowStyle, defaultWindowStyleWhite } from "./windowStyle.js";
 
 const NS = "http://www.w3.org/2000/svg";
@@ -963,6 +964,7 @@ function appendDoorFillPolygon(innerG, door, walls, snapCoord = identitySnapCoor
     door.style != null && typeof door.style === "object" && !Array.isArray(door.style)
       ? normalizeDoorStyle(door.style)
       : defaultDoorStyleWhite();
+  const doorType = getDoorTypeDef(door);
   const styleAttr =
     door.style != null && typeof door.style === "object"
       ? JSON.stringify(door.style)
@@ -975,13 +977,14 @@ function appendDoorFillPolygon(innerG, door, walls, snapCoord = identitySnapCoor
     "svg-floor-door-fill",
     {
       "data-door-id": String(door.id || ""),
+      "data-door-type": doorType.id,
       ...(styleAttr !== "" ? { "data-door-style": styleAttr } : {}),
     },
     snapCoord,
     { fill: ns.color },
   );
 
-  const tH = 0.82;
+  const tH = doorType.panelMode === "double_swing" ? 0.5 : 0.82;
   const hx = seg.x0 + tH * (seg.x1 - seg.x0);
   const hy = seg.y0 + tH * (seg.y1 - seg.y0);
   const pnx = -dy / len;
@@ -996,6 +999,7 @@ function appendDoorFillPolygon(innerG, door, walls, snapCoord = identitySnapCoor
     hc.setAttribute("r", String(snapCoord(4)));
     hc.setAttribute("class", "svg-floor-door-handle");
     hc.setAttribute("data-door-id", String(door.id || ""));
+    hc.setAttribute("data-door-type", doorType.id);
     innerG.appendChild(hc);
   }
 }

@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { ShapeUtils } from "three";
 
 import { normalizeDoorStyle, defaultDoorStyleWhite } from "../../floorplan/doorStyle.js";
+import { getDoorTypeDef } from "../../floorplan/doorTypes.js";
 import { normalizeWindowStyle, defaultWindowStyleWhite } from "../../floorplan/windowStyle.js";
 import { resolveTextureAssetUrl } from "../../furniture/furnitureConfig.js";
 
@@ -261,6 +262,78 @@ export function createMeshBuilder(ctx) {
     return baseMat.clone();
   }
 
+  function addDoorTypeDetailMeshes(group, door, doorType, centerX, wM, hDoor, wallDepth, floorOpacity, panelMat, floorLevelIdStr) {
+    const mode = doorType?.panelMode || "swing";
+    const detailMat = panelMat && typeof panelMat.clone === "function" ? panelMat.clone() : floorplanStdMat();
+    if (detailMat?.isMaterial) {
+      detailMat.side = THREE.DoubleSide;
+      detailMat.transparent = true;
+      detailMat.opacity = Math.min(Number(detailMat.opacity ?? 1), Math.max(0.22, 0.42 * (floorOpacity ?? 1)));
+      detailMat.depthWrite = false;
+      detailMat.needsUpdate = true;
+    }
+    const railMat = new THREE.MeshStandardMaterial({
+      color: 0x8a8174,
+      roughness: 0.72,
+      metalness: 0.22,
+      transparent: true,
+      opacity: Math.max(0.25, 0.58 * (floorOpacity ?? 1)),
+    });
+    const z = wallDepth * 0.74;
+    const thin = Math.max(0.012, wallDepth * 0.08);
+
+    function addPanel(width, height, x, zOffset = z, material = detailMat) {
+      const geo = new THREE.BoxGeometry(width, height, thin);
+      const mesh = new THREE.Mesh(geo, material);
+      mesh.position.set(x, height / 2, zOffset);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.userData.floorplanDoorFill = true;
+      mesh.userData.floorplanDoor = true;
+      mesh.userData.floorplanDoorId = String(door?.id ?? "").trim();
+      mesh.userData.doorId = String(door?.id ?? "").trim();
+      mesh.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
+      mesh.userData.floorplanDoorType = doorType.id;
+      group.add(mesh);
+    }
+
+    function addRail(width, x, yy = hDoor + 0.1) {
+      const geo = new THREE.BoxGeometry(width, 0.035, Math.max(0.018, wallDepth * 0.12));
+      const mesh = new THREE.Mesh(geo, railMat);
+      mesh.position.set(x, yy, z + 0.012);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.userData.floorplanDoorFill = true;
+      mesh.userData.floorplanDoor = true;
+      mesh.userData.floorplanDoorId = String(door?.id ?? "").trim();
+      mesh.userData.doorId = String(door?.id ?? "").trim();
+      mesh.userData.floorplanFloorLevelId = String(floorLevelIdStr ?? "").trim();
+      mesh.userData.floorplanDoorType = doorType.id;
+      group.add(mesh);
+    }
+
+    if (mode === "sliding") {
+      const panelW = wM * 0.56;
+      addPanel(panelW, hDoor * 0.96, centerX - panelW * 0.24, z + 0.008);
+      addPanel(panelW, hDoor * 0.96, centerX + panelW * 0.24, z + 0.03);
+      addRail(wM * 1.06, centerX, hDoor + 0.04);
+    } else if (mode === "barn") {
+      addPanel(wM * 1.06, hDoor * 0.96, centerX, z + 0.04);
+      addRail(wM * 1.22, centerX, hDoor + 0.1);
+    } else if (mode === "folding") {
+      const leafW = wM / 4;
+      for (let i = 0; i < 4; i += 1) {
+        const x = centerX - wM / 2 + leafW * (i + 0.5);
+        addPanel(leafW * 0.92, hDoor * 0.92, x, z + (i % 2 ? 0.03 : 0.01));
+      }
+    } else if (mode === "double_swing") {
+      addPanel(wM * 0.48, hDoor * 0.94, centerX - wM * 0.25, z + 0.012);
+      addPanel(wM * 0.48, hDoor * 0.94, centerX + wM * 0.25, z + 0.012);
+    } else {
+      addPanel(wM * 0.96, hDoor * 0.94, centerX, z + 0.012);
+    }
+  }
+
   function addDoorFrameMeshes(group, door, doorFrame, centerX, wM, hDoor, wallDepth, floorOpacity, styleDoorFrameMat, ns, floorLevelIdStr) {
     const rawFrameCm = Number(doorFrame?.thicknessCm ?? doorFrame?.frameThicknessCm);
     const frameW = Math.max(0.025, (Number.isFinite(rawFrameCm) && rawFrameCm > 0 ? rawFrameCm : 6) / 100);
@@ -385,6 +458,7 @@ export function createMeshBuilder(ctx) {
       door.style != null && typeof door.style === "object" && !Array.isArray(door.style)
         ? normalizeDoorStyle(door.style)
         : defaultDoorStyleWhite();
+    const doorType = getDoorTypeDef(door);
     const pos = Number(door.pos);
     const wcm = Number(door.width);
     const hcm = Number(door.height);
@@ -445,10 +519,14 @@ export function createMeshBuilder(ctx) {
     mesh.userData.floorplanSurfaceOpacity = floorOpacity ?? 1;
     mesh.userData.floorplanDoorStyle = ns;
     mesh.userData.floorplanDoorId = String(door?.id ?? "").trim();
+    mesh.userData.floorplanDoorType = doorType.id;
     if (!styleDoorMat) queueDoorFillTextures(mesh, ns);
     group.add(mesh);
     const doorDepth = thickM * 0.22;
     addDoorFrameMeshes(group, door, doorFrame, centerX, wM, hDoor, thickM, floorOpacity, styleDoorFrameMat, ns, floorLevelIdStr);
+    if (doorType.panelMode !== "swing") {
+      addDoorTypeDetailMeshes(group, door, doorType, centerX, wM, hDoor, thickM, floorOpacity, mat, floorLevelIdStr);
+    }
     addDoorHandleMeshes(
       group,
       centerX,

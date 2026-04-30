@@ -263,15 +263,15 @@
         }
       ],
       "doors": [
-        { "id": "d_main", "wallId": "w_ext_south_entry", "pos": 165, "width": 110, "height": 220, "name": "入户门", "type": "entrance" },
-        { "id": "d_master_bed", "wallId": "w_int_cloak_living", "pos": 80, "width": 85, "height": 210, "name": "主卧门", "type": "interior" },
-        { "id": "d_master_bath", "wallId": "w_int_master_bath", "pos": 110, "width": 75, "height": 210, "name": "主卫门", "type": "interior" },
-        { "id": "d_bed2", "wallId": "w_int_bed2_corridor", "pos": 255, "width": 85, "height": 210, "name": "次卧门", "type": "interior" },
-        { "id": "d_bed3", "wallId": "w_int_bed3_corridor", "pos": 80, "width": 85, "height": 210, "name": "儿童房门", "type": "interior" },
-        { "id": "d_guest_bath", "wallId": "w_int_guest_bath_west", "pos": 95, "width": 80, "height": 210, "name": "公卫门", "type": "interior" },
-        { "id": "d_kitchen", "wallId": "w_int_dining_kitchen", "pos": 140, "width": 85, "height": 210, "name": "厨房门", "type": "interior" },
-        { "id": "d_balcony_sliding", "wallId": "w_int_living_balcony", "pos": 260, "width": 240, "height": 220, "name": "阳台推拉门", "type": "balcony" },
-        { "id": "d_utility", "wallId": "w_int_entry_utility", "pos": 60, "width": 80, "height": 210, "name": "储物间门", "type": "interior" }
+        { "id": "d_main", "wallId": "w_ext_south_entry", "pos": 165, "width": 110, "height": 220, "name": "入户门", "type": "entrance", "doorType": "hinged" },
+        { "id": "d_master_bed", "wallId": "w_int_cloak_living", "pos": 80, "width": 85, "height": 210, "name": "主卧门", "type": "interior", "doorType": "hinged" },
+        { "id": "d_master_bath", "wallId": "w_int_master_bath", "pos": 110, "width": 75, "height": 210, "name": "主卫门", "type": "interior", "doorType": "hinged" },
+        { "id": "d_bed2", "wallId": "w_int_bed2_corridor", "pos": 255, "width": 85, "height": 210, "name": "次卧门", "type": "interior", "doorType": "hinged" },
+        { "id": "d_bed3", "wallId": "w_int_bed3_corridor", "pos": 80, "width": 85, "height": 210, "name": "儿童房门", "type": "interior", "doorType": "hinged" },
+        { "id": "d_guest_bath", "wallId": "w_int_guest_bath_west", "pos": 95, "width": 80, "height": 210, "name": "公卫门", "type": "interior", "doorType": "hinged" },
+        { "id": "d_kitchen", "wallId": "w_int_dining_kitchen", "pos": 140, "width": 85, "height": 210, "name": "厨房门", "type": "interior", "doorType": "hinged" },
+        { "id": "d_balcony_sliding", "wallId": "w_int_living_balcony", "pos": 260, "width": 240, "height": 220, "name": "阳台推拉门", "type": "balcony", "doorType": "sliding" },
+        { "id": "d_utility", "wallId": "w_int_entry_utility", "pos": 60, "width": 80, "height": 210, "name": "储物间门", "type": "interior", "doorType": "hinged" }
       ],
       "windows": [
         { "id": "win_master_w", "wallId": "w_ext_west_master", "pos": 180, "width": 180, "height": 160, "altitude": 80, "name": "主卧西窗", "type": "casement" },
