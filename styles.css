@@ -2914,6 +2914,11 @@ a.avatar:hover {
   flex: 0 0 auto;
   margin-top: 6px;
   text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.floorplan-asset-grid .floorplan-asset-label__title {
+  width: 100%;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.35;

@@ -43,7 +43,7 @@ python3 dev_server.py
 
 ## 数据说明
 
-- **户型库**：`assets/floorplans/manifest.json` 的 **`files`**（如 `apt_2b1l_compact_01.json`）→ 与同目录下的 **`assets/floorplans/<文件>`** 一一对应。新增户型：在该目录增加 `<id>.json`，并把文件名写入 manifest。工程里 **`templateId`** 对应条目的 **`id`**。
+- **户型库**：`assets/floorplans/manifest.json` 的 **`files`**（如 `apt_2b1l_compact_01.json`）→ 与同目录下的 **`assets/floorplans/<文件>`** 一一对应。新增户型：在该目录增加 `<id>.json`，并把文件名写入 manifest。工程里 **`templateId`** 对应条目的 **`id`**。每个户型 JSON 可在 **`project.category`** 配置中文分类（如 `两居`、`三居`），用于侧栏分类 Tab。
 - **家具库**：`assets/furniture/manifest.json` + 同目录 **`assets/furniture/<id>.json`**；侧栏预览仅当该条配置了 **`thumbnail`** 时加载图片，否则为骨架占位；平面图中 `data-model` 为 **`id`**。
 - **设计文件（方案）**：`assets/design/*.json` 表示在**户型库某一模板**上的**布局编辑会话**，不重复存整套户型几何。
   - **`schemaVersion`**：当前为 **`"1.1"`**。

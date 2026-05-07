@@ -22,6 +22,11 @@ function cardDisplayName(entry) {
   return p.name || entry.id;
 }
 
+function getFloorplanCategory(entry) {
+  const raw = entry?.project?.category ?? "";
+  return String(raw ?? "").trim();
+}
+
 /** @returns {number} ㎡，优先 project.areaM2，否则由首层房间 polygon 汇总 */
 function floorplanEntryAreaM2(entry) {
   const a = Number(entry?.project?.areaM2);
@@ -55,7 +60,7 @@ export function mountFloorplanLibrary(catalog, options = {}) {
 
   const categoryFirstIndex = new Map();
   (catalog.items || []).forEach((it, index) => {
-    const c = it?.project?.category;
+    const c = getFloorplanCategory(it);
     if (c && !categoryFirstIndex.has(c)) categoryFirstIndex.set(c, index);
   });
   const categories = [...categoryFirstIndex.entries()].sort((a, b) => a[1] - b[1]).map(([c]) => c);
@@ -154,12 +159,11 @@ export function mountFloorplanLibrary(catalog, options = {}) {
   searchInput?.addEventListener("input", applyFilter);
 
   (catalog.items || []).forEach((entry, idx) => {
-    const p = entry.project || {};
     const display = cardDisplayName(entry);
     const areaM2 = floorplanEntryAreaM2(entry);
     const areaCompact = formatFloorplanAreaCompact(areaM2);
     const cardLine = areaCompact ? `${display}·${areaCompact}` : display;
-    const category = p.category || "";
+    const category = getFloorplanCategory(entry);
     const fid = String(entry.id || "").trim();
 
     const card = document.createElement("article");
@@ -172,10 +176,7 @@ export function mountFloorplanLibrary(catalog, options = {}) {
     card.setAttribute("role", "button");
     card.setAttribute("aria-pressed", "false");
     card.setAttribute("aria-label", cardLine);
-    card.setAttribute(
-      "title",
-      [cardLine, category ? `分类: ${category}` : ""].filter(Boolean).join("\n"),
-    );
+    card.setAttribute("title", cardLine);
 
     const thumb = document.createElement("div");
     thumb.className = "asset-thumb";
@@ -183,7 +184,10 @@ export function mountFloorplanLibrary(catalog, options = {}) {
 
     const nameEl = document.createElement("div");
     nameEl.className = "floorplan-asset-label";
-    nameEl.textContent = cardLine;
+    const titleSpan = document.createElement("span");
+    titleSpan.className = "floorplan-asset-label__title";
+    titleSpan.textContent = cardLine;
+    nameEl.appendChild(titleSpan);
 
     card.appendChild(thumb);
     card.appendChild(nameEl);
