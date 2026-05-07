@@ -3861,9 +3861,46 @@ a.icon-btn {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
 }
 
+.model-empty-state {
+  grid-column: 1 / -1;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .model-thumb {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   aspect-ratio: 4 / 3;
+}
+
+.model-thumb--floorplan {
+  background: linear-gradient(135deg, rgba(36, 38, 48, 0.96) 0%, rgba(23, 24, 31, 0.96) 100%);
+}
+
+.model-thumb--floorplan .floorplan-thumb-svg {
+  position: absolute;
+  inset: 10px;
+  z-index: 1;
+  width: calc(100% - 20px);
+  height: calc(100% - 20px);
+  display: block;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.model-thumb--floorplan .thumb-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
 }
 
 .model-thumb--warm {

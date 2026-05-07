@@ -74,41 +74,43 @@
               </svg>
             </span>
             <span class="ucat-group-title">户型分类</span>
-            <button class="ucat-add-btn ucat-remove-btn" aria-label="删除户型">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
-            <button class="ucat-add-btn" aria-label="新增户型">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
           </div>
-          <ul class="ucat-list" role="list">
-            <li class="ucat-item is-active" role="listitem">
+          <ul class="ucat-list" role="list" data-floorplan-category-list>
+            <li class="ucat-item is-active" role="listitem" data-floorplan-category="__all__">
               <span class="ucat-label">全部户型</span>
-              <span class="ucat-count">318</span>
+              <span class="ucat-count">3</span>
             </li>
-            <li class="ucat-item" role="listitem">
-              <span class="ucat-label">小户型</span>
-              <span class="ucat-count">84</span>
+            <li class="ucat-item" role="listitem" data-floorplan-category="开间">
+              <span class="ucat-label">开间</span>
+              <span class="ucat-count">0</span>
             </li>
-            <li class="ucat-item" role="listitem">
-              <span class="ucat-label">两居室</span>
-              <span class="ucat-count">96</span>
+            <li class="ucat-item" role="listitem" data-floorplan-category="一居">
+              <span class="ucat-label">一居</span>
+              <span class="ucat-count">0</span>
             </li>
-            <li class="ucat-item" role="listitem">
-              <span class="ucat-label">三居室</span>
-              <span class="ucat-count">72</span>
+            <li class="ucat-item" role="listitem" data-floorplan-category="两居">
+              <span class="ucat-label">两居</span>
+              <span class="ucat-count">1</span>
             </li>
-            <li class="ucat-item" role="listitem">
-              <span class="ucat-label">别墅/复式</span>
-              <span class="ucat-count">40</span>
+            <li class="ucat-item" role="listitem" data-floorplan-category="三居">
+              <span class="ucat-label">三居</span>
+              <span class="ucat-count">2</span>
             </li>
-            <li class="ucat-item" role="listitem">
+            <li class="ucat-item" role="listitem" data-floorplan-category="四居">
+              <span class="ucat-label">四居</span>
+              <span class="ucat-count">0</span>
+            </li>
+            <li class="ucat-item" role="listitem" data-floorplan-category="五居及以上,五居,六居,七居,八居">
+              <span class="ucat-label">五居及以上</span>
+              <span class="ucat-count">0</span>
+            </li>
+            <li class="ucat-item" role="listitem" data-floorplan-category="复式,别墅,复式/别墅">
+              <span class="ucat-label">复式/别墅</span>
+              <span class="ucat-count">0</span>
+            </li>
+            <li class="ucat-item" role="listitem" data-floorplan-category="商业空间">
               <span class="ucat-label">商业空间</span>
-              <span class="ucat-count">26</span>
+              <span class="ucat-count">0</span>
             </li>
           </ul>
         </section>
@@ -220,7 +222,7 @@
 
         <!-- Top bar -->
         <div class="ucontent-topbar">
-          <span class="ucontent-count">显示 1 – 12 / 共 <strong>4,209</strong> 个模型</span>
+          <span class="ucontent-count">显示 1 – 3 / 共 <strong>3</strong> 个户型</span>
           <div class="ucontent-sort">
             <span class="ucontent-sort-label">排序方式：</span>
             <button class="ucontent-sort-btn" aria-haspopup="listbox">
@@ -414,5 +416,6 @@
 
       </div>
     </main>
+    <script type="module" src="./src/userPage.js"></script>
   </body>
 </html>
