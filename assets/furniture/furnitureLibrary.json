@@ -48,7 +48,7 @@
     {
       "id": "CoffeeCart_01",
       "name": "移动茶车",
-      "category": "decor",
+      "category": "装饰摆件",
       "model": "assets/furniture/models/CoffeeCart_01.glb",
       "thumbnail": "assets/furniture/thumbnails/CoffeeCart_01.png",
       "size": {"width": 80, "depth": 50, "height": 75},
@@ -81,7 +81,7 @@
     {
       "id": "GothicCabinet_01",
       "name": "哥特式柜",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/GothicCabinet_01.glb",
       "thumbnail": "assets/furniture/thumbnails/GothicCabinet_01.png",
       "size": {"width": 100, "depth": 50, "height": 180},
@@ -92,7 +92,7 @@
     {
       "id": "GothicCommode_01",
       "name": "哥特式抽屉柜",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/GothicCommode_01.glb",
       "thumbnail": "assets/furniture/thumbnails/GothicCommode_01.png",
       "size": {"width": 90, "depth": 45, "height": 95},
@@ -114,7 +114,7 @@
     {
       "id": "Ottoman_01",
       "name": "脚凳",
-      "category": "decor",
+      "category": "装饰摆件",
       "model": "assets/furniture/models/Ottoman_01.glb",
       "thumbnail": "assets/furniture/thumbnails/Ottoman_01.png",
       "size": {"width": 60, "depth": 60, "height": 42},
@@ -158,7 +158,7 @@
     {
       "id": "Shelf_01",
       "name": "置物架",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/Shelf_01.glb",
       "thumbnail": "assets/furniture/thumbnails/Shelf_01.png",
       "size": {"width": 100, "depth": 35, "height": 180},
@@ -246,7 +246,7 @@
     {
       "id": "chinese_cabinet",
       "name": "中式橱柜",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/chinese_cabinet.glb",
       "thumbnail": "assets/furniture/thumbnails/chinese_cabinet.png",
       "size": {"width": 110, "depth": 55, "height": 200},
@@ -257,7 +257,7 @@
     {
       "id": "chinese_commode",
       "name": "中式储物柜",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/chinese_commode.glb",
       "thumbnail": "assets/furniture/thumbnails/chinese_commode.png",
       "size": {"width": 95, "depth": 48, "height": 90},
@@ -279,7 +279,7 @@
     {
       "id": "chinese_screen_panels",
       "name": "中式屏风",
-      "category": "mirror",
+      "category": "镜子",
       "model": "assets/furniture/models/chinese_screen_panels.glb",
       "thumbnail": "assets/furniture/thumbnails/chinese_screen_panels.png",
       "size": {"width": 180, "depth": 3, "height": 200},
@@ -345,7 +345,7 @@
     {
       "id": "drawer_cabinet",
       "name": "抽屉柜",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/drawer_cabinet.glb",
       "thumbnail": "assets/furniture/thumbnails/drawer_cabinet.png",
       "size": {"width": 80, "depth": 45, "height": 85},
@@ -488,7 +488,7 @@
     {
       "id": "modern_wooden_cabinet",
       "name": "现代木柜",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/modern_wooden_cabinet.glb",
       "thumbnail": "assets/furniture/thumbnails/modern_wooden_cabinet.png",
       "size": {"width": 90, "depth": 42, "height": 120},
@@ -510,7 +510,7 @@
     {
       "id": "ornate_mirror_01",
       "name": "装饰镜",
-      "category": "mirror",
+      "category": "镜子",
       "model": "assets/furniture/models/ornate_mirror_01.glb",
       "thumbnail": "assets/furniture/thumbnails/ornate_mirror_01.png",
       "size": {"width": 60, "depth": 5, "height": 120},
@@ -543,7 +543,7 @@
     {
       "id": "painted_wooden_cabinet",
       "name": "漆面橱柜",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/painted_wooden_cabinet.glb",
       "thumbnail": "assets/furniture/thumbnails/painted_wooden_cabinet.png",
       "size": {"width": 100, "depth": 48, "height": 150},
@@ -554,7 +554,7 @@
     {
       "id": "painted_wooden_cabinet_02",
       "name": "漆面橱柜 02",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/painted_wooden_cabinet_02.glb",
       "thumbnail": "assets/furniture/thumbnails/painted_wooden_cabinet_02.png",
       "size": {"width": 95, "depth": 45, "height": 140},
@@ -598,7 +598,7 @@
     {
       "id": "painted_wooden_shelves",
       "name": "漆面架子",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/painted_wooden_shelves.glb",
       "thumbnail": "assets/furniture/thumbnails/painted_wooden_shelves.png",
       "size": {"width": 110, "depth": 32, "height": 160},
@@ -730,7 +730,7 @@
     {
       "id": "steel_frame_shelves_01",
       "name": "钢架置物架",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/steel_frame_shelves_01.glb",
       "thumbnail": "assets/furniture/thumbnails/steel_frame_shelves_01.png",
       "size": {"width": 100, "depth": 35, "height": 180},
@@ -741,7 +741,7 @@
     {
       "id": "steel_frame_shelves_02",
       "name": "钢架置物架 02",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/steel_frame_shelves_02.glb",
       "thumbnail": "assets/furniture/thumbnails/steel_frame_shelves_02.png",
       "size": {"width": 120, "depth": 38, "height": 200},
@@ -752,7 +752,7 @@
     {
       "id": "steel_frame_shelves_03",
       "name": "钢架置物架 03",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/steel_frame_shelves_03.glb",
       "thumbnail": "assets/furniture/thumbnails/steel_frame_shelves_03.png",
       "size": {"width": 90, "depth": 32, "height": 170},
@@ -763,7 +763,7 @@
     {
       "id": "stone_fire_pit",
       "name": "石制火坑",
-      "category": "decor",
+      "category": "装饰摆件",
       "model": "assets/furniture/models/stone_fire_pit.glb",
       "thumbnail": "assets/furniture/thumbnails/stone_fire_pit.png",
       "size": {"width": 100, "depth": 100, "height": 40},
@@ -774,7 +774,7 @@
     {
       "id": "vintage_cabinet_01",
       "name": "复古柜",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/vintage_cabinet_01.glb",
       "thumbnail": "assets/furniture/thumbnails/vintage_cabinet_01.png",
       "size": {"width": 85, "depth": 45, "height": 130},
@@ -785,7 +785,7 @@
     {
       "id": "vintage_wooden_drawer_01",
       "name": "复古木抽屉",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/vintage_wooden_drawer_01.glb",
       "thumbnail": "assets/furniture/thumbnails/vintage_wooden_drawer_01.png",
       "size": {"width": 75, "depth": 42, "height": 80},
@@ -796,7 +796,7 @@
     {
       "id": "wooden_bookshelf_worn",
       "name": "复古书架",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/wooden_bookshelf_worn.glb",
       "thumbnail": "assets/furniture/thumbnails/wooden_bookshelf_worn.png",
       "size": {"width": 95, "depth": 35, "height": 190},
@@ -807,7 +807,7 @@
     {
       "id": "wooden_display_shelves_01",
       "name": "展示架",
-      "category": "storage",
+      "category": "柜类/收纳",
       "model": "assets/furniture/models/wooden_display_shelves_01.glb",
       "thumbnail": "assets/furniture/thumbnails/wooden_display_shelves_01.png",
       "size": {"width": 105, "depth": 32, "height": 175},

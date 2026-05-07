@@ -3851,10 +3851,12 @@ a.icon-btn {
 .model-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  align-items: start;
   gap: 14px;
 }
 
 .model-card {
+  align-self: start;
   border-radius: 14px;
   overflow: hidden;
   background: #111;
@@ -3906,6 +3908,26 @@ a.icon-btn {
 }
 
 .model-thumb--floorplan .thumb-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.model-thumb--furniture {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.model-thumb--furniture .asset-thumb-img {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: 88%;
+  height: 88%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+}
+
+.model-thumb--furniture .thumb-skeleton {
   position: absolute;
   inset: 0;
   z-index: 2;
