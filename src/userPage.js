@@ -4,6 +4,7 @@ import { mountFloorplanThumb } from "./floorplan/floorplanPreview.js";
 import { getFloorFootprintAreaM2 } from "./floorplan/floorplanSvg.js";
 
 const ALL_FLOORPLAN_CATEGORY = "__all__";
+const DEFAULT_SORT_KEY = "name";
 
 function normalizeCategory(value) {
   return String(value ?? "").trim();
@@ -39,11 +40,15 @@ function floorCountLabel(entry) {
   return count > 0 ? `${count}层` : "楼层待补";
 }
 
-function roomCountLabel(entry) {
-  const count = (Array.isArray(entry?.floors) ? entry.floors : []).reduce(
+function getRoomCount(entry) {
+  return (Array.isArray(entry?.floors) ? entry.floors : []).reduce(
     (sum, floor) => sum + (Array.isArray(floor?.rooms) ? floor.rooms.length : 0),
     0,
   );
+}
+
+function roomCountLabel(entry) {
+  const count = getRoomCount(entry);
   return count > 0 ? `${count}个空间` : "空间待补";
 }
 
@@ -145,12 +150,43 @@ function renderEmptyState(grid, categoryLabel) {
   grid.appendChild(empty);
 }
 
-function renderFloorplanCards(items, categoryFilter) {
+function getSortKey() {
+  const select = document.querySelector(".ucontent-sort-select");
+  const value = normalizeCategory(select?.value);
+  return value || DEFAULT_SORT_KEY;
+}
+
+function sortFloorplanItems(items, sortKey) {
+  const next = [...(items || [])];
+  const collator = new Intl.Collator("zh-Hans-CN", { numeric: true, sensitivity: "base" });
+  next.sort((a, b) => {
+    if (sortKey === "area") {
+      const diff = getFloorplanAreaM2(b) - getFloorplanAreaM2(a);
+      if (Math.abs(diff) > 1e-6) return diff;
+      return collator.compare(getFloorplanName(a), getFloorplanName(b));
+    }
+    if (sortKey === "spaces") {
+      const diff = getRoomCount(b) - getRoomCount(a);
+      if (diff !== 0) return diff;
+      return collator.compare(getFloorplanName(a), getFloorplanName(b));
+    }
+    return collator.compare(getFloorplanName(a), getFloorplanName(b));
+  });
+  return next;
+}
+
+function getActiveCategoryFilter() {
+  const active = document.querySelector("[data-floorplan-category-list] .ucat-item.is-active");
+  return active?.dataset.floorplanCategory || ALL_FLOORPLAN_CATEGORY;
+}
+
+function renderFloorplanCards(items, categoryFilter = getActiveCategoryFilter()) {
   const grid = document.querySelector(".model-grid");
   if (!grid) return;
 
   const filters = parseCategoryFilter(categoryFilter);
-  const visibleItems = filters.length ? items.filter((item) => filters.includes(getFloorplanCategory(item))) : items;
+  const filteredItems = filters.length ? items.filter((item) => filters.includes(getFloorplanCategory(item))) : items;
+  const visibleItems = sortFloorplanItems(filteredItems, getSortKey());
   grid.replaceChildren();
   visibleItems.forEach((item, index) => {
     grid.appendChild(createFloorplanCard(item, index));
@@ -176,6 +212,14 @@ function bindFloorplanCategoryClicks(items) {
   });
 }
 
+function bindFloorplanSort(items) {
+  const select = document.querySelector(".ucontent-sort-select");
+  if (!select) return;
+  select.addEventListener("change", () => {
+    renderFloorplanCards(items);
+  });
+}
+
 async function mountUserPage() {
   try {
     const items = await loadItemsFromManifest({
@@ -184,8 +228,8 @@ async function mountUserPage() {
     });
     setCategoryCounts(items);
     bindFloorplanCategoryClicks(items);
-    const active = document.querySelector("[data-floorplan-category-list] .ucat-item.is-active");
-    renderFloorplanCards(items, active?.dataset.floorplanCategory || ALL_FLOORPLAN_CATEGORY);
+    bindFloorplanSort(items);
+    renderFloorplanCards(items);
   } catch (err) {
     console.warn("[VisionHomeAI] 用户页户型分类统计失败:", err);
   }

@@ -3737,15 +3737,20 @@ a.icon-btn {
   color: rgba(255, 255, 255, 0.38);
 }
 
-.ucontent-sort-btn {
+.ucontent-sort-select {
+  appearance: none;
+  -webkit-appearance: none;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   height: 26px;
-  padding: 0 10px 0 8px;
+  min-width: 86px;
+  padding: 0 26px 0 10px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.09);
-  background: rgba(255, 255, 255, 0.04);
+  background:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.45) 50%) calc(100% - 13px) 10px / 5px 5px no-repeat,
+    linear-gradient(135deg, rgba(255, 255, 255, 0.45) 50%, transparent 50%) calc(100% - 8px) 10px / 5px 5px no-repeat,
+    rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.75);
   font-size: 12px;
   font-weight: 600;
@@ -3754,15 +3759,18 @@ a.icon-btn {
   transition: background 120ms ease, border-color 120ms ease;
 }
 
-.ucontent-sort-btn:hover {
-  background: rgba(255, 255, 255, 0.07);
+.ucontent-sort-select:hover,
+.ucontent-sort-select:focus {
+  background:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.62) 50%) calc(100% - 13px) 10px / 5px 5px no-repeat,
+    linear-gradient(135deg, rgba(255, 255, 255, 0.62) 50%, transparent 50%) calc(100% - 8px) 10px / 5px 5px no-repeat,
+    rgba(255, 255, 255, 0.07);
   border-color: rgba(255, 255, 255, 0.14);
+  outline: none;
 }
 
-.ucontent-sort-btn svg {
-  width: 13px;
-  height: 13px;
-  color: rgba(255, 255, 255, 0.4);
+.ucontent-sort-select option {
+  color: #111;
 }
 
 /* Middle body */
