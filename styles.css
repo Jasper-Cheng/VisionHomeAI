@@ -3779,6 +3779,12 @@ a.icon-btn {
   min-height: 0;
   overflow-y: auto;
   padding: 20px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ucontent-body::-webkit-scrollbar {
+  display: none;
 }
 
 /* Bottom pagination */
