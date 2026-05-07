@@ -1,5 +1,6 @@
 import { loadItemsFromManifest } from "./core/catalogLoader.js";
 import { DATA_PATHS } from "./core/schema.js";
+import { loadDesignProjectsFromManifest } from "./files/designFilesManager.js";
 import { mountFloorplanThumb } from "./floorplan/floorplanPreview.js";
 import { getFloorFootprintAreaM2 } from "./floorplan/floorplanSvg.js";
 import {
@@ -14,6 +15,7 @@ import { getFurnitureLibrarySizeSuffix } from "./furniture/svgStyle.js";
 const ALL_CATEGORY = "__all__";
 const MODE_FLOORPLAN = "floorplan";
 const MODE_FURNITURE = "furniture";
+const MODE_FILE = "file";
 
 const SORT_OPTIONS = {
   [MODE_FLOORPLAN]: [
@@ -26,11 +28,17 @@ const SORT_OPTIONS = {
     { value: "price", label: "价格" },
     { value: "size", label: "大小" },
   ],
+  [MODE_FILE]: [
+    { value: "name", label: "名字" },
+    { value: "updatedAt", label: "更新时间" },
+    { value: "size", label: "大小" },
+  ],
 };
 
 let currentMode = MODE_FLOORPLAN;
 let floorplanItems = [];
 let furnitureItems = [];
+let fileItems = [];
 
 function normalize(value) {
   return String(value ?? "").trim();
@@ -127,6 +135,78 @@ function getFurnitureSizeLabel(item) {
   return getFurnitureLibrarySizeSuffix(item) || "尺寸待补";
 }
 
+function getDesignFileStem(entry) {
+  return normalize(entry?.file).replace(/\.json$/i, "");
+}
+
+function getDesignFileName(entry) {
+  const raw = entry?.project?.name ?? entry?.project?.title ?? getDesignFileStem(entry) ?? "未命名文件";
+  return normalize(raw) || "未命名文件";
+}
+
+function getDesignFileSizeBytes(entry) {
+  const size = Number(entry?.sizeBytes);
+  return Number.isFinite(size) && size > 0 ? size : 0;
+}
+
+function getJsonSizeBytes(value) {
+  const text = JSON.stringify(value ?? {});
+  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(text).length;
+  return text.length;
+}
+
+function normalizeDesignFileEntry(entry) {
+  return {
+    ...entry,
+    sizeBytes: getJsonSizeBytes(entry?.project),
+  };
+}
+
+function getDesignFileUpdatedMs(entry) {
+  const iso = entry?.project?.updatedAt || entry?.project?.createdAt;
+  if (iso != null && normalize(iso)) {
+    const ms = new Date(iso).getTime();
+    if (Number.isFinite(ms)) return ms;
+  }
+
+  const timestamp = getDesignFileStem(entry).match(/(\d{13})/)?.[1];
+  if (timestamp) {
+    const ms = Number(timestamp);
+    if (Number.isFinite(ms)) return ms;
+  }
+
+  return 0;
+}
+
+function formatDesignFileUpdatedAt(entry) {
+  const ms = getDesignFileUpdatedMs(entry);
+  if (!ms) return "更新时间待补";
+  return new Date(ms).toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "大小待补";
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb < 10 ? kb.toFixed(1) : Math.round(kb)} KB`;
+  const mb = kb / 1024;
+  return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`;
+}
+
+function getTemplateFloorplanName(templateId) {
+  const id = normalize(templateId);
+  if (!id) return "";
+  const floorplan = floorplanItems.find((item) => normalize(item?.id) === id);
+  return floorplan ? getFloorplanName(floorplan) : id;
+}
+
 function updateResultCount(count, noun) {
   const countEl = document.querySelector(".ucontent-count");
   if (!countEl) return;
@@ -158,6 +238,11 @@ function setCategoryCounts(listSelector, dataAttr, items, getCategory) {
     const count = categories.reduce((sum, category) => sum + (counts.get(category) || 0), 0);
     countEl.textContent = String(count);
   });
+}
+
+function setFileCategoryCount(items) {
+  const countEl = document.querySelector("[data-file-category] .ucat-count");
+  if (countEl) countEl.textContent = String(Array.isArray(items) ? items.length : 0);
 }
 
 function getSortSelect() {
@@ -217,6 +302,25 @@ function sortFurnitureItems(items, sortKey) {
       return collator.compare(getFurnitureDisplayName(a), getFurnitureDisplayName(b));
     }
     return collator.compare(getFurnitureDisplayName(a), getFurnitureDisplayName(b));
+  });
+  return next;
+}
+
+function sortFileItems(items, sortKey) {
+  const next = [...(items || [])];
+  const collator = new Intl.Collator("zh-Hans-CN", { numeric: true, sensitivity: "base" });
+  next.sort((a, b) => {
+    if (sortKey === "updatedAt") {
+      const diff = getDesignFileUpdatedMs(b) - getDesignFileUpdatedMs(a);
+      if (diff !== 0) return diff;
+      return collator.compare(getDesignFileName(a), getDesignFileName(b));
+    }
+    if (sortKey === "size") {
+      const diff = getDesignFileSizeBytes(b) - getDesignFileSizeBytes(a);
+      if (diff !== 0) return diff;
+      return collator.compare(getDesignFileName(a), getDesignFileName(b));
+    }
+    return collator.compare(getDesignFileName(a), getDesignFileName(b));
   });
   return next;
 }
@@ -293,6 +397,56 @@ function createFurnitureCard(item, index) {
   return card;
 }
 
+function createFileCard(entry) {
+  const file = normalize(entry?.file) || "unknown.json";
+  const stem = getDesignFileStem(entry);
+  const displayName = getDesignFileName(entry);
+  const templateId = normalize(entry?.project?.templateId);
+
+  const card = document.createElement("article");
+  card.className = "model-card model-card--file";
+  card.dataset.file = file;
+  card.dataset.designId = normalize(entry?.project?.id) || stem;
+  card.setAttribute("aria-label", `文件 ${displayName}`);
+
+  const thumb = document.createElement("div");
+  thumb.className = "model-thumb model-thumb--file";
+  thumb.innerHTML = `
+    <span class="file-card-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M6 3h8l4 4v14H6V3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M14 3v5h5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M9 12h6M9 15h6M9 18h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </span>
+  `;
+
+  const info = document.createElement("div");
+  info.className = "model-info";
+
+  const top = document.createElement("div");
+  top.className = "model-info-top";
+  const name = document.createElement("span");
+  name.className = "model-name";
+  name.textContent = displayName;
+  const size = document.createElement("span");
+  size.className = "model-price";
+  size.textContent = formatFileSize(getDesignFileSizeBytes(entry));
+  top.append(name, size);
+
+  const source = document.createElement("div");
+  source.className = "model-source";
+  source.textContent = `${formatDesignFileUpdatedAt(entry)} · ${file}`;
+
+  const tags = document.createElement("div");
+  tags.className = "model-tags";
+  if (templateId) tags.append(createTag(`模板 ${getTemplateFloorplanName(templateId)}`));
+
+  info.append(top, source, tags);
+  card.append(thumb, info);
+  return card;
+}
+
 function renderEmptyState(grid, label) {
   const empty = document.createElement("div");
   empty.className = "model-empty-state";
@@ -351,8 +505,21 @@ function renderFurniture(categoryFilter = getActiveFilter("[data-furniture-categ
 }
 
 function activateCategory(row) {
-  document.querySelectorAll("[data-floorplan-category], [data-furniture-category]").forEach((item) => {
+  document.querySelectorAll("[data-floorplan-category], [data-furniture-category], [data-file-category]").forEach((item) => {
     item.classList.toggle("is-active", item === row);
+  });
+}
+
+function renderFiles() {
+  currentMode = MODE_FILE;
+  setSortOptions(MODE_FILE);
+  renderCards(fileItems, {
+    categoryFilter: ALL_CATEGORY,
+    getCategory: () => ALL_CATEGORY,
+    sortItems: sortFileItems,
+    createCard: createFileCard,
+    noun: "文件",
+    emptyText: () => "当前没有文件",
   });
 }
 
@@ -372,31 +539,43 @@ function bindCategoryClicks() {
     activateCategory(row);
     renderFurniture(row.getAttribute("data-furniture-category"));
   });
+
+  const fileList = document.querySelector("[data-file-category-list]");
+  fileList?.addEventListener("click", (event) => {
+    const row = event.target.closest("[data-file-category]");
+    if (!row || !fileList.contains(row)) return;
+    activateCategory(row);
+    renderFiles();
+  });
 }
 
 function bindSort() {
   const select = getSortSelect();
   if (!select) return;
   select.addEventListener("change", () => {
-    if (currentMode === MODE_FURNITURE) renderFurniture();
+    if (currentMode === MODE_FILE) renderFiles();
+    else if (currentMode === MODE_FURNITURE) renderFurniture();
     else renderFloorplans();
   });
 }
 
 async function mountUserPage() {
   try {
-    const [loadedFloorplans, furnitureCatalog] = await Promise.all([
+    const [loadedFloorplans, furnitureCatalog, loadedFiles] = await Promise.all([
       loadItemsFromManifest({
         manifestUrl: DATA_PATHS.floorplansManifest,
         itemsBaseUrl: DATA_PATHS.floorplansDir,
       }),
       loadFurnitureCatalog(),
+      loadDesignProjectsFromManifest(),
     ]);
     floorplanItems = loadedFloorplans;
     furnitureItems = Array.isArray(furnitureCatalog?.items) ? furnitureCatalog.items : [];
+    fileItems = (Array.isArray(loadedFiles) ? loadedFiles : []).map(normalizeDesignFileEntry);
 
     setCategoryCounts("[data-floorplan-category-list]", "data-floorplan-category", floorplanItems, getFloorplanCategory);
     setCategoryCounts("[data-furniture-category-list]", "data-furniture-category", furnitureItems, getFurnitureCategory);
+    setFileCategoryCount(fileItems);
     bindCategoryClicks();
     bindSort();
     renderFloorplans();

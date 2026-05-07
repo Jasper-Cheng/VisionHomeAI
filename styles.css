@@ -3939,6 +3939,32 @@ a.icon-btn {
   z-index: 2;
 }
 
+.model-thumb--file {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(125, 211, 252, 0.16), transparent 34%),
+    linear-gradient(135deg, rgba(36, 39, 48, 0.98) 0%, rgba(19, 21, 26, 0.98) 100%);
+}
+
+.file-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  color: rgba(190, 185, 255, 0.9);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.file-card-icon svg {
+  width: 34px;
+  height: 34px;
+}
+
 .model-thumb--warm {
   background: linear-gradient(135deg, #e8d5b0 0%, #c9a96e 50%, #a07840 100%);
 }
