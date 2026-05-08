@@ -16,6 +16,7 @@ const ALL_CATEGORY = "__all__";
 const MODE_FLOORPLAN = "floorplan";
 const MODE_FURNITURE = "furniture";
 const MODE_FILE = "file";
+const MODE_SEARCH = "search";
 
 const SORT_OPTIONS = {
   [MODE_FLOORPLAN]: [
@@ -33,15 +34,65 @@ const SORT_OPTIONS = {
     { value: "updatedAt", label: "更新时间" },
     { value: "size", label: "大小" },
   ],
+  [MODE_SEARCH]: [
+    { value: "relevance", label: "相关度" },
+    { value: "name", label: "名称" },
+    { value: "type", label: "类型" },
+  ],
 };
 
 let currentMode = MODE_FLOORPLAN;
+let lastBrowseMode = MODE_FLOORPLAN;
+let globalSearchQuery = "";
 let floorplanItems = [];
 let furnitureItems = [];
 let fileItems = [];
 
 function normalize(value) {
   return String(value ?? "").trim();
+}
+
+function normalizeSearchText(value) {
+  return normalize(value).toLocaleLowerCase("zh-CN");
+}
+
+function getSearchTokens(query) {
+  return normalizeSearchText(query)
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function collectNestedText(value, depth = 3) {
+  if (value == null || depth < 0) return [];
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return [String(value)];
+  if (Array.isArray(value)) return value.flatMap((item) => collectNestedText(item, depth - 1));
+  if (typeof value === "object") {
+    return Object.values(value).flatMap((item) => collectNestedText(item, depth - 1));
+  }
+  return [];
+}
+
+function createSearchBlob(parts) {
+  return parts.flatMap((part) => collectNestedText(part)).map(normalizeSearchText).filter(Boolean).join(" ");
+}
+
+function textMatchesTokens(text, tokens) {
+  if (!tokens.length) return false;
+  return tokens.every((token) => text.includes(token));
+}
+
+function scoreSearchResult(name, category, text, query, tokens) {
+  const normalizedName = normalizeSearchText(name);
+  const normalizedCategory = normalizeSearchText(category);
+  let score = 0;
+  if (normalizedName === query) score += 120;
+  if (normalizedName.includes(query)) score += 80;
+  score += tokens.reduce((sum, token) => sum + (normalizedName.includes(token) ? 24 : 0), 0);
+  if (normalizedCategory.includes(query)) score += 28;
+  score += tokens.reduce((sum, token) => sum + (normalizedCategory.includes(token) ? 8 : 0), 0);
+  if (text.includes(query)) score += 12;
+  return score;
 }
 
 function createTag(text) {
@@ -214,6 +265,20 @@ function updateResultCount(count, noun) {
   countEl.innerHTML = `显示 ${start} – ${count} / 共 <strong>${count}</strong> 个${noun}`;
 }
 
+function updateSearchResultCount(count, query) {
+  const countEl = document.querySelector(".ucontent-count");
+  if (!countEl) return;
+  const start = count > 0 ? 1 : 0;
+  countEl.innerHTML = `搜索“${escapeHtml(query)}”：显示 ${start} – ${count} / 共 <strong>${count}</strong> 个结果`;
+}
+
+function escapeHtml(value) {
+  return normalize(value).replace(/[&<>"']/g, (char) => {
+    const entities = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    return entities[char] || char;
+  });
+}
+
 function setCategoryCounts(listSelector, dataAttr, items, getCategory) {
   const list = document.querySelector(listSelector);
   if (!list) return;
@@ -261,7 +326,7 @@ function setSortOptions(mode) {
     option.textContent = optionDef.label;
     select.appendChild(option);
   }
-  select.value = options.some((option) => option.value === prev) ? prev : "name";
+  select.value = options.some((option) => option.value === prev) ? prev : options[0]?.value || "name";
 }
 
 function getSortKey() {
@@ -321,6 +386,123 @@ function sortFileItems(items, sortKey) {
       return collator.compare(getDesignFileName(a), getDesignFileName(b));
     }
     return collator.compare(getDesignFileName(a), getDesignFileName(b));
+  });
+  return next;
+}
+
+function getSearchTypeLabel(mode) {
+  if (mode === MODE_FLOORPLAN) return "户型";
+  if (mode === MODE_FURNITURE) return "家具";
+  if (mode === MODE_FILE) return "文件";
+  return "结果";
+}
+
+function getSearchTypeRank(mode) {
+  if (mode === MODE_FLOORPLAN) return 1;
+  if (mode === MODE_FURNITURE) return 2;
+  if (mode === MODE_FILE) return 3;
+  return 9;
+}
+
+function buildFloorplanSearchResult(entry, query, tokens) {
+  const name = getFloorplanName(entry);
+  const category = getFloorplanCategory(entry) || "未分类";
+  const roomNames = (Array.isArray(entry?.floors) ? entry.floors : []).flatMap((floor) =>
+    Array.isArray(floor?.rooms) ? floor.rooms.map((room) => [room?.name, room?.type]) : [],
+  );
+  const text = createSearchBlob([
+    name,
+    category,
+    normalize(entry?.id),
+    formatArea(getFloorplanAreaM2(entry)),
+    floorCountLabel(entry),
+    roomCountLabel(entry),
+    roomNames,
+  ]);
+  if (!textMatchesTokens(text, tokens)) return null;
+  return {
+    mode: MODE_FLOORPLAN,
+    item: entry,
+    name,
+    typeRank: getSearchTypeRank(MODE_FLOORPLAN),
+    score: scoreSearchResult(name, category, text, query, tokens),
+  };
+}
+
+function buildFurnitureSearchResult(item, query, tokens) {
+  const name = getFurnitureDisplayName(item) || normalize(item?.id) || "未命名家具";
+  const category = getFurnitureCategoryLabel(getFurnitureCategory(item));
+  const text = createSearchBlob([
+    name,
+    category,
+    item?.id,
+    item?.model,
+    item?.thumbnail,
+    item?.tags,
+    formatPrice(getFurniturePrice(item)),
+    getFurnitureSizeLabel(item),
+  ]);
+  if (!textMatchesTokens(text, tokens)) return null;
+  return {
+    mode: MODE_FURNITURE,
+    item,
+    name,
+    typeRank: getSearchTypeRank(MODE_FURNITURE),
+    score: scoreSearchResult(name, category, text, query, tokens),
+  };
+}
+
+function buildFileSearchResult(entry, query, tokens) {
+  const name = getDesignFileName(entry);
+  const templateName = getTemplateFloorplanName(entry?.project?.templateId);
+  const text = createSearchBlob([
+    name,
+    entry?.file,
+    entry?.project?.id,
+    entry?.project?.templateId,
+    templateName,
+    formatDesignFileUpdatedAt(entry),
+    formatFileSize(getDesignFileSizeBytes(entry)),
+    entry?.project,
+  ]);
+  if (!textMatchesTokens(text, tokens)) return null;
+  return {
+    mode: MODE_FILE,
+    item: entry,
+    name,
+    typeRank: getSearchTypeRank(MODE_FILE),
+    score: scoreSearchResult(name, "文件", text, query, tokens),
+  };
+}
+
+function getSearchResults(query) {
+  const normalizedQuery = normalizeSearchText(query);
+  const tokens = getSearchTokens(query);
+  if (!tokens.length) return [];
+  return [
+    ...floorplanItems.map((entry) => buildFloorplanSearchResult(entry, normalizedQuery, tokens)),
+    ...furnitureItems.map((item) => buildFurnitureSearchResult(item, normalizedQuery, tokens)),
+    ...fileItems.map((entry) => buildFileSearchResult(entry, normalizedQuery, tokens)),
+  ].filter(Boolean);
+}
+
+function sortSearchResults(results, sortKey) {
+  const next = [...(results || [])];
+  const collator = new Intl.Collator("zh-Hans-CN", { numeric: true, sensitivity: "base" });
+  next.sort((a, b) => {
+    if (sortKey === "type") {
+      const diff = a.typeRank - b.typeRank;
+      if (diff !== 0) return diff;
+      return collator.compare(a.name, b.name);
+    }
+    if (sortKey === "name") {
+      const diff = collator.compare(a.name, b.name);
+      if (diff !== 0) return diff;
+      return a.typeRank - b.typeRank;
+    }
+    const diff = b.score - a.score;
+    if (Math.abs(diff) > 1e-6) return diff;
+    return collator.compare(a.name, b.name);
   });
   return next;
 }
@@ -454,6 +636,13 @@ function renderEmptyState(grid, label) {
   grid.appendChild(empty);
 }
 
+function addSearchTypeTag(card, mode) {
+  const tags = card.querySelector(".model-tags");
+  if (!tags) return card;
+  tags.prepend(createTag(getSearchTypeLabel(mode)));
+  return card;
+}
+
 function renderCards(items, options) {
   const grid = document.querySelector(".model-grid");
   if (!grid) return;
@@ -477,6 +666,7 @@ function getActiveFilter(selector, dataAttr) {
 
 function renderFloorplans(categoryFilter = getActiveFilter("[data-floorplan-category-list]", "data-floorplan-category")) {
   currentMode = MODE_FLOORPLAN;
+  lastBrowseMode = MODE_FLOORPLAN;
   setSortOptions(MODE_FLOORPLAN);
   renderCards(floorplanItems, {
     categoryFilter,
@@ -490,6 +680,7 @@ function renderFloorplans(categoryFilter = getActiveFilter("[data-floorplan-cate
 
 function renderFurniture(categoryFilter = getActiveFilter("[data-furniture-category-list]", "data-furniture-category")) {
   currentMode = MODE_FURNITURE;
+  lastBrowseMode = MODE_FURNITURE;
   setSortOptions(MODE_FURNITURE);
   renderCards(furnitureItems, {
     categoryFilter,
@@ -512,6 +703,7 @@ function activateCategory(row) {
 
 function renderFiles() {
   currentMode = MODE_FILE;
+  lastBrowseMode = MODE_FILE;
   setSortOptions(MODE_FILE);
   renderCards(fileItems, {
     categoryFilter: ALL_CATEGORY,
@@ -523,11 +715,55 @@ function renderFiles() {
   });
 }
 
+function renderSearchResults(query = globalSearchQuery) {
+  const grid = document.querySelector(".model-grid");
+  if (!grid) return;
+
+  const wasSearching = currentMode === MODE_SEARCH;
+  currentMode = MODE_SEARCH;
+  globalSearchQuery = normalize(query);
+  setSortOptions(MODE_SEARCH);
+  if (!wasSearching) {
+    const select = getSortSelect();
+    if (select) select.value = "relevance";
+  }
+
+  const results = sortSearchResults(getSearchResults(globalSearchQuery), getSortKey());
+  grid.replaceChildren();
+  results.forEach((result, index) => {
+    if (result.mode === MODE_FLOORPLAN) grid.appendChild(addSearchTypeTag(createFloorplanCard(result.item, index), result.mode));
+    else if (result.mode === MODE_FURNITURE) grid.appendChild(addSearchTypeTag(createFurnitureCard(result.item, index), result.mode));
+    else if (result.mode === MODE_FILE) grid.appendChild(addSearchTypeTag(createFileCard(result.item), result.mode));
+  });
+  if (!results.length) renderEmptyState(grid, `没有找到“${globalSearchQuery}”相关内容`);
+  updateSearchResultCount(results.length, globalSearchQuery);
+
+  const pager = document.querySelector(".ucontent-bottom");
+  if (pager) pager.hidden = true;
+}
+
+function restoreBrowseMode() {
+  if (lastBrowseMode === MODE_FILE) renderFiles();
+  else if (lastBrowseMode === MODE_FURNITURE) renderFurniture();
+  else renderFloorplans();
+}
+
+function getSearchInput() {
+  return document.querySelector(".header-search-input");
+}
+
+function clearSearchQuery() {
+  globalSearchQuery = "";
+  const input = getSearchInput();
+  if (input && input.value) input.value = "";
+}
+
 function bindCategoryClicks() {
   const floorplanList = document.querySelector("[data-floorplan-category-list]");
   floorplanList?.addEventListener("click", (event) => {
     const row = event.target.closest("[data-floorplan-category]");
     if (!row || !floorplanList.contains(row)) return;
+    clearSearchQuery();
     activateCategory(row);
     renderFloorplans(row.getAttribute("data-floorplan-category"));
   });
@@ -536,6 +772,7 @@ function bindCategoryClicks() {
   furnitureList?.addEventListener("click", (event) => {
     const row = event.target.closest("[data-furniture-category]");
     if (!row || !furnitureList.contains(row)) return;
+    clearSearchQuery();
     activateCategory(row);
     renderFurniture(row.getAttribute("data-furniture-category"));
   });
@@ -544,6 +781,7 @@ function bindCategoryClicks() {
   fileList?.addEventListener("click", (event) => {
     const row = event.target.closest("[data-file-category]");
     if (!row || !fileList.contains(row)) return;
+    clearSearchQuery();
     activateCategory(row);
     renderFiles();
   });
@@ -553,9 +791,27 @@ function bindSort() {
   const select = getSortSelect();
   if (!select) return;
   select.addEventListener("change", () => {
-    if (currentMode === MODE_FILE) renderFiles();
+    if (currentMode === MODE_SEARCH) renderSearchResults();
+    else if (currentMode === MODE_FILE) renderFiles();
     else if (currentMode === MODE_FURNITURE) renderFurniture();
     else renderFloorplans();
+  });
+}
+
+function bindGlobalSearch() {
+  const input = getSearchInput();
+  if (!input) return;
+  input.addEventListener("input", () => {
+    const query = normalize(input.value);
+    globalSearchQuery = query;
+    if (query) renderSearchResults(query);
+    else restoreBrowseMode();
+  });
+  input.addEventListener("search", () => {
+    const query = normalize(input.value);
+    globalSearchQuery = query;
+    if (query) renderSearchResults(query);
+    else restoreBrowseMode();
   });
 }
 
@@ -578,6 +834,7 @@ async function mountUserPage() {
     setFileCategoryCount(fileItems);
     bindCategoryClicks();
     bindSort();
+    bindGlobalSearch();
     renderFloorplans();
   } catch (err) {
     console.warn("[VisionHomeAI] 用户页分类加载失败:", err);

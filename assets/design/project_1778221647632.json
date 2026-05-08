@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.1",
+  "id": "project_1778221647632",
+  "name": "2",
+  "description": "",
+  "createdAt": "2026-05-08T06:27:27.632Z",
+  "updatedAt": "2026-05-08T06:27:27.632Z",
+  "templateId": "apt_118_3b2l2b_south_north",
+  "activeFloorId": "floor1",
+  "floorplanSnapshot": null,
+  "layoutEditor": {
+    "version": 1,
+    "floorPlanId": "apt_118_3b2l2b_south_north",
+    "floorLevelIndex": 0,
+    "floorplanStyleKey": "default",
+    "furniture": [
+      {
+        "instanceId": "li_mowj78up_3",
+        "model": "GothicBed_01",
+        "floorId": "floor1",
+        "x": -381,
+        "y": -336,
+        "rotation": 0
+      },
+      {
+        "instanceId": "li_mowj8268_4",
+        "model": "Sofa_01",
+        "floorId": "floor1",
+        "x": -366,
+        "y": 224,
+        "rotation": 180
+      }
+    ],
+    "surfaceOverridesByStyleKey": {
+      "default": {
+        "roomFloors": {
+          "floor1": {}
+        },
+        "doorOverrides": {},
+        "doorFrameOverrides": {},
+        "windowOverrides": {},
+        "wallFaceOverrides": {}
+      }
+    },
+    "lightingConfig": {
+      "toneMappingExposure": 1,
+      "ambient": {
+        "intensity": 0.26
+      },
+      "hemisphere": {
+        "intensity": 0.36
+      },
+      "directional": {
+        "intensity": 1
+      },
+      "envMapIntensity": 0.35
+    },
+    "renderQualityMode": "high"
+  }
+}
