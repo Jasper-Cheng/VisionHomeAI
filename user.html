@@ -400,48 +400,114 @@
             </svg>
           </button>
         </div>
-        <div class="design-file-dialog__preview" id="designFilePreview" aria-label="文件预览"></div>
-        <dl class="design-file-dialog__meta">
-          <div>
-            <dt>文件</dt>
-            <dd id="designFileMetaFile">-</dd>
+        <div class="design-file-dialog__body">
+          <div class="design-file-dialog__preview" id="designFilePreview" aria-label="文件预览"></div>
+          <dl class="design-file-dialog__meta">
+            <div>
+              <dt>文件</dt>
+              <dd id="designFileMetaFile">-</dd>
+            </div>
+            <div>
+              <dt>模板</dt>
+              <dd id="designFileMetaTemplate">-</dd>
+            </div>
+            <div>
+              <dt>家具</dt>
+              <dd id="designFileMetaFurniture">-</dd>
+            </div>
+            <div>
+              <dt>更新时间</dt>
+              <dd id="designFileMetaUpdated">-</dd>
+            </div>
+          </dl>
+          <label class="save-design-dialog__label">
+            方案名称
+            <input
+              id="designFileNameInput"
+              class="save-design-dialog__input"
+              type="text"
+              maxlength="64"
+              autocomplete="off"
+            />
+          </label>
+          <p id="designFileDialogError" class="save-design-dialog__error" role="alert" hidden></p>
+          <div id="designFileDeleteConfirm" class="design-file-dialog__delete-confirm" hidden>
+            <span id="designFileDeleteConfirmText">确定删除这个方案吗？</span>
+            <div class="design-file-dialog__delete-confirm-actions">
+              <button type="button" class="save-design-dialog__cancel" id="designFileDeleteCancelBtn">取消</button>
+              <button type="button" class="save-design-dialog__cancel design-file-dialog__delete" id="designFileDeleteConfirmBtn">确认删除</button>
+            </div>
           </div>
-          <div>
-            <dt>模板</dt>
-            <dd id="designFileMetaTemplate">-</dd>
-          </div>
-          <div>
-            <dt>家具</dt>
-            <dd id="designFileMetaFurniture">-</dd>
-          </div>
-          <div>
-            <dt>更新时间</dt>
-            <dd id="designFileMetaUpdated">-</dd>
-          </div>
-        </dl>
-        <label class="save-design-dialog__label">
-          方案名称
-          <input
-            id="designFileNameInput"
-            class="save-design-dialog__input"
-            type="text"
-            maxlength="64"
-            autocomplete="off"
-          />
-        </label>
-        <p id="designFileDialogError" class="save-design-dialog__error" role="alert" hidden></p>
-        <div id="designFileDeleteConfirm" class="design-file-dialog__delete-confirm" hidden>
-          <span id="designFileDeleteConfirmText">确定删除这个方案吗？</span>
-          <div class="design-file-dialog__delete-confirm-actions">
-            <button type="button" class="save-design-dialog__cancel" id="designFileDeleteCancelBtn">取消</button>
-            <button type="button" class="save-design-dialog__cancel design-file-dialog__delete" id="designFileDeleteConfirmBtn">确认删除</button>
+          <div class="save-design-dialog__actions design-file-dialog__actions">
+            <button type="button" class="save-design-dialog__cancel design-file-dialog__delete" id="designFileDeleteBtn">删除</button>
+            <span class="design-file-dialog__spacer"></span>
+            <button type="button" class="save-design-dialog__cancel" id="designFilePreviewBtn">预览效果</button>
+            <button type="button" class="btn-primary btn-save" id="designFileRenameBtn">保存名称</button>
           </div>
         </div>
-        <div class="save-design-dialog__actions design-file-dialog__actions">
-          <button type="button" class="save-design-dialog__cancel design-file-dialog__delete" id="designFileDeleteBtn">删除</button>
-          <span class="design-file-dialog__spacer"></span>
-          <button type="button" class="save-design-dialog__cancel" id="designFilePreviewBtn">预览效果</button>
-          <button type="button" class="btn-primary btn-save" id="designFileRenameBtn">保存名称</button>
+      </div>
+    </dialog>
+
+    <dialog id="floorplanDialog" class="save-design-dialog floorplan-dialog" aria-labelledby="floorplanDialogTitle">
+      <div class="save-design-dialog__panel design-file-dialog__panel">
+        <div class="design-file-dialog__head">
+          <h2 id="floorplanDialogTitle" class="save-design-dialog__title">户型详情</h2>
+          <button type="button" class="design-file-dialog__close" id="floorplanDialogClose" aria-label="关闭">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="design-file-dialog__body">
+          <div class="design-file-dialog__preview" id="floorplanPreview" aria-label="户型预览"></div>
+          <dl class="design-file-dialog__meta">
+            <div>
+              <dt>户型 ID</dt>
+              <dd id="floorplanMetaId">-</dd>
+            </div>
+            <div>
+              <dt>分类</dt>
+              <dd id="floorplanMetaCategory">-</dd>
+            </div>
+            <div>
+              <dt>面积</dt>
+              <dd id="floorplanMetaArea">-</dd>
+            </div>
+            <div>
+              <dt>空间</dt>
+              <dd id="floorplanMetaRooms">-</dd>
+            </div>
+          </dl>
+          <section class="floorplan-dialog__refs" aria-labelledby="floorplanRefsTitle">
+            <div class="floorplan-dialog__refs-head">
+              <h3 id="floorplanRefsTitle">引用该户型的用户文件</h3>
+              <span id="floorplanRefsCount">0</span>
+            </div>
+            <div id="floorplanRefsList" class="floorplan-dialog__refs-list"></div>
+          </section>
+          <label class="save-design-dialog__label">
+            户型名称
+            <input
+              id="floorplanNameInput"
+              class="save-design-dialog__input"
+              type="text"
+              maxlength="64"
+              autocomplete="off"
+            />
+          </label>
+          <p id="floorplanDialogError" class="save-design-dialog__error" role="alert" hidden></p>
+          <div id="floorplanDeleteConfirm" class="design-file-dialog__delete-confirm" hidden>
+            <span id="floorplanDeleteConfirmText">确定删除这个户型吗？</span>
+            <div class="design-file-dialog__delete-confirm-actions">
+              <button type="button" class="save-design-dialog__cancel" id="floorplanDeleteCancelBtn">取消</button>
+              <button type="button" class="save-design-dialog__cancel design-file-dialog__delete" id="floorplanDeleteConfirmBtn">确认删除</button>
+            </div>
+          </div>
+          <div class="save-design-dialog__actions design-file-dialog__actions">
+            <button type="button" class="save-design-dialog__cancel design-file-dialog__delete" id="floorplanDeleteBtn">删除</button>
+            <span class="design-file-dialog__spacer"></span>
+            <button type="button" class="btn-primary btn-save" id="floorplanRenameBtn">保存名称</button>
+          </div>
         </div>
       </div>
     </dialog>

@@ -363,8 +363,33 @@ body.vision-home-pointer-dragging [contenteditable="true"] {
   background: #2e2e2e;
 }
 
+.save-design-dialog__cancel:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.save-design-dialog__cancel:disabled:hover {
+  background: #252525;
+}
+
 .design-file-dialog__panel {
   width: min(560px, 92vw);
+  max-height: min(86vh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.design-file-dialog__body {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.design-file-dialog__body::-webkit-scrollbar {
+  display: none;
 }
 
 .design-file-dialog__head {
@@ -510,6 +535,86 @@ body.vision-home-pointer-dragging [contenteditable="true"] {
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
+}
+
+.floorplan-dialog__refs {
+  margin: 0 0 14px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.floorplan-dialog__refs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.floorplan-dialog__refs-head h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.floorplan-dialog__refs-head span {
+  height: 22px;
+  min-width: 22px;
+  padding: 0 7px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.floorplan-dialog__refs-list {
+  max-height: 108px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scrollbar-width: none;
+}
+
+.floorplan-dialog__refs-list::-webkit-scrollbar {
+  display: none;
+}
+
+.floorplan-dialog__ref-item,
+.floorplan-dialog__refs-empty {
+  min-height: 30px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: rgba(10, 10, 10, 0.38);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.floorplan-dialog__refs-empty {
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.floorplan-dialog__ref-file {
+  flex: 0 0 auto;
+  max-width: 44%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 11px;
 }
 
 .design-file-dialog__spacer {

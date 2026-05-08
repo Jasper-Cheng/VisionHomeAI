@@ -49,6 +49,7 @@ let floorplanItems = [];
 let furnitureItems = [];
 let fileItems = [];
 let activeDesignFileEntry = null;
+let activeFloorplanEntry = null;
 
 function normalize(value) {
   return String(value ?? "").trim();
@@ -273,6 +274,19 @@ function getTemplateFloorplanEntry(templateId) {
 
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value ?? null));
+}
+
+async function reloadFloorplanItemsFromManifest() {
+  floorplanItems = await loadItemsFromManifest({
+    manifestUrl: DATA_PATHS.floorplansManifest,
+    itemsBaseUrl: DATA_PATHS.floorplansDir,
+  });
+  window.__floorPlanCatalog = {
+    items: floorplanItems,
+    byId: new Map(floorplanItems.map((item) => [normalize(item?.id), item])),
+    raw: { floorPlanLibrary: floorplanItems },
+  };
+  return floorplanItems;
 }
 
 function updateResultCount(count, noun) {
@@ -532,6 +546,9 @@ function createFloorplanCard(entry, index) {
   card.className = "model-card model-card--floorplan";
   card.dataset.floorplanId = normalize(entry?.id);
   card.dataset.category = category;
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-label", `户型 ${getFloorplanName(entry)}`);
 
   const thumb = document.createElement("div");
   thumb.className = "model-thumb model-thumb--floorplan";
@@ -556,6 +573,13 @@ function createFloorplanCard(entry, index) {
 
   info.append(top, tags);
   card.append(thumb, info);
+  card.addEventListener("click", () => openFloorplanDialog(entry));
+  card.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openFloorplanDialog(entry);
+    }
+  });
   return card;
 }
 
@@ -900,10 +924,6 @@ function openDesignFileDialog(entry) {
     if (typeof elems.dialog.showModal === "function") elems.dialog.showModal();
     else elems.dialog.setAttribute("open", "");
   }
-  requestAnimationFrame(() => {
-    elems.nameInput.focus();
-    elems.nameInput.select();
-  });
 }
 
 function closeDesignFileDialog() {
@@ -913,8 +933,12 @@ function closeDesignFileDialog() {
 }
 
 function refreshCurrentView() {
+  setCategoryCounts("[data-floorplan-category-list]", "data-floorplan-category", floorplanItems, getFloorplanCategory);
+  setCategoryCounts("[data-furniture-category-list]", "data-furniture-category", furnitureItems, getFurnitureCategory);
   setFileCategoryCount(fileItems);
   if (currentMode === MODE_SEARCH && globalSearchQuery) renderSearchResults(globalSearchQuery);
+  else if (currentMode === MODE_FLOORPLAN || lastBrowseMode === MODE_FLOORPLAN) renderFloorplans();
+  else if (currentMode === MODE_FURNITURE || lastBrowseMode === MODE_FURNITURE) renderFurniture();
   else if (currentMode === MODE_FILE || lastBrowseMode === MODE_FILE) renderFiles();
 }
 
@@ -1019,6 +1043,284 @@ function clearDeletedDesignFromEditSession(deletedFile) {
   } catch {
     /* ignore */
   }
+}
+
+function getFloorplanDialogElements() {
+  return {
+    dialog: document.getElementById("floorplanDialog"),
+    title: document.getElementById("floorplanDialogTitle"),
+    preview: document.getElementById("floorplanPreview"),
+    closeBtn: document.getElementById("floorplanDialogClose"),
+    nameInput: document.getElementById("floorplanNameInput"),
+    idMeta: document.getElementById("floorplanMetaId"),
+    categoryMeta: document.getElementById("floorplanMetaCategory"),
+    areaMeta: document.getElementById("floorplanMetaArea"),
+    roomsMeta: document.getElementById("floorplanMetaRooms"),
+    refsCount: document.getElementById("floorplanRefsCount"),
+    refsList: document.getElementById("floorplanRefsList"),
+    error: document.getElementById("floorplanDialogError"),
+    deleteConfirm: document.getElementById("floorplanDeleteConfirm"),
+    deleteConfirmText: document.getElementById("floorplanDeleteConfirmText"),
+    renameBtn: document.getElementById("floorplanRenameBtn"),
+    deleteBtn: document.getElementById("floorplanDeleteBtn"),
+    deleteCancelBtn: document.getElementById("floorplanDeleteCancelBtn"),
+    deleteConfirmBtn: document.getElementById("floorplanDeleteConfirmBtn"),
+  };
+}
+
+function showFloorplanDialogError(message) {
+  const error = getFloorplanDialogElements().error;
+  if (!error) return;
+  error.hidden = false;
+  error.textContent = message;
+}
+
+function hideFloorplanDialogError() {
+  const error = getFloorplanDialogElements().error;
+  if (!error) return;
+  error.hidden = true;
+  error.textContent = "";
+}
+
+function getFloorplanReferenceFiles(entryOrId) {
+  const floorplanId = normalize(typeof entryOrId === "string" ? entryOrId : entryOrId?.id);
+  if (!floorplanId) return [];
+  return fileItems.filter((entry) => {
+    const templateId = normalize(entry?.project?.templateId);
+    const layoutFloorplanId = normalize(entry?.project?.layoutEditor?.floorPlanId);
+    return templateId === floorplanId || layoutFloorplanId === floorplanId;
+  });
+}
+
+function renderFloorplanRefs(entry) {
+  const { refsCount, refsList, deleteBtn } = getFloorplanDialogElements();
+  const refs = getFloorplanReferenceFiles(entry);
+  if (refsCount) refsCount.textContent = String(refs.length);
+  if (deleteBtn) {
+    deleteBtn.disabled = refs.length > 0;
+    deleteBtn.title = refs.length > 0 ? "请先删除引用该户型的用户设计文件" : "删除该户型";
+  }
+  if (!refsList) return refs;
+  refsList.replaceChildren();
+  if (!refs.length) {
+    const empty = document.createElement("div");
+    empty.className = "floorplan-dialog__refs-empty";
+    empty.textContent = "暂无用户设计文件引用";
+    refsList.appendChild(empty);
+    return refs;
+  }
+  refs.forEach((ref) => {
+    const item = document.createElement("div");
+    item.className = "floorplan-dialog__ref-item";
+    const name = document.createElement("span");
+    name.textContent = getDesignFileName(ref);
+    const file = document.createElement("span");
+    file.className = "floorplan-dialog__ref-file";
+    file.textContent = normalize(ref?.file);
+    item.append(name, file);
+    refsList.appendChild(item);
+  });
+  return refs;
+}
+
+function setFloorplanDeleteConfirmVisible(visible, entry = activeFloorplanEntry) {
+  const { deleteConfirm, deleteConfirmText } = getFloorplanDialogElements();
+  if (!deleteConfirm) return;
+  deleteConfirm.hidden = !visible;
+  if (visible && deleteConfirmText && entry) {
+    deleteConfirmText.textContent = `确定删除“${getFloorplanName(entry)}”吗？这会移除户型文件及对应风格文件。`;
+  }
+}
+
+function renderFloorplanDialogPreview(entry) {
+  const { preview } = getFloorplanDialogElements();
+  if (!preview) return;
+  preview.replaceChildren();
+  const thumb = document.createElement("div");
+  thumb.className = "design-file-dialog__floorplan-thumb model-thumb model-thumb--floorplan";
+  mountFloorplanThumb(thumb, entry, 0);
+  preview.appendChild(thumb);
+
+  const badge = document.createElement("div");
+  badge.className = "design-file-dialog__preview-badge";
+  badge.textContent = formatArea(getFloorplanAreaM2(entry));
+  preview.appendChild(badge);
+}
+
+function openFloorplanDialog(entry) {
+  const elems = getFloorplanDialogElements();
+  if (!elems.dialog || !elems.nameInput) return;
+  activeFloorplanEntry = entry;
+  hideFloorplanDialogError();
+  setFloorplanDeleteConfirmVisible(false, entry);
+
+  const displayName = getFloorplanName(entry);
+  if (elems.title) elems.title.textContent = displayName;
+  elems.nameInput.value = displayName;
+  if (elems.idMeta) elems.idMeta.textContent = normalize(entry?.id) || "-";
+  if (elems.categoryMeta) elems.categoryMeta.textContent = getFloorplanCategory(entry) || "未分类";
+  if (elems.areaMeta) elems.areaMeta.textContent = formatArea(getFloorplanAreaM2(entry));
+  if (elems.roomsMeta) elems.roomsMeta.textContent = roomCountLabel(entry);
+  renderFloorplanDialogPreview(entry);
+  const refs = renderFloorplanRefs(entry);
+  if (refs.length > 0) {
+    showFloorplanDialogError("该户型正在被用户设计文件引用。请先删除所有引用文件后再删除户型。");
+  }
+
+  if (!elems.dialog.open) {
+    if (typeof elems.dialog.showModal === "function") elems.dialog.showModal();
+    else elems.dialog.setAttribute("open", "");
+  }
+}
+
+function closeFloorplanDialog() {
+  const dialog = getFloorplanDialogElements().dialog;
+  if (dialog && typeof dialog.close === "function") dialog.close();
+  else dialog?.removeAttribute("open");
+}
+
+async function postRenameFloorplan(entry, nextName) {
+  const id = normalize(entry?.id);
+  const floorplan = cloneJson(entry);
+  if (!id || !floorplan || typeof floorplan !== "object") throw new Error("户型数据无效");
+  if (!floorplan.project || typeof floorplan.project !== "object") floorplan.project = {};
+  floorplan.project.name = nextName;
+
+  const response = await fetch(DATA_PATHS.floorplanSaveApi, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, floorplan }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok !== true) {
+    throw new Error(data?.error || response.statusText || "保存失败");
+  }
+  return floorplan;
+}
+
+async function postDeleteFloorplan(entry) {
+  const id = normalize(entry?.id);
+  if (!id) throw new Error("户型 ID 无效");
+  const response = await fetch(DATA_PATHS.floorplanDeleteApi, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok !== true) {
+    const refs = Array.isArray(data?.references) ? data.references : [];
+    if (response.status === 409 && refs.length) {
+      throw new Error(`该户型仍被 ${refs.length} 个用户设计文件引用，无法删除。`);
+    }
+    throw new Error(data?.error || response.statusText || "删除失败");
+  }
+  return data.id || id;
+}
+
+function clearDeletedFloorplanFromEditSession(deletedFloorplanId) {
+  const id = normalize(deletedFloorplanId);
+  if (!id) return;
+  let raw = "";
+  try {
+    raw = sessionStorage.getItem(EDIT_SESSION_STORAGE_KEY) || "";
+  } catch {
+    return;
+  }
+  if (!raw) return;
+
+  let session = null;
+  try {
+    session = JSON.parse(raw);
+  } catch {
+    return;
+  }
+  if (normalize(session?.floorPlanId) !== id) return;
+  try {
+    sessionStorage.removeItem(EDIT_SESSION_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function bindFloorplanDialog() {
+  const elems = getFloorplanDialogElements();
+  if (!elems.dialog) return;
+
+  elems.closeBtn?.addEventListener("click", closeFloorplanDialog);
+  elems.dialog.addEventListener("cancel", () => setFloorplanDeleteConfirmVisible(false));
+
+  elems.nameInput?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      elems.renameBtn?.click();
+    }
+  });
+
+  elems.renameBtn?.addEventListener("click", async () => {
+    if (!activeFloorplanEntry || !elems.nameInput) return;
+    const nextName = normalize(elems.nameInput.value);
+    if (!nextName) {
+      showFloorplanDialogError("请输入户型名称。");
+      return;
+    }
+    hideFloorplanDialogError();
+    setButtonBusy(elems.renameBtn, true, "保存中");
+    try {
+      const saved = await postRenameFloorplan(activeFloorplanEntry, nextName);
+      const id = normalize(saved?.id);
+      try {
+        await reloadFloorplanItemsFromManifest();
+      } catch (reloadError) {
+        console.warn("[VisionHomeAI] 户型库重载失败，使用本地更新:", reloadError);
+        floorplanItems = floorplanItems.map((item) => (normalize(item?.id) === id ? saved : item));
+      }
+      activeFloorplanEntry = floorplanItems.find((item) => normalize(item?.id) === id) || saved;
+      refreshCurrentView();
+      openFloorplanDialog(activeFloorplanEntry);
+    } catch (error) {
+      showFloorplanDialogError(`保存失败：${error?.message || error}`);
+    } finally {
+      setButtonBusy(elems.renameBtn, false);
+    }
+  });
+
+  elems.deleteBtn?.addEventListener("click", () => {
+    if (!activeFloorplanEntry) return;
+    const refs = getFloorplanReferenceFiles(activeFloorplanEntry);
+    if (refs.length > 0) {
+      showFloorplanDialogError("该户型正在被用户设计文件引用。请先删除所有引用文件后再删除户型。");
+      setFloorplanDeleteConfirmVisible(false);
+      return;
+    }
+    hideFloorplanDialogError();
+    setFloorplanDeleteConfirmVisible(true);
+  });
+
+  elems.deleteCancelBtn?.addEventListener("click", () => setFloorplanDeleteConfirmVisible(false));
+
+  elems.deleteConfirmBtn?.addEventListener("click", async () => {
+    if (!activeFloorplanEntry) return;
+    const refs = getFloorplanReferenceFiles(activeFloorplanEntry);
+    if (refs.length > 0) {
+      showFloorplanDialogError("该户型正在被用户设计文件引用。请先删除所有引用文件后再删除户型。");
+      setFloorplanDeleteConfirmVisible(false);
+      return;
+    }
+    hideFloorplanDialogError();
+    setButtonBusy(elems.deleteConfirmBtn, true, "删除中");
+    try {
+      const deletedId = await postDeleteFloorplan(activeFloorplanEntry);
+      clearDeletedFloorplanFromEditSession(deletedId);
+      floorplanItems = floorplanItems.filter((item) => normalize(item?.id) !== normalize(deletedId));
+      closeFloorplanDialog();
+      activeFloorplanEntry = null;
+      refreshCurrentView();
+    } catch (error) {
+      showFloorplanDialogError(`删除失败：${error?.message || error}`);
+    } finally {
+      setButtonBusy(elems.deleteConfirmBtn, false);
+    }
+  });
 }
 
 function bindDesignFileDialog() {
@@ -1166,6 +1468,7 @@ async function mountUserPage() {
     bindSort();
     bindGlobalSearch();
     bindDesignFileDialog();
+    bindFloorplanDialog();
     renderFloorplans();
   } catch (err) {
     console.warn("[VisionHomeAI] 用户页分类加载失败:", err);

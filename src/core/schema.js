@@ -5,6 +5,10 @@ export const DATA_PATHS = {
   /** 户型库：manifest.json 与同目录下各 <id>.json */
   floorplansManifest: "assets/floorplans/manifest.json",
   floorplansDir: "assets/floorplans",
+  /** 本地开发服务器 dev_server.py 提供的户型保存接口（同源 POST） */
+  floorplanSaveApi: "/api/floorplan/save",
+  /** 本地开发服务器 dev_server.py 提供的户型删除接口（同源 POST） */
+  floorplanDeleteApi: "/api/floorplan/delete",
   /** 家具库：manifest.json 与同目录下各 <id>.json（可选 tags: string[] 供属性面板展示） */
   furnitureManifest: "assets/furniture/furnitureLibrary.json",
   furnitureDir: "assets/furniture",

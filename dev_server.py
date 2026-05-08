@@ -22,6 +22,8 @@ PORT = int(os.environ.get("PORT", "8080"))
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DESIGN_DIR = os.path.join(ROOT, "assets", "design")
 MANIFEST_PATH = os.path.join(DESIGN_DIR, "manifest.json")
+FLOORPLAN_DIR = os.path.join(ROOT, "assets", "floorplans")
+FLOORPLAN_MANIFEST_PATH = os.path.join(FLOORPLAN_DIR, "manifest.json")
 
 FILENAME_OK = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]*\.json$")
 FLOORPLAN_ID_OK = re.compile(r"^[a-zA-Z0-9_-]+$")
@@ -32,6 +34,14 @@ def ensure_manifest() -> None:
     os.makedirs(DESIGN_DIR, exist_ok=True)
     if not os.path.isfile(MANIFEST_PATH):
         with open(MANIFEST_PATH, "w", encoding="utf-8") as f:
+            json.dump({"schemaVersion": "1.0", "files": []}, f, indent=2)
+            f.write("\n")
+
+
+def ensure_floorplan_manifest() -> None:
+    os.makedirs(FLOORPLAN_DIR, exist_ok=True)
+    if not os.path.isfile(FLOORPLAN_MANIFEST_PATH):
+        with open(FLOORPLAN_MANIFEST_PATH, "w", encoding="utf-8") as f:
             json.dump({"schemaVersion": "1.0", "files": []}, f, indent=2)
             f.write("\n")
 
@@ -47,6 +57,12 @@ class DevHTTPRequestHandler(SimpleHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/api/floorplan-style/save":
             self._post_floorplan_style_save()
+            return
+        if path == "/api/floorplan/save":
+            self._post_floorplan_save()
+            return
+        if path == "/api/floorplan/delete":
+            self._post_floorplan_delete()
             return
         if path == "/api/design/delete":
             self._post_design_delete()
@@ -178,6 +194,158 @@ class DevHTTPRequestHandler(SimpleHTTPRequestHandler):
             return
 
         out = json.dumps({"ok": True, "file": filename}).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(out)))
+        self.end_headers()
+        self.wfile.write(out)
+
+    def _read_manifest_files(self, manifest_path: str):
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            manifest = {"schemaVersion": "1.0", "files": []}
+        files = manifest.get("files")
+        if not isinstance(files, list):
+            files = []
+        return manifest, [f for f in files if isinstance(f, str)]
+
+    def _floorplan_references(self, fp_id: str):
+        ensure_manifest()
+        design_manifest, files = self._read_manifest_files(MANIFEST_PATH)
+        refs = []
+        design_dir_real = os.path.realpath(DESIGN_DIR)
+        for filename in files:
+            filename = os.path.basename(filename.strip())
+            if not FILENAME_OK.match(filename):
+                continue
+            path = os.path.realpath(os.path.join(DESIGN_DIR, filename))
+            if not path.startswith(design_dir_real + os.sep) and path != design_dir_real:
+                continue
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    project = json.load(f)
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not isinstance(project, dict):
+                continue
+            template_id = str(project.get("templateId") or "").strip()
+            layout = project.get("layoutEditor")
+            layout_fp_id = str(layout.get("floorPlanId") or "").strip() if isinstance(layout, dict) else ""
+            if template_id == fp_id or layout_fp_id == fp_id:
+                refs.append({
+                    "file": filename,
+                    "id": str(project.get("id") or "").strip(),
+                    "name": str(project.get("name") or filename).strip() or filename,
+                })
+        return refs
+
+    def _post_floorplan_save(self) -> None:
+        body = self._read_json_body(16 * 1024 * 1024)
+        if body is None:
+            return
+        fp_id = body.get("id")
+        floorplan = body.get("floorplan")
+        if not isinstance(fp_id, str) or not isinstance(floorplan, dict):
+            self.send_error(400, "Missing id or floorplan")
+            return
+        fp_id = fp_id.strip()
+        if not FLOORPLAN_ID_OK.match(fp_id):
+            self.send_error(400, "Invalid floorplan id")
+            return
+        floorplan["id"] = fp_id
+
+        ensure_floorplan_manifest()
+        filename = f"{fp_id}.json"
+        floorplan_dir_real = os.path.realpath(FLOORPLAN_DIR)
+        path = os.path.realpath(os.path.join(FLOORPLAN_DIR, filename))
+        if not path.startswith(floorplan_dir_real + os.sep) and path != floorplan_dir_real:
+            self.send_error(400, "Invalid path")
+            return
+
+        text = json.dumps(floorplan, ensure_ascii=False, indent=2) + "\n"
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+        except OSError as e:
+            self.send_error(500, str(e))
+            return
+
+        manifest, files = self._read_manifest_files(FLOORPLAN_MANIFEST_PATH)
+        if filename not in files:
+            files.append(filename)
+        manifest["files"] = files
+        manifest.setdefault("schemaVersion", "1.0")
+        try:
+            with open(FLOORPLAN_MANIFEST_PATH, "w", encoding="utf-8") as f:
+                json.dump(manifest, f, indent=2, ensure_ascii=False)
+                f.write("\n")
+        except OSError as e:
+            self.send_error(500, f"manifest: {e}")
+            return
+
+        out = json.dumps({"ok": True, "file": filename, "id": fp_id}).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(out)))
+        self.end_headers()
+        self.wfile.write(out)
+
+    def _post_floorplan_delete(self) -> None:
+        body = self._read_json_body()
+        if body is None:
+            return
+        fp_id = body.get("id")
+        if not isinstance(fp_id, str):
+            self.send_error(400, "Missing id")
+            return
+        fp_id = fp_id.strip()
+        if not FLOORPLAN_ID_OK.match(fp_id):
+            self.send_error(400, "Invalid floorplan id")
+            return
+
+        refs = self._floorplan_references(fp_id)
+        if refs:
+            out = json.dumps({"ok": False, "error": "floorplan is referenced", "references": refs}, ensure_ascii=False).encode("utf-8")
+            self.send_response(409)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(out)))
+            self.end_headers()
+            self.wfile.write(out)
+            return
+
+        ensure_floorplan_manifest()
+        filename = f"{fp_id}.json"
+        floorplan_dir_real = os.path.realpath(FLOORPLAN_DIR)
+        path = os.path.realpath(os.path.join(FLOORPLAN_DIR, filename))
+        if not path.startswith(floorplan_dir_real + os.sep) and path != floorplan_dir_real:
+            self.send_error(400, "Invalid path")
+            return
+
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+            style_path = os.path.realpath(os.path.join(STYLE_DIR, filename))
+            style_dir_real = os.path.realpath(STYLE_DIR)
+            if style_path.startswith(style_dir_real + os.sep) and os.path.exists(style_path):
+                os.remove(style_path)
+        except OSError as e:
+            self.send_error(500, str(e))
+            return
+
+        manifest, files = self._read_manifest_files(FLOORPLAN_MANIFEST_PATH)
+        manifest["files"] = [f for f in files if f != filename]
+        manifest.setdefault("schemaVersion", "1.0")
+        try:
+            with open(FLOORPLAN_MANIFEST_PATH, "w", encoding="utf-8") as f:
+                json.dump(manifest, f, indent=2, ensure_ascii=False)
+                f.write("\n")
+        except OSError as e:
+            self.send_error(500, f"manifest: {e}")
+            return
+
+        out = json.dumps({"ok": True, "file": filename, "id": fp_id}).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(out)))
