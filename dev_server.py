@@ -48,6 +48,9 @@ class DevHTTPRequestHandler(SimpleHTTPRequestHandler):
         if path == "/api/floorplan-style/save":
             self._post_floorplan_style_save()
             return
+        if path == "/api/design/delete":
+            self._post_design_delete()
+            return
         if path != "/api/design/save":
             self.send_error(404, "Not Found")
             return
@@ -106,6 +109,74 @@ class DevHTTPRequestHandler(SimpleHTTPRequestHandler):
         except OSError as e:
             self.send_error(500, f"manifest: {e}")
             return
+        out = json.dumps({"ok": True, "file": filename}).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(out)))
+        self.end_headers()
+        self.wfile.write(out)
+
+    def _read_json_body(self, max_bytes: int = 1024 * 1024):
+        try:
+            length = int(self.headers.get("Content-Length", "0") or 0)
+        except ValueError:
+            self.send_error(400, "Bad Content-Length")
+            return None
+        if length <= 0 or length > max_bytes:
+            self.send_error(400, "Bad body size")
+            return None
+        raw = self.rfile.read(length)
+        try:
+            return json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            self.send_error(400, "Invalid JSON")
+            return None
+
+    def _post_design_delete(self) -> None:
+        body = self._read_json_body()
+        if body is None:
+            return
+        filename = body.get("filename")
+        if not isinstance(filename, str):
+            self.send_error(400, "Missing filename")
+            return
+        filename = os.path.basename(filename.strip())
+        if not FILENAME_OK.match(filename):
+            self.send_error(400, "Invalid filename")
+            return
+
+        ensure_manifest()
+        design_dir_real = os.path.realpath(DESIGN_DIR)
+        path = os.path.realpath(os.path.join(DESIGN_DIR, filename))
+        if not path.startswith(design_dir_real + os.sep) and path != design_dir_real:
+            self.send_error(400, "Invalid path")
+            return
+
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+        except OSError as e:
+            self.send_error(500, str(e))
+            return
+
+        try:
+            with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            manifest = {"schemaVersion": "1.0", "files": []}
+        files = manifest.get("files")
+        if not isinstance(files, list):
+            files = []
+        manifest["files"] = [f for f in files if f != filename]
+        manifest.setdefault("schemaVersion", "1.0")
+        try:
+            with open(MANIFEST_PATH, "w", encoding="utf-8") as f:
+                json.dump(manifest, f, indent=2, ensure_ascii=False)
+                f.write("\n")
+        except OSError as e:
+            self.send_error(500, f"manifest: {e}")
+            return
+
         out = json.dumps({"ok": True, "file": filename}).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "application/json; charset=utf-8")

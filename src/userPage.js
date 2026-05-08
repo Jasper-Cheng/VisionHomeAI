@@ -17,6 +17,7 @@ const MODE_FLOORPLAN = "floorplan";
 const MODE_FURNITURE = "furniture";
 const MODE_FILE = "file";
 const MODE_SEARCH = "search";
+const EDIT_SESSION_STORAGE_KEY = "visionhome:editSession:v1";
 
 const SORT_OPTIONS = {
   [MODE_FLOORPLAN]: [
@@ -47,6 +48,7 @@ let globalSearchQuery = "";
 let floorplanItems = [];
 let furnitureItems = [];
 let fileItems = [];
+let activeDesignFileEntry = null;
 
 function normalize(value) {
   return String(value ?? "").trim();
@@ -200,6 +202,11 @@ function getDesignFileSizeBytes(entry) {
   return Number.isFinite(size) && size > 0 ? size : 0;
 }
 
+function getDesignFileFurnitureCount(entry) {
+  const items = entry?.project?.layoutEditor?.furniture;
+  return Array.isArray(items) ? items.length : 0;
+}
+
 function getJsonSizeBytes(value) {
   const text = JSON.stringify(value ?? {});
   if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(text).length;
@@ -256,6 +263,16 @@ function getTemplateFloorplanName(templateId) {
   if (!id) return "";
   const floorplan = floorplanItems.find((item) => normalize(item?.id) === id);
   return floorplan ? getFloorplanName(floorplan) : id;
+}
+
+function getTemplateFloorplanEntry(templateId) {
+  const id = normalize(templateId);
+  if (!id) return null;
+  return floorplanItems.find((item) => normalize(item?.id) === id) || null;
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value ?? null));
 }
 
 function updateResultCount(count, noun) {
@@ -590,6 +607,8 @@ function createFileCard(entry) {
   card.dataset.file = file;
   card.dataset.designId = normalize(entry?.project?.id) || stem;
   card.setAttribute("aria-label", `文件 ${displayName}`);
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
 
   const thumb = document.createElement("div");
   thumb.className = "model-thumb model-thumb--file";
@@ -626,6 +645,13 @@ function createFileCard(entry) {
 
   info.append(top, source, tags);
   card.append(thumb, info);
+  card.addEventListener("click", () => openDesignFileDialog(entry));
+  card.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openDesignFileDialog(entry);
+    }
+  });
   return card;
 }
 
@@ -758,6 +784,310 @@ function clearSearchQuery() {
   if (input && input.value) input.value = "";
 }
 
+function getDesignDialogElements() {
+  return {
+    dialog: document.getElementById("designFileDialog"),
+    title: document.getElementById("designFileDialogTitle"),
+    preview: document.getElementById("designFilePreview"),
+    closeBtn: document.getElementById("designFileDialogClose"),
+    nameInput: document.getElementById("designFileNameInput"),
+    fileMeta: document.getElementById("designFileMetaFile"),
+    templateMeta: document.getElementById("designFileMetaTemplate"),
+    furnitureMeta: document.getElementById("designFileMetaFurniture"),
+    updatedMeta: document.getElementById("designFileMetaUpdated"),
+    error: document.getElementById("designFileDialogError"),
+    deleteConfirm: document.getElementById("designFileDeleteConfirm"),
+    deleteConfirmText: document.getElementById("designFileDeleteConfirmText"),
+    previewBtn: document.getElementById("designFilePreviewBtn"),
+    renameBtn: document.getElementById("designFileRenameBtn"),
+    deleteBtn: document.getElementById("designFileDeleteBtn"),
+    deleteCancelBtn: document.getElementById("designFileDeleteCancelBtn"),
+    deleteConfirmBtn: document.getElementById("designFileDeleteConfirmBtn"),
+  };
+}
+
+function showDesignDialogError(message) {
+  const error = getDesignDialogElements().error;
+  if (!error) return;
+  error.hidden = false;
+  error.textContent = message;
+}
+
+function hideDesignDialogError() {
+  const error = getDesignDialogElements().error;
+  if (!error) return;
+  error.hidden = true;
+  error.textContent = "";
+}
+
+function setDesignDeleteConfirmVisible(visible, entry = activeDesignFileEntry) {
+  const { deleteConfirm, deleteConfirmText } = getDesignDialogElements();
+  if (!deleteConfirm) return;
+  deleteConfirm.hidden = !visible;
+  if (visible && deleteConfirmText && entry) {
+    deleteConfirmText.textContent = `确定删除“${getDesignFileName(entry)}”吗？此操作会移除本地文件和清单记录。`;
+  }
+}
+
+function setButtonBusy(button, busy, label) {
+  if (!button) return;
+  if (busy) {
+    button.dataset.originalText = button.textContent || "";
+    button.textContent = label;
+    button.disabled = true;
+    return;
+  }
+  button.disabled = false;
+  if (button.dataset.originalText) button.textContent = button.dataset.originalText;
+  delete button.dataset.originalText;
+}
+
+function renderDesignFilePreview(entry) {
+  const { preview } = getDesignDialogElements();
+  if (!preview) return;
+  preview.replaceChildren();
+
+  const templateId = normalize(entry?.project?.templateId);
+  const floorplan = getTemplateFloorplanEntry(templateId);
+  if (floorplan) {
+    const thumb = document.createElement("div");
+    thumb.className = "design-file-dialog__floorplan-thumb model-thumb model-thumb--floorplan";
+    mountFloorplanThumb(thumb, floorplan, 0);
+    preview.appendChild(thumb);
+  } else {
+    const empty = document.createElement("div");
+    empty.className = "design-file-dialog__file-preview";
+    empty.innerHTML = `
+      <span class="file-card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M6 3h8l4 4v14H6V3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M14 3v5h5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M9 12h6M9 15h6M9 18h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+    `;
+    preview.appendChild(empty);
+  }
+
+  const badge = document.createElement("div");
+  badge.className = "design-file-dialog__preview-badge";
+  badge.textContent = `${getDesignFileFurnitureCount(entry)} 件家具`;
+  preview.appendChild(badge);
+}
+
+function openDesignFileDialog(entry) {
+  const elems = getDesignDialogElements();
+  if (!elems.dialog || !elems.nameInput) return;
+  activeDesignFileEntry = entry;
+  hideDesignDialogError();
+  setDesignDeleteConfirmVisible(false, entry);
+
+  const displayName = getDesignFileName(entry);
+  const file = normalize(entry?.file) || "unknown.json";
+  const templateId = normalize(entry?.project?.templateId);
+  const templateName = getTemplateFloorplanName(templateId) || templateId || "未关联模板";
+  const furnitureCount = getDesignFileFurnitureCount(entry);
+
+  if (elems.title) elems.title.textContent = displayName;
+  elems.nameInput.value = displayName;
+  if (elems.fileMeta) elems.fileMeta.textContent = file;
+  if (elems.templateMeta) elems.templateMeta.textContent = templateName;
+  if (elems.furnitureMeta) elems.furnitureMeta.textContent = `${furnitureCount} 件`;
+  if (elems.updatedMeta) elems.updatedMeta.textContent = formatDesignFileUpdatedAt(entry);
+  renderDesignFilePreview(entry);
+
+  if (!elems.dialog.open) {
+    if (typeof elems.dialog.showModal === "function") elems.dialog.showModal();
+    else elems.dialog.setAttribute("open", "");
+  }
+  requestAnimationFrame(() => {
+    elems.nameInput.focus();
+    elems.nameInput.select();
+  });
+}
+
+function closeDesignFileDialog() {
+  const dialog = getDesignDialogElements().dialog;
+  if (dialog && typeof dialog.close === "function") dialog.close();
+  else dialog?.removeAttribute("open");
+}
+
+function refreshCurrentView() {
+  setFileCategoryCount(fileItems);
+  if (currentMode === MODE_SEARCH && globalSearchQuery) renderSearchResults(globalSearchQuery);
+  else if (currentMode === MODE_FILE || lastBrowseMode === MODE_FILE) renderFiles();
+}
+
+async function postRenameDesignFile(entry, nextName) {
+  const file = normalize(entry?.file);
+  const project = cloneJson(entry?.project);
+  if (!file || !project || typeof project !== "object") throw new Error("文件数据无效");
+  project.name = nextName;
+  project.updatedAt = new Date().toISOString();
+
+  const response = await fetch(DATA_PATHS.designSaveApi, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: file, project }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok !== true) {
+    throw new Error(data?.error || response.statusText || "保存失败");
+  }
+  return { file: data.file || file, project };
+}
+
+async function postDeleteDesignFile(entry) {
+  const file = normalize(entry?.file);
+  if (!file) throw new Error("文件名无效");
+  const response = await fetch(DATA_PATHS.designDeleteApi, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: file }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok !== true) {
+    throw new Error(data?.error || response.statusText || "删除失败");
+  }
+  return data.file || file;
+}
+
+function previewDesignFile(entry) {
+  if (!entry?.project || typeof entry.project !== "object") {
+    showDesignDialogError("文件数据无效，无法预览。");
+    return;
+  }
+  const project = cloneJson(entry.project);
+  const layoutEditor = project.layoutEditor && typeof project.layoutEditor === "object" ? project.layoutEditor : {};
+  const furnitureLayout = Array.isArray(layoutEditor.furniture) ? layoutEditor.furniture : [];
+  const floorPlanId = normalize(layoutEditor.floorPlanId) || normalize(project.templateId);
+  const session = {
+    version: 1,
+    furnitureLayout,
+    floorPlanId,
+    floorLevelIndex: Math.max(0, Math.trunc(Number(layoutEditor.floorLevelIndex) || 0)),
+    view: { tx: 0, ty: 0, scale: 1 },
+    gridVisible: true,
+    lightingConfig: layoutEditor.lightingConfig || null,
+    renderQualityMode: normalize(layoutEditor.renderQualityMode) || "standard",
+    design: {
+      file: normalize(entry.file),
+      id: normalize(project.id) || getDesignFileStem(entry),
+      project,
+    },
+  };
+  try {
+    sessionStorage.setItem(EDIT_SESSION_STORAGE_KEY, JSON.stringify(session));
+  } catch (error) {
+    showDesignDialogError("无法写入预览会话，请检查浏览器存储权限。");
+    return;
+  }
+  window.location.href = "./index.html";
+}
+
+function isSameDesignFile(a, b) {
+  return Boolean(normalize(a) && normalize(a) === normalize(b));
+}
+
+function clearDeletedDesignFromEditSession(deletedFile) {
+  if (!normalize(deletedFile)) return;
+
+  if (isSameDesignFile(window.__activeDesignFile, deletedFile)) {
+    window.__activeDesignFile = undefined;
+    window.__activeDesignProject = undefined;
+    window.__activeDesignId = undefined;
+  }
+
+  let raw = "";
+  try {
+    raw = sessionStorage.getItem(EDIT_SESSION_STORAGE_KEY) || "";
+  } catch {
+    return;
+  }
+  if (!raw) return;
+
+  let session = null;
+  try {
+    session = JSON.parse(raw);
+  } catch {
+    return;
+  }
+  if (!isSameDesignFile(session?.design?.file, deletedFile)) return;
+
+  try {
+    sessionStorage.removeItem(EDIT_SESSION_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function bindDesignFileDialog() {
+  const elems = getDesignDialogElements();
+  if (!elems.dialog) return;
+
+  elems.closeBtn?.addEventListener("click", closeDesignFileDialog);
+  elems.dialog.addEventListener("cancel", () => setDesignDeleteConfirmVisible(false));
+  elems.previewBtn?.addEventListener("click", () => {
+    if (activeDesignFileEntry) previewDesignFile(activeDesignFileEntry);
+  });
+
+  elems.nameInput?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      elems.renameBtn?.click();
+    }
+  });
+
+  elems.renameBtn?.addEventListener("click", async () => {
+    if (!activeDesignFileEntry || !elems.nameInput) return;
+    const nextName = normalize(elems.nameInput.value);
+    if (!nextName) {
+      showDesignDialogError("请输入方案名称。");
+      return;
+    }
+    hideDesignDialogError();
+    setButtonBusy(elems.renameBtn, true, "保存中");
+    try {
+      const saved = await postRenameDesignFile(activeDesignFileEntry, nextName);
+      activeDesignFileEntry.file = saved.file;
+      activeDesignFileEntry.project = saved.project;
+      activeDesignFileEntry.sizeBytes = getJsonSizeBytes(saved.project);
+      refreshCurrentView();
+      openDesignFileDialog(activeDesignFileEntry);
+    } catch (error) {
+      showDesignDialogError(`保存失败：${error?.message || error}`);
+    } finally {
+      setButtonBusy(elems.renameBtn, false);
+    }
+  });
+
+  elems.deleteBtn?.addEventListener("click", () => {
+    if (!activeDesignFileEntry) return;
+    hideDesignDialogError();
+    setDesignDeleteConfirmVisible(true);
+  });
+
+  elems.deleteCancelBtn?.addEventListener("click", () => setDesignDeleteConfirmVisible(false));
+
+  elems.deleteConfirmBtn?.addEventListener("click", async () => {
+    if (!activeDesignFileEntry) return;
+    hideDesignDialogError();
+    setButtonBusy(elems.deleteConfirmBtn, true, "删除中");
+    try {
+      const deletedFile = await postDeleteDesignFile(activeDesignFileEntry);
+      clearDeletedDesignFromEditSession(deletedFile);
+      fileItems = fileItems.filter((item) => normalize(item?.file) !== normalize(deletedFile));
+      closeDesignFileDialog();
+      activeDesignFileEntry = null;
+      refreshCurrentView();
+    } catch (error) {
+      showDesignDialogError(`删除失败：${error?.message || error}`);
+    } finally {
+      setButtonBusy(elems.deleteConfirmBtn, false);
+    }
+  });
+}
+
 function bindCategoryClicks() {
   const floorplanList = document.querySelector("[data-floorplan-category-list]");
   floorplanList?.addEventListener("click", (event) => {
@@ -835,6 +1165,7 @@ async function mountUserPage() {
     bindCategoryClicks();
     bindSort();
     bindGlobalSearch();
+    bindDesignFileDialog();
     renderFloorplans();
   } catch (err) {
     console.warn("[VisionHomeAI] 用户页分类加载失败:", err);

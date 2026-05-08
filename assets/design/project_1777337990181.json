@@ -1,10 +1,10 @@
 {
   "schemaVersion": "1.1",
   "id": "project_1777337990181",
-  "name": "1",
+  "name": "小程的家具方案",
   "description": "",
   "createdAt": "2026-04-28T00:59:50.181Z",
-  "updatedAt": "2026-04-28T00:59:50.181Z",
+  "updatedAt": "2026-05-08T07:17:02.992Z",
   "templateId": "apt_2b1l_compact_01",
   "activeFloorId": "floor1",
   "floorplanSnapshot": null,
@@ -15,7 +15,7 @@
     "floorplanStyleKey": "default",
     "furniture": [
       {
-        "instanceId": "li_mohx2e5c_1",
+        "instanceId": "li_mowl0yb4_1",
         "model": "potted_plant_02",
         "floorId": "floor1",
         "x": -16,
@@ -23,27 +23,11 @@
         "rotation": 0
       },
       {
-        "instanceId": "li_mohx2ew1_2",
+        "instanceId": "li_mowl0zgw_2",
         "model": "ArmChair_01",
         "floorId": "floor1",
-        "x": -486,
-        "y": 366,
-        "rotation": 0
-      },
-      {
-        "instanceId": "li_mohx4v55_5",
-        "model": "BarberShopChair_01",
-        "floorId": "floor1",
-        "x": 26,
-        "y": -352,
-        "rotation": 0
-      },
-      {
-        "instanceId": "li_mohx4vmq_6",
-        "model": "ClassicNightstand_01",
-        "floorId": "floor1",
-        "x": -71,
-        "y": 227,
+        "x": -176,
+        "y": -12,
         "rotation": 0
       }
     ],
@@ -51,6 +35,7 @@
       "default": {
         "roomFloors": {},
         "doorOverrides": {},
+        "doorFrameOverrides": {},
         "windowOverrides": {},
         "wallFaceOverrides": {}
       }

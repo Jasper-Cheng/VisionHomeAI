@@ -389,6 +389,62 @@
 
       </div>
     </main>
+
+    <dialog id="designFileDialog" class="save-design-dialog design-file-dialog" aria-labelledby="designFileDialogTitle">
+      <div class="save-design-dialog__panel design-file-dialog__panel">
+        <div class="design-file-dialog__head">
+          <h2 id="designFileDialogTitle" class="save-design-dialog__title">文件详情</h2>
+          <button type="button" class="design-file-dialog__close" id="designFileDialogClose" aria-label="关闭">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="design-file-dialog__preview" id="designFilePreview" aria-label="文件预览"></div>
+        <dl class="design-file-dialog__meta">
+          <div>
+            <dt>文件</dt>
+            <dd id="designFileMetaFile">-</dd>
+          </div>
+          <div>
+            <dt>模板</dt>
+            <dd id="designFileMetaTemplate">-</dd>
+          </div>
+          <div>
+            <dt>家具</dt>
+            <dd id="designFileMetaFurniture">-</dd>
+          </div>
+          <div>
+            <dt>更新时间</dt>
+            <dd id="designFileMetaUpdated">-</dd>
+          </div>
+        </dl>
+        <label class="save-design-dialog__label">
+          方案名称
+          <input
+            id="designFileNameInput"
+            class="save-design-dialog__input"
+            type="text"
+            maxlength="64"
+            autocomplete="off"
+          />
+        </label>
+        <p id="designFileDialogError" class="save-design-dialog__error" role="alert" hidden></p>
+        <div id="designFileDeleteConfirm" class="design-file-dialog__delete-confirm" hidden>
+          <span id="designFileDeleteConfirmText">确定删除这个方案吗？</span>
+          <div class="design-file-dialog__delete-confirm-actions">
+            <button type="button" class="save-design-dialog__cancel" id="designFileDeleteCancelBtn">取消</button>
+            <button type="button" class="save-design-dialog__cancel design-file-dialog__delete" id="designFileDeleteConfirmBtn">确认删除</button>
+          </div>
+        </div>
+        <div class="save-design-dialog__actions design-file-dialog__actions">
+          <button type="button" class="save-design-dialog__cancel design-file-dialog__delete" id="designFileDeleteBtn">删除</button>
+          <span class="design-file-dialog__spacer"></span>
+          <button type="button" class="save-design-dialog__cancel" id="designFilePreviewBtn">预览效果</button>
+          <button type="button" class="btn-primary btn-save" id="designFileRenameBtn">保存名称</button>
+        </div>
+      </div>
+    </dialog>
     <script type="module" src="./src/userPage.js"></script>
   </body>
 </html>
